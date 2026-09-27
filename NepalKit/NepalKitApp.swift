@@ -26,6 +26,6 @@ func resolveDisplaySettings() -> DisplaySettings {
 
 /// Short BS date for the menu-bar extra, honoring the stored display settings.
 func menuBarTitle(now: Date) -> String {
-    guard let today = todayBS(now: now, in: .sample) else { return "—" }
+    guard let today = todayBS(now: now, in: .v1) else { return "—" }
     return formatShort(today, settings: resolveDisplaySettings())
 }

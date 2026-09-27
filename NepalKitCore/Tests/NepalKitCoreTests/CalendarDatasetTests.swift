@@ -2,15 +2,15 @@ import XCTest
 @testable import NepalKitCore
 
 final class CalendarDatasetTests: XCTestCase {
-    func testSampleDatasetDeclaresVersionAndRange() {
-        let dataset = CalendarDataset.sample
+    func testV1DatasetDeclaresVersionAndRange() {
+        let dataset = CalendarDataset.v1
 
-        XCTAssertEqual(dataset.version, "0.1.0-skeleton")
-        XCTAssertEqual(dataset.supportedRange, 2082 ... 2083)
+        XCTAssertEqual(dataset.version, "1.0.0")
+        XCTAssertEqual(dataset.supportedRange, 1970 ... 2084)
     }
 
     func testEveryYearHasTwelveValidMonths() {
-        let dataset = CalendarDataset.sample
+        let dataset = CalendarDataset.v1
 
         for year in dataset.supportedRange {
             let months = dataset.monthLengths(for: year)
@@ -22,7 +22,7 @@ final class CalendarDatasetTests: XCTestCase {
     }
 
     func testSupportedRangeHasNoGaps() {
-        let dataset = CalendarDataset.sample
+        let dataset = CalendarDataset.v1
 
         for year in dataset.supportedRange {
             XCTAssertNotNil(dataset.monthLengths(for: year), "Missing data for BS year \(year)")

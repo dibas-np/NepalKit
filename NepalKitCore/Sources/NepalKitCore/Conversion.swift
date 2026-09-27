@@ -15,40 +15,31 @@ private func utcDate(from ad: GADay) -> Date? {
     return utcGregorian.date(from: components)
 }
 
-/// Days from the dataset anchor to the given BS date, or nil if outside the table.
-func daysSinceAnchor(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
-    guard bs.year >= dataset.anchorBS.year else { return nil }
-
-    var days = 0
-    // Whole years from the anchor year.
-    for year in dataset.anchorBS.year ..< bs.year {
+/// Absolute day index of a BS date within the table (days since the first day
+/// of the supported range), or nil if the date is invalid or outside the table.
+func absoluteDayIndex(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
+    guard dataset.supportedRange.contains(bs.year) else { return nil }
+    var index = 0
+    for year in dataset.supportedRange.lowerBound ..< bs.year {
         guard let months = dataset.monthLengths(for: year) else { return nil }
-        days += months.reduce(0, +)
+        index += months.reduce(0, +)
     }
-    // Whole months within the target year.
     guard let months = dataset.monthLengths(for: bs.year),
-          bs.month >= 1, bs.month <= 12
+          (1 ... 12).contains(bs.month),
+          (1 ... months[bs.month - 1]).contains(bs.day)
     else { return nil }
     for month in 1 ..< bs.month {
-        days += months[month - 1]
+        index += months[month - 1]
     }
-    // Days within the target month, relative to the anchor day.
-    guard bs.day >= 1, bs.day <= months[bs.month - 1] else { return nil }
-    if bs.year == dataset.anchorBS.year, bs.month == dataset.anchorBS.month {
-        return bs.day - dataset.anchorBS.day
-    }
-    days += bs.day - 1
-    if bs.year == dataset.anchorBS.year {
-        days -= dataset.anchorBS.day - 1
-    }
-    return days
+    return index + bs.day - 1
 }
 
 /// Converts a Bikram Sambat date to Gregorian, or nil if outside the table.
 public func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay? {
-    guard let offset = daysSinceAnchor(bs, in: dataset) else { return nil }
-    guard let anchorDate = utcDate(from: dataset.anchorAD),
-          let date = utcGregorian.date(byAdding: .day, value: offset, to: anchorDate)
+    guard let targetIndex = absoluteDayIndex(bs, in: dataset),
+          let anchorIndex = absoluteDayIndex(dataset.anchorBS, in: dataset),
+          let anchorDate = utcDate(from: dataset.anchorAD),
+          let date = utcGregorian.date(byAdding: .day, value: targetIndex - anchorIndex, to: anchorDate)
     else { return nil }
     let components = utcGregorian.dateComponents([.year, .month, .day], from: date)
     guard let year = components.year, let month = components.month, let day = components.day else { return nil }
@@ -61,25 +52,45 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
           let targetDate = utcDate(from: ad)
     else { return nil }
     let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
-    guard offset >= 0 else { return nil }
 
-    var remaining = offset
     var year = dataset.anchorBS.year
     var month = dataset.anchorBS.month
     var day = dataset.anchorBS.day
-    while remaining > 0 {
-        guard let months = dataset.monthLengths(for: year) else { return nil }
-        day += 1
-        if day > months[month - 1] {
-            day = 1
-            month += 1
-            if month > 12 {
-                month = 1
-                year += 1
+    if offset >= 0 {
+        var remaining = offset
+        while remaining > 0 {
+            guard let months = dataset.monthLengths(for: year) else { return nil }
+            day += 1
+            if day > months[month - 1] {
+                day = 1
+                month += 1
+                if month > 12 {
+                    month = 1
+                    year += 1
+                }
             }
+            remaining -= 1
         }
-        remaining -= 1
+    } else {
+        var remaining = offset
+        while remaining < 0 {
+            day -= 1
+            if day < 1 {
+                month -= 1
+                if month < 1 {
+                    month = 12
+                    year -= 1
+                }
+                guard let months = dataset.monthLengths(for: year) else { return nil }
+                day = months[month - 1]
+            }
+            remaining += 1
+        }
     }
+    guard let months = dataset.monthLengths(for: year),
+          (1 ... 12).contains(month),
+          (1 ... months[month - 1]).contains(day)
+    else { return nil }
     return BSDay(year: year, month: month, day: day)
 }
 

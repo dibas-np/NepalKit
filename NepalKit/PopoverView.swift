@@ -5,7 +5,7 @@ import NepalKitCore
 struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let today = todayBS(now: Date(), in: .sample) {
+            if let today = todayBS(now: Date(), in: .v1) {
                 Text(format(today, settings: resolveDisplaySettings()))
                 Text(gregorianTitle(for: Date()))
                     .foregroundStyle(.secondary)
