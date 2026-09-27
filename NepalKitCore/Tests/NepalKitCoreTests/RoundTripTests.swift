@@ -2,25 +2,36 @@ import XCTest
 @testable import NepalKitCore
 
 /// Exhaustive Q19 matrix: every date in the supported range, both directions.
+/// BS-side enumeration uses only the public table (data oracle), never the
+/// conversion logic under test; the AD side iterates with Foundation's calendar.
 final class RoundTripTests: XCTestCase {
-    private var totalDays: Int {
-        CalendarDataset.v1.supportedRange.reduce(0) { sum, year in
-            sum + (CalendarDataset.v1.monthLengths(for: year)?.reduce(0, +) ?? 0)
-        }
-    }
-
-    private func utcDate(from ad: GADay) -> Date {
+    private var utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar.date(from: DateComponents(year: ad.year, month: ad.month, day: ad.day))!
+        return calendar
+    }()
+
+    private func utcDate(from ad: GADay) -> Date {
+        utcCalendar.date(from: DateComponents(year: ad.year, month: ad.month, day: ad.day))!
+    }
+
+    private func everyBSDay(in dataset: CalendarDataset) -> [BSDay] {
+        var days: [BSDay] = []
+        for year in dataset.supportedRange {
+            guard let months = dataset.monthLengths(for: year) else { continue }
+            for (offset, length) in months.enumerated() {
+                for day in 1 ... length {
+                    days.append(BSDay(year: year, month: offset + 1, day: day))
+                }
+            }
+        }
+        return days
     }
 
     func testExhaustiveRoundTripBStoADtoBS() {
-        for index in 0 ..< totalDays {
-            guard let bs = bsDay(at: index, in: .v1),
-                  let ad = bsToAD(bs, in: .v1)
-            else {
-                XCTFail("No conversion at index \(index)")
+        for bs in everyBSDay(in: .v1) {
+            guard let ad = bsToAD(bs, in: .v1) else {
+                XCTFail("No conversion for \(bs)")
                 return
             }
             XCTAssertEqual(adToBS(ad, in: .v1), bs, "Round trip failed for \(bs)")
@@ -28,36 +39,30 @@ final class RoundTripTests: XCTestCase {
     }
 
     func testExhaustiveRoundTripADtoBStoAD() {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
         var date = utcDate(from: GADay(year: 1913, month: 4, day: 13))
         let end = utcDate(from: GADay(year: 2028, month: 4, day: 12))
         while date <= end {
-            let parts = calendar.dateComponents([.year, .month, .day], from: date)
+            let parts = utcCalendar.dateComponents([.year, .month, .day], from: date)
             let ad = GADay(year: parts.year!, month: parts.month!, day: parts.day!)
             guard let bs = adToBS(ad, in: .v1) else {
                 XCTFail("No conversion for \(ad)")
                 return
             }
             XCTAssertEqual(bsToAD(bs, in: .v1), ad, "Round trip failed for \(ad)")
-            date = calendar.date(byAdding: .day, value: 1, to: date)!
+            date = utcCalendar.date(byAdding: .day, value: 1, to: date)!
         }
     }
 
     func testConsecutiveBSDaysAdvanceOneADDay() {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
         var previous: Date?
-        for index in 0 ..< totalDays {
-            guard let bs = bsDay(at: index, in: .v1),
-                  let ad = bsToAD(bs, in: .v1)
-            else {
-                XCTFail("No conversion at index \(index)")
+        for bs in everyBSDay(in: .v1) {
+            guard let ad = bsToAD(bs, in: .v1) else {
+                XCTFail("No conversion for \(bs)")
                 return
             }
             let date = utcDate(from: ad)
             if let previous {
-                let gap = calendar.dateComponents([.day], from: previous, to: date).day
+                let gap = utcCalendar.dateComponents([.day], from: previous, to: date).day
                 XCTAssertEqual(gap, 1, "Non-consecutive mapping at \(bs)")
                 if gap != 1 { return }
             }
@@ -92,5 +97,11 @@ final class RoundTripTests: XCTestCase {
     func testRangeMinimumBothDirections() {
         XCTAssertEqual(bsToAD(BSDay(year: 1970, month: 1, day: 1), in: .v1), GADay(year: 1913, month: 4, day: 13))
         XCTAssertEqual(adToBS(GADay(year: 1913, month: 4, day: 13), in: .v1), BSDay(year: 1970, month: 1, day: 1))
+    }
+
+    func testRangeMaximumBothDirections() {
+        // Chaitra 2084 — rat32 grid.
+        XCTAssertEqual(bsToAD(BSDay(year: 2084, month: 12, day: 30), in: .v1), GADay(year: 2028, month: 4, day: 12))
+        XCTAssertEqual(adToBS(GADay(year: 2028, month: 4, day: 12), in: .v1), BSDay(year: 2084, month: 12, day: 30))
     }
 }

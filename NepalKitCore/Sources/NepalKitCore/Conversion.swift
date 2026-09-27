@@ -82,8 +82,8 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
     else { return nil }
     // Calendar normalizes invalid components (e.g. Feb 30 becomes Mar 1),
     // so reject dates that don't round-trip exactly.
-    let check = utcGregorian.dateComponents([.year, .month, .day], from: targetDate)
-    guard check.year == ad.year, check.month == ad.month, check.day == ad.day else { return nil }
+    let roundTripped = utcGregorian.dateComponents([.year, .month, .day], from: targetDate)
+    guard roundTripped.year == ad.year, roundTripped.month == ad.month, roundTripped.day == ad.day else { return nil }
     let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
     return bsDay(at: anchorIndex + offset, in: dataset)
 }
