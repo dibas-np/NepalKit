@@ -13,20 +13,24 @@ struct DisplaySettingsModelTests {
         return DisplaySettingsModel(store: SettingsStore(defaults: defaults))
     }
 
+    private func menuBar() -> MenuBarModel {
+        MenuBarModel(now: RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshInterval: 3600)
+    }
+
     @Test("Menu-bar title honors both display axes")
     func menuBarTitleHonorsSettings() {
-        let now = RoundTripFixtures.date(2026, 9, 27, 12, 0)
-        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        let bar = menuBar()
 
-        #expect(menuBarTitle(now: now, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "11 Ashoj")
-        #expect(menuBarTitle(now: now, settings: DisplaySettings(digits: .devanagari, monthNames: .nepali)) == "११ असोज")
-        #expect(menuBarTitle(now: now, settings: DisplaySettings(digits: .latin, monthNames: .nepali)) == "11 असोज")
-        #expect(menuBarTitle(now: now, settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)) == "११ Ashoj")
+        #expect(bar.title(settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "11 Ashoj")
+        #expect(bar.title(settings: DisplaySettings(digits: .devanagari, monthNames: .nepali)) == "११ असोज")
+        #expect(bar.title(settings: DisplaySettings(digits: .latin, monthNames: .nepali)) == "11 असोज")
+        #expect(bar.title(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)) == "११ Ashoj")
     }
 
     @Test("Menu bar and popover render the same date for the same settings")
     func menuBarMatchesPopoverForSameSettings() {
         let now = RoundTripFixtures.date(2026, 9, 27, 12, 0)
+        let bar = menuBar()
 
         for settings in [
             DisplaySettings(digits: .latin, monthNames: .transliterated),
@@ -37,8 +41,8 @@ struct DisplaySettingsModelTests {
                 return
             }
             // The menu bar drops the year; the popover keeps it. Same date either way.
-            #expect(menuBarTitle(now: now, settings: settings) == formatShort(today, settings: settings))
-            #expect(format(today, settings: settings).hasPrefix(menuBarTitle(now: now, settings: settings)))
+            #expect(bar.title(settings: settings) == formatShort(today, settings: settings))
+            #expect(format(today, settings: settings).hasPrefix(bar.title(settings: settings)))
         }
     }
 
