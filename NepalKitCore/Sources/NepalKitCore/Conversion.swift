@@ -29,13 +29,10 @@ func validatedMonths(for bs: BSDay, in dataset: CalendarDataset) -> [Int]? {
 /// Absolute day index of a Bikram Sambat date within the table (days since
 /// the first day of the supported range), or nil if invalid or outside.
 func absoluteDayIndex(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
-    guard dataset.supportedRange.contains(bs.year) else { return nil }
-    var index = 0
-    for year in dataset.supportedRange.lowerBound ..< bs.year {
-        guard let months = dataset.monthLengths(for: year) else { return nil }
-        index += months.reduce(0, +)
-    }
-    guard let months = validatedMonths(for: bs, in: dataset) else { return nil }
+    guard let yearStart = dataset.yearStartIndices[bs.year],
+          let months = validatedMonths(for: bs, in: dataset)
+    else { return nil }
+    var index = yearStart
     for month in 1 ..< bs.month {
         index += months[month - 1]
     }
@@ -54,47 +51,41 @@ public func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay? {
     return GADay(year: year, month: month, day: day)
 }
 
-/// Converts a Gregorian date to Bikram Sambat, or nil if outside the table.
-public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
-    guard let anchorDate = utcDate(from: dataset.anchorAD),
-          let targetDate = utcDate(from: ad)
-    else { return nil }
-    let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
-
-    var year = dataset.anchorBS.year
-    var month = dataset.anchorBS.month
-    var day = dataset.anchorBS.day
-    var remaining = offset
-    while remaining != 0 {
-        if remaining > 0 {
-            guard let months = dataset.monthLengths(for: year) else { return nil }
-            day += 1
-            if day > months[month - 1] {
-                day = 1
-                month += 1
-                if month > 12 {
-                    month = 1
-                    year += 1
+/// Bikram Sambat date at an absolute day index (inverse of absoluteDayIndex),
+/// or nil if the index falls outside the table.
+func bsDay(at index: Int, in dataset: CalendarDataset) -> BSDay? {
+    guard index >= 0 else { return nil }
+    for year in dataset.supportedRange {
+        guard let yearStart = dataset.yearStartIndices[year],
+              let months = dataset.monthLengths(for: year)
+        else { return nil }
+        let yearLength = months.reduce(0, +)
+        guard index >= yearStart + yearLength else {
+            var remaining = index - yearStart
+            for (offset, length) in months.enumerated() {
+                guard remaining >= length else {
+                    return BSDay(year: year, month: offset + 1, day: remaining + 1)
                 }
+                remaining -= length
             }
-            remaining -= 1
-        } else {
-            day -= 1
-            if day < 1 {
-                month -= 1
-                if month < 1 {
-                    month = 12
-                    year -= 1
-                }
-                guard let months = dataset.monthLengths(for: year) else { return nil }
-                day = months[month - 1]
-            }
-            remaining += 1
+            return nil
         }
     }
-    let landed = BSDay(year: year, month: month, day: day)
-    guard validatedMonths(for: landed, in: dataset) != nil else { return nil }
-    return landed
+    return nil
+}
+
+/// Converts a Gregorian date to Bikram Sambat, or nil if invalid or outside the table.
+public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
+    guard let anchorDate = utcDate(from: dataset.anchorAD),
+          let targetDate = utcDate(from: ad),
+          let anchorIndex = absoluteDayIndex(dataset.anchorBS, in: dataset)
+    else { return nil }
+    // Calendar normalizes invalid components (e.g. Feb 30 becomes Mar 1),
+    // so reject dates that don't round-trip exactly.
+    let check = utcGregorian.dateComponents([.year, .month, .day], from: targetDate)
+    guard check.year == ad.year, check.month == ad.month, check.day == ad.day else { return nil }
+    let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
+    return bsDay(at: anchorIndex + offset, in: dataset)
 }
 
 /// Weekday of a Bikram Sambat date as 1 (Sunday) through 7 (Saturday), or nil if outside the table.
@@ -106,7 +97,7 @@ public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
 }
 
 /// Today's Bikram Sambat date, anchored to Nepal Time (UTC+5:45) unconditionally:
-/// the BS date flips at NPT midnight regardless of the system time zone.
+/// the Bikram Sambat date flips at NPT midnight regardless of the system time zone.
 /// The clock is injected (`now`) so the anchoring is testable.
 public func todayBS(now: Date, in dataset: CalendarDataset) -> BSDay? {
     var nptCalendar = Calendar(identifier: .gregorian)

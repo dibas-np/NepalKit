@@ -28,6 +28,9 @@ public struct CalendarDataset: Sendable {
     /// Explicitly declared supported range (ADR-0002), not derived.
     public let supportedRange: ClosedRange<Int>
 
+    /// Absolute day index of each supported year's first day (lookup cache).
+    let yearStartIndices: [Int: Int]
+
     public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>) {
         self.version = version
         self.years = years
@@ -35,6 +38,13 @@ public struct CalendarDataset: Sendable {
         self.anchorAD = anchorAD
         self.supportedRange = supportedRange
         assert(Set(years.keys) == Set(supportedRange), "Dataset must cover exactly its declared range")
+        var starts: [Int: Int] = [:]
+        var cursor = 0
+        for year in supportedRange {
+            starts[year] = cursor
+            cursor += years[year]?.reduce(0, +) ?? 0
+        }
+        self.yearStartIndices = starts
     }
 
     public func monthLengths(for bsYear: Int) -> [Int]? {
