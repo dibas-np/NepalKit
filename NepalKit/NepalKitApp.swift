@@ -15,12 +15,17 @@ struct NepalKitApp: App {
     }
 }
 
-/// Short BS date for the menu-bar extra, honoring the stored display settings.
+/// Stored display settings shared by the menu-bar extra and the popover.
 /// Settings UI arrives in a later ticket; until then the stored values (if any)
 /// are read directly, defaulting to Latin digits and transliterated month names.
-func menuBarTitle(now: Date) -> String {
+func resolveDisplaySettings() -> DisplaySettings {
     let digits = DigitScript(rawValue: UserDefaults.standard.string(forKey: "digitScript") ?? "") ?? .latin
     let monthNames = MonthNameStyle(rawValue: UserDefaults.standard.string(forKey: "monthNameStyle") ?? "") ?? .transliterated
+    return DisplaySettings(digits: digits, monthNames: monthNames)
+}
+
+/// Short BS date for the menu-bar extra, honoring the stored display settings.
+func menuBarTitle(now: Date) -> String {
     guard let today = todayBS(now: now, in: .sample) else { return "—" }
-    return formatShort(today, digits: digits, monthNames: monthNames)
+    return formatShort(today, settings: resolveDisplaySettings())
 }

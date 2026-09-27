@@ -3,25 +3,33 @@ import XCTest
 
 final class FormattingTests: XCTestCase {
     private let date = BSDay(year: 2083, month: 6, day: 11)
+    private let latinTransliterated = DisplaySettings(digits: .latin, monthNames: .transliterated)
+    private let devanagariNepali = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
     func testLatinDigitsTransliteratedMonth() {
-        XCTAssertEqual(format(date, digits: .latin, monthNames: .transliterated), "11 Ashoj 2083")
+        XCTAssertEqual(format(date, settings: latinTransliterated), "11 Ashoj 2083")
     }
 
     func testDevanagariDigitsNepaliMonth() {
-        XCTAssertEqual(format(date, digits: .devanagari, monthNames: .nepali), "११ असोज २०८३")
+        XCTAssertEqual(format(date, settings: devanagariNepali), "११ असोज २०८३")
     }
 
     func testLatinDigitsNepaliMonth() {
-        XCTAssertEqual(format(date, digits: .latin, monthNames: .nepali), "11 असोज 2083")
+        XCTAssertEqual(
+            format(date, settings: DisplaySettings(digits: .latin, monthNames: .nepali)),
+            "11 असोज 2083"
+        )
     }
 
     func testDevanagariDigitsTransliteratedMonth() {
-        XCTAssertEqual(format(date, digits: .devanagari, monthNames: .transliterated), "११ Ashoj २०८३")
+        XCTAssertEqual(
+            format(date, settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)),
+            "११ Ashoj २०८३"
+        )
     }
 
     func testShortFormatOmitsYear() {
-        XCTAssertEqual(formatShort(date, digits: .latin, monthNames: .transliterated), "11 Ashoj")
-        XCTAssertEqual(formatShort(date, digits: .devanagari, monthNames: .nepali), "११ असोज")
+        XCTAssertEqual(formatShort(date, settings: latinTransliterated), "11 Ashoj")
+        XCTAssertEqual(formatShort(date, settings: devanagariNepali), "११ असोज")
     }
 }

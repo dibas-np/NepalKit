@@ -6,6 +6,15 @@ private let utcGregorian: Calendar = {
     return calendar
 }()
 
+/// A Gregorian date as a UTC civil day.
+private func utcDate(from ad: GADay) -> Date? {
+    var components = DateComponents()
+    components.year = ad.year
+    components.month = ad.month
+    components.day = ad.day
+    return utcGregorian.date(from: components)
+}
+
 /// Days from the dataset anchor to the given BS date, or nil if outside the table.
 func daysSinceAnchor(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
     guard bs.year >= dataset.anchorBS.year else { return nil }
@@ -38,11 +47,7 @@ func daysSinceAnchor(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
 /// Converts a Bikram Sambat date to Gregorian, or nil if outside the table.
 public func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay? {
     guard let offset = daysSinceAnchor(bs, in: dataset) else { return nil }
-    var anchorComponents = DateComponents()
-    anchorComponents.year = dataset.anchorAD.year
-    anchorComponents.month = dataset.anchorAD.month
-    anchorComponents.day = dataset.anchorAD.day
-    guard let anchorDate = utcGregorian.date(from: anchorComponents),
+    guard let anchorDate = utcDate(from: dataset.anchorAD),
           let date = utcGregorian.date(byAdding: .day, value: offset, to: anchorDate)
     else { return nil }
     let components = utcGregorian.dateComponents([.year, .month, .day], from: date)
@@ -52,16 +57,8 @@ public func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay? {
 
 /// Converts a Gregorian date to Bikram Sambat, or nil if outside the table.
 public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
-    var anchorComponents = DateComponents()
-    anchorComponents.year = dataset.anchorAD.year
-    anchorComponents.month = dataset.anchorAD.month
-    anchorComponents.day = dataset.anchorAD.day
-    var targetComponents = DateComponents()
-    targetComponents.year = ad.year
-    targetComponents.month = ad.month
-    targetComponents.day = ad.day
-    guard let anchorDate = utcGregorian.date(from: anchorComponents),
-          let targetDate = utcGregorian.date(from: targetComponents)
+    guard let anchorDate = utcDate(from: dataset.anchorAD),
+          let targetDate = utcDate(from: ad)
     else { return nil }
     let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
     guard offset >= 0 else { return nil }
@@ -88,12 +85,9 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
 
 /// Weekday of a BS date as 1 (Sunday) through 7 (Saturday), or nil if outside the table.
 public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
-    guard let ad = bsToAD(bs, in: dataset) else { return nil }
-    var components = DateComponents()
-    components.year = ad.year
-    components.month = ad.month
-    components.day = ad.day
-    guard let date = utcGregorian.date(from: components) else { return nil }
+    guard let ad = bsToAD(bs, in: dataset),
+          let date = utcDate(from: ad)
+    else { return nil }
     return utcGregorian.component(.weekday, from: date)
 }
 

@@ -9,6 +9,17 @@ public enum MonthNameStyle: String, Sendable {
     case transliterated
 }
 
+/// The two display axes travel together everywhere dates are shown.
+public struct DisplaySettings: Sendable {
+    public let digits: DigitScript
+    public let monthNames: MonthNameStyle
+
+    public init(digits: DigitScript, monthNames: MonthNameStyle) {
+        self.digits = digits
+        self.monthNames = monthNames
+    }
+}
+
 /// Canonical transliterated English month names, Baisakh through Chaitra.
 public let transliteratedMonthNames = [
     "Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashoj",
@@ -40,13 +51,13 @@ func monthName(month: Int, style: MonthNameStyle) -> String {
 }
 
 /// Formats a BS date as "day month year" honoring both display settings.
-public func format(_ bs: BSDay, digits: DigitScript, monthNames: MonthNameStyle) -> String {
-    let month = monthName(month: bs.month, style: monthNames)
-    return "\(renderNumber(bs.day, digits: digits)) \(month) \(renderNumber(bs.year, digits: digits))"
+public func format(_ bs: BSDay, settings: DisplaySettings) -> String {
+    let month = monthName(month: bs.month, style: settings.monthNames)
+    return "\(renderNumber(bs.day, digits: settings.digits)) \(month) \(renderNumber(bs.year, digits: settings.digits))"
 }
 
 /// Formats a BS date as "day month" for the menu-bar extra, honoring both display settings.
-public func formatShort(_ bs: BSDay, digits: DigitScript, monthNames: MonthNameStyle) -> String {
-    let month = monthName(month: bs.month, style: monthNames)
-    return "\(renderNumber(bs.day, digits: digits)) \(month)"
+public func formatShort(_ bs: BSDay, settings: DisplaySettings) -> String {
+    let month = monthName(month: bs.month, style: settings.monthNames)
+    return "\(renderNumber(bs.day, digits: settings.digits)) \(month)"
 }

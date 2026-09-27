@@ -12,7 +12,8 @@ public struct CalendarDataset: Sendable {
     public let years: [Int: [Int]]
 
     /// The anchor tying the table to the Gregorian calendar:
-    /// 1 Baisakh 2082 BS is 14 April 2025 AD.
+    /// 1 Baisakh 2082 in Bikram Sambat is 14 April 2025 in the Gregorian calendar.
+    /// (`BS`/`AD` survive only in type and function names, where the spec standardizes on them.)
     public let anchorBS: BSDay
     public let anchorAD: GADay
 

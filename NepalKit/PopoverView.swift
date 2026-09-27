@@ -6,8 +6,7 @@ struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let today = todayBS(now: Date(), in: .sample) {
-                Text(format(today, digits: .latin, monthNames: .transliterated))
-                Text(format(today, digits: .devanagari, monthNames: .nepali))
+                Text(format(today, settings: resolveDisplaySettings()))
                 Text(gregorianTitle(for: Date()))
                     .foregroundStyle(.secondary)
             } else {
@@ -22,6 +21,9 @@ struct PopoverView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         formatter.timeStyle = .none
+        // Same anchor as the BS date: the Gregorian day in Nepal Time,
+        // so both labels always agree even near NPT midnight.
+        formatter.timeZone = TimeZone(identifier: "Asia/Kathmandu")!
         return formatter
     }()
 
