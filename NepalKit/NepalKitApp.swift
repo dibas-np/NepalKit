@@ -1,31 +1,44 @@
+import Combine
 import SwiftUI
 import NepalKitCore
 
+/// Observable display settings: persisted through DisplaySettingsStore,
+/// published so the menu-bar extra and popover refresh instantly on change.
+@MainActor
+final class DisplaySettingsModel: ObservableObject {
+    @Published private(set) var settings: DisplaySettings
+
+    private let store: DisplaySettingsStore
+
+    init(store: DisplaySettingsStore = DisplaySettingsStore()) {
+        self.store = store
+        self.settings = store.settings
+    }
+
+    func save(_ settings: DisplaySettings) {
+        store.save(settings)
+        self.settings = settings
+    }
+}
+
 @main
 struct NepalKitApp: App {
+    @StateObject private var settingsModel = DisplaySettingsModel()
+
     var body: some Scene {
         MenuBarExtra {
-            PopoverView()
+            PopoverView(model: settingsModel)
         } label: {
             TimelineView(.everyMinute) { _ in
-                Text(menuBarTitle(now: Date()))
+                Text(menuBarTitle(now: Date(), settings: settingsModel.settings))
             }
         }
         .menuBarExtraStyle(.window)
     }
 }
 
-/// Stored display settings shared by the menu-bar extra and the popover.
-/// Settings UI arrives in a later ticket; until then the stored values (if any)
-/// are read directly, defaulting to Latin digits and transliterated month names.
-func resolveDisplaySettings() -> DisplaySettings {
-    let digits = DigitScript(rawValue: UserDefaults.standard.string(forKey: "digitScript") ?? "") ?? .latin
-    let monthNames = MonthNameStyle(rawValue: UserDefaults.standard.string(forKey: "monthNameStyle") ?? "") ?? .transliterated
-    return DisplaySettings(digits: digits, monthNames: monthNames)
-}
-
-/// Short BS date for the menu-bar extra, honoring the stored display settings.
-func menuBarTitle(now: Date) -> String {
+/// Short BS date for the menu-bar extra, honoring the given display settings.
+func menuBarTitle(now: Date, settings: DisplaySettings) -> String {
     guard let today = todayBS(now: now, in: .v1) else { return "—" }
-    return formatShort(today, settings: resolveDisplaySettings())
+    return formatShort(today, settings: settings)
 }

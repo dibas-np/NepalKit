@@ -1,20 +1,54 @@
 import SwiftUI
 import NepalKitCore
 
-/// Popover shell: today's dates. Converter and Settings sections arrive in later tickets.
+/// Popover shell: today's dates plus the display settings section.
+/// Converter arrives in a later ticket.
 struct PopoverView: View {
+    @ObservedObject var model: DisplaySettingsModel
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let today = todayBS(now: Date(), in: .v1) {
-                Text(format(today, settings: resolveDisplaySettings()))
+                Text(format(today, settings: model.settings))
                 Text(gregorianTitle(for: Date()))
                     .foregroundStyle(.secondary)
             } else {
                 Text("Date unavailable")
             }
+            Divider()
+            settingsSection
         }
         .padding()
         .frame(minWidth: 220)
+    }
+
+    private var settingsSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker("Digits", selection: digitBinding) {
+                Text("Latin 0–9").tag(DigitScript.latin)
+                Text("Devanagari ०–९").tag(DigitScript.devanagari)
+            }
+            .pickerStyle(.segmented)
+            Picker("Month names", selection: monthNameBinding) {
+                Text("Nepali").tag(MonthNameStyle.nepali)
+                Text("English").tag(MonthNameStyle.transliterated)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private var digitBinding: Binding<DigitScript> {
+        Binding(
+            get: { model.settings.digits },
+            set: { model.save(DisplaySettings(digits: $0, monthNames: model.settings.monthNames)) }
+        )
+    }
+
+    private var monthNameBinding: Binding<MonthNameStyle> {
+        Binding(
+            get: { model.settings.monthNames },
+            set: { model.save(DisplaySettings(digits: model.settings.digits, monthNames: $0)) }
+        )
     }
 
     private static let gregorianFormatter: DateFormatter = {
@@ -33,5 +67,5 @@ struct PopoverView: View {
 }
 
 #Preview {
-    PopoverView()
+    PopoverView(model: DisplaySettingsModel())
 }

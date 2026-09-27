@@ -1,16 +1,16 @@
 /// Display settings for BS dates, per the locked spec: two independent axes.
-public enum DigitScript: String, Sendable {
+public enum DigitScript: String, Sendable, Hashable {
     case latin
     case devanagari
 }
 
-public enum MonthNameStyle: String, Sendable {
+public enum MonthNameStyle: String, Sendable, Hashable {
     case nepali
     case transliterated
 }
 
 /// The two display axes travel together everywhere dates are shown.
-public struct DisplaySettings: Sendable {
+public struct DisplaySettings: Sendable, Hashable {
     public let digits: DigitScript
     public let monthNames: MonthNameStyle
 
@@ -47,6 +47,24 @@ func monthName(month: Int, style: MonthNameStyle) -> String {
     switch style {
     case .nepali: nepaliMonthNames[month - 1]
     case .transliterated: transliteratedMonthNames[month - 1]
+    }
+}
+
+/// Nepali weekday names, Sunday through Saturday.
+public let nepaliWeekdayNames = [
+    "आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि",
+]
+
+/// English weekday names, Sunday through Saturday.
+public let englishWeekdayNames = [
+    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+]
+
+/// Weekday name for 1 (Sunday) through 7 (Saturday), honoring the month-name setting.
+public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String {
+    switch style {
+    case .nepali: nepaliWeekdayNames[weekday - 1]
+    case .transliterated: englishWeekdayNames[weekday - 1]
     }
 }
 
