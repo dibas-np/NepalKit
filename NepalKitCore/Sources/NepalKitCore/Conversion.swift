@@ -15,8 +15,19 @@ private func utcDate(from ad: GADay) -> Date? {
     return utcGregorian.date(from: components)
 }
 
-/// Absolute day index of a BS date within the table (days since the first day
-/// of the supported range), or nil if the date is invalid or outside the table.
+/// Month lengths for a Bikram Sambat date after range and component
+/// validation, or nil if the date is invalid or outside the table.
+func validatedMonths(for bs: BSDay, in dataset: CalendarDataset) -> [Int]? {
+    guard dataset.supportedRange.contains(bs.year),
+          let months = dataset.monthLengths(for: bs.year),
+          (1 ... 12).contains(bs.month),
+          (1 ... months[bs.month - 1]).contains(bs.day)
+    else { return nil }
+    return months
+}
+
+/// Absolute day index of a Bikram Sambat date within the table (days since
+/// the first day of the supported range), or nil if invalid or outside.
 func absoluteDayIndex(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
     guard dataset.supportedRange.contains(bs.year) else { return nil }
     var index = 0
@@ -24,10 +35,7 @@ func absoluteDayIndex(_ bs: BSDay, in dataset: CalendarDataset) -> Int? {
         guard let months = dataset.monthLengths(for: year) else { return nil }
         index += months.reduce(0, +)
     }
-    guard let months = dataset.monthLengths(for: bs.year),
-          (1 ... 12).contains(bs.month),
-          (1 ... months[bs.month - 1]).contains(bs.day)
-    else { return nil }
+    guard let months = validatedMonths(for: bs, in: dataset) else { return nil }
     for month in 1 ..< bs.month {
         index += months[month - 1]
     }
@@ -56,9 +64,9 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
     var year = dataset.anchorBS.year
     var month = dataset.anchorBS.month
     var day = dataset.anchorBS.day
-    if offset >= 0 {
-        var remaining = offset
-        while remaining > 0 {
+    var remaining = offset
+    while remaining != 0 {
+        if remaining > 0 {
             guard let months = dataset.monthLengths(for: year) else { return nil }
             day += 1
             if day > months[month - 1] {
@@ -70,10 +78,7 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
                 }
             }
             remaining -= 1
-        }
-    } else {
-        var remaining = offset
-        while remaining < 0 {
+        } else {
             day -= 1
             if day < 1 {
                 month -= 1
@@ -87,14 +92,12 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
             remaining += 1
         }
     }
-    guard let months = dataset.monthLengths(for: year),
-          (1 ... 12).contains(month),
-          (1 ... months[month - 1]).contains(day)
-    else { return nil }
-    return BSDay(year: year, month: month, day: day)
+    let landed = BSDay(year: year, month: month, day: day)
+    guard validatedMonths(for: landed, in: dataset) != nil else { return nil }
+    return landed
 }
 
-/// Weekday of a BS date as 1 (Sunday) through 7 (Saturday), or nil if outside the table.
+/// Weekday of a Bikram Sambat date as 1 (Sunday) through 7 (Saturday), or nil if outside the table.
 public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
     guard let ad = bsToAD(bs, in: dataset),
           let date = utcDate(from: ad)

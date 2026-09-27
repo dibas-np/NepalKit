@@ -3,13 +3,15 @@
 /// Month lengths are declared per year by the official Nepali Patro; there is
 /// no closed-form algorithm, so conversion is table-driven.
 ///
-/// v1 provenance (ticket 02): base table medic/bikram-sambat, cross-checked
-/// month-by-month against askbuddie/bikram-sambat (107/116 rows identical) and
-/// a third python table (majority vote resolved 9 disputes; official published
-/// calendars confirmed 2082, 2083, 2084). Every New Year boundary 1970-2090
-/// verified against an independent anchor list (two single-day typos in that
-/// list corrected: 1975, 2089). Range capped at 2084: the current officially
-/// published year; 2085+ excluded, no extrapolated years (ADR-0001).
+/// v1 provenance (ticket 02): month rows reproduce the officially approved
+/// annual Nepali Patro. Three community tables were cross-checked
+/// month-by-month (107/116 identical); all 9 disputes were arbitrated against
+/// published Patro reproductions (KMC government grids, Hamro Patro, Nepali
+/// Patro, mypatro, ashesh, rat32, khudra), with tithi-continuity, weekday, and
+/// month-handoff checks. Every New Year boundary 1970-2090 verified against
+/// an independent anchor list (two single-day typos in that list corrected:
+/// 1975, 2089). Range capped at 2084: the current officially published year;
+/// 2085+ excluded, no extrapolated years (ADR-0001).
 public struct CalendarDataset: Sendable {
     /// Dataset version, e.g. "1.0.0" for the first verified table.
     public let version: String
@@ -23,18 +25,16 @@ public struct CalendarDataset: Sendable {
     public let anchorBS: BSDay
     public let anchorAD: GADay
 
-    public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay) {
+    /// Explicitly declared supported range (ADR-0002), not derived.
+    public let supportedRange: ClosedRange<Int>
+
+    public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>) {
         self.version = version
         self.years = years
         self.anchorBS = anchorBS
         self.anchorAD = anchorAD
-    }
-
-    public var supportedRange: ClosedRange<Int> {
-        guard let lo = years.keys.min(), let hi = years.keys.max() else {
-            return 0 ... -1
-        }
-        return lo ... hi
+        self.supportedRange = supportedRange
+        assert(Set(years.keys) == Set(supportedRange), "Dataset must cover exactly its declared range")
     }
 
     public func monthLengths(for bsYear: Int) -> [Int]? {
@@ -64,11 +64,11 @@ public struct CalendarDataset: Sendable {
             1986: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             1987: [31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30],
             1988: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
-            1989: [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30],
+            1989: [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30],
             1990: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             1991: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
             1992: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
-            1993: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
+            1993: [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30],
             1994: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             1995: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
             1996: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
@@ -162,7 +162,8 @@ public struct CalendarDataset: Sendable {
             2084: [31, 31, 32, 31, 31, 30, 30, 30, 29, 30, 30, 30],
         ],
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
-        anchorAD: GADay(year: 2025, month: 4, day: 14)
+        anchorAD: GADay(year: 2025, month: 4, day: 14),
+        supportedRange: 1970 ... 2084
     )
 }
 

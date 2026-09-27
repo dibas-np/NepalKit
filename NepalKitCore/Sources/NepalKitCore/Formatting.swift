@@ -50,13 +50,13 @@ func monthName(month: Int, style: MonthNameStyle) -> String {
     }
 }
 
-/// Formats a BS date as "day month year" honoring both display settings.
+/// Formats a Bikram Sambat date as "day month year" honoring both display settings.
 public func format(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
     return "\(renderNumber(bs.day, digits: settings.digits)) \(month) \(renderNumber(bs.year, digits: settings.digits))"
 }
 
-/// Formats a BS date as "day month" for the menu-bar extra, honoring both display settings.
+/// Formats a Bikram Sambat date as "day month" for the menu-bar extra, honoring both display settings.
 public func formatShort(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
     return "\(renderNumber(bs.day, digits: settings.digits)) \(month)"
