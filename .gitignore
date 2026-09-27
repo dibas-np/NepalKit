@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserdata/
+
+# Agent docs (local-only, never committed)
+AGENTS.md
+docs/agents/
+.scratch/
