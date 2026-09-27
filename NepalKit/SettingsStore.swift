@@ -1,8 +1,8 @@
 import Foundation
 
-/// Persists the two display axes in UserDefaults. The domain object stays
+/// Persists the two display axes in UserDefaults. The store stays
 /// dumb and injectable so persistence is testable without the app running.
-public struct DisplaySettingsStore {
+public struct SettingsStore {
     public static let digitScriptKey = "digitScript"
     public static let monthNameStyleKey = "monthNameStyle"
 

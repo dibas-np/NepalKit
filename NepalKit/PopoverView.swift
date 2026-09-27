@@ -4,7 +4,7 @@ import NepalKitCore
 /// Popover shell: today's dates plus the display settings section.
 /// Converter arrives in a later ticket.
 struct PopoverView: View {
-    @ObservedObject var model: DisplaySettingsModel
+    @Bindable var model: DisplaySettingsModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
