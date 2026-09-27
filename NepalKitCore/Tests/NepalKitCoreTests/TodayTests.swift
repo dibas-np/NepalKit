@@ -1,24 +1,61 @@
-import XCTest
+import Foundation
+import Testing
 @testable import NepalKitCore
 
-final class TodayTests: XCTestCase {
-    private func utcDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
+struct TodayTests {
+    static func utcDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))!
     }
 
-    func testTodayFollowsNPTEvenWhenUTCIsPreviousDay() {
-        // 18:30 UTC on 26 Sep is 00:15 NPT on 27 Sep: the BS date is already the 27th's.
-        let now = utcDate(2026, 9, 26, 18, 30)
+    @Test func todayFollowsNPTEvenWhenUTCIsPreviousDay() {
+        // 18:30 UTC on 26 Sep is 00:15 NPT on 27 Sep: the date is already the 27th's.
+        let now = Self.utcDate(2026, 9, 26, 18, 30)
 
-        XCTAssertEqual(todayBS(now: now, in: .v1), BSDay(year: 2083, month: 6, day: 11))
+        #expect(todayBS(now: now, in: .v1) == BSDay(year: 2083, month: 6, day: 11))
     }
 
-    func testTodayDuringNPTDaytime() {
+    @Test func todayDuringNPTDaytime() {
         // 12:00 UTC on 27 Sep is 17:45 NPT the same day.
-        let now = utcDate(2026, 9, 27, 12, 0)
+        let now = Self.utcDate(2026, 9, 27, 12, 0)
 
-        XCTAssertEqual(todayBS(now: now, in: .v1), BSDay(year: 2083, month: 6, day: 11))
+        #expect(todayBS(now: now, in: .v1) == BSDay(year: 2083, month: 6, day: 11))
+    }
+
+    @Test("A system time zone west of Nepal must not move today's date")
+    func todayIgnoresWestOfNPTSystemZone() {
+        // 23:30 UTC on 26 Sep is 04:45 NPT on the 27th, but 19:30 on the 26th
+        // in New York. A Calendar.current regression would answer the 26th.
+        let now = Self.utcDate(2026, 9, 26, 23, 30)
+
+        #expect(TodayTests.inTimeZone("America/New_York") {
+            todayBS(now: now, in: .v1)
+        } == BSDay(year: 2083, month: 6, day: 11))
+    }
+
+    @Test("A system time zone east of Nepal must not move today's date")
+    func todayIgnoresEastOfNPTSystemZone() {
+        // 10:00 UTC on 27 Sep is 15:45 NPT the same day, but already the 28th
+        // in Kiritimati (+14). A Calendar.current regression would answer the 28th.
+        let now = Self.utcDate(2026, 9, 27, 10, 0)
+
+        #expect(TodayTests.inTimeZone("Pacific/Kiritimati") {
+            todayBS(now: now, in: .v1)
+        } == BSDay(year: 2083, month: 6, day: 11))
+    }
+
+    @Test func flipHappensAtNPTMidnightNotSystemMidnight() {
+        // NPT midnight is 18:15 UTC. One minute earlier is still the 26th.
+        #expect(todayBS(now: Self.utcDate(2026, 9, 26, 18, 14), in: .v1) == BSDay(year: 2083, month: 6, day: 10))
+        #expect(todayBS(now: Self.utcDate(2026, 9, 26, 18, 15), in: .v1) == BSDay(year: 2083, month: 6, day: 11))
+    }
+
+    /// Runs a closure with a process-wide default time zone, restoring it after.
+    private static func inTimeZone(_ identifier: String, _ body: () -> BSDay?) -> BSDay? {
+        let original = NSTimeZone.default
+        NSTimeZone.default = TimeZone(identifier: identifier)!
+        defer { NSTimeZone.default = original }
+        return body()
     }
 }

@@ -37,7 +37,6 @@ public struct CalendarDataset: Sendable {
         self.anchorBS = anchorBS
         self.anchorAD = anchorAD
         self.supportedRange = supportedRange
-        assert(Set(years.keys) == Set(supportedRange), "Dataset must cover exactly its declared range")
         var starts: [Int: Int] = [:]
         var cursor = 0
         for year in supportedRange {

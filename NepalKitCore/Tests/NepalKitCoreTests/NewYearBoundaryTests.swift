@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import NepalKitCore
 
 /// Every New Year boundary in the v1 range, from the independent anchor
 /// list (two single-day typos corrected: 1975, 2089).
-final class NewYearBoundaryTests: XCTestCase {
-    private let newYears: [(bs: Int, ad: GADay)] = [
+struct NewYearBoundaryTests {
+    static let newYears: [(bs: Int, ad: GADay)] = [
         (1970, GADay(year: 1913, month: 4, day: 13)),
         (1971, GADay(year: 1914, month: 4, day: 13)),
         (1972, GADay(year: 1915, month: 4, day: 13)),
@@ -122,15 +122,17 @@ final class NewYearBoundaryTests: XCTestCase {
         (2084, GADay(year: 2027, month: 4, day: 14)),
     ]
 
-    func testAllNewYearBoundariesBStoAD() {
-        for (bs, ad) in newYears {
-            XCTAssertEqual(bsToAD(BSDay(year: bs, month: 1, day: 1), in: .v1), ad, "1 Baisakh \(bs)")
-        }
+    @Test(arguments: newYears)
+    func newYearBStoAD(boundary: (bs: Int, ad: GADay)) {
+        let bs = BSDay(year: boundary.bs, month: 1, day: 1)
+        #expect(bsToAD(bs, in: .v1) == boundary.ad, "1 Baisakh \(boundary.bs)")
     }
 
-    func testAllNewYearBoundariesADtoBS() {
-        for (bs, ad) in newYears {
-            XCTAssertEqual(adToBS(ad, in: .v1), BSDay(year: bs, month: 1, day: 1), "New Year \(bs)")
-        }
+    @Test(arguments: newYears)
+    func newYearADtoBS(boundary: (bs: Int, ad: GADay)) {
+        #expect(
+            adToBS(boundary.ad, in: .v1) == BSDay(year: boundary.bs, month: 1, day: 1),
+            "New Year \(boundary.bs)"
+        )
     }
 }

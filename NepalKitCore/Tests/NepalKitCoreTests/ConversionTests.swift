@@ -1,21 +1,17 @@
-import XCTest
+import Testing
 @testable import NepalKitCore
 
-final class ConversionTests: XCTestCase {
-    func testBSToADKnownDate() {
-        let converted = bsToAD(BSDay(year: 2083, month: 6, day: 11), in: .v1)
-
-        XCTAssertEqual(converted, GADay(year: 2026, month: 9, day: 27))
+struct ConversionTests {
+    @Test func bsToADKnownDate() {
+        #expect(bsToAD(BSDay(year: 2083, month: 6, day: 11), in: .v1) == GADay(year: 2026, month: 9, day: 27))
     }
 
-    func testADToBSKnownDate() {
-        let converted = adToBS(GADay(year: 2026, month: 9, day: 27), in: .v1)
-
-        XCTAssertEqual(converted, BSDay(year: 2083, month: 6, day: 11))
+    @Test func adToBSKnownDate() {
+        #expect(adToBS(GADay(year: 2026, month: 9, day: 27), in: .v1) == BSDay(year: 2083, month: 6, day: 11))
     }
 
-    func testWeekdayOfKnownDateIsSunday() {
+    @Test func weekdayOfKnownDateIsSunday() {
         // 27 September 2026 is a Sunday; weekday 1 is Sunday.
-        XCTAssertEqual(weekday(of: BSDay(year: 2083, month: 6, day: 11), in: .v1), 1)
+        #expect(weekday(of: BSDay(year: 2083, month: 6, day: 11), in: .v1) == 1)
     }
 }

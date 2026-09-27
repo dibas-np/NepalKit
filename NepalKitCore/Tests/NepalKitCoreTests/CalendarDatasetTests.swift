@@ -1,33 +1,50 @@
-import XCTest
+import Testing
 @testable import NepalKitCore
 
-final class CalendarDatasetTests: XCTestCase {
-    func testV1DatasetDeclaresVersionAndRange() {
+struct CalendarDatasetTests {
+    @Test func v1DatasetDeclaresVersionAndRange() {
         let dataset = CalendarDataset.v1
 
-        XCTAssertEqual(dataset.version, "1.0.0")
-        XCTAssertEqual(dataset.supportedRange, 1970 ... 2084)
+        #expect(dataset.version == "1.0.0")
+        #expect(dataset.supportedRange == 1970 ... 2084)
     }
 
-    func testEveryYearHasTwelveValidMonths() {
+    @Test(arguments: CalendarDataset.v1.supportedRange)
+    func everyYearHasTwelveValidMonths(year: Int) {
+        let months = CalendarDataset.v1.monthLengths(for: year)
+
+        #expect(months?.count == 12, "\(year) must have 12 months")
+        for length in months ?? [] {
+            #expect((29 ... 32).contains(length), "month length \(length) out of range in \(year)")
+        }
+        #expect([365, 366].contains(months?.reduce(0, +) ?? 0), "\(year) must span 365/366 days")
+    }
+
+    @Test func declaredRangeMatchesTableKeys() {
+        // The engine indexes exactly the declared range, so a table that
+        // disagrees with the range would silently produce zero-length years.
+        let dataset = CalendarDataset.v1
+
+        #expect(Set(dataset.years.keys) == Set(dataset.supportedRange))
+    }
+
+    @Test func supportedRangeHasNoGaps() {
         let dataset = CalendarDataset.v1
 
         for year in dataset.supportedRange {
-            let months = dataset.monthLengths(for: year)
-            XCTAssertEqual(months?.count, 12, "BS year \(year) must have 12 months")
-            for length in months ?? [] {
-                XCTAssertTrue((29 ... 32).contains(length), "Month length \(length) out of range in \(year)")
-            }
+            #expect(dataset.monthLengths(for: year) != nil, "missing data for \(year)")
         }
+        #expect(dataset.monthLengths(for: dataset.supportedRange.lowerBound - 1) == nil)
+        #expect(dataset.monthLengths(for: dataset.supportedRange.upperBound + 1) == nil)
     }
 
-    func testSupportedRangeHasNoGaps() {
+    @Test func yearStartIndicesAreContiguous() {
         let dataset = CalendarDataset.v1
+        var expected = 0
 
         for year in dataset.supportedRange {
-            XCTAssertNotNil(dataset.monthLengths(for: year), "Missing data for BS year \(year)")
+            #expect(dataset.yearStartIndices[year] == expected, "gap before \(year)")
+            expected += dataset.monthLengths(for: year)?.reduce(0, +) ?? 0
         }
-        XCTAssertNil(dataset.monthLengths(for: dataset.supportedRange.lowerBound - 1))
-        XCTAssertNil(dataset.monthLengths(for: dataset.supportedRange.upperBound + 1))
     }
 }

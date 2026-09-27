@@ -1,8 +1,20 @@
 import Foundation
 
-private let utcGregorian: Calendar = {
+/// Nepal Time: the product's anchor for "today" (UTC+5:45).
+public let nepalTimeZone = TimeZone(secondsFromGMT: 20700)!
+
+/// Gregorian calendar in UTC: conversion is civil-day math, not instant math.
+let utcGregorian: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(identifier: "UTC")!
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    return calendar
+}()
+
+/// Gregorian calendar in Nepal Time, shared so the anchoring rule lives in
+/// one place (see the NPT invariant in CODING_STANDARDS.md).
+let nptGregorian: Calendar = {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = nepalTimeZone
     return calendar
 }()
 
@@ -100,9 +112,7 @@ public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
 /// the Bikram Sambat date flips at NPT midnight regardless of the system time zone.
 /// The clock is injected (`now`) so the anchoring is testable.
 public func todayBS(now: Date, in dataset: CalendarDataset) -> BSDay? {
-    var nptCalendar = Calendar(identifier: .gregorian)
-    nptCalendar.timeZone = TimeZone(identifier: "Asia/Kathmandu")!
-    let components = nptCalendar.dateComponents([.year, .month, .day], from: now)
+    let components = nptGregorian.dateComponents([.year, .month, .day], from: now)
     guard let year = components.year, let month = components.month, let day = components.day else { return nil }
     return adToBS(GADay(year: year, month: month, day: day), in: dataset)
 }

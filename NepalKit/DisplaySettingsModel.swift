@@ -1,9 +1,9 @@
-import Foundation
 import Observation
 import NepalKitCore
 
 /// Observable display settings: persisted through SettingsStore, published
 /// so the menu-bar extra and popover refresh instantly on change.
+@MainActor
 @Observable
 final class DisplaySettingsModel {
     private(set) var settings: DisplaySettings

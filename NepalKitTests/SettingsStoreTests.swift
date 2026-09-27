@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import NepalKitCore
 @testable import NepalKit
 
 struct SettingsStoreTests {
