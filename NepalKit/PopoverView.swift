@@ -38,17 +38,11 @@ struct PopoverView: View {
     }
 
     private var digitBinding: Binding<DigitScript> {
-        Binding(
-            get: { model.settings.digits },
-            set: { model.save(DisplaySettings(digits: $0, monthNames: model.settings.monthNames)) }
-        )
+        Binding(get: { model.settings.digits }, set: { model.save(digits: $0) })
     }
 
     private var monthNameBinding: Binding<MonthNameStyle> {
-        Binding(
-            get: { model.settings.monthNames },
-            set: { model.save(DisplaySettings(digits: model.settings.digits, monthNames: $0)) }
-        )
+        Binding(get: { model.settings.monthNames }, set: { model.save(monthNames: $0) })
     }
 
     private static let gregorianFormatter: DateFormatter = {

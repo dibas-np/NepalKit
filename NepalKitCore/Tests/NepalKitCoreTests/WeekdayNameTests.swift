@@ -3,24 +3,30 @@ import XCTest
 
 final class WeekdayNameTests: XCTestCase {
     func testNepaliWeekdayNames() {
-        XCTAssertEqual(
-            (1 ... 7).map { weekdayName(for: $0, style: .nepali) },
-            ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"]
-        )
+        let expected = ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"]
+        for day in 1 ... 7 {
+            XCTAssertEqual(weekdayName(for: day, style: .nepali), expected[day - 1])
+        }
     }
 
     func testTransliteratedWeekdayNamesAreEnglish() {
-        XCTAssertEqual(
-            (1 ... 7).map { weekdayName(for: $0, style: .transliterated) },
-            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        )
+        let expected = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        for day in 1 ... 7 {
+            XCTAssertEqual(weekdayName(for: day, style: .transliterated), expected[day - 1])
+        }
     }
 
-    func testKnownDateWeekdayNameEndToEnd() {
-        // 27 September 2026 is a Sunday; Ashoj 2083 uses full Nepali names.
-        let bs = BSDay(year: 2083, month: 6, day: 11)
-        XCTAssertEqual(weekday(of: bs, in: .v1), 1)
-        XCTAssertEqual(weekdayName(for: 1, style: .nepali), "आइत")
-        XCTAssertEqual(weekdayName(for: 1, style: .transliterated), "Sunday")
+    func testAllSevenDaysEndToEndThroughWeekday() {
+        // 27 Sep – 3 Oct 2026 are Sunday–Saturday; Ashoj 11–17, 2083.
+        for offset in 0 ... 6 {
+            let bs = BSDay(year: 2083, month: 6, day: 11 + offset)
+            XCTAssertEqual(weekday(of: bs, in: .v1), offset + 1, "weekday of \(bs)")
+            XCTAssertEqual(weekdayName(for: offset + 1, style: .nepali), ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"][offset])
+        }
+    }
+
+    func testOutOfRangeWeekdayReturnsNil() {
+        XCTAssertNil(weekdayName(for: 0, style: .nepali))
+        XCTAssertNil(weekdayName(for: 8, style: .transliterated))
     }
 }

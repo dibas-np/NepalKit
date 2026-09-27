@@ -1,6 +1,6 @@
 import Combine
 import SwiftUI
-import NepalKitCore
+@_exported import NepalKitCore
 
 /// Observable display settings: persisted through DisplaySettingsStore,
 /// published so the menu-bar extra and popover refresh instantly on change.
@@ -18,6 +18,14 @@ final class DisplaySettingsModel: ObservableObject {
     func save(_ settings: DisplaySettings) {
         store.save(settings)
         self.settings = settings
+    }
+
+    func save(digits: DigitScript) {
+        save(DisplaySettings(digits: digits, monthNames: settings.monthNames))
+    }
+
+    func save(monthNames: MonthNameStyle) {
+        save(DisplaySettings(digits: settings.digits, monthNames: monthNames))
     }
 }
 
@@ -37,7 +45,7 @@ struct NepalKitApp: App {
     }
 }
 
-/// Short BS date for the menu-bar extra, honoring the given display settings.
+/// Short Bikram Sambat date for the menu-bar extra, honoring the given display settings.
 func menuBarTitle(now: Date, settings: DisplaySettings) -> String {
     guard let today = todayBS(now: now, in: .v1) else { return "—" }
     return formatShort(today, settings: settings)

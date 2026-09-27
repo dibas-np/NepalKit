@@ -1,7 +1,9 @@
 .build/
+build/
 .swiftpm/
 DerivedData/
 *.xcuserdata/
+-xcc/
 
 # Agent docs (local-only, never committed)
 AGENTS.md

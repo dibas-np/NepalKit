@@ -1,10 +1,11 @@
 import XCTest
-@testable import NepalKitCore
+@testable import NepalKit
 
 final class DisplaySettingsStoreTests: XCTestCase {
     private func freshStore() -> (DisplaySettingsStore, UserDefaults) {
-        let defaults = UserDefaults(suiteName: "NepalKitCoreTests-\(UUID().uuidString)")!
-        defaults.removePersistentDomain(forName: "NepalKitCoreTests")
+        let suiteName = "NepalKitCoreTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
         return (DisplaySettingsStore(defaults: defaults), defaults)
     }
 

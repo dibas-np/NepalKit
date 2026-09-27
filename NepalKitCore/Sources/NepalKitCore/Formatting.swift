@@ -45,8 +45,8 @@ func renderNumber(_ value: Int, digits: DigitScript) -> String {
 
 func monthName(month: Int, style: MonthNameStyle) -> String {
     switch style {
-    case .nepali: nepaliMonthNames[month - 1]
-    case .transliterated: transliteratedMonthNames[month - 1]
+    case .nepali: return nepaliMonthNames[month - 1]
+    case .transliterated: return transliteratedMonthNames[month - 1]
     }
 }
 
@@ -60,11 +60,13 @@ public let englishWeekdayNames = [
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ]
 
-/// Weekday name for 1 (Sunday) through 7 (Saturday), honoring the month-name setting.
-public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String {
+/// Weekday name for 1 (Sunday) through 7 (Saturday), honoring the month-name
+/// setting, or nil outside 1–7.
+public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
+    guard (1 ... 7).contains(weekday) else { return nil }
     switch style {
-    case .nepali: nepaliWeekdayNames[weekday - 1]
-    case .transliterated: englishWeekdayNames[weekday - 1]
+    case .nepali: return nepaliWeekdayNames[weekday - 1]
+    case .transliterated: return englishWeekdayNames[weekday - 1]
     }
 }
 

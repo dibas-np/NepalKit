@@ -8,12 +8,18 @@
 
 /* Begin PBXFileReference section */
 		233B3DC7306975960098472F /* NepalKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NepalKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A7B7C0106975960098472F /* NepalKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NepalKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		233B3DC9306975960098472F /* NepalKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NepalKit;
+			sourceTree = "<group>";
+		};
+		7A7B7C0206975960098472F /* NepalKitTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NepalKitTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -25,6 +31,12 @@
 				233B3DE2306975960098472F /* NepalKitCore in Frameworks */,
 			);
 		};
+		7A7B7C0506975960098472F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */,
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -32,6 +44,7 @@
 			isa = PBXGroup;
 			children = (
 				233B3DC9306975960098472F /* NepalKit */,
+				7A7B7C0206975960098472F /* NepalKitTests */,
 				233B3DC8306975960098472F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -68,6 +81,30 @@
 			productReference = 233B3DC7306975960098472F /* NepalKit.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7A7B7C0306975960098472F /* NepalKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A7B7C0906975960098472F /* Build configuration list for PBXNativeTarget "NepalKitTests" */;
+			buildPhases = (
+				7A7B7C0406975960098472F /* Sources */,
+				7A7B7C0506975960098472F /* Frameworks */,
+				7A7B7C0606975960098472F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A7B7C0706975960098472F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A7B7C0206975960098472F /* NepalKitTests */,
+			);
+			packageProductDependencies = (
+				7A7B7C0D06975960098472F /* NepalKitCore */,
+			);
+			name = NepalKitTests;
+			productName = "$(TARGET_NAME)";
+			productReference = 7A7B7C0106975960098472F /* NepalKitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -79,6 +116,9 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					233B3DC6306975960098472F = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					7A7B7C0306975960098472F = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -101,12 +141,18 @@
 			projectRoot = "";
 			targets = (
 				233B3DC6306975960098472F /* NepalKit */,
+				7A7B7C0306975960098472F /* NepalKitTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		233B3DC5306975960098472F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		7A7B7C0606975960098472F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -119,10 +165,16 @@
 			files = (
 			);
 		};
+		7A7B7C0406975960098472F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXBuildFile section */
 		233B3DE2306975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 233B3DE1306975960098472F /* NepalKitCore */; };
+		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
 /* End PBXBuildFile section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -131,7 +183,26 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		233B3DE1306975960098472F /* NepalKitCore */ = {isa = XCSwiftPackageProductDependency; package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */; productName = NepalKitCore; };
+		7A7B7C0D06975960098472F /* NepalKitCore */ = {isa = XCSwiftPackageProductDependency; package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */; productName = NepalKitCore; };
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		7A7B7C0806975960098472F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 233B3DBF306975960098472F;
+			proxyType = 1;
+			remoteGlobalIDString = 233B3DC6306975960098472F;
+			remoteInfo = NepalKit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		7A7B7C0706975960098472F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 233B3DC6306975960098472F /* NepalKit */;
+			targetProxy = 7A7B7C0806975960098472F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		233B3DD0306975980098472F /* Debug configuration for PBXProject "NepalKit" */ = {
@@ -320,6 +391,52 @@
 			};
 			name = Release;
 		};
+		7A7B7C0A06975960098472F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKit.app/Contents/MacOS/NepalKit";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path",
+					"@loader_path/../../../MacOS",
+					"@loader_path/../Frameworks",
+				);
+			};
+			name = Debug;
+		};
+		7A7B7C0B06975960098472F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKit.app/Contents/MacOS/NepalKit";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path",
+					"@loader_path/../../../MacOS",
+					"@loader_path/../Frameworks",
+				);
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -337,6 +454,15 @@
 				233B3DD3306975980098472F /* Debug configuration for PBXNativeTarget "NepalKit" */,
 				233B3DD4306975980098472F /* Release configuration for PBXNativeTarget "NepalKit" */,
 			);
+			defaultConfigurationName = Release;
+		};
+		7A7B7C0906975960098472F /* Build configuration list for PBXNativeTarget "NepalKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A7B7C0A06975960098472F /* Debug */,
+				7A7B7C0B06975960098472F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
