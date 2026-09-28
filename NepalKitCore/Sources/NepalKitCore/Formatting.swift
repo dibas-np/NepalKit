@@ -143,11 +143,30 @@ private func twoDigits(_ value: Int, digits: DigitScript) -> String {
     return digits.render(latinDigits: padded)
 }
 
+/// `formatClock`'s calendars, one per time zone. Building a `Calendar` per call
+/// dominated the cost of formatting, and `formatClock` runs at clock-tick
+/// frequency. The zones a process formats are few, so entries never evict.
+/// Lock-guarded because the function is nonisolated and callers may not all be
+/// on one thread.
+private enum ClockCalendars {
+    private static let lock = NSLock()
+    private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
+
+    static func gregorian(timeZone: TimeZone) -> Calendar {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached = calendars[timeZone.identifier] { return cached }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        calendars[timeZone.identifier] = calendar
+        return calendar
+    }
+}
+
 /// Formats a clock time as 24-hour "HH:mm:ss" in the given time zone,
 /// honoring the digit-script setting.
 public func formatClock(_ date: Date, timeZone: TimeZone, digits: DigitScript) -> String {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = timeZone
+    let calendar = ClockCalendars.gregorian(timeZone: timeZone)
     let parts = calendar.dateComponents([.hour, .minute, .second], from: date)
     return "\(twoDigits(parts.hour ?? 0, digits: digits)):\(twoDigits(parts.minute ?? 0, digits: digits)):\(twoDigits(parts.second ?? 0, digits: digits))"
 }

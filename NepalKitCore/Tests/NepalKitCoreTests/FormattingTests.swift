@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import NepalKitCore
 
@@ -24,6 +25,19 @@ struct FormattingTests {
     ])
     func shortFormatOmitsYear(testCase: (settings: DisplaySettings, expected: String)) {
         #expect(formatBSShort(Self.date, settings: testCase.settings) == testCase.expected)
+    }
+
+    /// One instant across two fixed zones pins the time-zone handling — the
+    /// epoch reads 05:45:00 at Nepal's UTC+5:45 and 01:00:00 at UTC+1 — and the
+    /// two scripts pin digit rendering. The zone pair also deliberately hits
+    /// the calendar cache once as a miss and once as a reuse.
+    @Test func clockRendersInTheGivenZoneAndScript() {
+        let epoch = Date(timeIntervalSince1970: 0)
+        let nepal = TimeZone(secondsFromGMT: 20_700)!
+        let utcPlusOne = TimeZone(secondsFromGMT: 3_600)!
+        #expect(formatClock(epoch, timeZone: nepal, digits: .latin) == "05:45:00")
+        #expect(formatClock(epoch, timeZone: nepal, digits: .devanagari) == "०५:४५:००")
+        #expect(formatClock(epoch, timeZone: utcPlusOne, digits: .latin) == "01:00:00")
     }
 
     /// Switching digit script must change the glyphs, never the value. An
