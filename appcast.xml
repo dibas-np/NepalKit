@@ -3,13 +3,13 @@
     <channel>
         <title>NepalKit</title>
         <item>
-            <title>1.0</title>
-            <pubDate>Mon, 28 Sep 2026 20:26:45 +0545</pubDate>
+            <title>1.1</title>
+            <pubDate>Tue, 29 Sep 2026 00:13:31 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.0/NepalKit-1.0.zip" length="3042439" type="application/octet-stream" sparkle:edSignature="ecusJsbPPaEv2Md3mNxgicquzDHYDouGMauza+DuXHAyQfLLWWtaI5qY+ygqrmrTD+qfC3KEaT2rntefMQ/CBA=="/>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.1/NepalKit-1.1.zip" length="3090947" type="application/octet-stream" sparkle:edSignature="QRKT6OV99sIc4+SqID6MpTai+aohC35hRASGi805/ojdeYnGMNPREQ05n/j14uRq+HHYXOtGAwJFseGowWQ6DQ=="/>
         </item>
     </channel>
 </rss>

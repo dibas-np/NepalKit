@@ -2,30 +2,6 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-# Release pipeline (ticket 08): archive, Developer ID export, notarize and staple
-# the APP, then a DMG for humans and a zip for Sparkle. Both are Gatekeeper-verified.
-# The app is notarized separately and first: see the note above, it is load-bearing.
-#
-# NOTARY CREDENTIALS. Preferred: a keychain profile, so no secret ever reaches
-# the process list.
-#
-#     xcrun notarytool store-credentials NepalKit-notary
-#     scripts/package-release.sh
-#
-# APPLE_ID and TEAM_ID are still needed to select the signing certificate, but
-# the app-specific password is read from the keychain rather than passed as an
-# argument. Passing it as `--password` puts it in argv, which is world-readable
-# through `ps` for as long as the submission runs - not a theoretical
-# concern, that is simply how the process table works.
-#
-# The env-var form is kept working for CI and for machines where setting up a
-# profile is not worth it, and it is not silently preferred. `ps` on this script
-# shows which path is in use.
-#
-# Usage (repo root): scripts/package-release.sh
-#   optional: NOTARY_PROFILE (default NepalKit-notary)
-#   fallback: APPLE_ID=you@example.com APP_SPECIFIC_PASSWORD=xxxx \
-#            TEAM_ID=XXXXXXXXXX scripts/package-release.sh
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
@@ -84,34 +60,16 @@ trap cleanup EXIT
 # to read it. Existence is therefore detected by asking whether the item is
 # there, and the profile is then passed through untouched.
 NOTARY_PROFILE="${NOTARY_PROFILE:-NepalKit-notary}"
-NOTARY_SVC="appSpecificPassword"
-NOTARY_ACCT="com.apple.gke.notary.tool.saved-creds.$NOTARY_PROFILE"
-NOTARY_ARGS=()
 
-if security find-generic-password -s "$NOTARY_SVC" -a "$NOTARY_ACCT" >/dev/null 2>&1; then
-    NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
-    echo "notary credentials: keychain profile '$NOTARY_PROFILE' (no secret in argv)"
-    # TEAM_ID is still needed below to select the Developer ID certificate. The
-    # profile cannot be parsed for it, so require it from the environment.
-    if [[ -z "${TEAM_ID:-}" ]]; then
-        echo "TEAM_ID is required even with a keychain profile: it selects the" >&2
-        echo "signing certificate. Export it, or set NOTARY_TEAM_ID." >&2
-        exit 2
-    fi
-elif [[ -n "${APPLE_ID:-}" && -n "${APP_SPECIFIC_PASSWORD:-}" && -n "${TEAM_ID:-}" ]]; then
-    NOTARY_ARGS=(--apple-id "$APPLE_ID" --password "$APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID")
-    echo "notary credentials: from environment"
-    echo "  WARNING: the password is in this process's argv and is readable via 'ps'"
-    echo "  for the duration of each submission. Prefer:"
-    echo "    xcrun notarytool store-credentials $NOTARY_PROFILE"
-else
-    echo "no notary credentials found." >&2
-    echo "Either store a keychain profile:" >&2
-    echo "  xcrun notarytool store-credentials $NOTARY_PROFILE" >&2
-    echo "or export APPLE_ID, APP_SPECIFIC_PASSWORD and TEAM_ID." >&2
-    echo "Create an app-specific password at https://account.apple.com" >&2
+if [[ -z "${TEAM_ID:-}" ]]; then
+    echo "TEAM_ID is required for Developer ID signing/export."
     exit 2
 fi
+
+NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+
+echo "notary credentials: keychain profile '$NOTARY_PROFILE'"
+
 
 # Explicitly require a Developer ID Application certificate for this team —
 # a generic codesigning identity is not enough for distribution.
