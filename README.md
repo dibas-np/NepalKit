@@ -11,9 +11,20 @@ date, and settings are all local. No analytics, no telemetry.
 The one exception is the software update check, which is the only thing the app
 is granted network access for. It runs against the feed URL pinned in the
 binary ([ADR-0012](docs/adr/0012-sparkle-version-pin.md)): automatically after
-launch and on demand from Settings → Software Update. The feed is not live yet,
-so until it is published a check honestly reports "could not check" rather
-than claiming you are current.
+launch and on demand from Settings → Software Update. The feed is live at
+`https://dibas-np.github.io/NepalKit/appcast.xml`. If it cannot be reached, a
+check reports the failure rather than claiming you are current.
+
+The feed is verified before it is published and can be verified by anyone: it
+carries an Ed25519 signature over the archive bytes, and the public key is in
+`NepalKit/Info.plist`. `scripts/verify-appcast.py` re-runs the check with stock
+`openssl` and no private key:
+
+```sh
+python3 scripts/verify-appcast.py appcast.xml --enclosure NepalKit-1.0.zip
+```
+
+Exit 0 means the archive you downloaded is the archive that was signed.
 
 - **Requires macOS 26 or later** (see [Why macOS 26](#why-macos-26)).
 - Not on the App Store — distributed as a notarized DMG from Releases.
@@ -27,9 +38,14 @@ project expects. [SUPPORT.md](SUPPORT.md) says where to ask, and
 
 ## Install
 
-Download the DMG from the project's Releases page, open it, and drag NepalKit
-into Applications. The app is Developer ID signed and notarized, so Gatekeeper
-accepts it without a right-click workaround.
+Download the DMG from the project's [Releases page](https://github.com/dibas-np/NepalKit/releases/tag/1.0),
+open it, and drag NepalKit into Applications. The app is Developer ID signed and
+notarized, so Gatekeeper accepts it without a right-click workaround.
+
+The notarization ticket is stapled to the app bundle itself, not only to the disk
+image. That is deliberate: in-place Sparkle updates copy the `.app` rather than
+the `.dmg`, so a DMG-only ticket would be discarded on every update and leave
+Gatekeeper to reach Apple's servers at update time.
 
 NepalKit is a menu-bar-only app (`LSUIElement`): it has no Dock icon and does not
 appear in Cmd-Tab. Look for the date in the menu bar. Launch at login is on by
@@ -134,6 +150,11 @@ closed-form rule, so the table is the product's correctness core.
   than projected (ADR-0001)
 - **The range can narrow as well as extend.** Dataset 2.0.0 dropped 1970–1974 —
   the only years the corroborating table does not cover at all (ADR-0010)
+- **Regulatory status is unresolved.** Whether distributing a Nepali almanac
+  publicly requires approval from the Panchanga Nirnayak Samiti, and whether any
+  fee applies, has not been established. This project publishes without claiming
+  to have answered that question, and anyone relying on the calendar for official
+  purposes should raise it with the Samiti.
 
 **The bundled table is not independently licensed, and this project does not
 claim it is.** It derives from one base source across its entire range; that
@@ -165,6 +186,19 @@ is missing. It does **not** read a `.env` file; an earlier version of this
 document claimed it did, and the script has never done so. Both the environment
 and any local `.env` are gitignored, so keeping a local `.env` is a convenient
 habit, but exporting the three variables is what the script actually reads.
+
+The script notarizes the **app** and the DMG as two separate submissions, in that
+order, and then generates and verifies the appcast. This is not redundancy. Apple
+issues one ticket per submitted item, so an app that is only ever submitted inside
+a DMG has no ticket of its own to staple — and Sparkle copies the `.app` out of
+the enclosure rather than handing over the DMG, so a DMG-only ticket is discarded
+on every update. The release runs `spctl` against the app itself for the same
+reason: validating the DMG proves nothing about the artifact Sparkle installs.
+
+Signing the appcast needs the private key from the keychain, so it happens on the
+release machine and not in CI. `sign_update` blocks on a keychain access prompt;
+run it in the foreground where the prompt can be answered rather than in a batch
+that will hang.
 
 ## Why macOS 26
 
