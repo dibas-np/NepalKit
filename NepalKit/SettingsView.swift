@@ -46,7 +46,7 @@ struct SettingsView: View {
                     get: { loginItem.isOn },
                     set: { loginItem.setOn($0) }
                 )) {
-                    Label(Strings.launchAtLoginLabel, systemImage: "power")
+                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
                         .symbolRenderingMode(.monochrome)
                 }
             }

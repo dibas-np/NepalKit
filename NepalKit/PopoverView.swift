@@ -29,7 +29,7 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(Strings.todayLabel, systemImage: "calendar")
+            Label(Strings.todayLabel, systemImage: Symbols.today)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .symbolRenderingMode(.hierarchical)
@@ -62,14 +62,14 @@ struct PopoverView: View {
                 Label {
                     Text("\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: settings.settings.digits))")
                 } icon: {
-                    Image(systemName: "clock")
+                    Image(systemName: Symbols.nepalTime)
                         .symbolRenderingMode(.monochrome)
                 }
                 Label {
                     Text("\(Strings.localTimeLabel): \(clock.localTimeString(digits: settings.settings.digits))")
                         .foregroundStyle(.secondary)
                 } icon: {
-                    Image(systemName: "person")
+                    Image(systemName: Symbols.localTime)
                         .symbolRenderingMode(.monochrome)
                 }
             }
@@ -79,7 +79,7 @@ struct PopoverView: View {
         .padding()
         .frame(minWidth: 280)
         Divider()
-        Label(Strings.converterLabel, systemImage: "arrow.left.arrow.right")
+        Label(Strings.converterLabel, systemImage: Symbols.converter)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .symbolRenderingMode(.monochrome)
@@ -95,7 +95,7 @@ struct PopoverView: View {
         Button {
             WindowPresentation.present(open: { openSettings() })
         } label: {
-            Label(Strings.settingsLabel, systemImage: "gearshape")
+            Label(Strings.settingsLabel, systemImage: Symbols.settings)
                 .symbolRenderingMode(.monochrome)
         }
         .padding(.horizontal)
@@ -105,7 +105,7 @@ struct PopoverView: View {
         Button {
             WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
         } label: {
-            Label(Strings.aboutLabel, systemImage: "info.circle")
+            Label(Strings.aboutLabel, systemImage: Symbols.about)
                 .symbolRenderingMode(.monochrome)
         }
         .padding(.horizontal)
