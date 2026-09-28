@@ -107,3 +107,35 @@ network, a feed, nor a key — the same arrangement as `LoginItemServicing`
 behind `LoginItemModel`. The Sparkle-backed implementation is the only file that
 imports Sparkle, and it is excluded from the app-test harness for the same
 reason `@main` is.
+
+## The public key reached the build only after the first one was discarded
+
+Worth recording as a process finding, because the failure was silent and the
+build was green.
+
+`INFOPLIST_KEY_SUPublicEDKey` was set in the project. **The build accepted it,
+reported success, and produced an app with no `SUPublicEDKey` in it at all.**
+`INFOPLIST_KEY_*` honours only a fixed allowlist of Apple-known names; a name
+outside it is discarded with no warning and no error. An app shipped in that
+state cannot verify a single update, and the only evidence anything was wrong was
+a successful build.
+
+This is the second time this project's own build has silently swallowed a
+setting — the repository URL in ticket 06 did the same. The generalisation is the
+useful part: **for a value that must appear in the product, a green build is not
+evidence. Read the product.**
+
+So the key now lives in `NepalKit/Info.plist`, wired through `INFOPLIST_FILE`
+alongside the generated plist rather than replacing it, and
+`InfoPlistKeysTests` reads the **built** `Info.plist` — not the project settings —
+to assert:
+
+- `SUPublicEDKey` is present and equals the committed value;
+- the generated keys still survive the merge (`LSUIElement`, bundle identifier,
+  both version numbers), because if that merge ever stopped happening NepalKit
+  would silently become a Dock app — the most visible regression available to
+  this change, and equally invisible to a green build;
+- `SUFeedURL` is still absent, deliberately, until a feed is published.
+
+Both of the first two were verified to fail when injected, with messages that
+name the consequence rather than the assertion.

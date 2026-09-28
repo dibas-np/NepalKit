@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Sparkle configuration that cannot be expressed as a build setting.
+
+  The project generates its Info.plist (`GENERATE_INFOPLIST_FILE = YES`) and
+  that is the right arrangement for everything Apple defines — bundle
+  identifier, versions, LSUIElement, the icon name. But `INFOPLIST_KEY_*` honours
+  only a fixed allowlist of Apple-known names, and a name outside it is
+  **accepted by the build and discarded with no warning or error**.
+
+  That was demonstrated on this key specifically. `INFOPLIST_KEY_SUPublicEDKey`
+  was set, the build reported success, and the finished app contained no
+  `SUPublicEDKey` at all. Trusting that build would have shipped an application
+  that could not verify a single update — with a green build as the only evidence
+  that something was wrong. Hence this file, and a test (see InfoPlistKeysTests)
+  that reads the built product rather than the project settings.
+
+  Public by design: this is how an installed copy verifies a download, so it
+  belongs in version control. The matching private key never appears here and is
+  never needed to build the app (ADR-0012).
+-->
+<plist version="1.0">
+<dict>
+	<!--
+	  Sparkle's EdDSA public key, generated 28 September 2026. Must stay
+	  identical to the key the release artifacts are signed with; changing it
+	  invalidates every existing installation's ability to update.
+	-->
+	<key>SUPublicEDKey</key>
+	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
+
+	<!--
+	  SUFeedURL is deliberately absent. The feed's location is not yet decided,
+	  and a wrong URL is worse than none: the updater would fail every check
+	  against it. Add it here when a feed is published, and verify the built
+	  product picks it up the same way this key is verified.
+	-->
+</dict>
+</plist>
