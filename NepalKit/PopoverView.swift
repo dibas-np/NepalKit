@@ -25,10 +25,14 @@ enum PopoverDestination: String, CaseIterable {
 
 /// Popover: today's date, the converter, and routes into Settings and About.
 ///
-/// Iconography (per ADR-0004): SF Symbols throughout, with the rendering mode
-/// chosen per surface — hierarchical where a symbol carries meaning on its own,
-/// monochrome for small inline icons so they keep contrast beside text. The
-/// menu-bar extra itself stays date text only.
+/// Iconography (per ADR-0004): SF Symbols throughout, monochrome for small
+/// inline icons so they keep contrast beside text. The menu-bar extra itself
+/// stays date text only.
+///
+/// The header and the Today destination read `ClockModel`, which ticks every
+/// second. Each is its own view type, so a tick re-evaluates only the sections
+/// that show live time and leaves the tab picker and the footer's buttons
+/// untouched.
 struct PopoverView: View {
     let settings: DisplaySettingsModel
     let clock: ClockModel
@@ -48,10 +52,6 @@ struct PopoverView: View {
     /// resting state because it is what the menu-bar item just showed.
     @State private var destination: PopoverDestination = .today
 
-    /// Last Bikram Sambat year the bundled dataset can convert. Named in the
-    /// range boundary state so a user past it can tell a data limit from a bug.
-    private var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
-
     /// One width for both destinations, so switching tabs does not resize the
     /// popover under the pointer. Fixed rather than a minimum because the
     /// converter's pickers are the widest content; a minimum would let the Today
@@ -60,7 +60,7 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            header
+            HeaderBar(clock: clock, settings: settings.settings)
 
             Picker("", selection: $destination) {
                 ForEach(PopoverDestination.allCases, id: \.self) { option in
@@ -76,7 +76,12 @@ struct PopoverView: View {
             .accessibilityElement(children: .contain)
 
             switch destination {
-            case .today: today
+            case .today:
+                VStack(alignment: .leading, spacing: 8) {
+                    TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
+                    Divider()
+                    ClocksSection(clock: clock, settings: settings.settings)
+                }
             case .convert:
                 ConverterView(model: converter, settings: settings.settings)
             }
@@ -108,10 +113,9 @@ struct PopoverView: View {
     /// popover is read as a whole: the control is a control, and this is the
     /// surface's own statement of position.
     ///
-    /// The actions are icon-only, which is why each carries an explicit spoken
-    /// name. The earlier full-width rows were survivable without one because the
-    /// text was on screen; an icon alone is not, and a VoiceOver user would
-    /// otherwise hear "button" three times over.
+    /// Each action pairs a symbol with its visible title and carries a spoken
+    /// hint. Why the titles are not dropped in favour of the reference's bare
+    /// glyphs is recorded at the call site below.
     private var footer: some View {
         VStack(spacing: 0) {
             Divider()
@@ -153,7 +157,7 @@ struct PopoverView: View {
 
                 // Quit keeps its text. It is the only action in a menu-bar-only
                 // app that ends the process, and the one a first-time user most
-                /// likely to hunt for; the others have conventional glyphs, this
+                // likely to hunt for; the others have conventional glyphs, this
                 // does not.
                 //
                 // The ⌘Q shortcut lives on the app's termination command group
@@ -193,28 +197,33 @@ struct PopoverView: View {
         .accessibilityLabel(title)
         .accessibilityHint(help)
     }
+}
 
-    // MARK: - Header
+// MARK: - Header Bar
 
-    /// Identity on the left, the live Nepal Time on the right.
-    ///
-    /// The reference this follows leads with a title bar carrying a name and a
-    /// running value, and that is what makes it read as a surface with its own
-    /// top edge rather than a loose stack of controls. The technique is taken; the
-    /// dashboard framing is not, so nothing here is a card and the row is a plain
-    /// line of text.
-    ///
-    /// The clock is the live element because it is the only value that changes
-    /// without the user acting. The date is deliberately not repeated here — it
-    /// is the hero directly below, and saying it twice would make the header
-    /// decorative.
-    private var header: some View {
+/// Identity on the left, the live Nepal Time on the right.
+///
+/// The reference this follows leads with a title bar carrying a name and a
+/// running value, and that is what makes it read as a surface with its own
+/// top edge rather than a loose stack of controls. The technique is taken; the
+/// dashboard framing is not, so nothing here is a card and the row is a plain
+/// line of text.
+///
+/// The clock is the live element because it is the only value that changes
+/// without the user acting. The date is deliberately not repeated here — it
+/// is the hero directly below, and saying it twice would make the header
+/// decorative.
+private struct HeaderBar: View {
+    let clock: ClockModel
+    let settings: DisplaySettings
+
+    var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(Strings.appName)
                 .font(.subheadline.weight(.medium))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Text(clock.nptTimeString(digits: settings.settings.digits))
+            Text(clock.nptTimeString(digits: settings.digits))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -223,10 +232,21 @@ struct PopoverView: View {
                 )
         }
     }
+}
 
-    // MARK: - Today
+// MARK: - Today
 
-    private var today: some View {
+/// Today's date as the hero, with the Gregorian line beneath it.
+private struct TodaySection: View {
+    let clock: ClockModel
+    let settings: DisplaySettings
+    let dataset: CalendarDataset
+
+    /// Last Bikram Sambat year the bundled dataset can convert. Named in the
+    /// range boundary state so a user past it can tell a data limit from a bug.
+    private var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // No "Today" header here. The segmented control directly above already
             // reads "Today" and is the selected segment, so a second "Today" two
@@ -246,7 +266,7 @@ struct PopoverView: View {
                 // Shown exactly as configured; announced in a form a voice can
                 // pronounce. The two come from the same date, so they cannot
                 // drift into describing different days.
-                Text(formatBS(todayBS, settings: settings.settings))
+                Text(formatBS(todayBS, settings: settings))
                     .font(.system(size: 28, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     // Label only. Adding `children: .ignore` here collapsed the
@@ -255,7 +275,7 @@ struct PopoverView: View {
                     // to hand a screen reader. Replacing the label on a `Text`
                     // keeps its static-text role.
                     .accessibilityLabel(
-                        SpokenDate.bs(todayBS, monthNames: settings.settings.monthNames)
+                        SpokenDate.bs(todayBS, monthNames: settings.monthNames)
                     )
             } else {
                 // Range boundary state: the bundled data has ended. Say so in
@@ -274,7 +294,7 @@ struct PopoverView: View {
                     Text(Strings.bsDateUnavailable)
                         .font(.title3)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(Strings.supportedThrough(lastSupportedBSYear, digits: settings.settings.digits))
+                    Text(Strings.supportedThrough(lastSupportedBSYear, digits: settings.digits))
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .combine)
@@ -287,9 +307,9 @@ struct PopoverView: View {
                 // One date, two channels: the shown line as configured, the
                 // announcement with Latin digits and the weekday folded in, so
                 // the whole line is a single spoken sentence.
-                let weekday = clock.weekdayString(style: settings.settings.monthNames)
+                let weekday = clock.weekdayString(style: settings.monthNames)
                 HStack(spacing: 4) {
-                    Text(formatAD(todayAD, settings: settings.settings))
+                    Text(formatAD(todayAD, settings: settings))
                     if let weekday {
                         Text("· \(weekday)")
                     }
@@ -301,26 +321,28 @@ struct PopoverView: View {
                     SpokenDate.gregorianAnnouncement(date: todayAD, weekday: weekday)
                 )
             }
-
-            Divider()
-            clocks
         }
     }
+}
 
-    // MARK: - Clocks
+// MARK: - Clocks
 
-    /// The local-time reference, which is the one clock the header cannot carry.
-    ///
-    /// Sits outside the Gregorian conditional because a clock is answerable
-    /// regardless of calendar data, so it must survive the range boundary.
-    ///
-    /// `Label` supplies the row's title for free, but it announces that title
-    /// verbatim — under Devanagari that is "Local: ११:४५:००", and a clock face is
-    /// the one place where a misread digit is not obviously wrong to the listener.
-    /// So the row re-derives its own string in Latin digits, and the stack is a
-    /// container that leaves the rows as separate elements rather than merging
-    /// them into one unreadable run.
-    private var clocks: some View {
+/// The local-time reference, which is the one clock the header cannot carry.
+///
+/// Sits outside the Gregorian conditional because a clock is answerable
+/// regardless of calendar data, so it must survive the range boundary.
+///
+/// `Label` supplies the row's title for free, but it announces that title
+/// verbatim — under Devanagari that is "Local: ११:४५:००", and a clock face is
+/// the one place where a misread digit is not obviously wrong to the listener.
+/// So the row re-derives its own string in Latin digits, and the stack is a
+/// container that leaves the rows as separate elements rather than merging
+/// them into one unreadable run.
+private struct ClocksSection: View {
+    let clock: ClockModel
+    let settings: DisplaySettings
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Nepal Time is not repeated here. The header carries it, so a second
             // copy one row below showed the same ticking value twice and made the
@@ -336,7 +358,7 @@ struct PopoverView: View {
             // reference only earns its row by differing.
             if !clock.localTimeIsRedundant {
                 Label {
-                    Text(clock.localTimeString(digits: settings.settings.digits))
+                    Text(clock.localTimeString(digits: settings.digits))
                 } icon: {
                     Text(Strings.localTimeLabel)
                         .font(.caption)

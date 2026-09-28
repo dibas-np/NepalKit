@@ -90,6 +90,12 @@ struct AboutView: View {
             // its terms rather than implying there are none.
             if let license = metadata.license {
                 row(Strings.licenseLabel, license)
+                // The licence names the code; the calendar data ships under
+                // different terms, so the row must not be read as app-wide.
+                Text(Strings.licenseScopeNote)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             // Real links, never text styled to look like a link. The repository
