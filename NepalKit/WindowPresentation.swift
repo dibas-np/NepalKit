@@ -30,13 +30,15 @@ import AppKit
 /// app — which is what the `ignoringOtherApps` flag expresses.
 ///
 /// **Which spelling, and why the obvious answer is not the one used.** The
-/// table above measured both spellings against the real app bundle, and the
-/// current-API one — `NSRunningApplication.activate(options:)` with the
-/// `ignoringOtherApps` flag — is deprecated: Apple's own message says the flag
-/// "will have no effect". The older `NSApp.activate(ignoringOtherApps: true)`
-/// fronts this app just as reliably and is *not* deprecated, so that is what
-/// is used: the measured behaviour is preserved and the warning is gone,
-/// rather than a deprecated call being kept alive under a documented risk.
+/// table above measured both spellings against the real app bundle. The
+/// `NSRunningApplication.activate(options:)` spelling cannot do this job on
+/// current macOS: its `ignoringOtherApps` flag is hard-deprecated (macOS 14),
+/// Apple's message says it "will have no effect", and plain activation is the
+/// table's never-comes-forward row. The older
+/// `NSApp.activate(ignoringOtherApps: true)` fronts this app just as
+/// reliably, so that is what is used. It is itself soft-deprecated — marked
+/// `API_TO_BE_DEPRECATED`, which emits no compiler warning — and keeping it
+/// is deliberate: the replacement Apple names is that same first row.
 ///
 /// **`isActive` is the retry condition, not the request's return value.** The
 /// request-accepted `Bool` is a proxy for the thing that actually matters.

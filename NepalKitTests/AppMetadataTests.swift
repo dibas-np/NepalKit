@@ -89,82 +89,82 @@ struct AppMetadataTests {
         #expect(metadata.repositoryURL == nil)
     }
 
-      // MARK: - The licence is read, not asserted
+    // MARK: - The licence is read, not asserted
 
-      /// Walked up from this file rather than assumed, so the test does not
-      /// depend on the working directory the runner happens to use.
-      private static var repositoryRoot: URL {
-          var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-          for _ in 0 ..< 8 {
-              if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                  return dir
-              }
-              dir = dir.deletingLastPathComponent()
-          }
-          return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-      }
+    /// Walked up from this file rather than assumed, so the test does not
+    /// depend on the working directory the runner happens to use.
+    private static var repositoryRoot: URL {
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        for _ in 0 ..< 8 {
+            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
+                return dir
+            }
+            dir = dir.deletingLastPathComponent()
+        }
+        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    }
 
-      /// Writes `text` as a LICENSE in a fresh temporary directory and returns it.
-      private func licenseDirectory(_ text: String) throws -> URL {
-          let directory = FileManager.default.temporaryDirectory
-              .appendingPathComponent("nk-lic-\(UUID().uuidString)")
-          try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-          try text.write(
-              to: directory.appendingPathComponent("LICENSE"), atomically: true, encoding: .utf8
-          )
-          return directory
-      }
+    /// Writes `text` as a LICENSE in a fresh temporary directory and returns it.
+    private func licenseDirectory(_ text: String) throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("nk-lic-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try text.write(
+            to: directory.appendingPathComponent("LICENSE"), atomically: true, encoding: .utf8
+        )
+        return directory
+    }
 
-      @Test func licenceComesFromTheShippedFileNotFromAString() throws {
-          // The reason this is parsed rather than hardcoded: a licence name in
-          // About is a legal claim. A literal cannot be wrong visibly, so a
-          // project relicensed MIT would keep shipping "GPL-3.0" in About with
-          // every test still green.
-          let shipped = try #require(
-              AppMetadata.licenseIdentifier(in: Self.repositoryRoot),
-              "the repository's own LICENSE did not parse"
-          )
-          #expect(shipped == "GNU GENERAL PUBLIC LICENSE 3")
-      }
+    @Test func licenceComesFromTheShippedFileNotFromAString() throws {
+        // The reason this is parsed rather than hardcoded: a licence name in
+        // About is a legal claim. A literal cannot be wrong visibly, so a
+        // project relicensed MIT would keep shipping "GPL-3.0" in About with
+        // every test still green.
+        let shipped = try #require(
+            AppMetadata.licenseIdentifier(in: Self.repositoryRoot),
+            "the repository's own LICENSE did not parse"
+        )
+        #expect(shipped == "GNU GENERAL PUBLIC LICENSE 3")
+    }
 
-      @Test func licenceVersionIsTheVersionNotThePublicationYear() throws {
-          // The heading is "Version 3, 29 June 2007". Taking the last token
-          // yields 2007 — the year the FSF published it, presented to the user
-          // as the licence version. Caught by reading the parsed value rather
-          // than by testing the tokenisation in isolation.
-          let directory = try licenseDirectory(
-              """
-              GNU GENERAL PUBLIC LICENSE
-                 Version 3, 29 June 2007
-              """
-          )
-          defer { try? FileManager.default.removeItem(at: directory) }
-          #expect(AppMetadata.licenseIdentifier(in: directory) == "GNU GENERAL PUBLIC LICENSE 3")
-      }
+    @Test func licenceVersionIsTheVersionNotThePublicationYear() throws {
+        // The heading is "Version 3, 29 June 2007". Taking the last token
+        // yields 2007 — the year the FSF published it, presented to the user
+        // as the licence version. Caught by reading the parsed value rather
+        // than by testing the tokenisation in isolation.
+        let directory = try licenseDirectory(
+            """
+            GNU GENERAL PUBLIC LICENSE
+               Version 3, 29 June 2007
+            """
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        #expect(AppMetadata.licenseIdentifier(in: directory) == "GNU GENERAL PUBLIC LICENSE 3")
+    }
 
-      @Test func licenceWithoutAVersionLineStillNamesItself() throws {
-          // An MIT licence has no "Version" line at all, and its body opens with
-          // a copyright line. If the parser required the version-bearing shape
-          // it would return nil, and About would silently omit the licence for
-          // any project that ever switched. Pinning this also proves the parser
-          // is reading the file rather than hardcoding the current answer: it
-          // reports MIT when handed MIT, and GPL-3 when handed the GPL.
-          let directory = try licenseDirectory("MIT License\n\nCopyright (c) 2026 Someone\n")
-          defer { try? FileManager.default.removeItem(at: directory) }
-          #expect(AppMetadata.licenseIdentifier(in: directory) == "MIT License")
-      }
+    @Test func licenceWithoutAVersionLineStillNamesItself() throws {
+        // An MIT licence has no "Version" line at all, and its body opens with
+        // a copyright line. If the parser required the version-bearing shape
+        // it would return nil, and About would silently omit the licence for
+        // any project that ever switched. Pinning this also proves the parser
+        // is reading the file rather than hardcoding the current answer: it
+        // reports MIT when handed MIT, and GPL-3 when handed the GPL.
+        let directory = try licenseDirectory("MIT License\n\nCopyright (c) 2026 Someone\n")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        #expect(AppMetadata.licenseIdentifier(in: directory) == "MIT License")
+    }
 
-      @Test func anAbsentLicenceIsNilRatherThanAPlaceholder() {
-          // About omits the row entirely when this is nil, rather than
-          // rendering a blank or a dash. Guessing a licence for a bundle that
-          // has none would be the exact failure this design avoids.
-          #expect(AppMetadata.licenseIdentifier(in: nil) == nil)
-          #expect(AppMetadata.licenseIdentifier(in: URL(fileURLWithPath: "/nonexistent")) == nil)
-      }
+    @Test func anAbsentLicenceIsNilRatherThanAPlaceholder() {
+        // About omits the row entirely when this is nil, rather than
+        // rendering a blank or a dash. Guessing a licence for a bundle that
+        // has none would be the exact failure this design avoids.
+        #expect(AppMetadata.licenseIdentifier(in: nil) == nil)
+        #expect(AppMetadata.licenseIdentifier(in: URL(fileURLWithPath: "/nonexistent")) == nil)
+    }
 
-      // MARK: - The calendar facts belong to the dataset
+    // MARK: - The calendar facts belong to the dataset
 
-      @Test func datasetVersionAndRangeComeFromTheDataset() {
+    @Test func datasetVersionAndRangeComeFromTheDataset() {
         // Ticket 03 narrowed the range and bumped the dataset version. If About
         // carried a literal for either, the next dataset release would make it
         // stale with nothing failing.
