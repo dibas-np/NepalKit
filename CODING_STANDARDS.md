@@ -147,6 +147,30 @@ Deterministic logic and persistence are automated. Native visual rendering —
 Liquid Glass materials, SF Symbol presentation, Devanagari layout in the status
 bar — is verified manually and is not a unit-test target.
 
+### Changing a supported-range boundary
+
+A green suite does **not** prove every historical boundary assumption was
+updated. A test whose fixture sits outside the new range can pass by not
+running: `guard … else { continue }` turns "this assumption is now invalid" into
+"this test did not run", which is worse than an ordinary assertion failure
+because nothing goes red. `GregorianWeekdayTests` did exactly this during the
+2.0.0 cut of 1970–1974 — a `1913-04-13` fixture stopped being convertible and
+the suite stayed green.
+
+So the order is:
+
+1. Search the repository for the old lower/upper boundary literals.
+2. Update the contract tests first, then change the data, so the failures show
+   where the old bound was assumed.
+3. Read every failure rather than bulk-rewriting expected values.
+4. Review every conditional or guarded historical fixture **separately** — those
+   are the ones a failure cannot report.
+5. Search again afterwards for stale boundary literals.
+
+Prefer a guarded fixture that records an issue over one that skips. If a fixture
+is genuinely optional, say why in a comment, so a later range change does not
+read the skip as coverage.
+
 ## Commands
 
 - Core tests: `swift test` in `NepalKitCore/`.
@@ -164,3 +188,5 @@ bar — is verified manually and is not a unit-test target.
   test that a reader can check against a published date.
 - A workaround for a platform or toolchain quirk is commented where it was
   found, and filed as a known issue if it is still outstanding.
+- If a supported-range boundary moved, every guarded historical fixture was
+  reviewed by hand and the tree re-grepped for the old bound.
