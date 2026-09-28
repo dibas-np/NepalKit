@@ -45,7 +45,7 @@ struct PopoverView: View {
     @Environment(\.openWindow) private var openWindow
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
-    var dataset: CalendarDataset = .v2
+    let dataset: CalendarDataset
     /// Ephemeral by design: the popover closes on every activation, so a
     /// remembered selection would open onto Convert after a read of the date and
     /// back onto Today after a conversion, with no predictability. Today is the
@@ -75,16 +75,23 @@ struct PopoverView: View {
             .accessibilityLabel(Strings.popoverDestinationsLabel)
             .accessibilityElement(children: .contain)
 
-            switch destination {
-            case .today:
-                VStack(alignment: .leading, spacing: 8) {
-                    TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
-                    Divider()
-                    ClocksSection(clock: clock, settings: settings.settings)
+            // The swap cross-fades: Today and Convert are two states of one
+            // surface, not two replacements. Scoped to the switch rather than
+            // the outer stack so the segmented control and the footer's
+            // position label, which also read `destination`, update plainly.
+            Group {
+                switch destination {
+                case .today:
+                    VStack(alignment: .leading, spacing: 8) {
+                        TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
+                        Divider()
+                        ClocksSection(clock: clock, settings: settings.settings)
+                    }
+                case .convert:
+                    ConverterView(model: converter, settings: settings.settings)
                 }
-            case .convert:
-                ConverterView(model: converter, settings: settings.settings)
             }
+            .animation(.default, value: destination)
         }
         .padding()
         .frame(width: Self.popoverWidth)
@@ -198,6 +205,18 @@ struct PopoverView: View {
         .accessibilityHint(help)
     }
 }
+
+#if DEBUG
+#Preview("Popover") {
+    PopoverView(
+        settings: DisplaySettingsModel(),
+        clock: ClockModel(),
+        converter: ConverterModel(),
+        dataset: .v2
+    )
+    .padding()
+}
+#endif
 
 // MARK: - Header Bar
 

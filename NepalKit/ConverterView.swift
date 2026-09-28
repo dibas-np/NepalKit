@@ -198,3 +198,14 @@ private struct ADPickers: View {
         )
     }
 }
+
+#if DEBUG
+#Preview("Converter") {
+    ConverterView(
+        model: ConverterModel(),
+        settings: DisplaySettings(digits: .latin, monthNames: .transliterated)
+    )
+    .padding()
+    .frame(width: 340)
+}
+#endif

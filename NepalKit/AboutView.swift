@@ -134,3 +134,10 @@ struct AboutView: View {
         .accessibilityLabel("\(label): \(spoken ?? value)")
     }
 }
+
+#if DEBUG
+#Preview("About") {
+    AboutView(metadata: .current(), dataset: .v2)
+        .frame(width: 380)
+}
+#endif

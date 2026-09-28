@@ -38,7 +38,7 @@ struct NepalKitApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel)
+            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, dataset: .v2)
         } label: {
             // The shown label stays the short bare date; the announcement is a
             // sentence that names the app and pronounces the date. Merging them
