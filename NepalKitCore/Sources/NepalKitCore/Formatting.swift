@@ -37,7 +37,16 @@ public let nepaliMonthNames = [
 private let devanagariDigits: [Character] = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
 
 private func devanagariString(_ latinDigits: String) -> String {
-    String(latinDigits.compactMap { $0.wholeNumberValue.map { devanagariDigits[$0] } })
+    // Only ASCII digits are transliterated. Everything else is passed through
+    // untouched, because dropping it would silently change the value: a compactMap
+    // over wholeNumberValue discarded the minus sign, rendering -42 as "४२".
+    String(latinDigits.map { character in
+        guard character.isASCII,
+              let value = character.wholeNumberValue,
+              devanagariDigits.indices.contains(value)
+        else { return character }
+        return devanagariDigits[value]
+    })
 }
 
 extension DigitScript {

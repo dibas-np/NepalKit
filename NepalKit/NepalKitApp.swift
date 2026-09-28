@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -23,5 +24,17 @@ struct NepalKitApp: App {
             Text(menuBarModel.title(settings: settingsModel.settings))
         }
         .menuBarExtraStyle(.window)
+        // A menu-bar-only app has no Dock icon and no Cmd-Tab presence, so this
+        // is the normal exit path. The shortcut is registered here on the
+        // termination command group, NOT on the popover's Quit button: a
+        // button-local keyboardShortcut only fires while the popover holds
+        // focus, and an LSUIElement app is frequently not frontmost, so that
+        // would not be an exit path at all. One registration, one action.
+        .commands {
+            CommandGroup(replacing: .appTermination) {
+                Button(Strings.quitLabel, action: AppTermination.quit)
+                    .keyboardShortcut("q")
+            }
+        }
     }
 }

@@ -6,7 +6,14 @@ DerivedData/
 -xcc/
 .env
 
-# Agent docs (local-only, never committed)
+# Agent workflow (local-only, never committed)
 AGENTS.md
 docs/agents/
-.scratch/
+
+# ...except the product spec, which is durable project knowledge and is
+# reviewed in PRs. Ignores one level below each .scratch/<feature>/ directory
+# rather than the directory itself: git cannot re-include a file whose parent
+# directory is excluded, so excluding .scratch/ outright would make the
+# negation below unreachable.
+.scratch/*/*
+!.scratch/*/spec.md

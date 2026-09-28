@@ -19,13 +19,26 @@ let nptGregorian: Calendar = {
     return calendar
 }()
 
-/// A Gregorian date as a UTC civil day.
+/// A Gregorian date as a UTC civil day, or nil if the components do not name a
+/// real day.
+///
+/// The single place a `GADay` becomes a `Date`, and therefore the single place
+/// civil-day validity is checked. `Calendar` normalizes impossible input —
+/// February 30 silently becomes March 1 — so anything that does not round-trip
+/// exactly is rejected here rather than by each caller repeating the check.
 private func utcDate(from ad: GADay) -> Date? {
+    guard (1 ... 12).contains(ad.month) else { return nil }
     var components = DateComponents()
     components.year = ad.year
     components.month = ad.month
     components.day = ad.day
-    return utcGregorian.date(from: components)
+    guard let date = utcGregorian.date(from: components) else { return nil }
+    let roundTripped = utcGregorian.dateComponents([.year, .month, .day], from: date)
+    guard roundTripped.year == ad.year,
+          roundTripped.month == ad.month,
+          roundTripped.day == ad.day
+    else { return nil }
+    return date
 }
 
 /// Month lengths for a Bikram Sambat date after range and component
@@ -89,23 +102,31 @@ func bsDay(at index: Int, in dataset: CalendarDataset) -> BSDay? {
 
 /// Converts a Gregorian date to Bikram Sambat, or nil if invalid or outside the table.
 public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
+    // utcDate(from:) rejects dates that do not name a real civil day, so there
+    // is no separate validation step here.
     guard let anchorDate = utcDate(from: dataset.anchorAD),
           let targetDate = utcDate(from: ad),
           let anchorIndex = absoluteDayIndex(dataset.anchorBS, in: dataset)
     else { return nil }
-    // Calendar normalizes invalid components (e.g. Feb 30 becomes Mar 1),
-    // so reject dates that don't round-trip exactly.
-    let roundTripped = utcGregorian.dateComponents([.year, .month, .day], from: targetDate)
-    guard roundTripped.year == ad.year, roundTripped.month == ad.month, roundTripped.day == ad.day else { return nil }
     let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
     return bsDay(at: anchorIndex + offset, in: dataset)
 }
 
 /// Weekday of a Bikram Sambat date as 1 (Sunday) through 7 (Saturday), or nil if outside the table.
 public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
-    guard let ad = bsToAD(bs, in: dataset),
-          let date = utcDate(from: ad)
-    else { return nil }
+    guard let ad = bsToAD(bs, in: dataset) else { return nil }
+    return weekday(of: ad)
+}
+
+/// Weekday of a Gregorian civil day as 1 (Sunday) through 7 (Saturday).
+///
+/// The weekday belongs to the civil day, not to either calendar, so it does not
+/// need the dataset. Computing it through a Bikram Sambat conversion made it
+/// vanish past the supported range, which is wrong: past that boundary the
+/// Gregorian date and its weekday are still perfectly well defined and
+/// answerable. This is the path the today view uses for exactly that reason.
+public func weekday(of ad: GADay) -> Int? {
+    guard let date = utcDate(from: ad) else { return nil }
     return utcGregorian.component(.weekday, from: date)
 }
 

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import NepalKitCore
 
@@ -13,6 +14,13 @@ struct PopoverView: View {
     let clock: ClockModel
     let converter: ConverterModel
     let loginItem: LoginItemModel
+    /// Injected so the year named in the range boundary state is the same
+    /// dataset the rest of the view reads, and so a test can control it.
+    var dataset: CalendarDataset = .v1
+
+    /// Last Bikram Sambat year the bundled dataset can convert. Named in the
+    /// range boundary state so a user past it can tell a data limit from a bug.
+    private var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -20,11 +28,21 @@ struct PopoverView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .symbolRenderingMode(.hierarchical)
-            if let bs = clock.bsString(settings: settings.settings),
-               let gregorian = clock.gregorianString(settings: settings.settings)
-            {
+            if let bs = clock.bsString(settings: settings.settings, in: dataset) {
                 Text(bs)
                     .font(.headline)
+            } else {
+                // Range boundary state: the bundled data has ended. Say so in
+                // words rather than showing a blank, and keep the Gregorian date
+                // and clocks below, which are still answerable.
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Strings.bsDateUnavailable)
+                        .font(.headline)
+                    Text(Strings.supportedThrough(lastSupportedBSYear, digits: settings.settings.digits))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let gregorian = clock.gregorianString(settings: settings.settings) {
                 HStack(spacing: 4) {
                     Text(gregorian)
                     if let weekday = clock.weekdayString(style: settings.settings.monthNames) {
@@ -32,26 +50,26 @@ struct PopoverView: View {
                     }
                 }
                 .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Label {
-                        Text("\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: settings.settings.digits))")
-                    } icon: {
-                        Image(systemName: "clock")
-                            .symbolRenderingMode(.monochrome)
-                    }
-                    Label {
-                        Text("\(Strings.localTimeLabel): \(clock.localTimeString(digits: settings.settings.digits))")
-                            .foregroundStyle(.secondary)
-                    } icon: {
-                        Image(systemName: "person")
-                            .symbolRenderingMode(.monochrome)
-                    }
-                }
-                .monospacedDigit()
-                .padding(.top, 2)
-            } else {
-                Text(Strings.dateUnavailable)
             }
+            // Clocks sit outside the Gregorian conditional: they are answerable
+            // regardless of calendar data, so they must survive the boundary.
+            VStack(alignment: .leading, spacing: 2) {
+                Label {
+                    Text("\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: settings.settings.digits))")
+                } icon: {
+                    Image(systemName: "clock")
+                        .symbolRenderingMode(.monochrome)
+                }
+                Label {
+                    Text("\(Strings.localTimeLabel): \(clock.localTimeString(digits: settings.settings.digits))")
+                        .foregroundStyle(.secondary)
+                } icon: {
+                    Image(systemName: "person")
+                        .symbolRenderingMode(.monochrome)
+                }
+            }
+            .monospacedDigit()
+            .padding(.top, 2)
         }
         .padding()
         .frame(minWidth: 280)
@@ -75,6 +93,14 @@ struct PopoverView: View {
         Divider()
         SettingsSection(model: settings)
             .padding(.top, 4)
+        Divider()
+        // The visible exit path for a menu-bar-only app. The matching ⌘Q lives
+        // on the app's termination command group (NepalKitApp.swift) so it works
+        // when the app is frontmost without the popover open; this button is the
+        // discoverable control for the same action.
+        Button(Strings.quitLabel, action: AppTermination.quit)
+            .padding(.horizontal)
+            .padding(.bottom, 4)
     }
 }
 
@@ -102,32 +128,4 @@ private struct SettingsSection: View {
             .pickerStyle(.segmented)
         }
     }
-}
-
-/// User-facing strings in one place. Not a localization system: the app ships
-/// one UI language (the month-name language setting is a date-presentation
-/// setting, not a second UI language).
-enum Strings {
-    static let dateUnavailable = "Date unavailable"
-    static let digitScriptLabel = "Digits"
-    static let digitsLatin = "Latin 0–9"
-    static let digitsDevanagari = "Devanagari ०–९"
-    static let monthNameLabel = "Month names"
-    static let monthsNepali = "Nepali"
-    static let monthsTransliterated = "Transliterated"
-    static let nepalTimeLabel = "Nepal Time"
-    static let localTimeLabel = "Local"
-    static let todayLabel = "Today"
-    static let launchAtLoginLabel = "Launch at login"
-    static let converterLabel = "Converter"
-    static let bsToAD = "Bikram Sambat → Gregorian"
-    static let adToBS = "Gregorian → Bikram Sambat"
-    static let yearLabel = "Year"
-    static let monthLabel = "Month"
-    static let dayLabel = "Day"
-    static let converterOutOfRange = "Outside supported range"
-}
-
-#Preview {
-    PopoverView(settings: DisplaySettingsModel(), clock: ClockModel(), converter: ConverterModel(), loginItem: LoginItemModel())
 }

@@ -45,8 +45,16 @@ final class MenuBarModel {
     }
 
     /// Short Bikram Sambat date for the menu-bar extra, honoring the given display settings.
-    func title(settings: DisplaySettings) -> String {
-        guard let today = todayBS(now: now, in: .v1) else { return "—" }
+    ///
+    /// Past the dataset's supported range this returns a compact boundary marker
+    /// rather than a bare "—". The menu bar has no room to explain itself and
+    /// deliberately carries no warning badge, so the marker's job is only to stop
+    /// the absence reading as a bug; the popover is where the boundary is
+    /// actually stated in words.
+    func title(settings: DisplaySettings, in dataset: CalendarDataset = .v1) -> String {
+        guard let today = todayBS(now: now, in: dataset) else {
+            return Strings.menuBarBeyondRange
+        }
         return formatBSShort(today, settings: settings)
     }
 }

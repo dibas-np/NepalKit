@@ -44,11 +44,15 @@ final class ClockModel {
         return formatAD(ad, settings: settings)
     }
 
-    func weekdayString(style: MonthNameStyle, in dataset: CalendarDataset = .v1) -> String? {
-        guard let bs = todayBSDate(in: dataset),
-              let day = weekday(of: bs, in: dataset)
-        else { return nil }
-        return weekdayName(for: day, style: style)
+    /// Weekday of today's civil day, in the selected display language.
+    ///
+    /// Derived from the Nepal Time Gregorian day rather than from a Bikram
+    /// Sambat conversion: the weekday is a property of the date, so it stays
+    /// available past the dataset's supported range, where the Bikram Sambat
+    /// date does not.
+    func weekdayString(style: MonthNameStyle) -> String? {
+        guard let day = todayADDate(), let weekday = weekday(of: day) else { return nil }
+        return weekdayName(for: weekday, style: style)
     }
 
     func nptTimeString(digits: DigitScript) -> String {
