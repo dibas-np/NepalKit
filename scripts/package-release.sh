@@ -2,8 +2,9 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-# Release pipeline (ticket 08): archive, Developer ID export, DMG, notarize,
-# staple, Gatekeeper-verify. Proves a Gatekeeper-clean DMG for public releases.
+# Release pipeline (ticket 08): archive, Developer ID export, notarize and staple
+# the APP, then a DMG for humans and a zip for Sparkle. Both are Gatekeeper-verified.
+# The app is notarized separately and first: see the note above, it is load-bearing.
 #
 # NOT YET PROVEN: needs a paid Apple Developer account. Provide credentials
 # via env (APPLE_ID, APP_SPECIFIC_PASSWORD, TEAM_ID); without them the script
@@ -24,6 +25,11 @@ EXPORT_DIR=/tmp/${APP}-export
 APP_PATH="$EXPORT_DIR/$APP.app"
 STAGE=/tmp/${APP}-dmg
 DMG=/tmp/$APP.dmg
+# Submitted to Apple. Rebuilt later as $DIST_ZIP, after the staple lands.
+NOTARY_ZIP=/tmp/${APP}-for-notary.zip
+# Computed at use, not here: the export has not run yet at this point in the
+# script, so reading its Info.plist now would silently yield "0" in the name.
+DIST_ZIP=
 
 [[ -n "${APPLE_ID:-}" && -n "${APP_SPECIFIC_PASSWORD:-}" && -n "${TEAM_ID:-}" ]] || {
     echo "missing credentials: set APPLE_ID, APP_SPECIFIC_PASSWORD, TEAM_ID"
@@ -81,6 +87,30 @@ grep -q "flags=.*runtime" /tmp/${APP}-codesign.txt || {
     exit 1
 }
 
+# Notarize the APP, not only the DMG.
+#
+# Sparkle never hands a user the DMG. It extracts the enclosure and copies the
+# .app over the installed one, so a ticket stapled to the DMG is thrown away on
+# every single update and Gatekeeper is left fetching a fresh one from Apple's
+# CDN at update time. That succeeds on a good connection and fails on a poor
+# one, which is exactly how "updates randomly fail for some users" begins.
+#
+# Apple issues a ticket per submitted item, so the .app has to be submitted in
+# its own right: stapling it beforehand fails with "Error 73" because there is
+# no ticket for it to staple. notarytool takes a zip rather than a bare bundle.
+# The staple then lands on the .app in the export directory, and the DMG below
+# is assembled *from that stapled app*, so both paths stay clean.
+ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
+xcrun notarytool submit "$NOTARY_ZIP" --apple-id "$APPLE_ID" \
+    --password "$APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
+xcrun stapler staple "$APP_PATH"
+xcrun stapler validate "$APP_PATH"
+# The check that would have caught this. A stapled DMG passed here for months
+# while the app inside it had no ticket at all, so the DMG was the wrong thing
+# to be validating. This is the assertion that matters for Sparkle.
+spctl -a -t execute -vv "$APP_PATH"
+echo "app notarized and stapled: $APP_PATH"
+
 # DMG with an Applications shortcut for drag-install.
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
@@ -120,4 +150,19 @@ done
 [[ $launched == 1 ]] || { echo "app did not launch from mounted DMG"; exit 1; }
 pkill -f "$MNT/$APP.app/Contents/MacOS/$APP" || true
 
+# The Sparkle enclosure: the stapled app, zipped *after* stapling so the ticket
+# is inside it. Rebuilt rather than reusing $NOTARY_ZIP, which predates the
+# staple and would ship without one.
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+    "$APP_PATH/Contents/Info.plist")
+DIST_ZIP=/tmp/${APP}-${VERSION}.zip
+rm -f "$DIST_ZIP"
+ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ZIP"
+# Same signature check as the DMG: Sparkle verifies this exact file, so it is
+# the artifact that actually has to be Gatekeeper-accepting.
+unzip -qo "$DIST_ZIP" -d /tmp/${APP}-dist-verify
+spctl -a -t execute -vv "/tmp/${APP}-dist-verify/$APP.app"
+rm -rf "/tmp/${APP}-dist-verify"
+
 echo "Gatekeeper-clean DMG: $DMG"
+echo "Sparkle enclosure (stapled, zipped): $DIST_ZIP"
