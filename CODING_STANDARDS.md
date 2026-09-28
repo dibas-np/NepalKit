@@ -94,6 +94,43 @@ that popover holds focus, which for an `LSUIElement` app is not an exit path.
 Register the shortcut in exactly one place; two registrations for one action is
 a bug even when both happen to work.
 
+## Apple platform conventions
+
+These are standing rules, not per-release preferences. They apply to every
+surface without exception.
+
+**Follow the Human Interface Guidelines.**
+<https://developer.apple.com/design/human-interface-guidelines>, and its macOS
+section,
+<https://developer.apple.com/design/human-interface-guidelines/designing-for-macos>.
+A control, a layout, or a naming choice that the HIG already answers is not a
+design decision to make fresh — go and read what Apple says. Where NepalKit
+knowingly departs from it, the departure gets a comment saying why, which is
+usually a consequence of the app being `LSUIElement`.
+
+**Use SF Symbols for all iconography.**
+<https://developer.apple.com/design/human-interface-guidelines/sf-symbols>. Never
+hand-draw a glyph, never ship a PNG or asset-catalog icon for something a symbol
+covers, and never draw a bespoke app icon where Icon Composer will do — the app
+icon is a layered `.icon` package for exactly this reason (ADR-0004). A symbol
+name that does not resolve renders as *nothing at all*, with no error, so verify
+names rather than trusting them: `NSImage(systemSymbolName:accessibilityDescription:)`
+returning `nil` is the check, and it is worth running when adding one.
+
+A symbol earns its place by reinforcing its label, never by decorating it. If a
+row already reads "Nepal Time", a clock is reinforcement; a symbol that suggests
+a different concept than the label is worse than none, because the user has to
+reconcile the two. Check the pairing reads correctly before shipping it.
+
+Rendering mode is chosen per surface for contrast against translucent Liquid
+Glass, not imposed globally: hierarchical for section headers, monochrome for
+small inline icons beside text (ADR-0004).
+
+**Respect the menu-bar-only shape.** Do not call `setActivationPolicy`, and do
+not add a Dock or Cmd-Tab presence. Any command that opens a normal window from
+this context must go through `WindowPresentation` so activation and focus are
+handled in one place (ADR-0011).
+
 ## User-facing strings
 
 All UI strings live in `enum Strings` in `Strings.swift`, which imports only
@@ -190,3 +227,5 @@ read the skip as coverage.
   found, and filed as a known issue if it is still outstanding.
 - If a supported-range boundary moved, every guarded historical fixture was
   reviewed by hand and the tree re-grepped for the old bound.
+- Every new `systemImage` name was checked to resolve, and its pairing with its
+  label actually reads. See *Apple platform conventions*.
