@@ -84,6 +84,14 @@ struct AboutView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // Read from the bundled LICENSE, so this cannot name one licence
+            // while shipping another. Omitted entirely rather than rendered
+            // blank, so a build that somehow omits the file says nothing about
+            // its terms rather than implying there are none.
+            if let license = metadata.license {
+                row(Strings.licenseLabel, license)
+            }
+
             // Real links, never text styled to look like a link. The repository
             // URL comes from the build's metadata, so it cannot drift from the
             // remote the app was actually published from.

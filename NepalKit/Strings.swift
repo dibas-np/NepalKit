@@ -34,6 +34,10 @@ enum Strings {
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
     static let converterLabel = "Converter"
+    /// Names the pair of destinations the popover's segmented control switches
+    /// between. The two segments are read out as bare words otherwise, which
+    /// does not convey that they are a choice between views.
+    static let popoverDestinationsLabel = "Destination"
     static let bsToAD = "Bikram Sambat → Gregorian"
     static let adToBS = "Gregorian → Bikram Sambat"
     static let yearLabel = "Year"
@@ -72,8 +76,16 @@ enum Strings {
     /// The reason is the framework's own description of what went wrong.
     /// Shown, not swallowed: "could not check" without a why is undebuggable,
     /// both for the user reporting it and for the maintainer reading the report.
+    ///
+    /// The reason is presented as a quoted detail rather than spliced into the
+    /// sentence. An updater framework phrases its errors for its own user
+    /// interface, and those phrases are not always about the check: this build
+    /// reported `Could not check for updates: You're up to date!`, which asserts
+    /// two contradictory things at once and is worse than either alone. Quoting
+    /// keeps the two claims separable, and the quotes make it obvious the
+    /// contradiction came from the framework rather than from this app.
     static func updateStatusFailedReason(_ reason: String) -> String {
-        "\(updateStatusFailed): \(reason)"
+        "\(updateStatusFailed). The updater reported: “\(reason)”"
     }
 
     /// About surface. The calendar range is formatted from the dataset's own
@@ -93,6 +105,12 @@ enum Strings {
     static let calendarDataLabel = "Calendar data"
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
+    static let licenseLabel = "Licence"
+    /// The bundled LICENSE covers the code, not the calendar data, and the two
+    /// are licensed differently. A licence line with no such caveat would be read
+    /// as covering everything in the app, which is the opposite of the truth.
+    static let licenseScopeNote =
+        "Applies to the app code. The bundled calendar data is licensed separately; see the repository."
     /// Says what the cross-check established and no more. The table is
     /// corroborated against a second community source, but every shipped year is
     /// still derived from one base table, so this must not read as independent

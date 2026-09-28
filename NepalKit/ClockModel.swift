@@ -66,4 +66,19 @@ final class ClockModel {
     func localTimeString(digits: DigitScript) -> String {
         formatClock(now, timeZone: localTimeZone, digits: digits)
     }
+
+    /// Whether showing Local alongside Nepal Time would repeat the same reading.
+    ///
+    /// Compared by UTC offset at this instant rather than by zone identity, because
+    /// the question is whether the row adds information: someone in Kathmandu
+    /// reading two identical clocks learns nothing from the second one, while
+    /// someone in a different zone five and a half hours out always does.
+    ///
+    /// Offset-at-instant rather than `localTimeZone == nepalTimeZone` because zone
+    /// identity is the wrong test. A zone with a different identifier can share
+    /// Nepal's offset, and would then be showing a genuinely duplicated reading
+    /// that identity comparison would miss.
+    var localTimeIsRedundant: Bool {
+        localTimeZone.secondsFromGMT(for: now) == nepalTimeZone.secondsFromGMT(for: now)
+    }
 }
