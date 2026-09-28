@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Sparkle configuration that cannot be expressed as a build setting.
+  NepalKit's Info.plist, in full.
 
-  The project generates its Info.plist (`GENERATE_INFOPLIST_FILE = YES`) and
-  that is the right arrangement for everything Apple defines — bundle
-  identifier, versions, LSUIElement, the icon name. But `INFOPLIST_KEY_*` honours
-  only a fixed allowlist of Apple-known names, and a name outside it is
-  **accepted by the build and discarded with no warning or error**.
+  It is authoritative for every key, including the Apple-defined ones, and
+  `GENERATE_INFOPLIST_FILE` is off. Two reasons, both learned the hard way:
 
-  That was demonstrated on this key specifically. `INFOPLIST_KEY_SUPublicEDKey`
-  was set, the build reported success, and the finished app contained no
-  `SUPublicEDKey` at all. Trusting that build would have shipped an application
-  that could not verify a single update — with a green build as the only evidence
-  that something was wrong. Hence this file, and a test (see InfoPlistKeysTests)
-  that reads the built product rather than the project settings.
+  **A generated plist silently wins.** With `GENERATE_INFOPLIST_FILE = YES`
+  alongside an `INFOPLIST_FILE`, this file's *unknown* keys survive the merge
+  but an Apple-*known* key is owned by the generator and overwritten. That is
+  how `NSHumanReadableCopyright` was set here, accepted by a green build, and
+  then absent from the finished app. The project now states every key itself,
+  so there is no second source to disagree with.
 
-  Public by design: this is how an installed copy verifies a download, so it
-  belongs in version control. The matching private key never appears here and is
-  never needed to build the app (ADR-0012).
+  **`INFOPLIST_KEY_*` can be accepted and discarded.** Setting a name outside
+  that allowlist produces a successful build and no key. Demonstrated on
+  `INFOPLIST_KEY_SUPublicEDKey`: build reported success, the app contained no
+  `SUPublicEDKey` at all, and a shipped app in that state could not verify a
+  single update. `InfoPlistKeysTests` reads the *built product* for this reason.
+
+  Merging the two also copied this file into `Contents/Resources/`, leaving a
+  stray second Info.plist inside the bundle — harmless at runtime, but a real
+  misconfiguration that the build warned about on every run.
+
+  Versions and the bundle identifier are substituted from the build settings
+  rather than duplicated here, so there is still exactly one place to change
+  them.
 -->
 <plist version="1.0">
 <dict>
@@ -27,6 +34,44 @@
 	  identical to the key the release artifacts are signed with; changing it
 	  invalidates every existing installation's ability to update.
 	-->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+
+	<!-- Menu-bar-only: no Dock icon, no menu bar of its own. The regression this
+	     guards against is losing LSUIElement, which would silently turn the app
+	     into a Dock app; InfoPlistKeysTests asserts it reaches the product. -->
+	<key>LSUIElement</key>
+	<true/>
+
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+
+	<!-- Spotlight/App Store category. Omitting it is a build warning, and
+	     "utilities" is what this is: a menu-bar date and time tool. -->
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+
+	<!-- Rendered by both About surfaces via AppMetadata, which omits the line
+	     entirely when this is absent rather than showing a blank. -->
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright (C) 2026 Dibas Sigdel</string>
+
 	<key>SUPublicEDKey</key>
 	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
 

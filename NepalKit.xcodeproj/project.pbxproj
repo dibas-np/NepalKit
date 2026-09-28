@@ -16,6 +16,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		233B3DC9306975960098472F /* NepalKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				233B3DC9306975960098472E /* Exceptions for "NepalKit" folder in "NepalKit" target */,
+			);
 			path = NepalKit;
 			sourceTree = "<group>";
 		};
@@ -40,6 +43,16 @@
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		233B3DC9306975960098472E /* Exceptions for "NepalKit" folder in "NepalKit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 233B3DC6306975960098472F /* NepalKit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXGroup section */
 		233B3DBE306975960098472F = {
@@ -357,15 +370,17 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
+				// NepalKit declares no App Intents, so the metadata extractor has
+				// nothing to extract and says so on every build. FILTER_WARNINGS is
+				// the supported opt-out (--quiet-warnings). Safe here precisely
+				// because the app has no App Intents: there is no App Intents
+				// warning that could be lost. Remove this if that ever changes.
+				FILTER_WARNINGS = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NepalKit/Info.plist;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 2026 Dibas Sigdel";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -393,15 +408,17 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
+				// NepalKit declares no App Intents, so the metadata extractor has
+				// nothing to extract and says so on every build. FILTER_WARNINGS is
+				// the supported opt-out (--quiet-warnings). Safe here precisely
+				// because the app has no App Intents: there is no App Intents
+				// warning that could be lost. Remove this if that ever changes.
+				FILTER_WARNINGS = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NepalKit/Info.plist;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 2026 Dibas Sigdel";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -427,7 +444,6 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_TESTABILITY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -449,7 +465,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
-				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

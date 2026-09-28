@@ -58,8 +58,16 @@ EOF
 
 # Explicit deployment target: the release artifact must never silently
 # inherit a different floor from Xcode project state.
+#
+# generic/platform=macOS, not platform=macOS: the latter matches both arm64 and
+# x86_64 on a machine that has both, and Xcode warns that it is picking the
+# first arbitrarily. generic/ is the universal build and matches exactly one.
+#
+# The comment sits above the command rather than inside it: a `#` comment
+# between the parts of a backslash-continued command is spliced into the
+# command line, and the rest of it then runs as a command of its own.
 MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
-    -destination 'platform=macOS' -configuration Release \
+    -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
@@ -79,7 +87,10 @@ mkdir -p "$STAGE"
 cp -R "$APP_PATH" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
-hdiutil create -volname "$APP" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+# diskutil, not hdiutil: `hdiutil create -volname -format` is deprecated and
+# says so on every run. Same image, supported spelling.
+rm -f "$DMG"
+diskutil image create from "$STAGE" --volumeName "$APP" --format UDZO "$DMG" >/dev/null
 
 xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" \
     --password "$APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
@@ -93,9 +104,11 @@ xcrun stapler staple "$DMG"
 xcrun stapler validate "$DMG"
 
 MNT=/Volumes/${APP}-release-check
-cleanup() { hdiutil detach "$MNT" >/dev/null 2>&1 || true; }
+cleanup() { diskutil unmount "$MNT" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-hdiutil attach "$DMG" -nobrowse -mountpoint "$MNT"
+# diskutil, not hdiutil: `hdiutil attach -nobrowse -mountpoint` is
+# deprecated and says so on every run.
+diskutil image attach "$DMG" --mountOptions nobrowse --mountPoint "$MNT" >/dev/null
 spctl -a -t execute "$MNT/$APP.app"
 
 # Launch smoke: the notarized app must start from the mounted DMG.

@@ -12,7 +12,13 @@ final class DisplaySettingsModel {
 
     private let store: SettingsStore
 
-    init(store: SettingsStore = SettingsStore()) {
+    /// `store` is optional rather than defaulted to `SettingsStore()` in the
+    /// signature. A default argument is evaluated in a nonisolated context even
+    /// when the initialiser is `@MainActor`, so the compiler cannot prove the
+    /// main-actor-isolated `SettingsStore` initialiser is safe there. Optional
+    /// plus a default built in the body says the same thing and type-checks.
+    init(store: SettingsStore? = nil) {
+        let store = store ?? SettingsStore()
         self.store = store
         self.settings = store.settings
     }

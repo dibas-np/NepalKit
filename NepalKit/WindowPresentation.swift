@@ -27,17 +27,23 @@ import AppKit
 /// `NSApp.activate()` cannot work here: it activates only when no other
 /// application is active, and a menu-bar app is being summoned *while* one is.
 /// So the activation must be able to come forward over the current frontmost
-/// app — which is what the `ignoringOtherApps` option expresses.
+/// app — which is what the `ignoringOtherApps` flag expresses.
 ///
-/// `NSRunningApplication.activate(options:)` is the current API and takes that
-/// option as a flag, which is preferable to the deprecated
-/// `NSApplication` method whose old Swift spelling no longer compiles. The
-/// *option* carries a soft deprecation of its own — Apple's message says
-/// `ignoringOtherApps` "will have no effect" — but at macOS 27 it is
-/// demonstrably the only thing that fronts this app, so it is used and the
-/// risk is noted rather than papered over. If it ever stops working, Settings
-/// opens without focus, which `WindowPresentationTests` and the real-app check
-/// will both show immediately.
+/// **Which spelling, and why the obvious answer is not the one used.** The
+/// current API is `NSRunningApplication.activate(options:)`, and it takes the
+/// same behaviour as a flag — but that flag is deprecated, and Apple's own
+/// message says it "will have no effect". The table above already recorded
+/// that the older `NSApp.activate(ignoringOtherApps: true)` fronts this app
+/// just as reliably, and that spelling is *not* deprecated. It is therefore
+/// what is used: the measured behaviour is preserved and the warning is gone,
+/// rather than a deprecated call being kept alive under a documented risk.
+///
+/// **`isActive` is the retry condition, not the request's return value.** The
+/// older API returned a `Bool` saying whether the request was accepted, which
+/// is a proxy for the thing that actually matters. `NSApp.isActive` reports
+/// whether the app came forward, so the bounded retry now continues for
+/// exactly as long as the app is not yet frontmost — which is the real
+/// condition, and stricter than trusting a submission receipt.
 ///
 /// The activation is attempted on a later main-queue turn, and retried a bounded
 /// number of times *only while the activation request is refused*.
@@ -57,11 +63,17 @@ import AppKit
 enum WindowPresentation {
     static func present(
         open: () -> Void,
-        activate: @escaping () -> Bool = {
-            NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        // @MainActor on the closure, not just on the enum: a default argument
+        // expression is evaluated in a nonisolated context even when the
+        // enclosing function is isolated, so a body touching NSApp warns
+        // without it. The same reason the model initialisers below moved their
+        // defaults out of the signature.
+        activate: @escaping @MainActor () -> Bool = {
+            NSApp.activate(ignoringOtherApps: true)
+            return NSApp.isActive
         },
         attempts: Int = 3,
-        schedule: @escaping (@escaping () -> Void) -> Void = { work in
+        schedule: @escaping (@escaping @MainActor @Sendable () -> Void) -> Void = { work in
             DispatchQueue.main.async(execute: work)
         }
     ) {
@@ -70,9 +82,9 @@ enum WindowPresentation {
     }
 
     private static func attemptActivation(
-        _ activate: @escaping () -> Bool,
+        _ activate: @escaping @MainActor () -> Bool,
         remaining: Int,
-        schedule: @escaping (@escaping () -> Void) -> Void
+        schedule: @escaping (@escaping @MainActor @Sendable () -> Void) -> Void
     ) {
         guard remaining > 0 else { return }
         schedule {

@@ -40,7 +40,14 @@ final class LoginItemModel {
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
 
-    init(service: any LoginItemServicing = LiveLoginItemService(), defaults: UserDefaults = .standard) {
+    /// Both defaults are built in the body rather than in the signature, for
+    /// the same reason as `DisplaySettingsModel`: a default argument is
+    /// evaluated nonisolated, and `LiveLoginItemService()` and
+    /// `UserDefaults.standard` are main-actor isolated. Tests still inject
+    /// either one explicitly, so the call sites are unchanged.
+    init(service: (any LoginItemServicing)? = nil, defaults: UserDefaults? = nil) {
+        let service = service ?? LiveLoginItemService()
+        let defaults = defaults ?? .standard
         self.service = service
         self.defaults = defaults
         self.isOn = service.isRegistered
