@@ -34,12 +34,29 @@ enum Strings {
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
     static let converterLabel = "Converter"
+    /// Names the direction toggle. Distinguishes it from the popover's own
+    /// Today/Converter switcher, which is a different control directly above.
+    static let converterDirectionLabel = "Direction"
     /// Names the pair of destinations the popover's segmented control switches
     /// between. The two segments are read out as bare words otherwise, which
     /// does not convey that they are a choice between views.
     static let popoverDestinationsLabel = "Destination"
-    static let bsToAD = "Bikram Sambat → Gregorian"
-    static let adToBS = "Gregorian → Bikram Sambat"
+    /// Shown on the direction toggle's segments, so abbreviated: the two full
+    /// calendar names do not fit a segmented control inside a 340pt popover and
+    /// the framework clips rather than wraps. "Bikram Sambat → Gregorian"
+    /// rendered as "ikram Sambat → Gregorian".
+    ///
+    /// The abbreviations are spoken in full - see `bsToADSpoken` - because
+    /// "BS" and "AD" are not self-evident aloud, and this is the control that
+    /// says which calendar the result will be in.
+    static let bsToAD = "BS → AD"
+    static let adToBS = "AD → BS"
+    /// Spoken form of the direction segments, which the abbreviations are not
+    /// enough to convey. Read aloud, "BS to AD" gives no clue what either
+    /// letter stands for, and the result line it governs is the whole point of
+    /// the tab.
+    static let bsToADSpoken = "Bikram Sambat to Gregorian"
+    static let adToBSSpoken = "Gregorian to Bikram Sambat"
     static let yearLabel = "Year"
     static let monthLabel = "Month"
     static let dayLabel = "Day"
