@@ -48,6 +48,26 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
     }
 
     func start() {
+        // Automatic checks only make sense for an installed copy: updating
+        // replaces the running bundle in place, which cannot succeed from a
+        // build directory (the sandbox cannot grant the installer access to
+        // the path) or from a mounted read-only DMG — from either, Autoupdate
+        // aborts with "the bundle being updated … has no CFBundleVersion".
+        // Measured when a /tmp Debug copy failed its self-update (2026-09-28);
+        // the DMG layout gate also opens the packaged app straight off the
+        // mounted image, so that launch is transient too. A transient launch
+        // never schedules automatic checks; manual checks still run off the
+        // same started updater.
+        let bundlePath = Bundle.main.bundleURL.path
+        let transient = bundlePath.hasPrefix("/tmp/")
+            || bundlePath.hasPrefix("/private/tmp/")
+            || bundlePath.hasPrefix("/Volumes/")
+            || bundlePath.contains("/DerivedData/")
+        if transient {
+            // A launch-local fallback: neither writes nor overrides a real
+            // preference, so the developer's own defaults are untouched.
+            UserDefaults.standard.register(defaults: ["SUEnableAutomaticChecks": false])
+        }
         // `startUpdater` schedules the background check, so it is a one-time
         // call at launch. Throwing means the updater could not be started at
         // all — a real failure worth surfacing rather than swallowing, because
