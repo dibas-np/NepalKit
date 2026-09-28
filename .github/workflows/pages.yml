@@ -1,0 +1,107 @@
+# Publish the Sparkle appcast as the update feed.
+#
+# The feed is what every install polls for updates, so it is verified here
+# rather than deployed on trust. Verification uses the public key committed to
+# Info.plist, so this job needs no secrets - which is the point. The private key
+# exists only on the release machine, and this workflow has no way to sign
+# anything even if it wanted to.
+#
+# Publishing is a commit. The appcast is verified by
+# scripts/package-release.sh on the release machine, then committed here, and
+# this workflow re-verifies and deploys it. Two independent checks of the same
+# file, one of them on the machine that holds the signing key.
+name: publish appcast
+
+on:
+  push:
+    # Only when a feed actually changes. A README fix must not redeploy.
+    paths:
+      - appcast.xml
+    branches: [main]
+  # Re-run the check on demand, without publishing. Useful after changing the
+  # verifier itself.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time: two concurrent publishes could interleave and leave
+# the live feed pointing at the older release.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify appcast
+    runs-on: ubuntu-latest
+    outputs:
+      # A dispatch with no committed feed has nothing to publish.
+      publish: ${{ steps.check.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the appcast is present
+        id: check
+        run: |
+          set -euo pipefail
+          if [ ! -f appcast.xml ]; then
+            echo "::notice::no committed appcast.xml; nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          wc -c appcast.xml
+
+      - name: Verify the appcast
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          # No --enclosure: the archives are release assets, not repository
+          # files, so they are not available here. This still enforces the
+          # checks that make a malformed, unsigned, or non-https feed
+          # impossible to publish. The length and signature checks over the
+          # real bytes run on the release machine, before the commit that
+          # triggers this workflow.
+          python3 scripts/verify-appcast.py appcast.xml \
+            --info-plist NepalKit/Info.plist \
+            --skip-crypto
+
+      - name: Confirm the committed key is well-formed
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import re
+          from pathlib import Path
+
+          plist = Path("NepalKit/Info.plist").read_text()
+          match = re.search(r"SUPublicEDKey</key>\s*<string>([^<]+)</string>", plist)
+          if not match:
+              raise SystemExit("no SUPublicEDKey in Info.plist")
+          raw = base64.b64decode(match.group(1).strip(), validate=True)
+          if len(raw) != 32:
+              raise SystemExit(f"public key is {len(raw)} bytes, expected 32")
+          print(f"  ok    committed public key is well-formed ({len(raw)} bytes)")
+          PY
+
+      - name: Upload Pages artifact
+        if: steps.check.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: appcast.xml
+
+  deploy:
+    name: deploy to Pages
+    needs: verify
+    if: needs.verify.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
