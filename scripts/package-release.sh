@@ -5,6 +5,9 @@
 # NOT YET PROVEN: needs a paid Apple Developer account. Provide credentials
 # via env (APPLE_ID, APP_SPECIFIC_PASSWORD, TEAM_ID); without them the script
 # stops after the checks step with instructions. Requires network to Apple.
+# No need to wait for the final UI: once the certificate exists, run this
+# against the current build and prove Xcode → Archive → Developer ID → DMG →
+# Notarize → Staple → Gatekeeper.
 #
 # Usage (repo root): APPLE_ID=you@example.com APP_SPECIFIC_PASSWORD=xxxx \
 #   TEAM_ID=XXXXXXXXXX scripts/package-release.sh
@@ -12,9 +15,11 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 APP=NepalKit
-IDENTITY="Developer ID Application: ${TEAM_ID:-MISSING}"
+DEPLOYMENT_TARGET=26.0
 ARCHIVE=/tmp/$APP.xcarchive
 EXPORT_DIR=/tmp/${APP}-export
+APP_PATH="$EXPORT_DIR/$APP.app"
+STAGE=/tmp/${APP}-dmg
 DMG=/tmp/$APP.dmg
 
 [[ -n "${APPLE_ID:-}" && -n "${APP_SPECIFIC_PASSWORD:-}" && -n "${TEAM_ID:-}" ]] || {
@@ -22,10 +27,18 @@ DMG=/tmp/$APP.dmg
     echo "create an app-specific password at https://account.apple.com"
     exit 2
 }
-security find-identity -v -p codesigning | grep -q "$TEAM_ID" || {
-    echo "no Developer ID identity for team $TEAM_ID in this keychain"
+
+# Explicitly require a Developer ID Application certificate for this team —
+# a generic codesigning identity is not enough for distribution.
+# (The `|| true` keeps `set -euo pipefail` from firing on no match so the
+# friendly error below runs instead.)
+IDENTITY="$(security find-identity -v -p codesigning \
+    | grep -o "Developer ID Application: .* ($TEAM_ID)" | head -1 || true)"
+[[ -n "$IDENTITY" ]] || {
+    echo "no Developer ID Application certificate for team $TEAM_ID in this keychain"
     exit 2
 }
+echo "signing as: $IDENTITY"
 
 cat > /tmp/${APP}-ExportOptions.plist <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -40,18 +53,36 @@ cat > /tmp/${APP}-ExportOptions.plist <<EOF
 </plist>
 EOF
 
-xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
+# Explicit deployment target: the release artifact must never silently
+# inherit a different floor from Xcode project state.
+MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
     -destination 'platform=macOS' -configuration Release \
+    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
     -exportPath "$EXPORT_DIR" -exportOptionsPlist /tmp/${APP}-ExportOptions.plist
 
+# Verify the exported app before it goes anywhere near a DMG.
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/${APP}-codesign.txt
+grep -q "flags=.*runtime" /tmp/${APP}-codesign.txt || {
+    echo "hardened runtime flag missing from signature"
+    exit 1
+}
+
+# DMG with an Applications shortcut for drag-install.
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+cp -R "$APP_PATH" "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
-hdiutil create -volname "$APP" -srcfolder "$EXPORT_DIR/$APP.app" \
-    -ov -format UDZO "$DMG"
+hdiutil create -volname "$APP" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 
 xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" \
     --password "$APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
 xcrun stapler staple "$DMG"
+
+# "Gatekeeper-clean" is earned only here: ticket validation AND spctl accept.
+xcrun stapler validate "$DMG"
 spctl -a -t open --context context:primary-signature -v "$DMG"
 echo "Gatekeeper-clean DMG: $DMG"
