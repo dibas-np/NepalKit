@@ -68,7 +68,7 @@ Every dependency that a test needs to control is a parameter with a sensible
 default, not a global lookup:
 
 ```swift
-init(now: Date = Date(), localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1)
+init(now: Date = .now, localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1)
 func bsToAD(_ bs: BSDay, in dataset: CalendarDataset = .v2) -> BSDay?
 SettingsStore(defaults: UserDefaults = .standard)
 ```

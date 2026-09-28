@@ -37,6 +37,11 @@ final class LoginItemModel {
 
     private(set) var isOn: Bool
 
+    /// The last failure reported by the login-item service, if any. `isOn`
+    /// follows the system either way, so without this a refused registration
+    /// only makes the toggle spring back, never saying why.
+    private(set) var setupError: String?
+
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
 
@@ -67,11 +72,23 @@ final class LoginItemModel {
     }
 
     func setOn(_ on: Bool) {
-        if on {
-            try? service.register()
-        } else {
-            try? service.unregister()
+        do {
+            if on {
+                try service.register()
+            } else {
+                try service.unregister()
+            }
+            setupError = nil
+        } catch {
+            setupError = error.localizedDescription
         }
         isOn = service.isRegistered
+    }
+
+    /// Binding target for the Settings toggle: writing runs the same
+    /// register/unregister path as `setOn(_:)`.
+    var launchAtLogin: Bool {
+        get { isOn }
+        set { setOn(newValue) }
     }
 }

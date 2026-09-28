@@ -40,6 +40,35 @@
 # Requires code scanning to be set to "Set up via workflows" rather than
 # "Default setup" in Settings -> Code security. While "Default setup" is
 # selected, GitHub runs its own workflow and this one is ignored.
+#
+# ## When this fails because the toolchain was retired
+#
+# The pinned Xcode is the point of the workflow, and it is also its expiry date.
+# GitHub removes old Xcode versions from the runner image, and when it does the
+# failure looks exactly like a regression:
+#
+#     ::error::Xcode 26.6 is not installed on this runner.
+#
+# It is not one. Nothing about NepalKit changed. The step below says so in its own
+# error message, because a contributor hitting this at midnight should not have
+# to find this comment first.
+#
+# **Raising the pin is not a routine bump.** It is a re-evaluation of the
+# deployment-floor claim, and it should be treated like one:
+#
+# 1. Check whether a *newer* floor is now the honest claim. The project deploys
+#    to the lowest macOS it can support, and that is a product decision about
+#    people on old hardware, not a build setting.
+# 2. If the floor is unchanged, pick the oldest Xcode on the image that still
+#    opens the project at object version 100, and record why that one.
+# 3. Re-run the gate. A new pin has proved nothing until it has gone green on a
+#    `macos-26` runner.
+# 4. Update ADR-0007 if the floor itself moves. It records the claim this
+#    workflow exists to enforce, and a stale claim is worse than no claim.
+#
+# A real regression looks completely different: the toolchain is present, the
+# build or a test fails, and the log says which. That is the case this workflow
+# exists for.
 
 name: "CodeQL"
 
@@ -104,7 +133,7 @@ jobs:
           set -euo pipefail
           candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
           if [ ! -d "$candidate" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner."
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Move this pin in step with macos26-floor.yml; that workflow's header has the policy, and the two must not drift."
             echo "Installed:"; ls -d /Applications/Xcode*.app || true
             exit 1
           fi

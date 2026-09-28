@@ -4,13 +4,6 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// Direction of conversion. The toggle preserves the converted date so the
-/// user never re-enters anything.
-enum ConverterDirection: Hashable {
-    case bsToAD
-    case adToBS
-}
-
 /// Owns the converter's picker state. Day pickers are clamped to the real
 /// month length, so invalid dates are structurally impossible; years are
 /// bounded to the dataset's supported range (Bikram Sambat) and its
@@ -84,8 +77,9 @@ final class ConverterModel {
     ) {
         self.dataset = dataset
         self.direction = direction
-        let todayBSDate = todayBS(now: Date(), in: dataset)
-        let todayADDate = todayAD(now: Date())
+        let now = Date.now
+        let todayBSDate = todayBS(now: now, in: dataset)
+        let todayADDate = todayAD(now: now)
         self.bsDate = BSDay(
             year: bsYear ?? todayBSDate?.year ?? dataset.supportedRange.lowerBound,
             month: bsMonth ?? todayBSDate?.month ?? 1,
@@ -134,15 +128,9 @@ final class ConverterModel {
     }
 
     func daysInADMonth(year: Int, month: Int) -> Int {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        var components = DateComponents()
-        components.year = year
-        components.month = month
-        guard let date = calendar.date(from: components),
-              let range = calendar.range(of: .day, in: .month, for: date)
-        else { return 30 }
-        return range.count
+        // The core's calendar is the one the conversion math uses, so the
+        // picker bounds and the conversion agree on what a civil day is.
+        daysInGregorianMonth(year: year, month: month) ?? 30
     }
 
     /// Gregorian days available for the given month, bounded by the
@@ -232,6 +220,14 @@ final class ConverterModel {
             }
             direction = .bsToAD
         }
+    }
+
+    /// Binding target for the direction picker: writing runs `setDirection(_:)`
+    /// so re-selecting the active segment is a no-op and the converted date is
+    /// carried across.
+    var directionSelection: ConverterDirection {
+        get { direction }
+        set { setDirection(newValue) }
     }
 
     /// Weekday name for the given Bikram Sambat date, or nil outside the table.

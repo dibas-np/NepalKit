@@ -18,29 +18,29 @@ import NepalKitCore
 @MainActor
 @Observable
 final class MenuBarModel {
-    private(set) var now = Date()
+    private(set) var now = Date.now
 
     private var timer: Timer?
     private var midnightTimer: Timer?
 
-    init(now: Date = Date(), refreshInterval: TimeInterval = 30) {
+    init(now: Date = .now, refreshInterval: TimeInterval = 30) {
         self.now = now
         // The closure captures self weakly, so nothing to tear down: the timer
         // lives on the main run loop and dies with the process.
         timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.now = Date() }
+            MainActor.assumeIsolated { self?.now = Date.now }
         }
         scheduleMidnightFire()
     }
 
     private func scheduleMidnightFire() {
         midnightTimer?.invalidate()
-        guard let nextMidnight = nextNPTMidnight(after: Date()) else { return }
+        guard let nextMidnight = nextNPTMidnight(after: .now) else { return }
         // +1s so the NPT civil day has definitively rolled over.
-        let interval = max(1, nextMidnight.timeIntervalSince(Date()) + 1)
+        let interval = max(1, nextMidnight.timeIntervalSince(.now) + 1)
         midnightTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.now = Date()
+                self?.now = Date.now
                 self?.scheduleMidnightFire()
             }
         }

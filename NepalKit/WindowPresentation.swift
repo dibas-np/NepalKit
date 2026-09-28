@@ -45,8 +45,8 @@ import AppKit
 /// exactly as long as the app is not yet frontmost — which is the real
 /// condition, and stricter than trusting a submission receipt.
 ///
-/// The activation is attempted on a later main-queue turn, and retried a bounded
-/// number of times *only while the activation request is refused*.
+    /// The activation is attempted on a later main-actor turn, and retried a bounded
+    /// number of times *only while the activation request is refused*.
 ///
 /// Retry rather than a longer sleep, because the observed failure is a refused
 /// request, not a mistimed one: `activate(options:)` returns `false` and the app
@@ -74,7 +74,7 @@ enum WindowPresentation {
         },
         attempts: Int = 3,
         schedule: @escaping (@escaping @MainActor @Sendable () -> Void) -> Void = { work in
-            DispatchQueue.main.async(execute: work)
+            Task { @MainActor in work() }
         }
     ) {
         open()

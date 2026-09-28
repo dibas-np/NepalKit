@@ -96,7 +96,7 @@ struct LoginItemModelTests {
         #expect(model.isOn)
     }
 
-    @Test func failedRegistrationLeavesToggleOff() {
+    @Test func failedRegistrationLeavesToggleOffAndSurfacesAnError() {
         let service = MockService()
         service.error = Boom()
         let model = LoginItemModel(service: service, defaults: freshDefaults())
@@ -104,6 +104,23 @@ struct LoginItemModelTests {
         model.setOn(true)
 
         #expect(!model.isOn)
+        // The toggle springs back because `isOn` follows the system; the
+        // surfaced error is what tells the user why.
+        #expect(model.setupError != nil)
+    }
+
+    @Test func successfulToggleClearsTheError() {
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        model.setOn(true)
+        #expect(model.setupError != nil)
+
+        service.error = nil
+        model.setOn(true)
+
+        #expect(model.isOn)
+        #expect(model.setupError == nil)
     }
 
     @Test func initReflectsCurrentSystemState() {

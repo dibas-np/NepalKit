@@ -18,11 +18,11 @@ final class ClockModel {
 
     private var timer: Timer?
 
-    init(now: Date = Date(), localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1) {
+    init(now: Date = .now, localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1) {
         self.now = now
         self.localTimeZone = localTimeZone
         timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.now = Date() }
+            MainActor.assumeIsolated { self?.now = Date.now }
         }
     }
 

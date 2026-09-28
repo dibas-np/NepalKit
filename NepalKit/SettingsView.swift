@@ -18,8 +18,8 @@ import SwiftUI
 /// year, an English Gregorian month name, and a weekday in either language at
 /// once. That combination is intended (CONTEXT.md).
 struct SettingsView: View {
-    let settings: DisplaySettingsModel
-    let loginItem: LoginItemModel
+    @Bindable var settings: DisplaySettingsModel
+    @Bindable var loginItem: LoginItemModel
     /// Optional because the update surface cannot exist before an updater is
     /// configured, which needs a published feed and a signing key. Absent, the
     /// section is omitted rather than shown disabled, so no build ever
@@ -29,10 +29,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(Strings.displaySection) {
-                Picker(Strings.digitScriptLabel, selection: Binding(
-                    get: { settings.settings.digits },
-                    set: { settings.save(digits: $0) }
-                )) {
+                Picker(Strings.digitScriptLabel, selection: $settings.digits) {
                     Text(Strings.digitsLatin).tag(DigitScript.latin)
                     Text(Strings.digitsDevanagari)
                         .tag(DigitScript.devanagari)
@@ -43,10 +40,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Picker(Strings.monthNameLabel, selection: Binding(
-                    get: { settings.settings.monthNames },
-                    set: { settings.save(monthNames: $0) }
-                )) {
+                Picker(Strings.monthNameLabel, selection: $settings.monthNames) {
                     Text(Strings.monthsNepali).tag(MonthNameStyle.nepali)
                     Text(Strings.monthsTransliterated).tag(MonthNameStyle.transliterated)
                 }
@@ -54,10 +48,7 @@ struct SettingsView: View {
             }
 
             Section(Strings.startupSection) {
-                Toggle(isOn: Binding(
-                    get: { loginItem.isOn },
-                    set: { loginItem.setOn($0) }
-                )) {
+                Toggle(isOn: $loginItem.launchAtLogin) {
                     Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
                         .symbolRenderingMode(.monochrome)
                 }
@@ -66,16 +57,23 @@ struct SettingsView: View {
                 // symbol name too ("power symbol button, launch at login, on"),
                 // which is noise in front of the real name.
                 .accessibilityLabel(Strings.launchAtLoginLabel)
+
+                if let error = loginItem.setupError {
+                    // A failed register/unregister is invisible on the toggle:
+                    // `isOn` follows the system, so it springs back without
+                    // ever saying why. This line is where the reason lands.
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if let updates {
+                @Bindable var updates = updates
                 Section(Strings.updatesSection) {
                     Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
 
-                    Toggle(isOn: Binding(
-                        get: { updates.automaticallyChecks },
-                        set: { updates.automaticallyChecks = $0 }
-                    )) {
+                    Toggle(isOn: $updates.automaticallyChecks) {
                         Text(Strings.updateAutomaticallyLabel)
                     }
 

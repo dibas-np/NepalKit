@@ -132,6 +132,25 @@ public func weekday(of ad: GADay) -> Int? {
     return utcGregorian.component(.weekday, from: date)
 }
 
+/// Number of days in a Gregorian month, or nil if the components do not name a
+/// month.
+///
+/// Backs the converter's Gregorian day-picker bounds, so the picker ranges and
+/// the conversion math share this one calendar and its UTC civil-day definition.
+/// The month guard matters: `Calendar` silently normalizes month 0 into
+/// December of the previous year, which would report a length for a month that
+/// does not exist.
+public func daysInGregorianMonth(year: Int, month: Int) -> Int? {
+    guard (1 ... 12).contains(month) else { return nil }
+    var components = DateComponents()
+    components.year = year
+    components.month = month
+    guard let date = utcGregorian.date(from: components),
+          let range = utcGregorian.range(of: .day, in: .month, for: date)
+    else { return nil }
+    return range.count
+}
+
 /// Today's Bikram Sambat date, anchored to Nepal Time (UTC+5:45) unconditionally:
 /// the Bikram Sambat date flips at NPT midnight regardless of the system time zone.
 /// The clock is injected (`now`) so the anchoring is testable.

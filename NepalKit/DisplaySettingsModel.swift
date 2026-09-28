@@ -35,4 +35,16 @@ final class DisplaySettingsModel {
     func save(monthNames: MonthNameStyle) {
         save(DisplaySettings(digits: settings.digits, monthNames: monthNames))
     }
+
+    /// Binding targets for the Settings pickers: writing runs the same save
+    /// path as `save(_:)`, so persistence and every reader move together.
+    var digits: DigitScript {
+        get { settings.digits }
+        set { save(digits: newValue) }
+    }
+
+    var monthNames: MonthNameStyle {
+        get { settings.monthNames }
+        set { save(monthNames: newValue) }
+    }
 }

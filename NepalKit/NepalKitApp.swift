@@ -10,7 +10,10 @@ struct NepalKitApp: App {
     @State private var menuBarModel = MenuBarModel()
     @State private var clockModel = ClockModel()
     @State private var converterModel = ConverterModel()
-    @State private var loginItemModel = LoginItemModel()
+    /// No default initializer: the default-on registration below must run
+    /// before the model is ever read, and a property initializer would run
+    /// first, constructing a second model that is immediately discarded.
+    @State private var loginItemModel: LoginItemModel
     /// Nil until an updater is configured — a published feed and a signing key
     /// are both outstanding (ticket 07). The Settings section is omitted rather
     /// than shown broken.

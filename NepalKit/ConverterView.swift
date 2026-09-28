@@ -16,10 +16,7 @@ struct ConverterView: View {
             // above is already an `AXHeading: Converter`, and a titled picker
             // adds its title as a second static text — the live tree showed the
             // section name twice.
-            Picker("", selection: Binding(
-                get: { model.direction },
-                set: { model.setDirection($0) }
-            )) {
+            Picker("", selection: $model.directionSelection) {
                 Text(Strings.bsToAD).tag(ConverterDirection.bsToAD)
                 Text(Strings.adToBS).tag(ConverterDirection.adToBS)
             }
@@ -71,28 +68,19 @@ private struct BSPickers: View {
     let settings: DisplaySettings
 
     var body: some View {
-        Picker(Strings.yearLabel, selection: Binding(
-            get: { model.bsYear },
-            set: { model.bsYear = $0 }
-        )) {
+        Picker(Strings.yearLabel, selection: $model.bsYear) {
             ForEach(model.bsYears, id: \.self) { year in
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
             }
         }
         .accessibilityValue(SpokenDate.number(model.bsYear))
-        Picker(Strings.monthLabel, selection: Binding(
-            get: { model.bsMonth },
-            set: { model.bsMonth = $0 }
-        )) {
+        Picker(Strings.monthLabel, selection: $model.bsMonth) {
             ForEach(1 ... 12, id: \.self) { month in
                 Text(monthName(month: month, style: settings.monthNames)).tag(month)
             }
         }
         .accessibilityValue(monthName(month: model.bsMonth, style: settings.monthNames))
-        Picker(Strings.dayLabel, selection: Binding(
-            get: { model.bsDay },
-            set: { model.bsDay = $0 }
-        )) {
+        Picker(Strings.dayLabel, selection: $model.bsDay) {
             ForEach(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth), id: \.self) { day in
                 Text(formatNumber(day, digits: settings.digits)).tag(day)
             }
@@ -106,28 +94,19 @@ private struct ADPickers: View {
     let settings: DisplaySettings
 
     var body: some View {
-        Picker(Strings.yearLabel, selection: Binding(
-            get: { model.adYear },
-            set: { model.adYear = $0 }
-        )) {
+        Picker(Strings.yearLabel, selection: $model.adYear) {
             ForEach(model.adYears, id: \.self) { year in
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
             }
         }
         .accessibilityValue(SpokenDate.number(model.adYear))
-        Picker(Strings.monthLabel, selection: Binding(
-            get: { model.adMonth },
-            set: { model.adMonth = $0 }
-        )) {
+        Picker(Strings.monthLabel, selection: $model.adMonth) {
             ForEach(model.adMonths(year: model.adYear), id: \.self) { month in
                 Text(gregorianMonthNames[month - 1]).tag(month)
             }
         }
         .accessibilityValue(gregorianMonthNames[model.adMonth - 1])
-        Picker(Strings.dayLabel, selection: Binding(
-            get: { model.adDay },
-            set: { model.adDay = $0 }
-        )) {
+        Picker(Strings.dayLabel, selection: $model.adDay) {
             ForEach(model.adDays(year: model.adYear, month: model.adMonth), id: \.self) { day in
                 Text(formatNumber(day, digits: settings.digits)).tag(day)
             }

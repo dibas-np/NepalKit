@@ -2,12 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
-/// Identifies the About window scene, so the popover and the scene agree on one
-/// window instead of the identifier appearing twice as a literal.
-enum AboutWindow {
-    static let id = "about"
-}
-
 /// Facts about the installed build, read from its own bundle.
 ///
 /// About exists so a user can say what they are running and report it. That only
