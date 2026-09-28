@@ -61,14 +61,22 @@ struct InfoPlistKeysTests {
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
-    func noFeedURLUntilOneIsPublished() throws {
-        // A wrong feed URL is worse than none: every check would fail against
-        // it. Absent today because the hosting decision is unmade, and this test
-        // records that as deliberate rather than accidental.
+    func feedURLIsStableHTTPSAndAbsolute() throws {
+        // A feed URL that moves strands every existing installation, so the
+        // shape is pinned: HTTPS (Sparkle refuses insecure feeds), absolute, and
+        // served from this repository rather than a host that could vanish.
         let info = try #require(Self.builtInfo)
+        let feed = try #require(info["SUFeedURL"] as? String, "SUFeedURL is absent")
 
-        #expect(info["SUFeedURL"] == nil, "a feed URL is set but none has been published")
+        #expect(feed == Self.expectedFeedURL, "feed URL changed: \(feed)")
+        #expect(feed.hasPrefix("https://"), "Sparkle refuses an insecure feed")
+        #expect(URL(string: feed)?.host == "dibas-np.github.io", "feed is not served from this repository")
     }
+
+    /// The feed's declared home. Changing it is a release decision: every
+    /// installed copy reads this URL, so a change breaks updates for all of them
+    /// at once.
+    private static let expectedFeedURL = "https://dibas-np.github.io/NepalKit/appcast.xml"
 
     @Test func thePublicKeyIsWellFormed() {
         // 32 bytes, base64 — the shape Ed25519 requires. A truncated paste would

@@ -31,10 +31,23 @@
 	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
 
 	<!--
-	  SUFeedURL is deliberately absent. The feed's location is not yet decided,
-	  and a wrong URL is worse than none: the updater would fail every check
-	  against it. Add it here when a feed is published, and verify the built
-	  product picks it up the same way this key is verified.
+	  The update feed, served from this repository via GitHub Pages so the URL
+	  never changes between releases — a feed URL that moved would strand every
+	  existing installation. HTTPS, as Sparkle requires.
+
+	  Chosen over `releases/latest/download/appcast.xml`, which is also stable:
+	  Pages keeps the appcast in version control next to the code that signs it,
+	  where CI can regenerate it on release, rather than re-attaching an asset to
+	  every release by hand and hoping it matches the artifacts.
+
+	  NOT YET SERVABLE. Pages is not enabled on the repository and the appcast
+	  does not exist, so this URL currently 404s and a check reports failure
+	  rather than a version. That is the honest failure — `UpdateCheckModel`
+	  distinguishes "could not check" from "up to date" — but it must be
+	  published before any release ships, or the app reports a broken updater to
+	  every user.
 	-->
+	<key>SUFeedURL</key>
+	<string>https://dibas-np.github.io/NepalKit/appcast.xml</string>
 </dict>
 </plist>

@@ -161,3 +161,34 @@ The gap is narrow and cheap to close: an Ed25519 private key is 32 bytes, about
 64 hex characters, so a printed copy in a physical location is fully independent
 of Apple, of any cloud account, and of this machine. Worth doing before the first
 signed artifact, and worth restoring *from* rather than merely re-reading.
+
+## The feed is served from this repository
+
+`https://dibas-np.github.io/NepalKit/appcast.xml` — GitHub Pages, over HTTPS as
+Sparkle requires.
+
+Chosen over `releases/latest/download/appcast.xml`, which is also a stable URL.
+Pages keeps the appcast in version control beside the code and the signing key,
+where a release step can regenerate it, instead of requiring an asset to be
+re-attached to every release by hand and kept in step with the artifacts. The
+appcast is part of the conversion contract with users — it is what every
+installed copy reads — so it belongs under review with everything else.
+
+The URL is pinned by a test, because it is the one value here that cannot move
+without breaking updates for every installation at once.
+
+**Preconditions, none of which hold yet.** The repository is public and
+reachable, but it is **empty**: no branches, no commits, no releases, and Pages
+is not enabled. Every local commit exists only on this machine. So the feed URL
+is presently a declaration of intent and the appcast does not exist. A check
+against it returns "could not check" rather than a version, which the update
+model reports honestly rather than as up to date — but that must be fixed before
+any release ships, or every user is told the updater is broken.
+
+**Sign the appcast, not only the archive.** `generate_appcast` can sign the
+appcast itself with the same EdDSA key. A signed archive proves the download was
+not tampered with in transit; a signed appcast additionally proves the *feed* did
+not lie about what the update is. Given this framework's recent history — 2.6.4
+allowed a signed update to be replaced with another payload, bypassing its
+(Ed)DSA checks — signing the feed as well is the difference between trusting the
+transport and not having to trust the publisher's account.
