@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- White calendar page with binder rings. No shadows: Icon Composer adds material. -->
+  <rect x="262" y="252" width="500" height="520" rx="64" fill="#FFFFFF"/>
+  <rect x="360" y="192" width="44" height="110" rx="22" fill="#FFFFFF"/>
+  <rect x="620" y="192" width="44" height="110" rx="22" fill="#FFFFFF"/>
+</svg>

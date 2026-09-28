@@ -9,6 +9,7 @@
 /* Begin PBXFileReference section */
 		233B3DC7306975960098472F /* NepalKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NepalKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A7B7C0106975960098472F /* NepalKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NepalKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A110C001C0DE000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +46,7 @@
 			children = (
 				233B3DC9306975960098472F /* NepalKit */,
 				7A7B7C0206975960098472F /* NepalKitTests */,
+				A110C001C0DE000000000001 /* AppIcon.icon */,
 				233B3DC8306975960098472F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -150,6 +152,7 @@
 		233B3DC5306975960098472F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				A110C001C0DE000000000002 /* AppIcon.icon in Resources */,
 			);
 		};
 		7A7B7C0606975960098472F /* Resources */ = {
@@ -175,6 +178,7 @@
 /* Begin PBXBuildFile section */
 		233B3DE2306975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 233B3DE1306975960098472F /* NepalKitCore */; };
 		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
+		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin XCLocalSwiftPackageReference section */
