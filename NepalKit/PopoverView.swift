@@ -1,38 +1,45 @@
 import SwiftUI
 import NepalKitCore
 
-/// Popover shell: today's dates plus the display settings section.
-/// Converter arrives in a later ticket.
+/// Popover: today details, converter, and display settings.
 struct PopoverView: View {
-    let model: DisplaySettingsModel
+    let settings: DisplaySettingsModel
+    let clock: ClockModel
+    let converter: ConverterModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let today = todayBS(now: Date(), in: .v1) {
-                Text(format(today, settings: model.settings))
-                Text(gregorianReference())
-                    .foregroundStyle(.secondary)
+            if let bs = clock.bsString(settings: settings.settings),
+               let gregorian = clock.gregorianString(settings: settings.settings)
+            {
+                Text(bs)
+                    .font(.headline)
+                HStack(spacing: 4) {
+                    Text(gregorian)
+                    if let weekday = clock.weekdayString(style: settings.settings.monthNames) {
+                        Text("· \(weekday)")
+                    }
+                }
+                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: settings.settings.digits))")
+                    Text("\(Strings.localTimeLabel): \(clock.localTimeString(digits: settings.settings.digits))")
+                        .foregroundStyle(.secondary)
+                }
+                .monospacedDigit()
+                .padding(.top, 2)
             } else {
                 Text(Strings.dateUnavailable)
             }
         }
         .padding()
-        .frame(minWidth: 220)
+        .frame(minWidth: 280)
         Divider()
-        SettingsSection(model: model)
+        ConverterView(model: converter, settings: settings.settings)
+            .padding(.horizontal)
+        Divider()
+        SettingsSection(model: settings)
             .padding(.top, 4)
-    }
-
-    private static let gregorianFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        formatter.timeZone = nepalTimeZone
-        return formatter
-    }()
-
-    private func gregorianReference() -> String {
-        Self.gregorianFormatter.string(from: Date())
     }
 }
 
@@ -73,8 +80,17 @@ enum Strings {
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "English"
+    static let nepalTimeLabel = "Nepal Time"
+    static let localTimeLabel = "Local"
+    static let converterLabel = "Converter"
+    static let bsToAD = "BS → AD"
+    static let adToBS = "AD → BS"
+    static let yearLabel = "Year"
+    static let monthLabel = "Month"
+    static let dayLabel = "Day"
+    static let converterOutOfRange = "Outside supported range"
 }
 
 #Preview {
-    PopoverView(model: DisplaySettingsModel())
+    PopoverView(settings: DisplaySettingsModel(), clock: ClockModel(), converter: ConverterModel())
 }

@@ -112,7 +112,14 @@ public func weekday(of bs: BSDay, in dataset: CalendarDataset) -> Int? {
 /// the Bikram Sambat date flips at NPT midnight regardless of the system time zone.
 /// The clock is injected (`now`) so the anchoring is testable.
 public func todayBS(now: Date, in dataset: CalendarDataset) -> BSDay? {
+    guard let today = todayAD(now: now) else { return nil }
+    return adToBS(today, in: dataset)
+}
+
+/// Today's Gregorian civil day in Nepal Time. The clock is injected (`now`)
+/// so the anchoring is testable.
+public func todayAD(now: Date) -> GADay? {
     let components = nptGregorian.dateComponents([.year, .month, .day], from: now)
     guard let year = components.year, let month = components.month, let day = components.day else { return nil }
-    return adToBS(GADay(year: year, month: month, day: day), in: dataset)
+    return GADay(year: year, month: month, day: day)
 }
