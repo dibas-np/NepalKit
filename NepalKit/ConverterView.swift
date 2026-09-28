@@ -134,7 +134,7 @@ private struct DatePickers<Y: Hashable, M: Hashable, D: Hashable>: View {
         label: String,
         minWidth: CGFloat,
         @ViewBuilder content: () -> Content,
-        @ViewBuilder value: () -> String
+        value: () -> String
     ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
