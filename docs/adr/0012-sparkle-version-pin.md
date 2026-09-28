@@ -139,3 +139,25 @@ to assert:
 
 Both of the first two were verified to fail when injected, with messages that
 name the consequence rather than the assertion.
+
+## Custody as actually configured
+
+Recorded so nobody has to infer it. The keypair was generated on 28 September
+2026 and the public half is in `NepalKit/Info.plist` (see the discarded-
+setting note above).
+
+The private key is held in the login keychain, with an encrypted iCloud copy as
+the off-machine backup. **No restore has been verified yet** — a backup that has
+not been restored from is a hope, not a backup.
+
+One residual risk, stated rather than glossed: on Apple platforms the keychain
+syncs through iCloud, so the keychain copy and the iCloud copy may share a single
+failure domain — an Apple account loss, reset, or lockout would take both
+together. That is the specific case the original custody plan ruled out by
+requiring an offline copy "not merely another copy synchronized through the same
+cloud account".
+
+The gap is narrow and cheap to close: an Ed25519 private key is 32 bytes, about
+64 hex characters, so a printed copy in a physical location is fully independent
+of Apple, of any cloud account, and of this machine. Worth doing before the first
+signed artifact, and worth restoring *from* rather than merely re-reading.
