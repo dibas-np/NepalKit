@@ -3,43 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 110;
+	objectVersion = 100;
 	objects = {
-
-/* Begin PBXBuildFile section */
-		233B3DE2306975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 233B3DE1306975960098472F /* NepalKitCore */; };
-		238DF0E8306AEC6E002F9FDC /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A17E000000000000000000A2 /* Sparkle */; };
-		4C1E7A0100000000000000A2 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 4C1E7A0100000000000000A1 /* LICENSE */; };
-		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
-		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
-/* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		7A7B7C0806975960098472F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 233B3DBF306975960098472F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 233B3DC6306975960098472F;
-			remoteInfo = NepalKit;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		233B3DC7306975960098472F /* NepalKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NepalKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4C1E7A0100000000000000A1 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		7A7B7C0106975960098472F /* NepalKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NepalKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A110C001C0DE000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		4C1E7A0100000000000000A1 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = LICENSE; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		233B3DC9306975960098472E /* Exceptions for "NepalKit" folder in "NepalKit" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 233B3DC6306975960098472F /* NepalKit */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		233B3DC9306975960098472F /* NepalKit */ = {
@@ -61,7 +33,6 @@
 		233B3DC4306975960098472F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				238DF0E8306AEC6E002F9FDC /* Sparkle in Frameworks */,
 				233B3DE2306975960098472F /* NepalKitCore in Frameworks */,
 			);
 		};
@@ -72,6 +43,16 @@
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		233B3DC9306975960098472E /* Exceptions for "NepalKit" folder in "NepalKit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 233B3DC6306975960098472F /* NepalKit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXGroup section */
 		233B3DBE306975960098472F = {
@@ -89,7 +70,6 @@
 			isa = PBXGroup;
 			children = (
 				233B3DC7306975960098472F /* NepalKit.app */,
-				7A7B7C0106975960098472F /* NepalKitTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -110,11 +90,11 @@
 			fileSystemSynchronizedGroups = (
 				233B3DC9306975960098472F /* NepalKit */,
 			);
-			name = NepalKit;
 			packageProductDependencies = (
 				233B3DE1306975960098472F /* NepalKitCore */,
 				A17E000000000000000000A2 /* Sparkle */,
 			);
+			name = NepalKit;
 			productName = NepalKit;
 			productReference = 233B3DC7306975960098472F /* NepalKit.app */;
 			productType = "com.apple.product-type.application";
@@ -135,10 +115,10 @@
 			fileSystemSynchronizedGroups = (
 				7A7B7C0206975960098472F /* NepalKitTests */,
 			);
-			name = NepalKitTests;
 			packageProductDependencies = (
 				7A7B7C0D06975960098472F /* NepalKitCore */,
 			);
+			name = NepalKitTests;
 			productName = "$(TARGET_NAME)";
 			productReference = 7A7B7C0106975960098472F /* NepalKitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -212,6 +192,44 @@
 			);
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXBuildFile section */
+		233B3DE2306975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 233B3DE1306975960098472F /* NepalKitCore */; };
+		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
+		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
+		4C1E7A0100000000000000A2 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 4C1E7A0100000000000000A1 /* LICENSE */; };
+/* End PBXBuildFile section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */ = {isa = XCLocalSwiftPackageReference; relativePath = NepalKitCore; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		233B3DE1306975960098472F /* NepalKitCore */ = {isa = XCSwiftPackageProductDependency; package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */; productName = NepalKitCore; };
+		7A7B7C0D06975960098472F /* NepalKitCore */ = {isa = XCSwiftPackageProductDependency; package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */; productName = NepalKitCore; };
+		A17E000000000000000000A2 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */; productName = Sparkle; };
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		7A7B7C0806975960098472F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 233B3DBF306975960098472F;
+			proxyType = 1;
+			remoteGlobalIDString = 233B3DC6306975960098472F;
+			remoteInfo = NepalKit;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
 		7A7B7C0706975960098472F /* PBXTargetDependency */ = {
@@ -357,7 +375,6 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				INFOPLIST_FILE = NepalKit/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -390,7 +407,6 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				INFOPLIST_FILE = NepalKit/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -408,7 +424,7 @@
 			};
 			name = Release;
 		};
-		7A7B7C0A06975960098472F /* Debug configuration for PBXNativeTarget "NepalKitTests" */ = {
+		7A7B7C0A06975960098472F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -416,39 +432,39 @@
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_TESTABILITY = YES;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKit.app/Contents/MacOS/NepalKit";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path",
 					"@loader_path/../../../MacOS",
 					"@loader_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKit.app/Contents/MacOS/NepalKit";
 			};
 			name = Debug;
 		};
-		7A7B7C0B06975960098472F /* Release configuration for PBXNativeTarget "NepalKitTests" */ = {
+		7A7B7C0B06975960098472F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CA89X9954L;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path",
-					"@loader_path/../../../MacOS",
-					"@loader_path/../Frameworks",
-				);
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKit.app/Contents/MacOS/NepalKit";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path",
+					"@loader_path/../../../MacOS",
+					"@loader_path/../Frameworks",
+				);
 			};
 			name = Release;
 		};
@@ -474,48 +490,13 @@
 		7A7B7C0906975960098472F /* Build configuration list for PBXNativeTarget "NepalKitTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7A7B7C0A06975960098472F /* Debug configuration for PBXNativeTarget "NepalKitTests" */,
-				7A7B7C0B06975960098472F /* Release configuration for PBXNativeTarget "NepalKitTests" */,
+				7A7B7C0A06975960098472F /* Debug */,
+				7A7B7C0B06975960098472F /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = NepalKitCore;
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = exactVersion;
-				version = 2.9.6;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		233B3DE1306975960098472F /* NepalKitCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
-			productName = NepalKitCore;
-		};
-		7A7B7C0D06975960098472F /* NepalKitCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
-			productName = NepalKitCore;
-		};
-		A17E000000000000000000A2 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 233B3DBF306975960098472F /* Project object */;
 	validationLevel = 1;
