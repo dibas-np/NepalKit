@@ -164,5 +164,17 @@ unzip -qo "$DIST_ZIP" -d /tmp/${APP}-dist-verify
 spctl -a -t execute -vv "/tmp/${APP}-dist-verify/$APP.app"
 rm -rf "/tmp/${APP}-dist-verify"
 
+# Build and verify the appcast for this version. Signing needs the keychain, so
+# this runs on the release machine, never in CI.
+APPCAST_DIR=/tmp/${APP}-appcast-$VERSION
+rm -rf "$APPCAST_DIR"
+mkdir -p "$APPCAST_DIR"
+cp "$DIST_ZIP" "$APPCAST_DIR/"
+"${0:A:h}/verify-appcast.sh" "$APPCAST_DIR" || {
+    echo "appcast verification failed; refusing to report a publishable release"
+    exit 1
+}
+
 echo "Gatekeeper-clean DMG: $DMG"
 echo "Sparkle enclosure (stapled, zipped): $DIST_ZIP"
+echo "Signed appcast: $APPCAST_DIR/appcast.xml"
