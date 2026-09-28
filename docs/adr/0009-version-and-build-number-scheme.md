@@ -27,6 +27,14 @@ any application release.
 Because a build-number regression would not surface until an update silently
 stopped appearing, a test asserts that build numbers increase.
 
+**That test does not exist yet.** It was recorded here as though it did, and it
+does not: the only build-number coverage in the suite reads a value out of a
+supplied dictionary. It lands with ticket 07, alongside the updater that would
+otherwise fail silently. Flagged so the next reader does not assume the gap is
+already closed. The two numbers are also not yet disjoint in practice —
+`MARKETING_VERSION = 1.0` and `CURRENT_PROJECT_VERSION = 1` — so the scheme this
+record describes is specified but not yet implemented.
+
 ## Considered Options
 
 **Use the short version string for update ordering.** Rejected. Sparkle 2.7
