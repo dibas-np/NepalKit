@@ -40,6 +40,9 @@ let package = Package(
             exclude: [
                 "NepalKitApp.swift",
                 "Assets.xcassets",
+                // Imports Sparkle; the harness links only NepalKitCore. The
+                // seam it implements is Sparkle-free and fully covered here.
+                "SparkleUpdateService.swift",
             ]
         ),
         .testTarget(

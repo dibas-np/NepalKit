@@ -9,6 +9,10 @@ struct NepalKitApp: App {
     @State private var clockModel = ClockModel()
     @State private var converterModel = ConverterModel()
     @State private var loginItemModel = LoginItemModel()
+    /// Nil until an updater is configured — a published feed and a signing key
+    /// are both outstanding (ticket 07). The Settings section is omitted rather
+    /// than shown broken.
+    @State private var updateCheckModel: UpdateCheckModel?
 
     init() {
         // Default on: the date is in the menu bar from the moment of sign-in.
@@ -45,7 +49,7 @@ struct NepalKitApp: App {
         // reaching it from a menu-bar-only app is the half that needed deciding,
         // and `WindowPresentation` is what makes it usable once open.
         Settings {
-            SettingsView(settings: settingsModel, loginItem: loginItemModel)
+            SettingsView(settings: settingsModel, loginItem: loginItemModel, updates: updateCheckModel)
         }
         // A single-instance named window rather than a `WindowGroup`, so repeated
         // About invocations focus the existing window instead of stacking

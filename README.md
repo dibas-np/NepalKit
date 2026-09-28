@@ -5,7 +5,14 @@ today's Bikram Sambat date; one click opens a popover with today's Bikram
 Sambat and Gregorian dates, a live Nepal Time clock, and a BS ↔ Gregorian
 converter.
 
-Everything is offline. No network calls, no data fetching, no analytics.
+Everything the app *does* is offline. Conversion, the calendar dataset, today's
+date, and settings are all local, and nothing is fetched at runtime. No
+analytics, no telemetry.
+
+The one exception is the software update check, which is the only thing the app
+is granted network access for. That check is not yet enabled: there is no
+published feed, so nothing is contacted today. It will appear under
+Settings → Software Update once a feed exists ([ADR-0012](docs/adr/0012-sparkle-version-pin.md)).
 
 - **Requires macOS 26 or later** (see [Why macOS 26](#why-macos-26)).
 - Not on the App Store — distributed as a notarized DMG from Releases.

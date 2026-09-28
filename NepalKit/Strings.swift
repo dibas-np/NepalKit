@@ -35,6 +35,15 @@ enum Strings {
     static let aboutLabel = "About NepalKit"
     static let displaySection = "Display"
     static let startupSection = "Startup"
+    static let updatesSection = "Software Update"
+    static let updateAutomaticallyLabel = "Check automatically"
+    static let checkForUpdatesLabel = "Check for Updates…"
+    static let updateStatusNotChecked = "Not checked yet"
+    static let updateStatusUpToDate = "NepalKit is up to date"
+    static let updateStatusUpdateAvailable = "An update is available"
+    /// A failed check is not the same answer as an up-to-date one, and saying
+    /// so is the whole point: "could not check" must never read as "current".
+    static let updateStatusFailed = "Could not check for updates"
 
     /// About surface. The calendar range is formatted from the dataset's own
     /// bounds, so narrowing or extending the table moves this line with it.

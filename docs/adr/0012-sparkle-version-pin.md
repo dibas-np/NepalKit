@@ -78,3 +78,32 @@ up in at least two independent places, and the backup is verified to restore
 before the first distributed build. It is never committed. The pinned version
 above does not change that dependency — it is the same key contract in 2.9.6 as
 in any other 2.x release.
+
+## The signing key is a release-time secret, never a build-time one
+
+The architecture is arranged so the EdDSA **private** key is never needed to
+build the application at all. Only the **public** key is compiled in, and only
+the public key belongs in the repository.
+
+| Artifact | Needed to | Lives where |
+| --- | --- | --- |
+| Public key | build and ship the app | repository / build settings |
+| Private key | sign a release artifact, generate the appcast | release machine and CI secret store only |
+
+So the private key is required at exactly one moment — producing or verifying a
+signed update — and never during development, never in the app target, and never
+in the working tree. `Scripts` for signing run as a separate step from the app
+build for the same reason.
+
+This is what makes the custody sequence safe to run late. Until a feed and a key
+exist, the app can be built, tested, and run with a network entitlement that is
+never exercised, and the only thing missing is a configuration value. Nothing
+has to be undone or re-signed if key generation is delayed, because no shipped
+artifact has ever referenced a key.
+
+The Settings update section is written against a `UpdateServicing` protocol, so
+the model's behaviour is covered by tests that need neither a framework, a
+network, a feed, nor a key — the same arrangement as `LoginItemServicing`
+behind `LoginItemModel`. The Sparkle-backed implementation is the only file that
+imports Sparkle, and it is excluded from the app-test harness for the same
+reason `@main` is.

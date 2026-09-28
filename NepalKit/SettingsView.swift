@@ -18,6 +18,11 @@ import SwiftUI
 struct SettingsView: View {
     let settings: DisplaySettingsModel
     let loginItem: LoginItemModel
+    /// Optional because the update surface cannot exist before an updater is
+    /// configured, which needs a published feed and a signing key. Absent, the
+    /// section is omitted rather than shown disabled, so no build ever
+    /// advertises a control that cannot work.
+    let updates: UpdateCheckModel?
 
     var body: some View {
         Form {
@@ -48,6 +53,25 @@ struct SettingsView: View {
                 )) {
                     Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
                         .symbolRenderingMode(.monochrome)
+                }
+            }
+
+            if let updates {
+                Section(Strings.updatesSection) {
+                    Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
+
+                    Toggle(isOn: Binding(
+                        get: { updates.automaticallyChecks },
+                        set: { updates.automaticallyChecks = $0 }
+                    )) {
+                        Text(Strings.updateAutomaticallyLabel)
+                    }
+
+                    if let status = updates.statusText {
+                        Text(status)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  NepalKit runs sandboxed (ADR-0008). The project set ENABLE_APP_SANDBOX = YES
+  long before it shipped any entitlements, so the setting and the signature
+  disagreed and the signed app carried no sandbox entitlement at all. This file
+  is that decision, made concrete.
+
+  network.client exists solely to serve the update check. Everything the app
+  actually does — conversion, the calendar dataset, today's date, and settings —
+  is local, so this entitlement buys nothing else.
+
+  The two temporary-exception Mach-lookup entries are Sparkle's own services.
+  A sandboxed Sparkle app must be able to reach them by name, and it cannot
+  without these. `$(PRODUCT_BUNDLE_IDENTIFIER)` keeps them correct across a
+  bundle-identifier change rather than hardcoding today's value.
+
+  The Downloader XPC service is deliberately NOT bundled. Upstream documents the
+  Downloader path's own costs: release notes fall back to a deprecated WebView
+  because of a known WKWebView defect, release notes referencing external content
+  stop working, and since 2.6 the service is not sandboxed by default anyway.
+  Taking the entitlement above costs NepalKit nothing it wanted.
+
+  This file is a release-contract artifact. Changing it after the first
+  distributed build means re-signing, re-notarizing, and re-establishing the
+  update baseline.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)-spks</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)-spki</string>
+	</array>
+</dict>
+</plist>
