@@ -1,6 +1,6 @@
 import Foundation
 
-/// Display settings for BS dates, per the locked spec: two independent axes.
+/// Display settings for Bikram Sambat dates, per the locked spec: two independent axes.
 public enum DigitScript: String, Sendable, Hashable {
     case latin
     case devanagari
@@ -36,12 +36,16 @@ public let nepaliMonthNames = [
 
 private let devanagariDigits: [Character] = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
 
+private func devanagariString(_ latinDigits: String) -> String {
+    String(latinDigits.compactMap { $0.wholeNumberValue.map { devanagariDigits[$0] } })
+}
+
 func renderNumber(_ value: Int, digits: DigitScript) -> String {
     switch digits {
     case .latin:
         return String(value)
     case .devanagari:
-        return String(value.description.compactMap { $0.wholeNumberValue.map { devanagariDigits[$0] } })
+        return devanagariString(value.description)
     }
 }
 
@@ -55,6 +59,12 @@ func monthName(month: Int, style: MonthNameStyle) -> String {
     case .nepali: return nepaliMonthNames[month - 1]
     case .transliterated: return transliteratedMonthNames[month - 1]
     }
+}
+
+/// Bikram Sambat month name for 1 (Baisakh) through 12 (Chaitra),
+/// honoring the month-name setting.
+public func bsMonthName(month: Int, style: MonthNameStyle) -> String {
+    monthName(month: month, style: style)
 }
 
 /// Nepali weekday names, Sunday through Saturday.
@@ -78,13 +88,13 @@ public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
 }
 
 /// Formats a Bikram Sambat date as "day month year" honoring both display settings.
-public func format(_ bs: BSDay, settings: DisplaySettings) -> String {
+public func formatBS(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
     return "\(renderNumber(bs.day, digits: settings.digits)) \(month) \(renderNumber(bs.year, digits: settings.digits))"
 }
 
 /// Formats a Bikram Sambat date as "day month" for the menu-bar extra, honoring both display settings.
-public func formatShort(_ bs: BSDay, settings: DisplaySettings) -> String {
+public func formatBSShort(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
     return "\(renderNumber(bs.day, digits: settings.digits)) \(month)"
 }
@@ -108,7 +118,7 @@ private func twoDigits(_ value: Int, digits: DigitScript) -> String {
     case .latin:
         return padded
     case .devanagari:
-        return String(padded.compactMap { $0.wholeNumberValue.map { devanagariDigits[$0] } })
+        return devanagariString(padded)
     }
 }
 

@@ -13,7 +13,7 @@ struct FormattingTests {
     @Test(arguments: allSettings)
     func fullFormat(testCase: (settings: DisplaySettings, expected: String, label: String)) {
         #expect(
-            format(Self.date, settings: testCase.settings) == testCase.expected,
+            formatBS(Self.date, settings: testCase.settings) == testCase.expected,
             "\(testCase.label) should render \(testCase.expected)"
         )
     }
@@ -23,6 +23,6 @@ struct FormattingTests {
         (DisplaySettings(digits: .devanagari, monthNames: .nepali), "११ असोज"),
     ])
     func shortFormatOmitsYear(testCase: (settings: DisplaySettings, expected: String)) {
-        #expect(formatShort(Self.date, settings: testCase.settings) == testCase.expected)
+        #expect(formatBSShort(Self.date, settings: testCase.settings) == testCase.expected)
     }
 }

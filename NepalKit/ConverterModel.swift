@@ -11,7 +11,8 @@ enum ConverterDirection: Hashable {
 
 /// Owns the converter's picker state. Day pickers are clamped to the real
 /// month length, so invalid dates are structurally impossible; years are
-/// bounded to the dataset's supported range (BS) and its convertible AD span.
+/// bounded to the dataset's supported range (Bikram Sambat) and its
+/// convertible Gregorian span.
 @MainActor
 @Observable
 final class ConverterModel {
@@ -24,6 +25,12 @@ final class ConverterModel {
     var adDay: Int
 
     private let dataset: CalendarDataset
+
+    /// The Bikram Sambat picker values bundled as one date.
+    var bsDate: BSDay { BSDay(year: bsYear, month: bsMonth, day: bsDay) }
+
+    /// The Gregorian picker values bundled as one date.
+    var adDate: GADay { GADay(year: adYear, month: adMonth, day: adDay) }
 
     init(
         direction: ConverterDirection = .bsToAD,
@@ -90,6 +97,18 @@ final class ConverterModel {
         return range.count
     }
 
+    /// Gregorian days available for the given month, bounded by the
+    /// convertible span at the edges so invalid dates can't be picked.
+    func adDays(year: Int, month: Int) -> [Int] {
+        guard let minAD, let maxAD else { return Array(1 ... daysInADMonth(year: year, month: month)) }
+        var lower = 1
+        var upper = daysInADMonth(year: year, month: month)
+        if year == minAD.year, month == minAD.month { lower = minAD.day }
+        if year == maxAD.year, month == maxAD.month { upper = maxAD.day }
+        guard lower <= upper else { return [] }
+        return Array(lower ... upper)
+    }
+
     func clampBSDay() {
         let maxDay = daysInBSMonth(year: bsYear, month: bsMonth)
         bsDay = min(max(bsDay, 1), maxDay)
@@ -146,14 +165,14 @@ final class ConverterModel {
     func toggleDirection() {
         switch direction {
         case .bsToAD:
-            if let ad = bsToAD(BSDay(year: bsYear, month: bsMonth, day: bsDay), in: dataset) {
+            if let ad = bsToAD(bsDate, in: dataset) {
                 adYear = ad.year
                 adMonth = ad.month
                 adDay = ad.day
             }
             direction = .adToBS
         case .adToBS:
-            if let bs = adToBS(GADay(year: adYear, month: adMonth, day: adDay), in: dataset) {
+            if let bs = adToBS(adDate, in: dataset) {
                 bsYear = bs.year
                 bsMonth = bs.month
                 bsDay = bs.day
@@ -162,23 +181,36 @@ final class ConverterModel {
         }
     }
 
+    /// Weekday name for the given Bikram Sambat date, or nil outside the table.
+    private func weekdayText(for bs: BSDay, style: MonthNameStyle) -> String? {
+        guard let day = weekday(of: bs, in: dataset),
+              let name = weekdayName(for: day, style: style)
+        else { return nil }
+        return name
+    }
+
     /// Converted date plus weekday, honoring both display settings.
-    func result(settings: DisplaySettings) -> String? {
+    /// Gregorian months stay English (no Nepali Gregorian names are defined);
+    /// digits and weekday names honor the settings.
+    /// Returns nil only defensively: bounded pickers keep every selectable
+    /// date inside the convertible span.
+    func convertedText(settings: DisplaySettings) -> String? {
         switch direction {
         case .bsToAD:
-            let bs = BSDay(year: bsYear, month: bsMonth, day: bsDay)
-            guard let ad = bsToAD(bs, in: dataset),
-                  let day = weekday(of: bs, in: dataset),
-                  let weekday = weekdayName(for: day, style: settings.monthNames)
+            guard let ad = bsToAD(bsDate, in: dataset),
+                  let weekday = weekdayText(for: bsDate, style: settings.monthNames)
             else { return nil }
             return "\(formatAD(ad, settings: settings)) · \(weekday)"
         case .adToBS:
-            let ad = GADay(year: adYear, month: adMonth, day: adDay)
-            guard let bs = adToBS(ad, in: dataset),
-                  let day = weekday(of: bs, in: dataset),
-                  let weekday = weekdayName(for: day, style: settings.monthNames)
+            guard let bs = adToBS(adDate, in: dataset),
+                  let weekday = weekdayText(for: bs, style: settings.monthNames)
             else { return nil }
-            return "\(format(bs, settings: settings)) · \(weekday)"
+            return "\(formatBS(bs, settings: settings)) · \(weekday)"
         }
+    }
+
+    @available(*, deprecated, renamed: "convertedText")
+    func result(settings: DisplaySettings) -> String? {
+        convertedText(settings: settings)
     }
 }

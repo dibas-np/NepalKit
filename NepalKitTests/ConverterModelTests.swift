@@ -16,7 +16,7 @@ struct ConverterModelTests {
     @Test func bsToADKnownDateWithWeekday() {
         let model = bsModel()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
-        #expect(model.result(settings: settings) == "27 September 2026 · Sunday")
+        #expect(model.convertedText(settings: settings) == "27 September 2026 · Sunday")
     }
 
     @Test func adToBSKnownDateWithWeekday() {
@@ -26,14 +26,14 @@ struct ConverterModelTests {
             adYear: 2026, adMonth: 9, adDay: 27
         )
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
-        #expect(model.result(settings: settings) == "11 Ashoj 2083 · Sunday")
+        #expect(model.convertedText(settings: settings) == "11 Ashoj 2083 · Sunday")
     }
 
     @Test func outputHonorsDevanagariAndNepali() {
         let model = bsModel()
         let settings = DisplaySettings(digits: .devanagari, monthNames: .nepali)
-        // AD months stay English; digits and weekday honor settings.
-        #expect(model.result(settings: settings) == "२७ September २०२६ · आइत")
+        // Gregorian months stay English; digits and weekday honor settings.
+        #expect(model.convertedText(settings: settings) == "२७ September २०२६ · आइत")
     }
 
     @Test func bsPickersBoundedToSupportedRange() {
@@ -55,7 +55,7 @@ struct ConverterModelTests {
         model.toggleDirection()
         #expect(model.direction == .adToBS)
         #expect((model.adYear, model.adMonth, model.adDay) == (2026, 9, 27))
-        // Toggling back restores the BS date.
+        // Toggling back restores the Bikram Sambat date.
         model.toggleDirection()
         #expect(model.direction == .bsToAD)
         #expect((model.bsYear, model.bsMonth, model.bsDay) == (2083, 6, 11))
@@ -96,5 +96,19 @@ struct ConverterModelTests {
         )
         model.clampADDate()
         #expect((model.adYear, model.adMonth, model.adDay) == (1913, 4, 13))
+    }
+
+    @Test func adDaysBoundedAtSpanEdges() {
+        let model = bsModel()
+        #expect(model.adDays(year: 1913, month: 4).first == 13)
+        #expect(model.adDays(year: 1913, month: 4).last == 30)
+        #expect(model.adDays(year: 2028, month: 4).last == 12)
+        #expect(model.adDays(year: 2026, month: 9).count == 30)
+    }
+
+    @Test func bundledDatesMatchPickers() {
+        let model = bsModel()
+        #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 11))
+        #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
     }
 }

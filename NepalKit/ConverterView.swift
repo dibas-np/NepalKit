@@ -22,55 +22,15 @@ struct ConverterView: View {
             switch model.direction {
             case .bsToAD:
                 HStack {
-                    Picker(Strings.yearLabel, selection: Binding(
-                        get: { model.bsYear },
-                        set: { model.bsYear = $0; model.clampBSDay() }
-                    )) {
-                        ForEach(model.bsYears, id: \.self) { year in
-                            Text(formatYear(year)).tag(year)
-                        }
-                    }
-                    Picker(Strings.monthLabel, selection: Binding(
-                        get: { model.bsMonth },
-                        set: { model.bsMonth = $0; model.clampBSDay() }
-                    )) {
-                        ForEach(1 ... 12, id: \.self) { month in
-                            Text(bsMonthName(month)).tag(month)
-                        }
-                    }
-                    Picker(Strings.dayLabel, selection: $model.bsDay) {
-                        ForEach(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth), id: \.self) { day in
-                            Text(formatDay(day)).tag(day)
-                        }
-                    }
+                    BSPickers(model: model, settings: settings)
                 }
             case .adToBS:
                 HStack {
-                    Picker(Strings.yearLabel, selection: Binding(
-                        get: { model.adYear },
-                        set: { model.adYear = $0; model.clampADDate() }
-                    )) {
-                        ForEach(model.adYears, id: \.self) { year in
-                            Text(formatYear(year)).tag(year)
-                        }
-                    }
-                    Picker(Strings.monthLabel, selection: Binding(
-                        get: { model.adMonth },
-                        set: { model.adMonth = $0; model.clampADDate() }
-                    )) {
-                        ForEach(model.adMonths(year: model.adYear), id: \.self) { month in
-                            Text(gregorianMonthNames[month - 1]).tag(month)
-                        }
-                    }
-                    Picker(Strings.dayLabel, selection: $model.adDay) {
-                        ForEach(1 ... model.daysInADMonth(year: model.adYear, month: model.adMonth), id: \.self) { day in
-                            Text(formatDay(day)).tag(day)
-                        }
-                    }
+                    ADPickers(model: model, settings: settings)
                 }
             }
 
-            if let output = model.result(settings: settings) {
+            if let output = model.convertedText(settings: settings) {
                 Text(output)
                     .font(.headline)
             } else {
@@ -79,19 +39,68 @@ struct ConverterView: View {
             }
         }
     }
+}
 
-    private func formatYear(_ year: Int) -> String {
-        formatNumber(year, digits: settings.digits)
+private struct BSPickers: View {
+    @Bindable var model: ConverterModel
+    let settings: DisplaySettings
+
+    var body: some View {
+        Picker(Strings.yearLabel, selection: Binding(
+            get: { model.bsYear },
+            set: { model.bsYear = $0; model.clampBSDay() }
+        )) {
+            ForEach(model.bsYears, id: \.self) { year in
+                Text(formatNumber(year, digits: settings.digits)).tag(year)
+            }
+        }
+        Picker(Strings.monthLabel, selection: Binding(
+            get: { model.bsMonth },
+            set: { model.bsMonth = $0; model.clampBSDay() }
+        )) {
+            ForEach(1 ... 12, id: \.self) { month in
+                Text(bsMonthName(month: month, style: settings.monthNames)).tag(month)
+            }
+        }
+        Picker(Strings.dayLabel, selection: Binding(
+            get: { model.bsDay },
+            set: { model.bsDay = $0; model.clampBSDay() }
+        )) {
+            ForEach(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth), id: \.self) { day in
+                Text(formatNumber(day, digits: settings.digits)).tag(day)
+            }
+        }
     }
+}
 
-    private func formatDay(_ day: Int) -> String {
-        formatNumber(day, digits: settings.digits)
-    }
+private struct ADPickers: View {
+    @Bindable var model: ConverterModel
+    let settings: DisplaySettings
 
-    private func bsMonthName(_ month: Int) -> String {
-        switch settings.monthNames {
-        case .nepali: return nepaliMonthNames[month - 1]
-        case .transliterated: return transliteratedMonthNames[month - 1]
+    var body: some View {
+        Picker(Strings.yearLabel, selection: Binding(
+            get: { model.adYear },
+            set: { model.adYear = $0; model.clampADDate() }
+        )) {
+            ForEach(model.adYears, id: \.self) { year in
+                Text(formatNumber(year, digits: settings.digits)).tag(year)
+            }
+        }
+        Picker(Strings.monthLabel, selection: Binding(
+            get: { model.adMonth },
+            set: { model.adMonth = $0; model.clampADDate() }
+        )) {
+            ForEach(model.adMonths(year: model.adYear), id: \.self) { month in
+                Text(gregorianMonthNames[month - 1]).tag(month)
+            }
+        }
+        Picker(Strings.dayLabel, selection: Binding(
+            get: { model.adDay },
+            set: { model.adDay = $0; model.clampADDate() }
+        )) {
+            ForEach(model.adDays(year: model.adYear, month: model.adMonth), id: \.self) { day in
+                Text(formatNumber(day, digits: settings.digits)).tag(day)
+            }
         }
     }
 }

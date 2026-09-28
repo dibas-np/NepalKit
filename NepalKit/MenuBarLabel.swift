@@ -28,6 +28,6 @@ final class MenuBarModel {
     /// Short Bikram Sambat date for the menu-bar extra, honoring the given display settings.
     func title(settings: DisplaySettings) -> String {
         guard let today = todayBS(now: now, in: .v1) else { return "—" }
-        return formatShort(today, settings: settings)
+        return formatBSShort(today, settings: settings)
     }
 }
