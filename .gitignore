@@ -4,6 +4,7 @@ build/
 DerivedData/
 *.xcuserdata/
 -xcc/
+.env
 
 # Agent docs (local-only, never committed)
 AGENTS.md
