@@ -17,20 +17,44 @@ enum ConverterDirection: Hashable {
 @Observable
 final class ConverterModel {
     var direction: ConverterDirection
-    var bsYear: Int
-    var bsMonth: Int
-    var bsDay: Int
-    var adYear: Int
-    var adMonth: Int
-    var adDay: Int
+
+    /// Picker state bundled as dates: one value travels together instead of
+    /// six ints. The `*Year/*Month/*Day` accessors below exist for the
+    /// pickers, tests, and bindings.
+    var bsDate: BSDay
+    var adDate: GADay
+
+    var bsYear: Int {
+        get { bsDate.year }
+        set { bsDate = BSDay(year: newValue, month: bsDate.month, day: bsDate.day) }
+    }
+
+    var bsMonth: Int {
+        get { bsDate.month }
+        set { bsDate = BSDay(year: bsDate.year, month: newValue, day: bsDate.day) }
+    }
+
+    var bsDay: Int {
+        get { bsDate.day }
+        set { bsDate = BSDay(year: bsDate.year, month: bsDate.month, day: newValue) }
+    }
+
+    var adYear: Int {
+        get { adDate.year }
+        set { adDate = GADay(year: newValue, month: adDate.month, day: adDate.day) }
+    }
+
+    var adMonth: Int {
+        get { adDate.month }
+        set { adDate = GADay(year: adDate.year, month: newValue, day: adDate.day) }
+    }
+
+    var adDay: Int {
+        get { adDate.day }
+        set { adDate = GADay(year: adDate.year, month: adDate.month, day: newValue) }
+    }
 
     private let dataset: CalendarDataset
-
-    /// The Bikram Sambat picker values bundled as one date.
-    var bsDate: BSDay { BSDay(year: bsYear, month: bsMonth, day: bsDay) }
-
-    /// The Gregorian picker values bundled as one date.
-    var adDate: GADay { GADay(year: adYear, month: adMonth, day: adDay) }
 
     init(
         direction: ConverterDirection = .bsToAD,
@@ -42,12 +66,16 @@ final class ConverterModel {
         self.direction = direction
         let todayBSDate = todayBS(now: Date(), in: dataset)
         let todayADDate = todayAD(now: Date())
-        self.bsYear = bsYear ?? todayBSDate?.year ?? dataset.supportedRange.lowerBound
-        self.bsMonth = bsMonth ?? todayBSDate?.month ?? 1
-        self.bsDay = bsDay ?? todayBSDate?.day ?? 1
-        self.adYear = adYear ?? todayADDate?.year ?? 2026
-        self.adMonth = adMonth ?? todayADDate?.month ?? 1
-        self.adDay = adDay ?? todayADDate?.day ?? 1
+        self.bsDate = BSDay(
+            year: bsYear ?? todayBSDate?.year ?? dataset.supportedRange.lowerBound,
+            month: bsMonth ?? todayBSDate?.month ?? 1,
+            day: bsDay ?? todayBSDate?.day ?? 1
+        )
+        self.adDate = GADay(
+            year: adYear ?? todayADDate?.year ?? 2026,
+            month: adMonth ?? todayADDate?.month ?? 1,
+            day: adDay ?? todayADDate?.day ?? 1
+        )
         clampBSDay()
         clampADDay()
     }
@@ -123,15 +151,10 @@ final class ConverterModel {
     /// Keeps the AD pickers inside the convertible [minAD, maxAD] span.
     func clampADDate() {
         guard let minAD, let maxAD else { return }
-        let current = GADay(year: adYear, month: adMonth, day: adDay)
-        if compareAD(current, minAD) == .orderedAscending {
-            adYear = minAD.year
-            adMonth = minAD.month
-            adDay = minAD.day
-        } else if compareAD(current, maxAD) == .orderedDescending {
-            adYear = maxAD.year
-            adMonth = maxAD.month
-            adDay = maxAD.day
+        if adDate < minAD {
+            adDate = minAD
+        } else if adDate > maxAD {
+            adDate = maxAD
         }
         // After clamping to the span, re-clamp month/day at the edges.
         if !adMonths(year: adYear).contains(adMonth) {
@@ -147,13 +170,6 @@ final class ConverterModel {
         }
     }
 
-    private func compareAD(_ lhs: GADay, _ rhs: GADay) -> ComparisonResult {
-        if lhs.year != rhs.year { return lhs.year < rhs.year ? .orderedAscending : .orderedDescending }
-        if lhs.month != rhs.month { return lhs.month < rhs.month ? .orderedAscending : .orderedDescending }
-        if lhs.day != rhs.day { return lhs.day < rhs.day ? .orderedAscending : .orderedDescending }
-        return .orderedSame
-    }
-
     /// Sets the direction, carrying the converted date across. No-op when
     /// the direction is unchanged, so re-tapping the active segment is safe.
     func setDirection(_ newDirection: ConverterDirection) {
@@ -166,16 +182,12 @@ final class ConverterModel {
         switch direction {
         case .bsToAD:
             if let ad = bsToAD(bsDate, in: dataset) {
-                adYear = ad.year
-                adMonth = ad.month
-                adDay = ad.day
+                adDate = ad
             }
             direction = .adToBS
         case .adToBS:
             if let bs = adToBS(adDate, in: dataset) {
-                bsYear = bs.year
-                bsMonth = bs.month
-                bsDay = bs.day
+                bsDate = bs
             }
             direction = .bsToAD
         }
@@ -207,10 +219,5 @@ final class ConverterModel {
             else { return nil }
             return "\(formatBS(bs, settings: settings)) · \(weekday)"
         }
-    }
-
-    @available(*, deprecated, renamed: "convertedText")
-    func result(settings: DisplaySettings) -> String? {
-        convertedText(settings: settings)
     }
 }

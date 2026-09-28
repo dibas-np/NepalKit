@@ -201,3 +201,11 @@ public struct GADay: Hashable, Sendable {
         self.day = day
     }
 }
+
+extension GADay: Comparable {
+    public static func < (lhs: GADay, rhs: GADay) -> Bool {
+        if lhs.year != rhs.year { return lhs.year < rhs.year }
+        if lhs.month != rhs.month { return lhs.month < rhs.month }
+        return lhs.day < rhs.day
+    }
+}

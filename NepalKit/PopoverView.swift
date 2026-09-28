@@ -114,7 +114,7 @@ enum Strings {
     static let digitsDevanagari = "Devanagari ०–९"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
-    static let monthsTransliterated = "English"
+    static let monthsTransliterated = "Transliterated"
     static let nepalTimeLabel = "Nepal Time"
     static let localTimeLabel = "Local"
     static let todayLabel = "Today"

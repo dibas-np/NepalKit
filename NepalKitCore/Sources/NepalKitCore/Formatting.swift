@@ -40,31 +40,31 @@ private func devanagariString(_ latinDigits: String) -> String {
     String(latinDigits.compactMap { $0.wholeNumberValue.map { devanagariDigits[$0] } })
 }
 
-func renderNumber(_ value: Int, digits: DigitScript) -> String {
-    switch digits {
-    case .latin:
-        return String(value)
-    case .devanagari:
-        return devanagariString(value.description)
+extension DigitScript {
+    /// Renders a Latin-digit string in this script. The single place that
+    /// branches on digit script; all number formatting funnels through here.
+    func render(latinDigits: String) -> String {
+        switch self {
+        case .latin:
+            return latinDigits
+        case .devanagari:
+            return devanagariString(latinDigits)
+        }
     }
 }
 
 /// Formats a plain number (picker year/day) honoring the digit-script setting.
 public func formatNumber(_ value: Int, digits: DigitScript) -> String {
-    renderNumber(value, digits: digits)
-}
-
-func monthName(month: Int, style: MonthNameStyle) -> String {
-    switch style {
-    case .nepali: return nepaliMonthNames[month - 1]
-    case .transliterated: return transliteratedMonthNames[month - 1]
-    }
+    digits.render(latinDigits: String(value))
 }
 
 /// Bikram Sambat month name for 1 (Baisakh) through 12 (Chaitra),
 /// honoring the month-name setting.
-public func bsMonthName(month: Int, style: MonthNameStyle) -> String {
-    monthName(month: month, style: style)
+public func monthName(month: Int, style: MonthNameStyle) -> String {
+    switch style {
+    case .nepali: return nepaliMonthNames[month - 1]
+    case .transliterated: return transliteratedMonthNames[month - 1]
+    }
 }
 
 /// Nepali weekday names, Sunday through Saturday.
@@ -90,13 +90,13 @@ public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
 /// Formats a Bikram Sambat date as "day month year" honoring both display settings.
 public func formatBS(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
-    return "\(renderNumber(bs.day, digits: settings.digits)) \(month) \(renderNumber(bs.year, digits: settings.digits))"
+    return "\(formatNumber(bs.day, digits: settings.digits)) \(month) \(formatNumber(bs.year, digits: settings.digits))"
 }
 
 /// Formats a Bikram Sambat date as "day month" for the menu-bar extra, honoring both display settings.
 public func formatBSShort(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
-    return "\(renderNumber(bs.day, digits: settings.digits)) \(month)"
+    return "\(formatNumber(bs.day, digits: settings.digits)) \(month)"
 }
 
 /// Gregorian month names, January through December. The month-name setting
@@ -109,7 +109,7 @@ public let gregorianMonthNames = [
 
 /// Formats a Gregorian date as "day month year", honoring the digit-script setting.
 public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
-    "\(renderNumber(ad.day, digits: settings.digits)) \(gregorianMonthNames[ad.month - 1]) \(renderNumber(ad.year, digits: settings.digits))"
+    "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthNames[ad.month - 1]) \(formatNumber(ad.year, digits: settings.digits))"
 }
 
 private func twoDigits(_ value: Int, digits: DigitScript) -> String {

@@ -59,7 +59,7 @@ private struct BSPickers: View {
             set: { model.bsMonth = $0; model.clampBSDay() }
         )) {
             ForEach(1 ... 12, id: \.self) { month in
-                Text(bsMonthName(month: month, style: settings.monthNames)).tag(month)
+                Text(monthName(month: month, style: settings.monthNames)).tag(month)
             }
         }
         Picker(Strings.dayLabel, selection: Binding(

@@ -11,7 +11,8 @@ let utcGregorian: Calendar = {
 }()
 
 /// Gregorian calendar in Nepal Time, shared so the anchoring rule lives in
-/// one place (see the NPT invariant in CODING_STANDARDS.md).
+/// one place: "today" is the NPT civil day unconditionally (see the NPT
+/// anchoring tests in TodayTests and the spec's Implementation Decisions).
 let nptGregorian: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = nepalTimeZone
