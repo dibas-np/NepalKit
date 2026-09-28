@@ -32,7 +32,12 @@ struct SettingsView: View {
                     set: { settings.save(digits: $0) }
                 )) {
                     Text(Strings.digitsLatin).tag(DigitScript.latin)
-                    Text(Strings.digitsDevanagari).tag(DigitScript.devanagari)
+                    Text(Strings.digitsDevanagari)
+                        .tag(DigitScript.devanagari)
+                        // The option announces with Latin digits so it stays
+                        // identifiable aloud; the screen keeps the Devanagari
+                        // characters it is describing.
+                        .accessibilityLabel(Strings.digitsDevanagariSpoken)
                 }
                 .pickerStyle(.segmented)
 
@@ -54,6 +59,11 @@ struct SettingsView: View {
                     Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
                         .symbolRenderingMode(.monochrome)
                 }
+                // The symbol is decoration beside a control that is already
+                // named. Left in the label, some VoiceOver voices announce the
+                // symbol name too ("power symbol button, launch at login, on"),
+                // which is noise in front of the real name.
+                .accessibilityLabel(Strings.launchAtLoginLabel)
             }
 
             if let updates {
@@ -68,6 +78,8 @@ struct SettingsView: View {
                     }
 
                     if let status = updates.statusText {
+                        // A plain Text already announces itself. Left
+                        // unmodified rather than given a redundant label.
                         Text(status)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -76,6 +88,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
+        // A minimum for the same reason as About: pinned at 460 the window
+        // clips at larger accessibility text sizes, and the segmented pickers
+        // with translated labels are what overflow first.
+        .frame(minWidth: 460)
     }
 }

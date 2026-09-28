@@ -10,7 +10,11 @@ struct ConverterView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Picker(Strings.converterLabel, selection: Binding(
+            // Untitled, and the label hidden. The section header directly
+            // above is already an `AXHeading: Converter`, and a titled picker
+            // adds its title as a second static text — the live tree showed the
+            // section name twice.
+            Picker("", selection: Binding(
                 get: { model.direction },
                 set: { model.setDirection($0) }
             )) {
@@ -18,6 +22,7 @@ struct ConverterView: View {
                 Text(Strings.adToBS).tag(ConverterDirection.adToBS)
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
 
             switch model.direction {
             case .bsToAD:
@@ -31,9 +36,27 @@ struct ConverterView: View {
             }
 
             if let output = model.convertedText(settings: settings) {
+                // The shown line and the announcement come from the same
+                // conversion, so they cannot describe different days. The
+                // "Result" prefix is spoken-only: on screen the line sits under
+                // the pickers that produced it, but read aloud "12 Ashoj 2083"
+                // gives no clue which calendar it is in.
+                //
+                // Falls back to the shown text rather than an optional. The two
+                // share a conversion, so this is unreachable in practice — but
+                // an unreachable path must not be allowed to announce
+                // "Optional(12 Ashoj 2083)" to a screen reader.
                 Text(output)
                     .font(.headline)
+                    // Label only, for the same reason as the popover headline:
+                    // `children: .ignore` left the live tree showing
+                    // `AXUnknown: Result: ...` with no role at all.
+                    .accessibilityLabel(
+                        [Strings.converterResultLabel, model.spokenResult(monthNames: settings.monthNames) ?? output]
+                            .joined(separator: ": ")
+                    )
             } else {
+                // A plain Text already announces itself; no override needed.
                 Text(Strings.converterOutOfRange)
                     .foregroundStyle(.secondary)
             }
@@ -54,6 +77,7 @@ private struct BSPickers: View {
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
             }
         }
+        .accessibilityValue(SpokenDate.number(model.bsYear))
         Picker(Strings.monthLabel, selection: Binding(
             get: { model.bsMonth },
             set: { model.bsMonth = $0 }
@@ -62,6 +86,7 @@ private struct BSPickers: View {
                 Text(monthName(month: month, style: settings.monthNames)).tag(month)
             }
         }
+        .accessibilityValue(monthName(month: model.bsMonth, style: settings.monthNames))
         Picker(Strings.dayLabel, selection: Binding(
             get: { model.bsDay },
             set: { model.bsDay = $0 }
@@ -70,6 +95,7 @@ private struct BSPickers: View {
                 Text(formatNumber(day, digits: settings.digits)).tag(day)
             }
         }
+        .accessibilityValue(SpokenDate.number(model.bsDay))
     }
 }
 
@@ -86,6 +112,7 @@ private struct ADPickers: View {
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
             }
         }
+        .accessibilityValue(SpokenDate.number(model.adYear))
         Picker(Strings.monthLabel, selection: Binding(
             get: { model.adMonth },
             set: { model.adMonth = $0 }
@@ -94,6 +121,7 @@ private struct ADPickers: View {
                 Text(gregorianMonthNames[month - 1]).tag(month)
             }
         }
+        .accessibilityValue(gregorianMonthNames[model.adMonth - 1])
         Picker(Strings.dayLabel, selection: Binding(
             get: { model.adDay },
             set: { model.adDay = $0 }
@@ -102,5 +130,6 @@ private struct ADPickers: View {
                 Text(formatNumber(day, digits: settings.digits)).tag(day)
             }
         }
+        .accessibilityValue(SpokenDate.number(model.adDay))
     }
 }

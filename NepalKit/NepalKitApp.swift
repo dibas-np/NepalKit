@@ -26,7 +26,11 @@ struct NepalKitApp: App {
         MenuBarExtra {
             PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel)
         } label: {
+            // The shown label stays the short bare date; the announcement is a
+            // sentence that names the app and pronounces the date. Merging them
+            // would put "NepalKit," in the menu bar itself.
             Text(menuBarModel.title(settings: settingsModel.settings))
+                .accessibilityLabel(menuBarModel.spokenTitle(settings: settingsModel.settings))
         }
         .menuBarExtraStyle(.window)
         // A menu-bar-only app has no Dock icon and no Cmd-Tab presence, so this

@@ -28,7 +28,12 @@ struct AboutView: View {
             Divider()
             details
         }
-        .frame(width: 380)
+        // A minimum, not a fixed width. Pinned at 380 the window clips its
+        // contents once the user increases text size, and the widest content
+        // here is a long Devanagari-supported range plus a full URL — the exact
+        // combination most likely to overflow. The window still opens at the
+        // same size; it just no longer refuses to grow.
+        .frame(minWidth: 380)
     }
 
     // MARK: - Header
@@ -39,9 +44,14 @@ struct AboutView: View {
                 Image(nsImage: icon)
                     .resizable()
                     .frame(width: 64, height: 64)
+                    // Decorative: the app name is the next element down and is
+                    // already announced. Exposed, this is a stop that only
+                    // says "image" before the name that identifies the app.
+                    .accessibilityHidden(true)
             }
             Text(metadata.name)
                 .font(.title2.weight(.medium))
+                .accessibilityAddTraits(.isHeader)
             Text(Strings.versionLabel(metadata.versionDescription))
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -55,7 +65,11 @@ struct AboutView: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 8) {
             row(Strings.calendarDataLabel, Strings.datasetVersionLabel(dataset.version))
-            row(Strings.supportedRangeLabel, Strings.supportedRange(dataset.supportedRange))
+            row(
+                Strings.supportedRangeLabel,
+                Strings.supportedRange(dataset.supportedRange),
+                spoken: Strings.supportedRangeSpoken(dataset.supportedRange)
+            )
 
             Text(Strings.calendarDataAttribution)
                 .font(.footnote)
@@ -74,13 +88,24 @@ struct AboutView: View {
             if let repository = metadata.repositoryURL {
                 Link(Strings.repositoryLabel, destination: repository)
                     .font(.footnote)
+                    // The title already says what the link is. The
+                    // destination is the part a sighted user reads off the
+                    // screen and a blind user otherwise never learns, so it
+                    // becomes the value.
+                    .accessibilityValue(repository.absoluteString)
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func row(_ label: String, _ value: String) -> some View {
+    /// A label and its value as one announced element.
+    ///
+    /// Left as two `Text`s these are two focus stops, and a value is not
+    /// meaningful without the label that names it — "2.0.0" alone says nothing.
+    /// `spoken` exists for values whose shown punctuation a voice misreads; it
+    /// falls back to the shown value when there is nothing to improve.
+    private func row(_ label: String, _ value: String, spoken: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
                 .foregroundStyle(.secondary)
@@ -89,5 +114,7 @@ struct AboutView: View {
                 .monospacedDigit()
         }
         .font(.callout)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(spoken ?? value)")
     }
 }

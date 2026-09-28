@@ -16,6 +16,14 @@ enum Strings {
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"
     static let digitsDevanagari = "Devanagari ०–९"
+    /// Spoken form of the Devanagari digit option. The shown label deliberately
+    /// shows the digits it selects, but those are exactly the characters a voice
+    /// may not read, which would leave the option unidentifiable when the two
+    /// Settings pickers are read aloud. Same rule as the dates: the screen keeps
+    /// the characters, only the announcement is made pronounceable.
+    ///
+    /// Found by walking the live accessibility tree, not by reading this file.
+    static let digitsDevanagariSpoken = "Devanagari 0–9"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "Transliterated"
@@ -32,6 +40,15 @@ enum Strings {
     static let converterOutOfRange = "Outside supported range"
     static let quitLabel = "Quit NepalKit"
     static let settingsLabel = "Settings…"
+    // Spoken-channel strings. These are *said*, never shown: the visual date
+    // always renders as configured, and only the accessibility representation
+    // differs (SpokenDate).
+    static let appNameForSpeech = "NepalKit"
+    /// Introduces the converter's result when spoken. On screen the result is
+    /// self-evident next to the pickers that produced it; read aloud it is a
+    /// bare date with no way to tell which calendar it is in.
+    static let converterResultLabel = "Result"
+    static let spokenDateBeyondRange = "date unavailable, calendar data ends 12 April 2028"
     static let aboutLabel = "About NepalKit"
     static let displaySection = "Display"
     static let startupSection = "Startup"
@@ -51,6 +68,13 @@ enum Strings {
     static func datasetVersionLabel(_ version: String) -> String { "Dataset \(version)" }
     static func supportedRange(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound)–\(range.upperBound) BS"
+    }
+    /// Spoken form of the supported range. The shown form uses an en dash,
+    /// which is right on screen but which voices read unpredictably — some say
+    /// "1975 dash 2084", some pause, some drop it. "to" is unambiguous in every
+    /// case. Spoken only; the screen keeps the dash.
+    static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
+        "\(range.lowerBound) to \(range.upperBound) BS"
     }
     static let calendarDataLabel = "Calendar data"
     static let supportedRangeLabel = "Supported range"

@@ -57,4 +57,19 @@ final class MenuBarModel {
         }
         return formatBSShort(today, settings: settings)
     }
+
+    /// What VoiceOver announces for the menu-bar extra.
+    ///
+    /// Separate from `title` because the two answer different questions. The
+    /// title is the menu bar's few pixels of space and carries the bare date; the
+    /// announcement is a sentence, so it can name the app and say the date in a
+    /// form a voice can actually pronounce. Splitting them is what keeps the
+    /// menu bar from being made worse for everybody in order to help someone
+    /// using speech — the visual stays exactly as short as it was.
+    func spokenTitle(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String {
+        SpokenDate.menuBar(
+            today: todayBS(now: now, in: dataset),
+            monthNames: settings.monthNames
+        )
+    }
 }

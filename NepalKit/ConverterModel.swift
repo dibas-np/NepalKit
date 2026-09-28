@@ -259,4 +259,26 @@ final class ConverterModel {
             return "\(formatBS(bs, settings: settings)) · \(weekday)"
         }
     }
+
+    /// The converted date as it should be spoken, in whichever calendar the
+    /// conversion produced.
+    ///
+    /// Parallel to `convertedText` and derived from the same conversion, so the
+    /// spoken value cannot describe a different day than the shown one. The
+    /// month-name language still follows the user's setting, because a matching
+    /// VoiceOver voice reads it; only the digits are made pronounceable.
+    func spokenResult(monthNames: MonthNameStyle) -> String? {
+        switch direction {
+        case .bsToAD:
+            guard let ad = bsToAD(bsDate, in: dataset),
+                  let weekday = weekdayText(for: bsDate, style: monthNames)
+            else { return nil }
+            return "\(SpokenDate.ad(ad)), \(weekday)"
+        case .adToBS:
+            guard let bs = adToBS(adDate, in: dataset),
+                  let weekday = weekdayText(for: bs, style: monthNames)
+            else { return nil }
+            return "\(SpokenDate.bs(bs, monthNames: monthNames)), \(weekday)"
+        }
+    }
 }
