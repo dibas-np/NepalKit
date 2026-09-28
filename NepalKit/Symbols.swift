@@ -4,34 +4,21 @@ import Foundation
 
 /// Every SF Symbol the app uses, named once.
 ///
-/// Centralised for two reasons. An unresolvable name renders as *nothing*, with
-/// no error and no fallback, so a typo is invisible until someone looks at the
-/// screen; `SymbolTests` resolves every name so a typo fails the suite instead.
-/// And a symbol earns its place by reinforcing its label rather than decorating
-/// it, so the pairing is written down where a reviewer will read it — which is
-/// what caught `person` sitting beside "Local", reading as a user account
-/// rather than a place.
+/// Centralised so an unresolvable name fails the suite rather than rendering as
+/// *nothing* with no error and no fallback. `SymbolTests` resolves every name in
+/// `all`, and `all` is meant to list exactly what the app renders — an entry no
+/// view can reach is dead weight that still looks maintained.
 ///
-/// Per ADR-0004 the app uses SF Symbols throughout, and rendering mode is chosen
-/// per surface for contrast against Liquid Glass: hierarchical for section
-/// headers, monochrome for small inline icons beside text.
+/// A symbol earns its place by reinforcing its label, not decorating it, so each
+/// pairing is written down with the reasoning. That is what caught `person`
+/// beside "Local", which reads as a user account rather than a place, and it is
+/// why the popover's clock rows use typographic labels instead: "Nepal Time" and
+/// "Local" are short enough that a glyph beside them is decoration, and a glyph
+/// that differs only in a detail the reader must decode is worse than none.
+///
+/// Per ADR-0004 rendering mode is chosen per surface for contrast against Liquid
+/// Glass; the remaining symbols are all monochrome inline icons beside text.
 enum Symbols {
-    /// Section header for the today block.
-    static let today = "calendar"
-
-    /// Section header for the converter.
-    static let converter = "arrow.left.arrow.right"
-
-    /// "Nepal Time" — the row's distinguishing word is Time.
-    static let nepalTime = "clock"
-
-    /// "Local" — the row's distinguishing word is place, and `location` is the
-    /// macOS convention for *this place* (Maps, Location Services in System
-    /// Settings). Optically identical to `clock` at the size the popover uses,
-    /// so the two rows sit on one baseline. `person` was wrong here: it reads
-    /// as a user or account, which is a different concept than the label.
-    static let localTime = "location"
-
     /// "Launch at login" — the conventional glyph for run-at-startup.
     static let launchAtLogin = "power"
 
@@ -42,6 +29,6 @@ enum Symbols {
     static let about = "info.circle"
 
     static let all: [String] = [
-        today, converter, nepalTime, localTime, launchAtLogin, settings, about,
+        launchAtLogin, settings, about,
     ]
 }

@@ -81,6 +81,10 @@ struct PopoverView: View {
         }
         .padding()
         .frame(width: Self.popoverWidth)
+        // The actions below are full-width rows, so the whole popover shares one
+        // left edge. Without this the date and the actions are left-aligned to
+        // two different x positions and the block looks accidentally staggered.
+        .frame(maxWidth: .infinity, alignment: .leading)
 
         Divider()
 
@@ -114,7 +118,13 @@ struct PopoverView: View {
             // discoverable control for the same action.
             Button(Strings.quitLabel, action: AppTermination.quit)
         }
+        // `.plain` alone gives each button its intrinsic width, which inside a
+        // leading-aligned stack leaves the three labels ragged and pushed right
+        // rather than forming full-width rows. `maxWidth: .infinity` on the label
+        // is what makes each one a row; a chevron is deliberately absent because
+        // these open windows or quit, and a chevron would read as navigation.
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
         .padding(.bottom, 4)
     }
@@ -123,17 +133,15 @@ struct PopoverView: View {
 
     private var today: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(Strings.todayLabel, systemImage: Symbols.today)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .symbolRenderingMode(.hierarchical)
-                // A heading, so it can be reached by heading navigation, and
-                // combined into one element: a `Label` otherwise contributes its
-                // own text as a separate child, so the live tree exposed both
-                // `AXHeading: Today` and `AXStaticText: Today`.
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Strings.todayLabel)
-                .accessibilityAddTraits(.isHeader)
+            // No "Today" header here. The segmented control directly above already
+            // reads "Today" and is the selected segment, so a second "Today" two
+            // lines down repeats the destination to confirm what the control just
+            // said. Removing it also lets the date sit at the top of the content
+            // rather than below a label describing it.
+            //
+            // The heading role is not lost: the segmented control carries the
+            // destination name, and the date below it is the first thing a reader
+            // meets either way.
 
             if let todayBS = clock.todayBSDate(in: dataset) {
                 // The hero. Weight is what makes the date the first thing read
