@@ -2,7 +2,13 @@
 build/
 .swiftpm/
 DerivedData/
+# Xcode's per-user directories. The real name is "<user>.xcuserdatad" — with a
+# trailing "d" — so the earlier "*.xcuserdata/" rule matched nothing and let a
+# local username sit tracked in the repository. Both spellings are covered so the
+# typo cannot be reintroduced silently.
+*.xcuserdatad/
 *.xcuserdata/
+xcuserdata/
 -xcc/
 .env
 

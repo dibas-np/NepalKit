@@ -3,6 +3,12 @@
 /// Month lengths are declared per year by the official Nepali Patro; there is
 /// no closed-form algorithm, so conversion is table-driven.
 ///
+/// **Provenance is documented in `SOURCES.md` at the repository root**, with
+/// every source pinned to a commit, its licence and role recorded, and each
+/// arbitrated month listed. That document also states plainly what this table is
+/// not: it is not independently licensed. Read it before describing this data
+/// as verified or permissively sourced.
+///
 /// Provenance (v1 spec ticket 02): month rows reproduce the officially approved
 /// annual Nepali Patro. Three community tables were cross-checked
 /// month-by-month (107/116 identical); all 9 disputes were arbitrated against

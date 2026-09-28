@@ -53,7 +53,7 @@ the popover says so explicitly rather than showing a blank.
 Requires Xcode 27 (or later) and a macOS 26+ machine to run.
 
 ```sh
-git clone <repo-url>
+git clone https://github.com/dibas-np/NepalKit.git
 cd NepalKit
 ```
 
@@ -103,19 +103,28 @@ The split is strict: anything expressible without a view belongs in
 ## The calendar data
 
 Conversion is table-driven, not algorithmic. Bikram Sambat month lengths have no
-closed-form rule, so the table is transcribed year by year from the officially
-approved annual **Nepali Patro**.
+closed-form rule, so the table is the product's correctness core.
 
 - Dataset version `2.0.0`, covering **1975–2084 BS**
-- Year lengths cross-checked against multiple independent converters, with
-  disputed months resolved by majority vote and then confirmed against
-  published calendars wherever they exist
+- Month lengths cross-checked year by year against a second, MIT-licensed
+  community table, with the 20 months where they disagree arbitrated
+  individually and recorded
 - Every supported New Year boundary is a test in both conversion directions
 - **Nothing is extrapolated.** Years without published data are excluded rather
   than projected (ADR-0001)
-- **The range can narrow as well as extend.** Dataset 2.0.0 dropped 1970–1974,
-  the only years no second table corroborated, rather than ship them on the base
-  source alone (ADR-0010)
+- **The range can narrow as well as extend.** Dataset 2.0.0 dropped 1970–1974 —
+  the only years the corroborating table does not cover at all (ADR-0010)
+
+**The bundled table is not independently licensed, and this project does not
+claim it is.** It derives from one base source across its entire range; that
+source is a fork of an upstream carrying no licence file, and the fork later
+added a licence of its own. The corroborating source is a check, not the origin
+of any value.
+
+**[SOURCES.md](SOURCES.md)** records every source, pinned to a commit, with its
+licence, its role, the arbitration of each disputed month, and the two arguments
+that sound protective and are not. Anyone can re-run the comparison with
+`python3 scripts/verify-data-sources.py`.
 
 The bundled dataset is frozen per release. Changing the supported range means
 shipping a new dataset in a subsequent release — extending it once newer official
@@ -130,8 +139,12 @@ APPLE_ID=... APP_SPECIFIC_PASSWORD=... TEAM_ID=... ./scripts/package-release.sh
 
 Archives with Developer ID Application signing and the hardened runtime, exports,
 builds a UDZO DMG, submits to the notary service, staples the ticket, and
-verifies the mounted app with `spctl`. Credentials come from the environment or a
-local `.env`; both are gitignored.
+verifies the mounted app with `spctl`. Credentials are read from the environment only —
+`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, and `TEAM_ID` — and the script exits if any
+is missing. It does **not** read a `.env` file; an earlier version of this
+document claimed it did, and the script has never done so. Both the environment
+and any local `.env` are gitignored, so keeping a local `.env` is a convenient
+habit, but exporting the three variables is what the script actually reads.
 
 ## Why macOS 26
 

@@ -17,9 +17,16 @@ belongs.
 This decision required downgrading the Xcode project file from object version
 110 to object version 100. Object version 110 is Xcode 27.0's format and Xcode 26
 cannot open it, so a `macos-26` job would fail before compiling a line. The
-application source needed no accommodation: the highest API availability in use
-is macOS 15, there are no availability gates, both SwiftPM manifests load under
-Xcode 26, and the Liquid Glass API family is macOS 26 rather than macOS 27.
+application source needed no accommodation: there are no availability gates
+anywhere in the source, both SwiftPM manifests load under Xcode 26, and the
+Liquid Glass API family is macOS 26 rather than macOS 27.
+
+(An earlier version of this paragraph said "the highest API availability in use
+is macOS 15". That was not checkable — it sat beside this record's own statement
+that the Liquid Glass family is macOS 26, and the bundled `AppIcon.icon` Icon
+Composer package is also a macOS 26 feature. What is actually true, and what
+matters for the gate, is that nothing in the source is gated *above* the floor,
+so the floor SDK can build it without a single availability check.)
 Object version 100 is a valid common denominator readable by both toolchains, so
 Xcode 27 continues to open the project.
 
