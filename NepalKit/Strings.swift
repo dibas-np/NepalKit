@@ -67,6 +67,13 @@ enum Strings {
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
     static let quitLabel = "Quit NepalKit"
+    /// Spoken purposes for the footer's icon-only buttons. A symbol with no
+    /// accessible name is the worst case in the whole app: a screen-reader user
+    /// hears "button" three times and cannot tell the actions apart, while a
+    /// sighted user sees three distinct glyphs and reads them instantly.
+    static let settingsHelp = "Opens the Settings window"
+    static let aboutHelp = "Opens the About window"
+    static let quitHelp = "Quits NepalKit"
     static let settingsLabel = "Settings…"
     // Spoken-channel strings. These are *said*, never shown: the visual date
     // always renders as configured, and only the accessibility representation

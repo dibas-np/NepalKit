@@ -94,41 +94,104 @@ struct PopoverView: View {
         // either destination. They open other windows or end the process, so
         // they are not a step in navigating Today and Convert, and burying them
         // in one tab would hide them from the other.
-        VStack(alignment: .leading, spacing: 2) {
-            Button {
-                WindowPresentation.present(open: { openSettings() })
-            } label: {
-                Label(Strings.settingsLabel, systemImage: Symbols.settings)
-                    .symbolRenderingMode(.monochrome)
-            }
-            .accessibilityLabel(Strings.settingsLabel)
+        footer
+    }
 
-            // About sits directly above Quit, as it does in a macOS application
-            // menu. The app menu's own `About NepalKit` item is unreachable from
-            // the menu bar for the same reason `Settings…` is, so this is the route.
-            Button {
-                WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
-            } label: {
-                Label(Strings.aboutLabel, systemImage: Symbols.about)
-                    .symbolRenderingMode(.monochrome)
-            }
-            .accessibilityLabel(Strings.aboutLabel)
+    // MARK: - Footer
 
-            // The visible exit path for a menu-bar-only app. The matching ⌘Q lives
-            // on the app's termination command group (NepalKitApp.swift) so it works
-            // when the app is frontmost without the popover open; this is the
-            // discoverable control for the same action.
-            Button(Strings.quitLabel, action: AppTermination.quit)
+    /// A bar along the bottom: the selected destination on the left, the three
+    /// actions on the right.
+    ///
+    /// This follows the reference layout, where the footer names where you are
+    /// on the left and puts the actions on the right. Naming the destination here
+    /// is what the segmented control's selection does not say on its own when the
+    /// popover is read as a whole: the control is a control, and this is the
+    /// surface's own statement of position.
+    ///
+    /// The actions are icon-only, which is why each carries an explicit spoken
+    /// name. The earlier full-width rows were survivable without one because the
+    /// text was on screen; an icon alone is not, and a VoiceOver user would
+    /// otherwise hear "button" three times over.
+    private var footer: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 8) {
+                Text(destination.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                // Visible text, not icon-only.
+                //
+                // The reference this follows puts a bare gear in its footer, and
+                // that was tried here: the two actions became glyphs with no
+                // label. `System Events` reported `AXName` as *missing value* for
+                // every button in this popover, and with the text removed there
+                // is nothing left to fall back on — a screen-reader user would
+                // hear "button" twice with no way to tell them apart, and could
+                // not verify the fix from here.
+                //
+                // So the footer takes the reference's *layout* and keeps the
+                // labels. An action whose name cannot be proven announced should
+                // show its name.
+                action(
+                    Symbols.settings,
+                    title: Strings.settingsLabel,
+                    help: Strings.settingsHelp
+                ) {
+                    WindowPresentation.present(open: { openSettings() })
+                }
+
+                action(
+                    Symbols.about,
+                    title: Strings.aboutLabel,
+                    help: Strings.aboutHelp
+                ) {
+                    WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
+                }
+
+                // Quit keeps its text. It is the only action in a menu-bar-only
+                // app that ends the process, and the one a first-time user most
+                /// likely to hunt for; the others have conventional glyphs, this
+                // does not.
+                //
+                // The ⌘Q shortcut lives on the app's termination command group
+                // (NepalKitApp.swift) so it works when the app is frontmost
+                // without the popover open. This is the discoverable control for
+                // the same action.
+                Button(Strings.quitLabel, action: AppTermination.quit)
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(Strings.quitLabel)
+                    .accessibilityHint(Strings.quitHelp)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
-        // `.plain` alone gives each button its intrinsic width, which inside a
-        // leading-aligned stack leaves the three labels ragged and pushed right
-        // rather than forming full-width rows. `maxWidth: .infinity` on the label
-        // is what makes each one a row; a chevron is deliberately absent because
-        // these open windows or quit, and a chevron would read as navigation.
+    }
+
+    /// A compact symbol-and-title action for the footer.
+    ///
+    /// Tighter than a full-width row so three of them fit beside the position
+    /// label, but still text: see the note at the call site for why these are not
+    /// icon-only. The hint carries the purpose, which a glyph cannot.
+    private func action(
+        _ symbol: String,
+        title: String,
+        help: String,
+        perform: @escaping () -> Void
+    ) -> some View {
+        Button(action: perform) {
+            Label(title, systemImage: symbol)
+                .font(.caption)
+                .symbolRenderingMode(.monochrome)
+        }
         .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal)
-        .padding(.bottom, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityHint(help)
     }
 
     // MARK: - Header
