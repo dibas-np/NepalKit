@@ -21,6 +21,20 @@
 /// and a data-contract major bump, not a fix (ADR-0010). The Gregorian lower
 /// bound is a consequence of this range, not a setting of its own: 1 Baisakh 1975
 /// is 13 April 1918, so the convertible span begins there.
+///
+/// **Transcribe from a current checkout, not a pre-2025-03-14 one.** The base
+/// table `medic/bikram-sambat` shipped wrong Falgun and Chaitra lengths for BS
+/// 2081, corrected in its PR #27 (merged 14 March 2025). The shipped rows here
+/// are the corrected ones and match upstream exactly. The correction is
+/// dangerous to miss because the *year total is 366 either way* — 29+31 and
+/// 30+30 redistribute the same days — so a stale transcription produces the
+/// right 1 Baisakh 2082 and passes every year-level check while shifting all of
+/// Chaitra 2081 by a day and rejecting a real 31 Chaitra 2081. Re-verify those
+/// two rows after any re-transcription. See the coverage note in ADR-0010.
+///
+/// **2085 is absent on purpose.** The base table carries rows past 2084; they are
+/// not shipped because 2085 is not officially published, and "the source has it"
+/// is not a reason to widen the conversion contract (ADR-0001).
 public struct CalendarDataset: Sendable {
     /// Dataset version, e.g. "2.0.0" for the table narrowed to 1975-2084 BS.
     public let version: String

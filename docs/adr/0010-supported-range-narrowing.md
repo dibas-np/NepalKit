@@ -35,14 +35,56 @@ rather than 1913-04-13. `ConverterModel` derives both ends by converting the
 first and last days of `supportedRange`, so a future dataset release moves the
 Gregorian span on its own and no view or model carries a range literal.
 
-**What this cut does not do.** It does not make the remaining table independently
-licensed, and no documentation may say it does. Every year still shipped is
+## What this cut does not do
+
+It does not make the remaining table independently licensed, and no
+documentation may say it does. Every year still shipped is
 derived from the same base table (`medic/bikram-sambat`, itself a fork of
 `alxndrsn/bikram-sambat.js`, which carries no licence file). The cut removes the
 five years with the weakest corroboration; it does not resolve the provenance
 chain, which is a separate track, tracked outside the engineering tickets.
 Stating this honestly is the point of the record — a narrowing presented as a
-licence fix would be worse than no cut at all.
+licence fix would be worse than no cut all.
+
+## Coverage gap: month boundaries are mostly unasserted
+
+Found while cross-checking the table against a third party's public conformance
+index, which tracks a real instance of this exact bug: the base table
+`medic/bikram-sambat` shipped wrong Falgun and Chaitra lengths for BS 2081,
+corrected in its PR #27 (merged 14 March 2025). **NepalKit's shipped rows match
+the corrected values exactly**, so there is no defect in the shipped data.
+
+The concerning part is that nothing here would have noticed. Demonstrated, not
+theorised: restoring the pre-fix 2081 row — `[…, 29, 30, 30, 30]` instead of
+`[…, 29, 30, 29, 31]` — leaves all 44 core tests green. The correction moves the
+same number of days within the year, so:
+
+- the year total is 366 either way, and `everyYearHasTwelveValidMonths` passes;
+- 1 Baisakh 2082 is 2025-04-14 either way, so the whole New Year sweep passes;
+- the round-trip and consecutiveness suites are internally consistent, so they
+  pass by construction;
+- `MonthStartTests` has no 2081 entry.
+
+What it would break in the product: every Chaitra 2081 date shifts a day late,
+and 31 Chaitra 2081 — a real date, 13 April 2025 — is rejected as invalid.
+
+**The measured extent: 8 of the 110 supported years have any month-boundary
+assertion at all**, and 10 have any `BSDay` assertion anywhere in the core suite.
+The New Year sweep covers all 110 years but only at the year boundary, which is
+blind to redistribution *within* a year.
+
+So the honest statement of what the suite proves is narrower than it looks: it
+proves the table is internally consistent and correct at year boundaries, and it
+proves month boundaries for 8 years. It does **not** prove month boundaries for
+the other 102. A second source is the only thing that can, and the cross-check
+already had one — those arbitrated months are the ones that should each be an
+assertion.
+
+Not fixed here. Adding fixtures for 102 years needs published-calendar sources
+per year, which do not all exist, and asserting dates without them would break
+the repo's sourcing rule. The fix is to assert every month boundary for which a
+cited source exists, prioritising the nine already-arbitrated disputes, and to
+record the rest as uncovered rather than implying otherwise.
 
 ## Considered Options
 
