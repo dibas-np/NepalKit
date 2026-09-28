@@ -10,6 +10,7 @@
 		233B3DC7306975960098472F /* NepalKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NepalKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A7B7C0106975960098472F /* NepalKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NepalKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A110C001C0DE000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		4C1E7A0100000000000000A1 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = LICENSE; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,6 +48,7 @@
 				233B3DC9306975960098472F /* NepalKit */,
 				7A7B7C0206975960098472F /* NepalKitTests */,
 				A110C001C0DE000000000001 /* AppIcon.icon */,
+				4C1E7A0100000000000000A1 /* LICENSE */,
 				233B3DC8306975960098472F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -155,6 +157,7 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				A110C001C0DE000000000002 /* AppIcon.icon in Resources */,
+				4C1E7A0100000000000000A2 /* LICENSE in Resources */,
 			);
 		};
 		7A7B7C0606975960098472F /* Resources */ = {
@@ -181,6 +184,7 @@
 		233B3DE2306975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 233B3DE1306975960098472F /* NepalKitCore */; };
 		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
 		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
+		4C1E7A0100000000000000A2 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 4C1E7A0100000000000000A1 /* LICENSE */; };
 /* End PBXBuildFile section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -361,6 +365,7 @@
 				INFOPLIST_FILE = NepalKit/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 2026 Dibas Sigdel";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -396,6 +401,7 @@
 				INFOPLIST_FILE = NepalKit/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 2026 Dibas Sigdel";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

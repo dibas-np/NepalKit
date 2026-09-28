@@ -49,5 +49,21 @@
 	-->
 	<key>SUFeedURL</key>
 	<string>https://dibas-np.github.io/NepalKit/appcast.xml</string>
+
+	<!--
+	  The copyright line is NOT set here, and that is a finding worth keeping.
+
+	  It was added to this file first, on the reasoning that a name outside the
+	  INFOPLIST_KEY_* allowlist has to be spelled out in the plist. The build
+	  succeeded and the finished app contained no NSHumanReadableCopyright at
+	  all, caught by InfoPlistKeysTests reading the built product.
+
+	  The reason is the reverse of the trap above. This file's *unknown* keys
+	  (SUPublicEDKey, SUFeedURL) survive the merge, but NSHumanReadableCopyright
+	  is an Apple-known key, so GENERATE_INFOPLIST_FILE owns it and overwrites
+	  whatever this file says. It therefore has to come from
+	  INFOPLIST_KEY_NSHumanReadableCopyright in the build settings — which is
+	  what that allowlist is for.
+	-->
 </dict>
 </plist>

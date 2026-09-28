@@ -72,11 +72,11 @@ struct AppMetadataTests {
         // When the rights-holder track resolves, filling the build setting is
         // the only change needed — the line is already wired.
         let metadata = AppMetadata(
-            info: info(copyright: "Copyright © 2026 Finnove Technologies"),
+            info: info(copyright: "Copyright (C) 2026 Dibas Sigdel"),
             applicationIcon: nil
         )
 
-        #expect(metadata.copyright == "Copyright © 2026 Finnove Technologies")
+        #expect(metadata.copyright == "Copyright (C) 2026 Dibas Sigdel")
     }
 
     @Test func missingKeysDoNotProduceEmptyPresentedText() {

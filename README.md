@@ -176,9 +176,22 @@ two are treated as OS behavior, not something to compensate for (ADR-0003).
 
 ## License
 
-Not yet chosen. Add a `LICENSE` file before publishing publicly — without one,
-the default is exclusive copyright and nobody else may legally use or
-redistribute this.
+**GNU General Public License v3.0 or later** — see [LICENSE](LICENSE), which
+carries the verbatim text.
+
+GPL-3.0 rather than a permissive licence is a deliberate choice about the
+calendar data. `medic/bikram-sambat`, the base table, is Apache-2.0, and
+Apache-2.0 is one-way compatible with GPLv3 — so GPL lets the table ship inside
+the same grant as the code, where a permissive licence would have left the two
+on separate and incompatible terms. That compatibility is a reason, not a cure:
+see below.
+
+**The licence does not cover the bundled calendar table.** No licence a
+copyright holder grants can extend to material they do not hold rights in. The
+table derives from a fork of an upstream carrying no licence file, and this
+project does not assert a licence over it. `SOURCES.md` states exactly what the
+data is. A reader relying on this repository's licence for the dataset is relying
+on something this repository does not assert.
 
 ## Acknowledgements
 

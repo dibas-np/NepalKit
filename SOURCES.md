@@ -27,11 +27,36 @@ The 2.0.0 range narrowing (ADR-0010) removed the years that had no corroboration
 at all. That reduced the exposure. **It did not make the remaining table
 independently licensed**, and no documentation here should be read as saying so.
 
+## The licence covers the code, not this table
+
+The repository is GPL-3.0-or-later (see `LICENSE`).
+
+**That grant covers the code and this document. It does not extend to the
+calendar table**, and copyleft makes the boundary more important to state, not
+less: a reader may reasonably assume a single strong copyleft grant covers the
+whole repository, data files included. It does not.
+
+GPL was chosen partly *because* of the table. `medic/bikram-sambat` is
+Apache-2.0, and Apache-2.0 is one-way compatible with GPLv3, so GPL is the
+licence under which that material can lawfully travel with the code. That solves
+compatibility. It does not solve provenance: the fork's parent,
+`alxndrsn/bikram-sambat.js`, carries no licence at all, and no downstream choice
+of licence manufactures a grant that was never given.
+
+If the table is re-derived from sources carrying unambiguous licences, this
+caveat can be removed. Until then it stands.
+
 ## Sources
 
 Every entry is pinned to an immutable commit. Branches are not used, because
 licences get changed silently and the base source's own history contains exactly
 that — a fork that adopted a licence its upstream never had.
+
+The licence status of every source was re-checked against the GitHub API while
+writing this, rather than trusted from the earlier pass. Both claims held:
+`medic/bikram-sambat` reports `Apache-2.0` and is a fork, while its parent
+`alxndrsn/bikram-sambat.js` reports **no licence at all** (`"license": null`).
+`askbuddie/bikram-sambat` reports `MIT` and is not a fork.
 
 ### 1. Base table — `medic/bikram-sambat`
 

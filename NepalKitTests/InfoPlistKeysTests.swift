@@ -23,6 +23,25 @@ struct InfoPlistKeysTests {
         return NSDictionary(contentsOf: builtPlist) as? [String: Any]
     }
 
+    /// The repository root, found by walking up from this file.
+    ///
+    /// Not a fixed number of `deletingLastPathComponent` calls: the harness
+    /// compiles these tests through a symlink, so `#filePath` may name either
+    /// `NepalKitTests/` or `scripts/apptests/Tests/NepalKitTests/`, and a depth
+    /// that works for one is wrong for the other. Walking up to a file that
+    /// only exists at the root is correct either way.
+    private static var repositoryRoot: URL {
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        for _ in 0 ..< 8 {
+            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
+                return dir
+            }
+            dir = dir.deletingLastPathComponent()
+        }
+        Issue.record("could not locate the repository root from #filePath")
+        return URL(fileURLWithPath: "/")
+    }
+
     /// The key the release artifacts are signed with. Committed deliberately:
     /// it is public, and it is what lets an installed copy verify a download.
     private static let expectedPublicKey = "HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA="
@@ -77,6 +96,46 @@ struct InfoPlistKeysTests {
     /// installed copy reads this URL, so a change breaks updates for all of them
     /// at once.
     private static let expectedFeedURL = "https://dibas-np.github.io/NepalKit/appcast.xml"
+
+    @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
+    func theCopyrightLineReachesTheBuiltProduct() throws {
+        // The About surfaces render NSHumanReadableCopyright, and the value is
+        // only correct if it survives the plist merge. Set through INFOPLIST_KEY_
+        // it could be dropped silently, with a green build — the exact failure
+        // documented at the top of Info.plist. Checked against the built product.
+        let info = try #require(Self.builtInfo)
+        let copyright = try #require(info["NSHumanReadableCopyright"] as? String, "copyright line is absent")
+
+        #expect(copyright == "Copyright (C) 2026 Dibas Sigdel")
+        // It must match LICENSE, or the app and the repository disagree.
+        // Read outside #require: the macro cannot wrap a throwing call, and a
+        // missing LICENSE should fail loudly here rather than be swallowed.
+        //
+        let licence = try String(contentsOf: Self.repositoryRoot.appendingPathComponent("LICENSE"), encoding: .utf8)
+
+        #expect(licence.contains(copyright), "LICENSE and the About surfaces state different holders")
+    }
+
+    @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
+    func theLicenceTravelsWithTheBinary() throws {
+        // GPL-3.0 requires the licence to accompany the work, not just to sit in
+        // the repository. For a distributed .app that means inside the bundle:
+        // a user who has the binary has to be able to read what they may do
+        // with it, offline, without a network round trip to the source.
+        //
+        // Checked in the built product, because the interesting failure is a
+        // resource build phase that quietly stopped copying the file.
+        let bundle = Self.builtPlist.deletingLastPathComponent()
+            .deletingLastPathComponent()   // NepalKit.app
+        let shipped = bundle.appendingPathComponent("Contents/Resources/LICENSE")
+        #expect(FileManager.default.fileExists(atPath: shipped.path), "the app ships without its licence")
+
+        let text = try String(contentsOf: shipped, encoding: .utf8)
+        #expect(text.contains("GNU GENERAL PUBLIC LICENSE"))
+        #expect(text.contains("Version 3, 29 June 2007"))
+        // The project's own notice travels with the licence text.
+        #expect(text.contains("Copyright (C) 2026 Dibas Sigdel"))
+    }
 
     @Test func thePublicKeyIsWellFormed() {
         // 32 bytes, base64 — the shape Ed25519 requires. A truncated paste would
