@@ -1,0 +1,73 @@
+import AppKit
+
+/// Identifies the About window scene, so the popover and the scene agree on one
+/// window instead of the identifier appearing twice as a literal.
+enum AboutWindow {
+    static let id = "about"
+}
+
+/// Facts about the installed build, read from its own bundle.
+///
+/// About exists so a user can say what they are running and report it. That only
+/// works if every value on it comes from the build that is actually running, so
+/// nothing here is a literal: name, versions, icon and repository all come from
+/// the bundle, and the calendar facts come from the dataset (ADR-0009 treats the
+/// three version numbers as independent; this type is where two of them live).
+///
+/// Injectable rather than reading `Bundle.main` directly, so tests can supply a
+/// dictionary and prove the surface reads metadata instead of hardcoding it.
+struct AppMetadata: Equatable {
+    /// The source repository, as a single named constant rather than a literal
+    /// in a view.
+    ///
+    /// It is *not* an `INFOPLIST_KEY_` build setting, though that is where it
+    /// belongs conceptually. The project generates its Info.plist, and Xcode
+    /// honours only a known allowlist of `INFOPLIST_KEY_*` names — an unknown
+    /// one is dropped in silence, leaving no key and no diagnostic. Carrying it
+    /// here is the honest option until the project ships a real Info.plist.
+    ///
+    /// Kept in step with `git remote origin`. If the repository moves, this and
+    /// the README are the two places to change.
+    static let defaultRepositoryURL = URL(string: "https://github.com/dibas-np/NepalKit")!
+
+    let name: String
+    /// `CFBundleShortVersionString` — the human-facing version.
+    let shortVersion: String
+    /// `CFBundleVersion` — monotonically increasing, and what Sparkle orders on.
+    let buildNumber: String
+    /// The source repository, for the one interactive element on the surface.
+    let repositoryURL: URL?
+    /// `NSHumanReadableCopyright`. Empty until the rights-holder question is
+    /// answered in writing, which the release contract says must happen before
+    /// any public metadata is finalised. The surface omits the line entirely
+    /// rather than rendering a blank, so the field appears by itself the moment
+    /// the build setting is filled in.
+    let copyright: String?
+    let applicationIcon: NSImage?
+
+    init(
+        info: [String: Any] = Bundle.main.infoDictionary ?? [:],
+        repositoryURL: URL? = AppMetadata.defaultRepositoryURL,
+        applicationIcon: NSImage? = nil
+    ) {
+        name = (info["CFBundleName"] as? String) ?? ""
+        shortVersion = (info["CFBundleShortVersionString"] as? String) ?? ""
+        buildNumber = (info["CFBundleVersion"] as? String) ?? ""
+        self.repositoryURL = repositoryURL
+        let declared = (info["NSHumanReadableCopyright"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        copyright = (declared?.isEmpty ?? true) ? nil : declared
+        self.applicationIcon = applicationIcon
+    }
+
+    /// The installed build's own facts, including its real app icon.
+    @MainActor
+    static func current() -> AppMetadata {
+        AppMetadata(applicationIcon: NSApp.applicationIconImage)
+    }
+
+    /// Apple's own About-panel form: human-facing version, then the build in
+    /// parentheses so a bug report can name the exact build.
+    var versionDescription: String {
+        shortVersion.isEmpty ? buildNumber : "\(shortVersion) (\(buildNumber))"
+    }
+}

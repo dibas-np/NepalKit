@@ -16,6 +16,9 @@ struct PopoverView: View {
     /// Settings open through SwiftUI's own action rather than a hand-built
     /// window; the activation half is `WindowPresentation`'s (ADR-0011).
     @Environment(\.openSettings) private var openSettings
+    /// About is a named window scene, opened the same way — same activation
+    /// behaviour, not a second mechanism (ADR-0011).
+    @Environment(\.openWindow) private var openWindow
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
     var dataset: CalendarDataset = .v2
@@ -93,6 +96,16 @@ struct PopoverView: View {
             WindowPresentation.present(open: { openSettings() })
         } label: {
             Label(Strings.settingsLabel, systemImage: "gearshape")
+                .symbolRenderingMode(.monochrome)
+        }
+        .padding(.horizontal)
+        // About sits directly above Quit, as it does in a macOS application
+        // menu. The app menu's own `About NepalKit` item is unreachable from the
+        // menu bar for the same reason `Settings…` is, so this is the route.
+        Button {
+            WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
+        } label: {
+            Label(Strings.aboutLabel, systemImage: "info.circle")
                 .symbolRenderingMode(.monochrome)
         }
         .padding(.horizontal)

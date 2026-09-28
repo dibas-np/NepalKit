@@ -37,24 +37,45 @@ import AppKit
 /// opens without focus, which `WindowPresentationTests` and the real-app check
 /// will both show immediately.
 ///
-/// The activation is deferred by one main-queue hop. Measured both ways against
-/// the real app — activating in the same turn and on the next turn both produce
-/// an active app with a key Settings window — so the hop is a cheap safeguard
-/// against SwiftUI creating the window asynchronously, not a requirement. What
-/// *is* load-bearing is the ordering: never activate before opening, or the app
-/// comes forward with no window to focus.
+/// The activation is attempted on a later main-queue turn, and retried a bounded
+/// number of times *only while the activation request is refused*.
+///
+/// Retry rather than a longer sleep, because the observed failure is a refused
+/// request, not a mistimed one: `activate(options:)` returns `false` and the app
+/// never comes forward, leaving the window open and dead to the keyboard. A
+/// fixed delay would paper over that and still fail when the machine is busy.
+///
+/// Measured for the `Settings` scene: activating in the same turn and on the
+/// next turn both work. Measured for a lazily created `Window` scene (About):
+/// the same one-turn hop worked on some launches and not others, which is why
+/// this is bounded-retry rather than a magic interval. Either way the invariant
+/// that matters is unchanged — never activate before opening, and never give up
+/// while the user is still waiting for a usable window.
 @MainActor
 enum WindowPresentation {
     static func present(
         open: () -> Void,
-        activate: @escaping () -> Void = {
+        activate: @escaping () -> Bool = {
             NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         },
-        schedule: (@escaping () -> Void) -> Void = { work in
+        attempts: Int = 3,
+        schedule: @escaping (@escaping () -> Void) -> Void = { work in
             DispatchQueue.main.async(execute: work)
         }
     ) {
         open()
-        schedule { activate() }
+        attemptActivation(activate, remaining: attempts, schedule: schedule)
+    }
+
+    private static func attemptActivation(
+        _ activate: @escaping () -> Bool,
+        remaining: Int,
+        schedule: @escaping (@escaping () -> Void) -> Void
+    ) {
+        guard remaining > 0 else { return }
+        schedule {
+            guard !activate() else { return }
+            attemptActivation(activate, remaining: remaining - 1, schedule: schedule)
+        }
     }
 }

@@ -32,6 +32,27 @@ enum Strings {
     static let converterOutOfRange = "Outside supported range"
     static let quitLabel = "Quit NepalKit"
     static let settingsLabel = "Settings…"
+    static let aboutLabel = "About NepalKit"
     static let displaySection = "Display"
     static let startupSection = "Startup"
+
+    /// About surface. The calendar range is formatted from the dataset's own
+    /// bounds, so narrowing or extending the table moves this line with it.
+    static func versionLabel(_ version: String) -> String { "Version \(version)" }
+    static func datasetVersionLabel(_ version: String) -> String { "Dataset \(version)" }
+    static func supportedRange(_ range: ClosedRange<Int>) -> String {
+        "\(range.lowerBound)–\(range.upperBound) BS"
+    }
+    static let calendarDataLabel = "Calendar data"
+    static let supportedRangeLabel = "Supported range"
+    static let repositoryLabel = "Source repository"
+    /// Says what the cross-check established and no more. The table is
+    /// corroborated against a second community source, but every shipped year is
+    /// still derived from one base table, so this must not read as independent
+    /// licensing (ADR-0010).
+    static let calendarDataAttribution = """
+        Month lengths follow the officially published Nepali Patro and are \
+        cross-checked month-by-month against community tables. The table is \
+        derived from those sources across its whole range.
+        """
 }

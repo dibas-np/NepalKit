@@ -1,4 +1,5 @@
 import AppKit
+import NepalKitCore
 import SwiftUI
 
 @main
@@ -46,5 +47,13 @@ struct NepalKitApp: App {
         Settings {
             SettingsView(settings: settingsModel, loginItem: loginItemModel)
         }
+        // A single-instance named window rather than a `WindowGroup`, so repeated
+        // About invocations focus the existing window instead of stacking
+        // copies. The dataset is the same one the app converts with, so the
+        // range line cannot drift from the conversion contract (ADR-0010).
+        Window(Strings.aboutLabel, id: AboutWindow.id) {
+            AboutView(metadata: .current(), dataset: .v2)
+        }
+        .windowResizability(.contentSize)
     }
 }
