@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// Popover: today details, converter, launch-at-login, and display settings.
+/// Popover: today details, converter, and a route into Settings.
 ///
 /// Iconography (per ADR-0004): SF Symbols everywhere in the popover, with the
 /// rendering mode chosen per surface — hierarchical for section headers so the
@@ -13,7 +13,9 @@ struct PopoverView: View {
     let settings: DisplaySettingsModel
     let clock: ClockModel
     let converter: ConverterModel
-    let loginItem: LoginItemModel
+    /// Settings open through SwiftUI's own action rather than a hand-built
+    /// window; the activation half is `WindowPresentation`'s (ADR-0011).
+    @Environment(\.openSettings) private var openSettings
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
     var dataset: CalendarDataset = .v2
@@ -82,17 +84,18 @@ struct PopoverView: View {
         ConverterView(model: converter, settings: settings.settings)
             .padding(.horizontal)
         Divider()
-        Toggle(isOn: Binding(
-            get: { loginItem.isOn },
-            set: { loginItem.setOn($0) }
-        )) {
-            Label(Strings.launchAtLoginLabel, systemImage: "power")
+        // The settings themselves live in the native Settings scene now, so
+        // the popover carries one entry point instead of three inline controls.
+        // Opening it must also establish activation and focus, which an
+        // `LSUIElement` app does not get for free — WindowPresentation owns
+        // that, and About will reuse it (ADR-0011).
+        Button {
+            WindowPresentation.present(open: { openSettings() })
+        } label: {
+            Label(Strings.settingsLabel, systemImage: "gearshape")
                 .symbolRenderingMode(.monochrome)
         }
         .padding(.horizontal)
-        Divider()
-        SettingsSection(model: settings)
-            .padding(.top, 4)
         Divider()
         // The visible exit path for a menu-bar-only app. The matching ⌘Q lives
         // on the app's termination command group (NepalKitApp.swift) so it works
@@ -101,31 +104,5 @@ struct PopoverView: View {
         Button(Strings.quitLabel, action: AppTermination.quit)
             .padding(.horizontal)
             .padding(.bottom, 4)
-    }
-}
-
-private struct SettingsSection: View {
-    let model: DisplaySettingsModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Picker(Strings.digitScriptLabel, selection: Binding(
-                get: { model.settings.digits },
-                set: { model.save(digits: $0) }
-            )) {
-                Text(Strings.digitsLatin).tag(DigitScript.latin)
-                Text(Strings.digitsDevanagari).tag(DigitScript.devanagari)
-            }
-            .pickerStyle(.segmented)
-
-            Picker(Strings.monthNameLabel, selection: Binding(
-                get: { model.settings.monthNames },
-                set: { model.save(monthNames: $0) }
-            )) {
-                Text(Strings.monthsNepali).tag(MonthNameStyle.nepali)
-                Text(Strings.monthsTransliterated).tag(MonthNameStyle.transliterated)
-            }
-            .pickerStyle(.segmented)
-        }
     }
 }

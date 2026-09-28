@@ -81,17 +81,48 @@ of what you are testing. A broken trigger measures the probe, not the product,
 and — because it returns `true` rather than failing — it reports a confident
 negative. Verify any probe's trigger against a known-good control first.
 
-## Do not use the deprecated activation API
+## Do not activate with `NSApp.activate()`
 
-The spike reached for `activateIgnoringOtherApps: true`. Do not copy that into
-production. `NSApp.activate()` is the current API and Apple's own deprecation
-message names it; the floor is macOS 26, well past its macOS 14 introduction.
-The old spelling is not merely discouraged in Swift — it does not compile:
-`activateIgnoringOtherApps` "has been renamed to `activate(ignoringOtherApps:)`"
-and "was obsoleted in Swift 3", and the underlying method carries
-`API_DEPRECATED` reading "Use NSApp.activate instead." Apple also cautions
-generally against stealing focus, so any activation is to be scoped to the
-moment the user has asked for a window, not applied opportunistically.
+**Corrected by ticket 05, against the real app.** The spike used
+`activateIgnoringOtherApps: true` and the obvious modern replacement was assumed
+to be `NSApp.activate()`. Measured against the real bundle, that is wrong.
+
+Five strategies, each run after resetting the active application so none could
+inherit the previous one's success:
+
+| Strategy | App active | Settings window key |
+| --- | --- | --- |
+| `NSApp.activate()` | no | no |
+| `NSRunningApplication…activate(options: [])` | no | no |
+| `NSRunningApplication…activate(options: [.activateAllWindows])` | no | no |
+| `NSRunningApplication…activate(options: [.activateAllWindows, .activateIgnoringOtherApps])` | **yes** | **yes** |
+| `NSApp.activate(ignoringOtherApps: true)` | **yes** | **yes** |
+
+`NSApp.activate()` cannot work here. It activates only when no other application
+is currently active, and a menu-bar app is summoned precisely *while* one is.
+Telling it to activate is close to a no-op; doing nothing and doing that are
+indistinguishable in the measurement. The activation has to be able to come
+forward over the current frontmost application, which is what the
+`ignoringOtherApps` option expresses.
+
+`NSRunningApplication.current.activate(options:)` is the current API and takes
+that option as a flag, which is preferable to the deprecated `NSApplication`
+method — whose old Swift spelling no longer compiles, "obsoleted in Swift 3",
+and whose header reads "Use NSApp.activate instead." That advice is right about
+the method and wrong about the app shape: for a menu-bar-only app the replacement
+is `NSRunningApplication`, not the zero-argument `NSApp.activate()`.
+
+**Accepted risk.** The `ignoringOtherApps` *option* carries a soft deprecation
+of its own — Apple's message says it "will have no effect" — yet at macOS 27 it
+is the only thing that fronts this app. It is used deliberately and the risk is
+recorded rather than hidden. If it ever does stop working, Settings opens
+without focus, which is a loud, immediate, visible failure rather than a silent
+one: `WindowPresentationTests` covers the ordering, and the real-app check in
+ticket 05 shows the state directly.
+
+The activation is scoped to the moment the user asked for a window, never applied
+opportunistically, because Apple cautions generally against stealing focus and
+this app is otherwise invisible.
 
 ## Still needs human eyes
 

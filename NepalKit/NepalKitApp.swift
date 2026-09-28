@@ -19,7 +19,7 @@ struct NepalKitApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, loginItem: loginItemModel)
+            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel)
         } label: {
             Text(menuBarModel.title(settings: settingsModel.settings))
         }
@@ -30,11 +30,21 @@ struct NepalKitApp: App {
         // button-local keyboardShortcut only fires while the popover holds
         // focus, and an LSUIElement app is frequently not frontmost, so that
         // would not be an exit path at all. One registration, one action.
+        //
+        // It is registered on the app's command group rather than anywhere in
+        // Settings precisely so it keeps working with the Settings window open
+        // and frontmost — a shortcut scoped to the popover would not.
         .commands {
             CommandGroup(replacing: .appTermination) {
                 Button(Strings.quitLabel, action: AppTermination.quit)
                     .keyboardShortcut("q")
             }
+        }
+        // The native Settings scene (ADR-0011). Declaring it is the easy half;
+        // reaching it from a menu-bar-only app is the half that needed deciding,
+        // and `WindowPresentation` is what makes it usable once open.
+        Settings {
+            SettingsView(settings: settingsModel, loginItem: loginItemModel)
         }
     }
 }

@@ -31,4 +31,7 @@ enum Strings {
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
     static let quitLabel = "Quit NepalKit"
+    static let settingsLabel = "Settings…"
+    static let displaySection = "Display"
+    static let startupSection = "Startup"
 }
