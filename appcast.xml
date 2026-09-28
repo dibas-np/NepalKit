@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>NepalKit</title>
+        <item>
+            <title>1.0</title>
+            <pubDate>Mon, 28 Sep 2026 20:26:45 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.0/NepalKit-1.0.zip" length="3042439" type="application/octet-stream" sparkle:edSignature="ecusJsbPPaEv2Md3mNxgicquzDHYDouGMauza+DuXHAyQfLLWWtaI5qY+ygqrmrTD+qfC3KEaT2rntefMQ/CBA=="/>
+        </item>
+    </channel>
+</rss>
