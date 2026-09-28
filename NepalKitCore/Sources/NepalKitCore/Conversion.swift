@@ -124,3 +124,10 @@ public func todayAD(now: Date) -> GADay? {
     guard let year = components.year, let month = components.month, let day = components.day else { return nil }
     return GADay(year: year, month: month, day: day)
 }
+
+/// Next Nepal Time midnight after the given instant, for scheduling a
+/// date-flip refresh. Returns nil only if calendar math fails.
+public func nextNPTMidnight(after date: Date) -> Date? {
+    let startOfToday = nptGregorian.startOfDay(for: date)
+    return nptGregorian.date(byAdding: .day, value: 1, to: startOfToday)
+}

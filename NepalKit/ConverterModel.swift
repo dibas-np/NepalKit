@@ -26,32 +26,50 @@ final class ConverterModel {
 
     var bsYear: Int {
         get { bsDate.year }
-        set { bsDate = BSDay(year: newValue, month: bsDate.month, day: bsDate.day) }
+        set {
+            bsDate = BSDay(year: newValue, month: bsDate.month, day: bsDate.day)
+            clampBSDay()
+        }
     }
 
     var bsMonth: Int {
         get { bsDate.month }
-        set { bsDate = BSDay(year: bsDate.year, month: newValue, day: bsDate.day) }
+        set {
+            bsDate = BSDay(year: bsDate.year, month: newValue, day: bsDate.day)
+            clampBSDay()
+        }
     }
 
     var bsDay: Int {
         get { bsDate.day }
-        set { bsDate = BSDay(year: bsDate.year, month: bsDate.month, day: newValue) }
+        set {
+            bsDate = BSDay(year: bsDate.year, month: bsDate.month, day: newValue)
+            clampBSDay()
+        }
     }
 
     var adYear: Int {
         get { adDate.year }
-        set { adDate = GADay(year: newValue, month: adDate.month, day: adDate.day) }
+        set {
+            adDate = GADay(year: newValue, month: adDate.month, day: adDate.day)
+            clampADDate()
+        }
     }
 
     var adMonth: Int {
         get { adDate.month }
-        set { adDate = GADay(year: adDate.year, month: newValue, day: adDate.day) }
+        set {
+            adDate = GADay(year: adDate.year, month: newValue, day: adDate.day)
+            clampADDate()
+        }
     }
 
     var adDay: Int {
         get { adDate.day }
-        set { adDate = GADay(year: adDate.year, month: adDate.month, day: newValue) }
+        set {
+            adDate = GADay(year: adDate.year, month: adDate.month, day: newValue)
+            clampADDate()
+        }
     }
 
     private let dataset: CalendarDataset
@@ -137,36 +155,57 @@ final class ConverterModel {
         return Array(lower ... upper)
     }
 
+    /// Clamps the BS pickers into the dataset's supported range and the real
+    /// month length. Writes `bsDate` directly (never through the setters) so
+    /// the setters can call this safely without recursing. Idempotent, so
+    /// existing call sites that call it explicitly keep working.
     func clampBSDay() {
-        let maxDay = daysInBSMonth(year: bsYear, month: bsMonth)
-        bsDay = min(max(bsDay, 1), maxDay)
+        let clampedYear = min(max(bsDate.year, dataset.supportedRange.lowerBound), dataset.supportedRange.upperBound)
+        let clampedMonth = min(max(bsDate.month, 1), 12)
+        let maxDay = daysInBSMonth(year: clampedYear, month: clampedMonth)
+        let clampedDay = min(max(bsDate.day, 1), maxDay)
+        let clamped = BSDay(year: clampedYear, month: clampedMonth, day: clampedDay)
+        if clamped != bsDate {
+            bsDate = clamped
+        }
     }
 
     func clampADDay() {
-        let maxDay = daysInADMonth(year: adYear, month: adMonth)
-        adDay = min(max(adDay, 1), maxDay)
         clampADDate()
     }
 
     /// Keeps the AD pickers inside the convertible [minAD, maxAD] span.
+    /// Writes `adDate` once at the end (never through the setters) so the
+    /// setters can call this safely without recursing. Idempotent.
     func clampADDate() {
         guard let minAD, let maxAD else { return }
-        if adDate < minAD {
-            adDate = minAD
-        } else if adDate > maxAD {
-            adDate = maxAD
+        var date = adDate
+        // Real calendar bounds first.
+        let monthInYear = min(max(date.month, 1), 12)
+        let maxDayInMonth = daysInADMonth(year: date.year, month: monthInYear)
+        date = GADay(year: date.year, month: monthInYear, day: min(max(date.day, 1), maxDayInMonth))
+        // Convertible span.
+        if date < minAD {
+            date = minAD
+        } else if date > maxAD {
+            date = maxAD
         }
         // After clamping to the span, re-clamp month/day at the edges.
-        if !adMonths(year: adYear).contains(adMonth) {
-            adMonth = adMonths(year: adYear).first ?? adMonth
+        if !adMonths(year: date.year).contains(date.month) {
+            let fallback = adMonths(year: date.year).first ?? date.month
+            let maxDay = daysInADMonth(year: date.year, month: fallback)
+            date = GADay(year: date.year, month: fallback, day: min(max(date.day, 1), maxDay))
         }
-        let maxDay = daysInADMonth(year: adYear, month: adMonth)
-        adDay = min(max(adDay, 1), maxDay)
-        if adYear == minAD.year, adMonth == minAD.month {
-            adDay = max(adDay, minAD.day)
+        var day = min(max(date.day, 1), daysInADMonth(year: date.year, month: date.month))
+        if date.year == minAD.year, date.month == minAD.month {
+            day = max(day, minAD.day)
         }
-        if adYear == maxAD.year, adMonth == maxAD.month {
-            adDay = min(adDay, maxAD.day)
+        if date.year == maxAD.year, date.month == maxAD.month {
+            day = min(day, maxAD.day)
+        }
+        let clamped = GADay(year: date.year, month: date.month, day: day)
+        if clamped != adDate {
+            adDate = clamped
         }
     }
 

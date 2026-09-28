@@ -48,7 +48,7 @@ private struct BSPickers: View {
     var body: some View {
         Picker(Strings.yearLabel, selection: Binding(
             get: { model.bsYear },
-            set: { model.bsYear = $0; model.clampBSDay() }
+            set: { model.bsYear = $0 }
         )) {
             ForEach(model.bsYears, id: \.self) { year in
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
@@ -56,7 +56,7 @@ private struct BSPickers: View {
         }
         Picker(Strings.monthLabel, selection: Binding(
             get: { model.bsMonth },
-            set: { model.bsMonth = $0; model.clampBSDay() }
+            set: { model.bsMonth = $0 }
         )) {
             ForEach(1 ... 12, id: \.self) { month in
                 Text(monthName(month: month, style: settings.monthNames)).tag(month)
@@ -64,7 +64,7 @@ private struct BSPickers: View {
         }
         Picker(Strings.dayLabel, selection: Binding(
             get: { model.bsDay },
-            set: { model.bsDay = $0; model.clampBSDay() }
+            set: { model.bsDay = $0 }
         )) {
             ForEach(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth), id: \.self) { day in
                 Text(formatNumber(day, digits: settings.digits)).tag(day)
@@ -80,7 +80,7 @@ private struct ADPickers: View {
     var body: some View {
         Picker(Strings.yearLabel, selection: Binding(
             get: { model.adYear },
-            set: { model.adYear = $0; model.clampADDate() }
+            set: { model.adYear = $0 }
         )) {
             ForEach(model.adYears, id: \.self) { year in
                 Text(formatNumber(year, digits: settings.digits)).tag(year)
@@ -88,7 +88,7 @@ private struct ADPickers: View {
         }
         Picker(Strings.monthLabel, selection: Binding(
             get: { model.adMonth },
-            set: { model.adMonth = $0; model.clampADDate() }
+            set: { model.adMonth = $0 }
         )) {
             ForEach(model.adMonths(year: model.adYear), id: \.self) { month in
                 Text(gregorianMonthNames[month - 1]).tag(month)
@@ -96,7 +96,7 @@ private struct ADPickers: View {
         }
         Picker(Strings.dayLabel, selection: Binding(
             get: { model.adDay },
-            set: { model.adDay = $0; model.clampADDate() }
+            set: { model.adDay = $0 }
         )) {
             ForEach(model.adDays(year: model.adYear, month: model.adMonth), id: \.self) { day in
                 Text(formatNumber(day, digits: settings.digits)).tag(day)

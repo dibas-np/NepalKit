@@ -114,12 +114,7 @@ public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
 
 private func twoDigits(_ value: Int, digits: DigitScript) -> String {
     let padded = value < 10 ? "0\(value)" : String(value)
-    switch digits {
-    case .latin:
-        return padded
-    case .devanagari:
-        return devanagariString(padded)
-    }
+    return digits.render(latinDigits: padded)
 }
 
 /// Formats a clock time as 24-hour "HH:mm:ss" in the given time zone,
