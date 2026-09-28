@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 // Excluded from the app-test harness, alongside NepalKitApp.swift: this is the
 // only file that imports Sparkle, and the harness links only NepalKitCore. The
 // seam it implements — `UpdateServicing` — is Sparkle-free and fully covered by

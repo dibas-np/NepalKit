@@ -108,13 +108,22 @@ struct InfoPlistKeysTests {
         let copyright = try #require(info["NSHumanReadableCopyright"] as? String, "copyright line is absent")
 
         #expect(copyright == "Copyright (C) 2026 Dibas Sigdel")
-        // It must match LICENSE, or the app and the repository disagree.
-        // Read outside #require: the macro cannot wrap a throwing call, and a
-        // missing LICENSE should fail loudly here rather than be swallowed.
-        //
-        let licence = try String(contentsOf: Self.repositoryRoot.appendingPathComponent("LICENSE"), encoding: .utf8)
 
-        #expect(licence.contains(copyright), "LICENSE and the About surfaces state different holders")
+        // It must match what the source files declare, or the app and the
+        // repository name different holders.
+        //
+        // This used to be checked against LICENSE, which is where the notice was
+        // originally. That arrangement was wrong: a project notice prepended to
+        // LICENSE stops GitHub's Licensee identifying the licence, and GitHub
+        // reported the repository as NOASSERTION. The GPL's own guidance puts
+        // the notice in the source headers and leaves LICENSE as the licence
+        // text alone, which is what this now checks.
+        let source = Self.repositoryRoot.appendingPathComponent("NepalKit/PopoverView.swift")
+        let header = try String(contentsOf: source, encoding: .utf8)
+
+        #expect(header.contains(copyright),
+                "the About surfaces and the source headers state different holders")
+        #expect(header.contains("SPDX-License-Identifier: GPL-3.0-or-later"))
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
@@ -134,8 +143,18 @@ struct InfoPlistKeysTests {
         let text = try String(contentsOf: shipped, encoding: .utf8)
         #expect(text.contains("GNU GENERAL PUBLIC LICENSE"))
         #expect(text.contains("Version 3, 29 June 2007"))
-        // The project's own notice travels with the licence text.
-        #expect(text.contains("Copyright (C) 2026 Dibas Sigdel"))
+        // A real licence, not a stub that merely names one.
+        #expect(text.contains("TERMS AND CONDITIONS"))
+        #expect(text.contains("END OF TERMS AND CONDITIONS"))
+
+        // It must be the licence and nothing else. Anything prepended — a project
+        // notice, a README extract — stops GitHub's Licensee from identifying
+        // it, and the repository then shows NOASSERTION: this project was
+        // published that way until this assertion existed. The GPL asks for the
+        // notice in the source headers, not in the licence file.
+        let canonical = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        #expect(canonical.hasPrefix("                    GNU GENERAL PUBLIC LICENSE"),
+                "something is prepended to LICENSE, so GitHub cannot identify the licence")
     }
 
     @Test func thePublicKeyIsWellFormed() {

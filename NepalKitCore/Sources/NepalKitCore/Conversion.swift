@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
 /// Nepal Time: the product's anchor for "today" (UTC+5:45).

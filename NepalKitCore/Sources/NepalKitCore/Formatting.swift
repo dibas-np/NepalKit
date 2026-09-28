@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
 /// Display settings for Bikram Sambat dates, per the locked spec: two independent axes.

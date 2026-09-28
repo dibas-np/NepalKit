@@ -1,6 +1,7 @@
 #!/bin/zsh
 
 # SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Dibas Sigdel
 # Release pipeline (ticket 08): archive, Developer ID export, DMG, notarize,
 # staple, Gatekeeper-verify. Proves a Gatekeeper-clean DMG for public releases.
 #

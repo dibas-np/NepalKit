@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
 /// Shared UTC instant builder for app tests. One helper instead of a copy

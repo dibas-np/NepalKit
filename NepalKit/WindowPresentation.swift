@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
 /// Establishes activation and focus when a command opens a normal application

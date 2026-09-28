@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 /// A versioned Bikram Sambat month-length table with its conversion anchor.
 ///
 /// Month lengths are declared per year by the official Nepali Patro; there is
