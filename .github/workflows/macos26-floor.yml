@@ -1,0 +1,131 @@
+# macOS 26 deployment-floor gate (ADR-0007).
+#
+# The floor claim is behavioural: "this app builds, tests, and runs here." It is
+# not a pixel comparison — design review belongs on the current macOS release,
+# where a human is looking. The two are deliberately not confused.
+#
+# This workflow is the *implementation* of that gate. Until it has actually run
+# on the `macos-26` runner, it establishes nothing: see the status line on
+# ticket 04, which is deliberately not "resolved".
+
+name: macOS 26 floor
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  floor:
+    name: build, test, and launch on macOS 26
+    runs-on: macos-26
+
+    env:
+      # Pinned explicitly. The runner image's default Xcode has already moved
+      # 26.4.1 -> 26.5 -> 26.6 and will keep moving, so relying on it means this
+      # gate silently starts testing a different toolchain than it claims to.
+      XCODE_VERSION: "26.6"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select an explicit Xcode, not the image default
+        run: |
+          set -euo pipefail
+          candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          if [ ! -d "$candidate" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner."
+            echo "Installed:"; ls -d /Applications/Xcode*.app || true
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
+          echo "Using DEVELOPER_DIR=$candidate"
+          xcodebuild -version
+
+      - name: Core suite
+        working-directory: NepalKitCore
+        run: swift test
+
+      # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
+      # builds the app clean and then hangs before connecting, reproducibly and
+      # including with an empty test; it is a toolchain issue, not a reason to
+      # delete the app-layer tests. See ADR-0005.
+      - name: App-layer suite
+        run: ./scripts/run-app-tests.sh
+
+      # Signing is disabled: the project sets a development team target-wide, and
+      # a pull-request job must need no credentials and be unable to reach any.
+      - name: Build the application
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project NepalKit.xcodeproj \
+            -scheme NepalKit \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/NepalKitDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      # The check that matters most, per the ticket: an LSUIElement app that
+      # dies or respawns in a loop on its own floor is a real shipping defect,
+      # and cosmetic differences are not.
+      #
+      # What this can and cannot establish is recorded below, and the distinction
+      # is not blurred. It cannot prove the menu-bar item appeared or that the
+      # popover opens, because doing so headlessly would need a launch-argument
+      # debug hook that the spec explicitly forbids shipping.
+      - name: Launch, survive, and exit without a relaunch loop
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app"
+          binary="$app/Contents/MacOS/NepalKit"
+          test -x "$binary" || { echo "::error::no built binary at $binary"; exit 1; }
+
+          "$binary" &
+          pid=$!
+          sleep 12
+
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "::error::the app did not survive 12s after launch"
+            exit 1
+          fi
+
+          # A runaway loop would show up as more than one instance.
+          instances=$(pgrep -f "$binary" | wc -l | tr -d ' ')
+          echo "instances after launch: $instances"
+          if [ "$instances" -ne 1 ]; then
+            echo "::error::expected exactly one process, found $instances"
+            pkill -f "$binary" || true
+            exit 1
+          fi
+
+          # Terminate the way the app's own exit path does, then confirm it is
+          # gone and does not come back.
+          kill -TERM "$pid" 2>/dev/null || true
+          sleep 5
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "::error::the app ignored SIGTERM"
+            pkill -f "$binary" || true
+            exit 1
+          fi
+          sleep 5
+          if pgrep -f "$binary" >/dev/null; then
+            echo "::error::the app relaunched after termination"
+            pkill -f "$binary" || true
+            exit 1
+          fi
+          echo "launched, survived, and terminated cleanly"
+
+      - name: Upload the build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NepalKit-macos26-build
+          path: ${{ runner.temp }}/NepalKitDerivedData/Logs/Build
+          if-no-files-found: ignore
+          retention-days: 14
