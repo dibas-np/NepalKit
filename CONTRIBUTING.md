@@ -29,8 +29,15 @@ true.
 
 ## Getting set up
 
-You need Xcode 27 or later. The app's deployment floor is macOS 26, and
-`NepalKitCore` will not build against anything older.
+The app's deployment floor is macOS 26, and `NepalKitCore` will not build
+against anything older.
+
+**Which Xcode is required is not settled, and this file will not pretend
+otherwise.** It builds with Xcode 27, which is what the release pipeline uses.
+The floor gate ([macos26-floor.yml](.github/workflows/macos26-floor.yml)) pins
+**Xcode 26.6** on the `macos-26` runner and has still never run, so nobody has
+proved 26.6 can build this — see ticket 04. If you hit something 26.6 cannot
+compile, that is a finding worth reporting, not a local problem to work around.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git

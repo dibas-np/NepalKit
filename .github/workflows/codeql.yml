@@ -1,0 +1,145 @@
+# CodeQL analysis.
+#
+# This workflow exists because GitHub's *default* code-scanning setup cannot be
+# used here. That setup is a server-side workflow (`dynamic/github-code-scanning/
+# codeql`) with no file in this repository, so its build steps cannot be changed.
+# Its Swift job fails on the `macos-26` runner image:
+#
+#     [ERROR] Spawned process exited abnormally (code 139;
+#             tried to run: [.../codeql/swift/tools/autobuild.sh])
+#     ##[error] We were unable to automatically build your code.
+#                Please replace the call to the autobuild action with your
+#                custom build steps.
+#
+# 139 is 128 + 11: a segmentation fault inside CodeQL's own `autobuild.sh`, before
+# any project source was compiled. The `python` and `actions` jobs of that same
+# run succeeded, which is what identifies it as a tool-and-runner problem rather
+# than a problem with this code.
+#
+# So this file does the thing GitHub's error message asks for: `build-mode:
+# manual` and explicit build steps we control. Deleting it would silently put the
+# analysis back to a configuration that does not work.
+#
+# To use it, code scanning has to be set to "Set up via workflows" rather than
+# "Default setup" in Settings -> Code security. While "Default setup" is selected
+# GitHub runs its own workflow and this one is ignored.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so a newly published advisory is noticed on code that has not
+    # changed. A quarterly cron would leave a window open for months.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: macos-26
+
+    permissions:
+      # Required to upload SARIF. The top-level `contents: read` is inherited by
+      # every other token.
+      security-events: write
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # swift: the app and NepalKitCore.
+        # python: the provenance and calendar-check scripts.
+        # actions: the workflow files themselves, which is how a compromised or
+        #   injected step gets caught.
+        language: [swift, python, actions]
+
+    env:
+      # Pinned, exactly as in macos26-floor.yml, and for the same reason: the
+      # runner image's default Xcode has already moved 26.4.1 -> 26.5 -> 26.6
+      # and will keep moving. A security analysis that silently changes
+      # toolchain is not the same analysis.
+      #
+      # If the project is found to need a newer Xcode, this and
+      # macos26-floor.yml have to move together. The floor gate has never
+      # actually run, so whether 26.6 can build this is unproven — see ticket
+      # 04. That is a reason to find out, not a reason to guess here.
+      XCODE_VERSION: "26.6"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select an explicit Xcode, not the image default
+        run: |
+          set -euo pipefail
+          candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          if [ ! -d "$candidate" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner."
+            echo "Installed:"; ls -d /Applications/Xcode*.app || true
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
+          echo "Using DEVELOPER_DIR=$candidate"
+          xcodebuild -version
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # The whole point of this file. `autobuild` is what segfaults; the
+          # build is done explicitly below so CodeQL traces it instead.
+          build-mode: manual
+
+      # CodeQL traces whatever build commands run after `init`, so the order
+      # matters: this must come after Initialize and before Analyze.
+      - name: Build (traced)
+        if: matrix.language == 'swift'
+        run: |
+          set -euo pipefail
+          # Debug, not Release: the extractor needs to see the code compiled, and
+          # Release's extra signing and optimisation only add failure modes. The
+          # release artifact is signed and notarized in package-release.sh, on a
+          # machine that holds the credentials — not in a pull request.
+          # No output formatter and no `|| true`. A pipe to a tool the runner may
+          # not have would fail the step, and swallowing that with `|| true`
+          # would also swallow a genuine compile error — leaving a security gate
+          # reporting success on code that was never built. macos26-floor.yml
+          # does the same thing for the same reason.
+          xcodebuild build \
+            -project NepalKit.xcodeproj \
+            -scheme NepalKit \
+            -configuration Debug \
+            -destination 'generic/platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build (traced) — core only
+        if: matrix.language == 'swift'
+        # The app target links NepalKitCore, so the build above already compiles
+        # it. This step exists only to build its tests, which the app scheme does
+        # not: without it, ~50% of the Swift source is never extracted, and the
+        # analysis would silently cover less than it appears to.
+        run: |
+          set -euo pipefail
+          cd NepalKitCore
+          swift build --build-tests
+
+      - name: Build (traced) — scripts
+        if: matrix.language == 'python'
+        # Python needs no build step; this exists so the step is not simply
+        # absent, and so a future reader can see it was considered rather than
+        # forgotten.
+        run: echo "python sources are analysed directly; nothing to compile"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
