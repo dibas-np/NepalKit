@@ -82,7 +82,27 @@ xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" \
     --password "$APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
 xcrun stapler staple "$DMG"
 
-# "Gatekeeper-clean" is earned only here: ticket validation AND spctl accept.
+# "Gatekeeper-clean" is earned only here. Note the assessment order, each a
+# hard gate: the ticket on the DMG first, then the app users actually launch.
+# (A DMG carries no code signature by design, so `spctl` on the .dmg file
+# itself always reports "no usable signature" — the meaningful checks are
+# the stapled ticket plus the mounted app.)
 xcrun stapler validate "$DMG"
-spctl -a -t open --context context:primary-signature -v "$DMG"
+
+MNT=/Volumes/${APP}-release-check
+cleanup() { hdiutil detach "$MNT" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+hdiutil attach "$DMG" -nobrowse -mountpoint "$MNT"
+spctl -a -t execute "$MNT/$APP.app"
+
+# Launch smoke: the notarized app must start from the mounted DMG.
+open "$MNT/$APP.app"
+launched=0
+for _ in {1..15}; do
+    if pgrep -f "$MNT/$APP.app/Contents/MacOS/$APP" >/dev/null; then launched=1; break; fi
+    sleep 1
+done
+[[ $launched == 1 ]] || { echo "app did not launch from mounted DMG"; exit 1; }
+pkill -f "$MNT/$APP.app/Contents/MacOS/$APP" || true
+
 echo "Gatekeeper-clean DMG: $DMG"
