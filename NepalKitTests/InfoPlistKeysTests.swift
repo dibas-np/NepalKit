@@ -78,6 +78,8 @@ struct InfoPlistKeysTests {
 
         #expect(info["LSUIElement"] as? Bool == true, "menu-bar-only would be lost")
         #expect(info["CFBundleIdentifier"] as? String == "com.dibas.NepalKit.NepalKit")
+        #expect(info["SUEnableInstallerLauncherService"] as? Bool == true,
+                "sandboxed installs abort at the installer launch without it")
         #expect(info["CFBundleShortVersionString"] as? String != nil, "the human-facing version is substituted")
         #expect(info["CFBundleVersion"] as? String != nil, "the build number the updater orders on is substituted")
         #expect(info["CFBundleIconName"] as? String == "AppIcon", "the icon would fall back to a generic one")

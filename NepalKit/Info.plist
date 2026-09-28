@@ -72,6 +72,17 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright (C) 2026 Dibas Sigdel</string>
 
+	<!--
+	  Required for sandboxed installs (Sparkle's sandboxing guide): without
+	  it the installer launch skips the embedded Installer.xpc and falls
+	  back to an authorization path the sandbox forbids, so every update
+	  aborts with "Failed to gain authorization required to update target"
+	  — errAuthorizationInternal (-60005), measured on an installed 1.0
+	  updating against a live 1.1 feed.
+	-->
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+
 	<key>SUPublicEDKey</key>
 	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
 
