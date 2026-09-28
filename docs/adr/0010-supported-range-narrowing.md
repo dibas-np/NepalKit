@@ -80,11 +80,17 @@ the other 102. A second source is the only thing that can, and the cross-check
 already had one — those arbitrated months are the ones that should each be an
 assertion.
 
-Not fixed here. Adding fixtures for 102 years needs published-calendar sources
-per year, which do not all exist, and asserting dates without them would break
-the repo's sourcing rule. The fix is to assert every month boundary for which a
-cited source exists, prioritising the nine already-arbitrated disputes, and to
-record the rest as uncovered rather than implying otherwise.
+Partly addressed since: the arbitrated months now live in their own
+`ArbitratedDisputeTests` suite, which added the one that was missing — 2084
+Baisakh, arbitrated at 31 days but never asserted — and added a presence test so
+the set cannot shrink silently during a refactor. Thirteen of the thirteen
+recorded arbitration decisions are now asserted. (An earlier draft of this record
+said those cases were unasserted. They were not; the count was wrong.)
+
+The remaining 102 years are unchanged and still uncovered, and closing them needs
+a cited published-calendar source per year, which does not exist for most of
+them. Asserting dates without one would break the repo's sourcing rule, so the
+gap stands as recorded rather than being papered over.
 
 ## Considered Options
 
