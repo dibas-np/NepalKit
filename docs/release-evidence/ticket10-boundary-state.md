@@ -11,6 +11,14 @@ status item reports a negative y and looks off-screen. It is not. The
 popover was opened by clicking the position the accessibility API
 reports, which is why it could be captured at all.
 
+The trees below were captured before Screen Recording permission was
+granted. Pixel captures of the same two states were taken afterwards and
+are in `screenshots/`, and they agree with the trees. The one thing only
+a pixel can show is the menu bar's **drawn** compact marker, which the tree
+cannot report because the accessibility label replaces the drawn string:
+the tree says "date unavailable, calendar data ends 12 April 2028" and the
+screen says `n/a`. Both are correct, and they are different on purpose.
+
 ## Captured instant: 13 April 2028, 12:00 Nepal Time
 
 ### Menu bar
