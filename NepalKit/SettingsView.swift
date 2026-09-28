@@ -20,11 +20,10 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
-    /// Optional because the update surface cannot exist before an updater is
-    /// configured, which needs a published feed and a signing key. Absent, the
-    /// section is omitted rather than shown disabled, so no build ever
-    /// advertises a control that cannot work.
-    let updates: UpdateCheckModel?
+    /// The updater is constructed and started at launch (NepalKitApp), so the
+    /// section always exists; it reads its outcome state from the same model
+    /// the background check reports into.
+    @Bindable var updates: UpdateCheckModel
 
     var body: some View {
         Form {
@@ -68,22 +67,19 @@ struct SettingsView: View {
                 }
             }
 
-            if let updates {
-                @Bindable var updates = updates
-                Section(Strings.updatesSection) {
-                    Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
+            Section(Strings.updatesSection) {
+                Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
 
-                    Toggle(isOn: $updates.automaticallyChecks) {
-                        Text(Strings.updateAutomaticallyLabel)
-                    }
+                Toggle(isOn: $updates.automaticallyChecks) {
+                    Text(Strings.updateAutomaticallyLabel)
+                }
 
-                    if let status = updates.statusText {
-                        // A plain Text already announces itself. Left
-                        // unmodified rather than given a redundant label.
-                        Text(status)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+                if let status = updates.statusText {
+                    // A plain Text already announces itself. Left
+                    // unmodified rather than given a redundant label.
+                    Text(status)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

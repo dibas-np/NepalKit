@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// `weekday(of: GADay)` exists so the weekday of a civil day can be had without
 /// the dataset. Two reasons it has to be: the weekday belongs to the date rather

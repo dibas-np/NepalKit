@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// Month starts and notable month dates from published Patro reproductions
 /// (independent of the table sources): KMC government grids, Hamro Patro,

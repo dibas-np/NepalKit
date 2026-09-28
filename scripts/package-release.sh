@@ -89,7 +89,6 @@ ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
 # diskutil, not hdiutil: `hdiutil create -volname -format` is deprecated and
 # says so on every run. Same image, supported spelling.
-rm -f "$DMG"
 diskutil image create from "$STAGE" --volumeName "$APP" --format UDZO "$DMG" >/dev/null
 
 xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" \

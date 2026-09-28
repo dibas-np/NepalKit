@@ -67,17 +67,22 @@ struct InfoPlistKeysTests {
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
-    func theGeneratedKeysSurviveThePlistMerge() throws {
-        // Wiring INFOPLIST_FILE alongside GENERATE_INFOPLIST_FILE merges the
-        // two. If that merge ever stopped happening, NepalKit would silently
-        // become a Dock app — the single most visible regression available to
-        // this change — and the build would still be green.
+    func thePlistIsAuthoritativeInTheBuiltProduct() throws {
+        // The plist states every key itself now (GENERATE_INFOPLIST_FILE is
+        // off), so there is no merge to survive — but the keys still have to
+        // reach the product intact, and the version keys still arrive
+        // substituted from build settings (ADR-0009). Losing LSUIElement would
+        // silently turn NepalKit into a Dock app — the single most visible
+        // regression available to this change — and the build would stay green.
         let info = try #require(Self.builtInfo)
 
         #expect(info["LSUIElement"] as? Bool == true, "menu-bar-only would be lost")
         #expect(info["CFBundleIdentifier"] as? String == "com.dibas.NepalKit.NepalKit")
-        #expect(info["CFBundleShortVersionString"] as? String != nil, "the human-facing version is generated")
-        #expect(info["CFBundleVersion"] as? String != nil, "the build number the updater orders on is generated")
+        #expect(info["CFBundleShortVersionString"] as? String != nil, "the human-facing version is substituted")
+        #expect(info["CFBundleVersion"] as? String != nil, "the build number the updater orders on is substituted")
+        #expect(info["CFBundleIconName"] as? String == "AppIcon", "the icon would fall back to a generic one")
+        #expect(info["LSApplicationCategoryType"] as? String == "public.app-category.utilities", "the category clears a build warning only if it arrives")
+        #expect(info["LSMinimumSystemVersion"] as? String != nil, "the deployment floor must be stated in the product")
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
@@ -152,9 +157,18 @@ struct InfoPlistKeysTests {
         // it, and the repository then shows NOASSERTION: this project was
         // published that way until this assertion existed. The GPL asks for the
         // notice in the source headers, not in the licence file.
-        let canonical = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        #expect(canonical.hasPrefix("                    GNU GENERAL PUBLIC LICENSE"),
-                "something is prepended to LICENSE, so GitHub cannot identify the licence")
+        //
+        // Compared as the first non-empty line, trimmed of its own indentation.
+        // The canonical file indents the title by 20 spaces, so trimming the
+        // whole text and then asserting a prefix *containing* that indentation
+        // could never pass — the original form of this assertion was provably
+        // dead and only went unnoticed because it is gated on a built product.
+        let firstNonEmptyLine = text
+            .split(whereSeparator: \.isNewline)
+            .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        #expect(firstNonEmptyLine == "GNU GENERAL PUBLIC LICENSE",
+                "something is prepended to LICENSE, so GitHub cannot identify the licence; first line is \(firstNonEmptyLine.map { "\"\($0)\"" } ?? "absent")")
     }
 
     @Test func thePublicKeyIsWellFormed() {

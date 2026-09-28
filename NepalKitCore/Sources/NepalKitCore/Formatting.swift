@@ -72,10 +72,17 @@ public func formatNumber(_ value: Int, digits: DigitScript) -> String {
 /// Bikram Sambat month name for 1 (Baisakh) through 12 (Chaitra),
 /// honoring the month-name setting.
 public func monthName(month: Int, style: MonthNameStyle) -> String {
+    let names: [String]
     switch style {
-    case .nepali: return nepaliMonthNames[month - 1]
-    case .transliterated: return transliteratedMonthNames[month - 1]
+    case .nepali: names = nepaliMonthNames
+    case .transliterated: names = transliteratedMonthNames
     }
+    // Out-of-range months render as their number — the pass-through rule
+    // `devanagariString` uses. The pickers and the dataset bound months to
+    // 1...12, so reaching this line means an unclamped value got here, and
+    // showing "13" beats inventing a name or trapping on the way to the menu bar.
+    guard names.indices.contains(month - 1) else { return String(month) }
+    return names[month - 1]
 }
 
 /// Nepali weekday names, Sunday through Saturday.
@@ -118,9 +125,17 @@ public let gregorianMonthNames = [
     "July", "August", "September", "October", "November", "December",
 ]
 
+/// Gregorian month name for 1 (January) through 12 (December). Out-of-range
+/// months render as their number — same pass-through rule as `monthName`.
+/// The one lookup `formatAD` and `SpokenDate.ad` share.
+public func gregorianMonthName(_ month: Int) -> String {
+    guard gregorianMonthNames.indices.contains(month - 1) else { return String(month) }
+    return gregorianMonthNames[month - 1]
+}
+
 /// Formats a Gregorian date as "day month year", honoring the digit-script setting.
 public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
-    "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthNames[ad.month - 1]) \(formatNumber(ad.year, digits: settings.digits))"
+    "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthName(ad.month)) \(formatNumber(ad.year, digits: settings.digits))"
 }
 
 private func twoDigits(_ value: Int, digits: DigitScript) -> String {

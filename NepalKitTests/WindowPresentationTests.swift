@@ -68,9 +68,10 @@ struct WindowPresentationTests {
         #expect(activations == 1)
     }
 
-    @Test func retriesWhileTheRequestIsRefused() {
-        // A refused request is the observed failure: the app never comes
-        // forward and the window is left open and dead. It must be retried.
+    @Test func retriesWhileTheAppIsNotYetActive() {
+        // The closure reports whether the app came forward, and a `false` —
+        // still not frontmost, the observed failure that leaves the window open
+        // and dead — is what gets retried.
         var activations = 0
         WindowPresentation.present(
             open: {},

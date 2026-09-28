@@ -51,7 +51,7 @@ struct ConverterView: View {
                     // `children: .ignore` left the live tree showing
                     // `AXUnknown: Result: ...` with no role at all.
                     .accessibilityLabel(
-                        [Strings.converterResultLabel, model.spokenResult(monthNames: settings.monthNames) ?? output]
+                        [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")
                     )
             } else {

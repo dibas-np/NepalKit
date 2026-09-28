@@ -72,13 +72,33 @@ public struct CalendarDataset: Sendable {
         var cursor = 0
         for year in supportedRange {
             starts[year] = cursor
-            cursor += years[year]?.reduce(0, +) ?? 0
+            // A declared range year with no month row would silently contribute
+            // zero days here, shifting every later year's index and corrupting
+            // every conversion after it. A broken dataset must fail loudly at
+            // construction, not convert wrong.
+            guard let lengths = years[year] else {
+                preconditionFailure("CalendarDataset \(version): supported-range year \(year) has no month-length row")
+            }
+            cursor += lengths.reduce(0, +)
         }
         self.yearStartIndices = starts
     }
 
     public func monthLengths(for bsYear: Int) -> [Int]? {
         years[bsYear]
+    }
+
+    /// The last day the table can express, as a Gregorian civil day: the
+    /// Gregorian end of `supportedRange`. Nil only if the table is broken.
+    ///
+    /// Derived, never stored: the About surface and the spoken boundary
+    /// sentence both read this, so a table change moves them without a
+    /// Gregorian literal to hunt down (ADR-0010).
+    public var gregorianEnd: GADay? {
+        guard let months = monthLengths(for: supportedRange.upperBound),
+              months.count == 12
+        else { return nil }
+        return bsToAD(BSDay(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
     }
 
     /// Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).

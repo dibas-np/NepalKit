@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// The month lengths that were actually **disputed** between sources, and the
 /// published material each dispute was settled against.

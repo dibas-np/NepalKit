@@ -6,8 +6,8 @@
     {
       "layers" : [
         {
-          "image-name" : "foreground-glyph 2.svg",
-          "name" : "foreground-glyph 2"
+          "image-name" : "foreground-glyph.svg",
+          "name" : "foreground-glyph"
         },
         {
           "image-name" : "foreground-page.svg",

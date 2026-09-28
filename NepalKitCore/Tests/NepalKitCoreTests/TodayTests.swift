@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 struct TodayTests {
 

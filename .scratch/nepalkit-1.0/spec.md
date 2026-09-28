@@ -131,8 +131,9 @@ Numbered continuously from the v1 spec (1–28), which remains in force.
     runs on its own deployment floor, so that the floor is a verified claim
     rather than an aspiration.
 37. As a maintainer, I want the licence and copyright holder settled in
-    writing, so that the MIT grant is granted by whoever actually holds the
-    rights.
+    writing, so that the grant is granted by whoever actually holds the
+    rights. *(Amended 2026-09-28: the grant is GPL-3.0-or-later, not MIT —
+    see Amendments.)*
 
 ## Implementation decisions
 
@@ -228,7 +229,7 @@ elsewhere.
 
 **Ownership is a parallel track, not a numbered step.** The Apple Developer
 account belongs to Finnove Technologies; that does not establish who holds
-copyright in NepalKit or who may grant the MIT licence. The question is asked
+copyright in NepalKit or who may grant its licence. The question is asked
 immediately, and engineering proceeds in parallel, but no public metadata is
 finalised before it is answered in writing.
 
@@ -323,4 +324,23 @@ easy to get wrong.
 - macOS 26-compatible source ≠ Xcode-26-readable project file
 - Settings scene declared ≠ Settings activation solved
 - private candidate ≠ public release
-- source code MIT ≠ bundled calendar data independently licensed
+- source code GPL-3.0 ≠ bundled calendar data independently licensed
+
+## Amendments
+
+**2026-09-28 — Licence: MIT → GPL-3.0-or-later (story 37).** The original text
+said MIT. The shipped licence is GPL-3.0-or-later, decided in ticket 09: the
+base table's fork (`medic/bikram-sambat`) is Apache-2.0, which is one-way
+compatible with GPLv3 — so GPL lets the code and the table ship inside one
+grant, where a permissive licence would have left them on incompatible terms.
+The data itself remains unlicensed by this project either way; SOURCES.md
+records that, and the distinction line above now reads GPL-3.0. Story 37's
+underlying requirement — the grant made in writing by whoever holds the
+rights — is unchanged.
+
+Recorded at the same time, both deliberate additions this spec never asked
+for: the community-health files (CODE_OF_CONDUCT, CONTRIBUTING, GOVERNANCE,
+SECURITY, SUPPORT, CODEOWNERS — the Linux Foundation baseline) and
+`scripts/check-kathmandu-calendar.py` (a live spot-check of the Kathmandu
+Metropolitan City calendar, beyond the three-source cross-check). Neither
+changes the release contract.

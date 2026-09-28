@@ -56,19 +56,21 @@ struct SpokenDateTests {
     @Test func menuBarNamesTheAppSoItIsIdentifiableOutOfContext() {
         // The only surface a blind user meets before opening anything. A bare
         // date says nothing about which app it belongs to.
-        let spoken = SpokenDate.menuBar(today: ashoj11, monthNames: .transliterated)
+        let spoken = SpokenDate.menuBar(today: ashoj11, monthNames: .transliterated, dataset: .v2)
 
         #expect(spoken == "NepalKit, 11 Ashoj 2083")
         #expect(spoken.hasPrefix("NepalKit"))
     }
 
     @Test func menuBarExplainsTheBoundaryRatherThanSayingNothing() {
-        // A bare "n/a" spoken alone reads as a broken menu-bar item.
-        let spoken = SpokenDate.menuBar(today: nil, monthNames: .transliterated)
+        // A bare "n/a" spoken alone reads as a broken menu-bar item. The end
+        // date is the dataset's own Gregorian end — 12 April 2028 — derived,
+        // not spelled in a string somewhere.
+        let spoken = SpokenDate.menuBar(today: nil, monthNames: .transliterated, dataset: .v2)
 
         #expect(spoken.hasPrefix("NepalKit"))
         #expect(spoken != "NepalKit, n/a")
-        #expect(spoken.contains("calendar data ends"))
+        #expect(spoken.contains("calendar data ends 12 April 2028"))
     }
 }
 
@@ -110,7 +112,7 @@ struct SpokenSurfaceTests {
 
         let settings = DisplaySettings(digits: .devanagari, monthNames: .transliterated)
         let shown = try #require(model.convertedText(settings: settings))
-        let spoken = try #require(model.spokenResult(monthNames: .transliterated))
+        let spoken = try #require(model.spokenResult(settings: settings))
 
         // Same day, different channel: the digits are Latin in speech and
         // Devanagari on screen.
@@ -127,8 +129,8 @@ struct SpokenSurfaceTests {
         model.adMonth = 9
         model.adDay = 27
 
-        #expect(try #require(model.spokenResult(monthNames: .nepali)).contains("असोज"))
-        #expect(try #require(model.spokenResult(monthNames: .transliterated)).contains("Ashoj"))
+        #expect(try #require(model.spokenResult(settings: DisplaySettings(digits: .latin, monthNames: .nepali))).contains("असोज"))
+        #expect(try #require(model.spokenResult(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))).contains("Ashoj"))
     }
 
     @Test func gregorianAnnouncementFoldsInTheWeekdayWhenThereIsOne() {

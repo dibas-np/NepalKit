@@ -12,9 +12,9 @@ import AppKit
 /// here rather than each growing its own activation call, so About (ticket 06)
 /// inherits the behaviour instead of reimplementing it.
 ///
-/// **Why `NSRunningApplication` and not `NSApp.activate()`.** Measured against
-/// the real app bundle, five strategies, each after resetting the active app so
-/// none could inherit the previous one's success:
+/// **Which API, measured rather than assumed.** Measured against the real app
+/// bundle, five strategies, each after resetting the active app so none could
+/// inherit the previous one's success:
 ///
 /// | Strategy | App active | Settings window key |
 /// | --- | --- | --- |
@@ -30,28 +30,28 @@ import AppKit
 /// app — which is what the `ignoringOtherApps` flag expresses.
 ///
 /// **Which spelling, and why the obvious answer is not the one used.** The
-/// current API is `NSRunningApplication.activate(options:)`, and it takes the
-/// same behaviour as a flag — but that flag is deprecated, and Apple's own
-/// message says it "will have no effect". The table above already recorded
-/// that the older `NSApp.activate(ignoringOtherApps: true)` fronts this app
-/// just as reliably, and that spelling is *not* deprecated. It is therefore
-/// what is used: the measured behaviour is preserved and the warning is gone,
+/// table above measured both spellings against the real app bundle, and the
+/// current-API one — `NSRunningApplication.activate(options:)` with the
+/// `ignoringOtherApps` flag — is deprecated: Apple's own message says the flag
+/// "will have no effect". The older `NSApp.activate(ignoringOtherApps: true)`
+/// fronts this app just as reliably and is *not* deprecated, so that is what
+/// is used: the measured behaviour is preserved and the warning is gone,
 /// rather than a deprecated call being kept alive under a documented risk.
 ///
 /// **`isActive` is the retry condition, not the request's return value.** The
-/// older API returned a `Bool` saying whether the request was accepted, which
-/// is a proxy for the thing that actually matters. `NSApp.isActive` reports
-/// whether the app came forward, so the bounded retry now continues for
-/// exactly as long as the app is not yet frontmost — which is the real
-/// condition, and stricter than trusting a submission receipt.
+/// request-accepted `Bool` is a proxy for the thing that actually matters.
+/// The activation closure reports `NSApp.isActive`, which says whether the app
+/// came forward, so the bounded retry continues for exactly as long as the app
+/// is not yet frontmost — the real condition, and stricter than trusting a
+/// submission receipt.
 ///
-    /// The activation is attempted on a later main-actor turn, and retried a bounded
-    /// number of times *only while the activation request is refused*.
+/// The activation is attempted on a later main-actor turn, and retried a
+/// bounded number of times *while the app is not yet active*.
 ///
-/// Retry rather than a longer sleep, because the observed failure is a refused
-/// request, not a mistimed one: `activate(options:)` returns `false` and the app
-/// never comes forward, leaving the window open and dead to the keyboard. A
-/// fixed delay would paper over that and still fail when the machine is busy.
+/// Retry rather than a longer sleep, because the observed failure is an
+/// activation that does not take effect, not a mistimed one: the app never
+/// comes forward, leaving the window open and dead to the keyboard. A fixed
+/// delay would paper over that and still fail when the machine is busy.
 ///
 /// Measured for the `Settings` scene: activating in the same turn and on the
 /// next turn both work. Measured for a lazily created `Window` scene (About):
@@ -66,8 +66,8 @@ enum WindowPresentation {
         // @MainActor on the closure, not just on the enum: a default argument
         // expression is evaluated in a nonisolated context even when the
         // enclosing function is isolated, so a body touching NSApp warns
-        // without it. The same reason the model initialisers below moved their
-        // defaults out of the signature.
+        // without it. The same reason the model initialisers build their
+        // defaults in the body rather than in the signature.
         activate: @escaping @MainActor () -> Bool = {
             NSApp.activate(ignoringOtherApps: true)
             return NSApp.isActive

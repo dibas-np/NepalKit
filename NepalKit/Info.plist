@@ -96,19 +96,18 @@
 	<string>https://dibas-np.github.io/NepalKit/appcast.xml</string>
 
 	<!--
-	  The copyright line is NOT set here, and that is a finding worth keeping.
+	  The copyright line IS set here, and that is a change worth explaining.
 
-	  It was added to this file first, on the reasoning that a name outside the
-	  INFOPLIST_KEY_* allowlist has to be spelled out in the plist. The build
-	  succeeded and the finished app contained no NSHumanReadableCopyright at
-	  all, caught by InfoPlistKeysTests reading the built product.
+	  It used to be set only by INFOPLIST_KEY_NSHumanReadableCopyright, because
+	  with GENERATE_INFOPLIST_FILE on, this file's *unknown* keys (SUPublicEDKey,
+	  SUFeedURL) survived the merge but NSHumanReadableCopyright is an Apple-known
+	  key that the generator owned and overwrote — so the build settings carried
+	  it instead, and a version of this comment recorded why it was NOT here.
 
-	  The reason is the reverse of the trap above. This file's *unknown* keys
-	  (SUPublicEDKey, SUFeedURL) survive the merge, but NSHumanReadableCopyright
-	  is an Apple-known key, so GENERATE_INFOPLIST_FILE owns it and overwrites
-	  whatever this file says. It therefore has to come from
-	  INFOPLIST_KEY_NSHumanReadableCopyright in the build settings — which is
-	  what that allowlist is for.
+	  The generator is now gone entirely: this file states every key itself (see
+	  the header above), the build setting was removed with it, and the line
+	  lives here next to every other key. InfoPlistKeysTests reads the built
+	  product to prove it arrives.
 	-->
 </dict>
 </plist>

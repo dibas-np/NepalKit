@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 struct InvalidDateTests {
     static let invalidBSDays: [(day: BSDay, label: String)] = [

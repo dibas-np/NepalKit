@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 struct CalendarDatasetTests {
     @Test func bundledDatasetDeclaresVersionAndRange() {
@@ -25,6 +25,10 @@ struct CalendarDatasetTests {
     @Test func declaredRangeMatchesTableKeys() {
         // The engine indexes exactly the declared range, so a table that
         // disagrees with the range would silently produce zero-length years.
+        // The dataset's own init now traps on a range year with no row, and
+        // the index cache this used to check directly is a consequence of that
+        // plus the row sums — whose public consequence (each New Year landing
+        // on its pinned Gregorian date) NewYearBoundaryTests asserts exactly.
         let dataset = CalendarDataset.v2
 
         #expect(Set(dataset.years.keys) == Set(dataset.supportedRange))
@@ -38,15 +42,5 @@ struct CalendarDatasetTests {
         }
         #expect(dataset.monthLengths(for: dataset.supportedRange.lowerBound - 1) == nil)
         #expect(dataset.monthLengths(for: dataset.supportedRange.upperBound + 1) == nil)
-    }
-
-    @Test func yearStartIndicesAreContiguous() {
-        let dataset = CalendarDataset.v2
-        var expected = 0
-
-        for year in dataset.supportedRange {
-            #expect(dataset.yearStartIndices[year] == expected, "gap before \(year)")
-            expected += dataset.monthLengths(for: year)?.reduce(0, +) ?? 0
-        }
     }
 }

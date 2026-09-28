@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 struct WeekdayNameTests {
     @Test func nepaliWeekdayNames() {

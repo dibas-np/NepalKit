@@ -14,10 +14,12 @@ struct NepalKitApp: App {
     /// before the model is ever read, and a property initializer would run
     /// first, constructing a second model that is immediately discarded.
     @State private var loginItemModel: LoginItemModel
-    /// Nil until an updater is configured — a published feed and a signing key
-    /// are both outstanding (ticket 07). The Settings section is omitted rather
-    /// than shown broken.
-    @State private var updateCheckModel: UpdateCheckModel?
+    /// The updater owns its start: it is constructed and started in `init`, at
+    /// launch, because starting it is what schedules the automatic background
+    /// check — a user who never opens Settings still gets one. The feed URL and
+    /// the public key are pinned in Info.plist (ADR-0012); the wiring lives here
+    /// because this is the only place that outlives every surface.
+    @State private var updateCheckModel: UpdateCheckModel
 
     init() {
         // Default on: the date is in the menu bar from the moment of sign-in.
@@ -25,6 +27,13 @@ struct NepalKitApp: App {
         let login = LoginItemModel()
         login.ensureDefaultOn()
         _loginItemModel = State(initialValue: login)
+        // `startingUpdater: false` so the explicit start below is the one owner
+        // of "when the updater begins", rather than the controller starting it
+        // mid-initialisation. A failed start records an outcome, so Settings
+        // says "could not check" instead of silently never checking.
+        let updates = UpdateCheckModel(service: SparkleUpdateService(startingUpdater: false))
+        updates.start()
+        _updateCheckModel = State(initialValue: updates)
     }
 
     var body: some Scene {

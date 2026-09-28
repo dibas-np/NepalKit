@@ -38,7 +38,7 @@ enum SpokenDate {
     /// Gregorian month names are always English on every surface and in every
     /// display combination (CONTEXT.md), so only the digits can ever differ.
     static func ad(_ ad: GADay) -> String {
-        "\(formatNumber(ad.day, digits: .latin)) \(gregorianMonthNames[ad.month - 1]) \(formatNumber(ad.year, digits: .latin))"
+        "\(formatNumber(ad.day, digits: .latin)) \(gregorianMonthName(ad.month)) \(formatNumber(ad.year, digits: .latin))"
     }
 
     /// The spoken form of a Gregorian date with its weekday, for the popover's
@@ -62,12 +62,17 @@ enum SpokenDate {
     /// navigating by menu-bar extras is relying on this one string entirely.
     /// Naming the app costs a word and makes the item identifiable out of
     /// context.
-    static func menuBar(today: BSDay?, monthNames: MonthNameStyle) -> String {
+    static func menuBar(today: BSDay?, monthNames: MonthNameStyle, dataset: CalendarDataset) -> String {
         guard let today else {
             // Past the supported range the label is a marker, not a date, and a
             // bare "n/a" spoken alone is meaningless — it reads as a broken
-            // item. Say what actually happened instead.
-            return "\(Strings.appNameForSpeech), \(Strings.spokenDateBeyondRange)"
+            // item. Say what actually happened instead. The end date comes from
+            // the dataset itself, so a table change moves this sentence with it
+            // (ADR-0010: no range literal outside the dataset).
+            guard let end = dataset.gregorianEnd else {
+                return "\(Strings.appNameForSpeech), \(Strings.bsDateUnavailable)"
+            }
+            return "\(Strings.appNameForSpeech), \(Strings.spokenDateBeyondRange(ad(end)))"
         }
         return "\(Strings.appNameForSpeech), \(bs(today, monthNames: monthNames))"
     }

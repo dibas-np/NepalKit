@@ -94,9 +94,10 @@ permissions:
   actions: read
 
 env:
-  # Whether 26.6 can actually build this is unproven — the floor gate that pins
-  # the same version has never run (ticket 04). That is a reason to find out, not
-  # a reason to guess: if this job fails to build, that is the answer.
+  # 26.6 is proven: the floor gate (macos26-floor.yml) ran green on a macos-26
+  # runner with this exact pin — core suite, app-layer suite, build, launch.
+  # See ticket 04. The two pins must not drift; that workflow's header carries
+  # the raising-the-pin policy.
   XCODE_VERSION: "26.6"
 
 jobs:

@@ -4,8 +4,8 @@ import Testing
 @testable import NepalKit
 
 /// Test double, same shape as the `LoginItemServicing` mock. The production
-/// service needs a running updater, a published feed and a signing key, none of
-/// which exist yet, so this is how the model's own logic is covered.
+/// service needs Sparkle and a live updater session, which the harness does not
+/// link, so this is how the model's own logic is covered.
 @MainActor
 final class FakeUpdateService: UpdateServicing {
     private(set) var startCount = 0
@@ -57,7 +57,7 @@ struct UpdateCheckModelTests {
         let model = UpdateCheckModel(service: service)
 
         service.report(.failed(reason: "feed unreachable"))
-        #expect(model.statusText == Strings.updateStatusFailed)
+        #expect(model.statusText == Strings.updateStatusFailedReason("feed unreachable"))
         #expect(model.statusText != Strings.updateStatusUpToDate)
     }
 

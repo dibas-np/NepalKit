@@ -13,10 +13,13 @@ final class DisplaySettingsModel {
     private let store: SettingsStore
 
     /// `store` is optional rather than defaulted to `SettingsStore()` in the
-    /// signature. A default argument is evaluated in a nonisolated context even
-    /// when the initialiser is `@MainActor`, so the compiler cannot prove the
-    /// main-actor-isolated `SettingsStore` initialiser is safe there. Optional
-    /// plus a default built in the body says the same thing and type-checks.
+    /// signature. A default argument is evaluated in a nonisolated context,
+    /// so a default that constructs a main-actor-isolated type is fragile
+    /// under strict isolation checking even when the initialiser itself is
+    /// `@MainActor` — whether it warns varies by toolchain and language mode.
+    /// Building the default in the body is correct under every setting, and
+    /// matches `WindowPresentation` and `LoginItemModel`. Tests still inject
+    /// a store explicitly.
     init(store: SettingsStore? = nil) {
         let store = store ?? SettingsStore()
         self.store = store

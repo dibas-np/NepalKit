@@ -89,7 +89,7 @@ final class UpdateCheckModel {
         case nil: Strings.updateStatusNotChecked
         case .upToDate: Strings.updateStatusUpToDate
         case .updateAvailable: Strings.updateStatusUpdateAvailable
-        case .failed: Strings.updateStatusFailed
+        case .failed(let reason): Strings.updateStatusFailedReason(reason)
         }
     }
 }

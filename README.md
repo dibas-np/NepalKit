@@ -6,13 +6,14 @@ Sambat and Gregorian dates, a live Nepal Time clock, and a BS ↔ Gregorian
 converter.
 
 Everything the app *does* is offline. Conversion, the calendar dataset, today's
-date, and settings are all local, and nothing is fetched at runtime. No
-analytics, no telemetry.
+date, and settings are all local. No analytics, no telemetry.
 
 The one exception is the software update check, which is the only thing the app
-is granted network access for. That check is not yet enabled: there is no
-published feed, so nothing is contacted today. It will appear under
-Settings → Software Update once a feed exists ([ADR-0012](docs/adr/0012-sparkle-version-pin.md)).
+is granted network access for. It runs against the feed URL pinned in the
+binary ([ADR-0012](docs/adr/0012-sparkle-version-pin.md)): automatically after
+launch and on demand from Settings → Software Update. The feed is not live yet,
+so until it is published a check honestly reports "could not check" rather
+than claiming you are current.
 
 - **Requires macOS 26 or later** (see [Why macOS 26](#why-macos-26)).
 - Not on the App Store — distributed as a notarized DMG from Releases.
@@ -32,13 +33,15 @@ accepts it without a right-click workaround.
 
 NepalKit is a menu-bar-only app (`LSUIElement`): it has no Dock icon and does not
 appear in Cmd-Tab. Look for the date in the menu bar. Launch at login is on by
-default and can be toggled in the popover.
+default and can be toggled in Settings → Startup.
 
 ## Using it
 
-The popover has three parts: **Today** (both calendars, Nepal Time, your local
-time as a reference), a **converter** with a direction toggle and bounded
-pickers, and your **display settings** plus **Quit**.
+The popover has two parts: **Today** (both calendars, Nepal Time, your local
+time as a reference) and a **converter** with a direction toggle and bounded
+pickers, plus routes into **Settings**, **About**, and **Quit**. Display
+settings and launch-at-login live in the Settings window (Settings… in the
+popover, or Cmd-,).
 
 Two independent display settings apply to every date on every surface:
 
@@ -57,7 +60,11 @@ the popover says so explicitly rather than showing a blank.
 
 ## Development
 
-Requires Xcode 27 (or later) and a macOS 26+ machine to run.
+Requires Xcode 26.6 or later and a macOS 26+ machine to run. Xcode 26.6 is
+proven, not assumed: the floor gate
+([macos26-floor.yml](.github/workflows/macos26-floor.yml)) builds, tests, and
+launches the app on a `macos-26` runner with that exact pin. The release
+pipeline uses Xcode 27.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -71,10 +78,10 @@ builds and tests on its own with no Xcode.
 ### Tests
 
 ```sh
-# core: conversion, dataset, formatting          -> 44 tests, 11 suites
+# core: conversion, dataset, formatting          -> 47 tests, 13 suites
 cd NepalKitCore && swift test
 
-# app layer: models, settings persistence        -> 43 tests, 6 suites
+# app layer: models, settings persistence        -> 96 tests, 15 suites
 ./scripts/run-app-tests.sh
 ```
 
@@ -179,12 +186,11 @@ two are treated as OS behavior, not something to compensate for (ADR-0003).
 - **The dataset-boundary notice has never been seen.** The boundary is
   2028-04-13, so the popover's out-of-range layout is asserted by tests but has
   not been eyeballed.
-- **macOS 26 launch is unverified.** Every result to date is from macOS 27.
-  Function and stability on the deployment floor is a release gate (ADR-0006),
-  so a macOS 26 run is still outstanding.
 - **Cross-machine installation is unverified.** Notarization acceptance,
   stapling, signature validation, and launching from the mounted DMG all pass
-  locally, but no second Mac has confirmed a clean install.
+  locally, and the floor gate builds and launches on a real `macos-26` runner,
+  but no second Mac has confirmed a clean *install* of the shipped DMG — the
+  CI runner builds from source, which is a different path.
 - **The supported range ends at 2084 BS.** Expected, and stated in the UI.
 
 ## License

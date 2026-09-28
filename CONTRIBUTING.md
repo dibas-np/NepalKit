@@ -54,7 +54,7 @@ the application.
 
 ```sh
 cd NepalKitCore && swift test          # the calendar: 47 tests
-./scripts/run-app-tests.sh             # the app: 95 tests
+./scripts/run-app-tests.sh             # the app: 96 tests
 ```
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
@@ -107,6 +107,12 @@ first.
   deployment-floor gate: it proves the app builds, tests, and launches on the
   oldest macOS it claims to support, which is a different question from "does it
   work on my machine".
+- That gate is also a **required status check** on `main` (branch ruleset
+  `main`, enforcement active — checkable under
+  Settings → Rules → Rulesets). Its single required check is named
+  `build, test, and launch on macOS 26`. The repository owner is a bypass
+  actor, so a broken gate can never lock a solo maintainer out of their own
+  repository; for everyone else it cannot be skipped.
 
 ## Licensing of contributions
 

@@ -47,8 +47,10 @@ final class LoginItemModel {
 
     /// Both defaults are built in the body rather than in the signature, for
     /// the same reason as `DisplaySettingsModel`: a default argument is
-    /// evaluated nonisolated, and `LiveLoginItemService()` and
-    /// `UserDefaults.standard` are main-actor isolated. Tests still inject
+    /// evaluated in a nonisolated context, so defaulting to constructs of
+    /// main-actor-isolated types is fragile under strict isolation checking
+    /// even when the initialiser itself is `@MainActor`. Building them in the
+    /// body is correct under every toolchain setting. Tests still inject
     /// either one explicitly, so the call sites are unchanged.
     init(service: (any LoginItemServicing)? = nil, defaults: UserDefaults? = nil) {
         let service = service ?? LiveLoginItemService()

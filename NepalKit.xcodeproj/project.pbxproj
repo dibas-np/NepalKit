@@ -370,12 +370,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
-				// NepalKit declares no App Intents, so the metadata extractor has
-				// nothing to extract and says so on every build. FILTER_WARNINGS is
-				// the supported opt-out (--quiet-warnings). Safe here precisely
-				// because the app has no App Intents: there is no App Intents
-				// warning that could be lost. Remove this if that ever changes.
-				FILTER_WARNINGS = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -408,12 +402,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CA89X9954L;
-				// NepalKit declares no App Intents, so the metadata extractor has
-				// nothing to extract and says so on every build. FILTER_WARNINGS is
-				// the supported opt-out (--quiet-warnings). Safe here precisely
-				// because the app has no App Intents: there is no App Intents
-				// warning that could be lost. Remove this if that ever changes.
-				FILTER_WARNINGS = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;

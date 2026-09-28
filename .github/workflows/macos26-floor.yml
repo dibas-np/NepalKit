@@ -80,7 +80,7 @@ jobs:
       XCODE_VERSION: "26.6"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select an explicit Xcode, not the image default
         run: |

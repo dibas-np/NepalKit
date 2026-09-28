@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// Exhaustive Q19 matrix: every date in the supported range, both directions.
 /// BS-side enumeration uses only the public table (data oracle), never the

@@ -27,8 +27,8 @@ final class MenuBarModel {
         self.now = now
         // The closure captures self weakly, so nothing to tear down: the timer
         // lives on the main run loop and dies with the process.
-        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.now = Date.now }
+        timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
+            self?.now = .now
         }
         scheduleMidnightFire()
     }
@@ -38,11 +38,9 @@ final class MenuBarModel {
         guard let nextMidnight = nextNPTMidnight(after: .now) else { return }
         // +1s so the NPT civil day has definitively rolled over.
         let interval = max(1, nextMidnight.timeIntervalSince(.now) + 1)
-        midnightTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.now = Date.now
-                self?.scheduleMidnightFire()
-            }
+        midnightTimer = scheduledMainActorTimer(withTimeInterval: interval, repeats: false) { [weak self] in
+            self?.now = .now
+            self?.scheduleMidnightFire()
         }
     }
 
@@ -71,7 +69,8 @@ final class MenuBarModel {
     func spokenTitle(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String {
         SpokenDate.menuBar(
             today: todayBS(now: now, in: dataset),
-            monthNames: settings.monthNames
+            monthNames: settings.monthNames,
+            dataset: dataset
         )
     }
 }

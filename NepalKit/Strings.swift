@@ -50,7 +50,12 @@ enum Strings {
     /// self-evident next to the pickers that produced it; read aloud it is a
     /// bare date with no way to tell which calendar it is in.
     static let converterResultLabel = "Result"
-    static let spokenDateBeyondRange = "date unavailable, calendar data ends 12 April 2028"
+    /// Spoken form of the range boundary. The Gregorian end date is passed in
+    /// rather than spelled here: it is derived from the dataset (ADR-0010), so
+    /// no literal in this file can drift from the shipped table.
+    static func spokenDateBeyondRange(_ gregorianEnd: String) -> String {
+        "date unavailable, calendar data ends \(gregorianEnd)"
+    }
     static let aboutLabel = "About NepalKit"
     static let displaySection = "Display"
     static let startupSection = "Startup"
@@ -63,6 +68,13 @@ enum Strings {
     /// A failed check is not the same answer as an up-to-date one, and saying
     /// so is the whole point: "could not check" must never read as "current".
     static let updateStatusFailed = "Could not check for updates"
+
+    /// The reason is the framework's own description of what went wrong.
+    /// Shown, not swallowed: "could not check" without a why is undebuggable,
+    /// both for the user reporting it and for the maintainer reading the report.
+    static func updateStatusFailedReason(_ reason: String) -> String {
+        "\(updateStatusFailed): \(reason)"
+    }
 
     /// About surface. The calendar range is formatted from the dataset's own
     /// bounds, so narrowing or extending the table moves this line with it.

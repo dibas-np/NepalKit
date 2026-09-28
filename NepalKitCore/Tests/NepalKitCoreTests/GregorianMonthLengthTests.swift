@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// `daysInGregorianMonth` backs the converter's Gregorian day-picker bounds.
 /// Facts read off any published Gregorian calendar.

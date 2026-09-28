@@ -1,5 +1,5 @@
 import Testing
-@testable import NepalKitCore
+import NepalKitCore
 
 /// Every New Year boundary in the shipped range, from the independent anchor
 /// list (two single-day typos corrected: 1975, 2089). The list starts at 1975

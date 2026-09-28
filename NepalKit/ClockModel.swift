@@ -21,8 +21,10 @@ final class ClockModel {
     init(now: Date = .now, localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1) {
         self.now = now
         self.localTimeZone = localTimeZone
-        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.now = Date.now }
+        // The closure captures self weakly, so nothing to tear down: the timer
+        // lives on the main run loop and dies with the process.
+        timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
+            self?.now = .now
         }
     }
 
