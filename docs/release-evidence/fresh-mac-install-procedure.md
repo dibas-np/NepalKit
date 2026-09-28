@@ -59,6 +59,22 @@ spctl -a -t execute -vvv /Applications/NepalKit.app
 open /Applications/NepalKit.app
 ```
 
+Before dragging, look at the window itself. It is a designed surface
+(ADR-0013), and the release gate checks its *geometry* — that the icons sit
+where the layout says, and that a background picture is recorded — which is not
+the same check as whether it looks right:
+
+- [ ] The arrow points from the app to the Applications shortcut, level with the
+      two icons
+- [ ] The caption reads "Drag NepalKit into your Applications folder"
+- [ ] Neither the toolbar nor the status bar is showing
+
+A Mac whose Finder has the path bar turned off gets a taller content area, the
+background stays centred in it, and the icons sit roughly 16pt above the arrow.
+That is the one configuration where the composition is known to drift, which is
+why this is a human check, and a drifted arrow is a finding rather than a
+nitpick.
+
 Then, in the app itself:
 
 - [ ] The menu-bar item appears, showing today's date

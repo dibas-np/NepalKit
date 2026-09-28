@@ -203,6 +203,19 @@ Archives with Developer ID Application signing and the hardened runtime, exports
 builds a UDZO DMG, submits to the notary service, staples the ticket, and
 verifies the mounted app with `spctl`.
 
+The DMG window is designed rather than left to Finder: a background with an
+arrow from the app to the Applications shortcut and a caption telling the user
+what to do, laid out by Finder itself and generated from one description of the
+layout in `scripts/make-dmg-artwork.swift`. Every other gate in the script
+passes just as happily on a DMG whose window is Finder's default, so the window
+is read back off the finished image and the release fails if it is not the
+window that was designed. Building it needs two `hdiutil` calls that Apple has
+deprecated and cannot be done without — the reasoning, the measurements, and the
+one configuration where the composition is known to drift are in
+[ADR-0013](docs/adr/0013-dmg-window-layout.md). The layout is scripted through
+Finder, so the release machine's terminal needs Automation permission for it
+once; the script says so by name if it does not have it.
+
 The script notarizes the **app** and the DMG as two separate submissions, in that
 order, and then generates and verifies the appcast. This is not redundancy. Apple
 issues one ticket per submitted item, so an app that is only ever submitted inside
@@ -241,6 +254,13 @@ two are treated as OS behavior, not something to compensate for (ADR-0003).
   locally, and the floor gate builds and launches on a real `macos-26` runner,
   but no second Mac has confirmed a clean *install* of the shipped DMG — the
   CI runner builds from source, which is a different path.
+- **The DMG window has only been seen on macOS 27.** It is laid out by Finder
+  into an undocumented `.DS_Store`, and the release reads the window back off the
+  finished image — so its geometry is gated, but "gated" is not "looked at". The
+  composition has not been seen on the macOS 26 floor, and it is known to drift
+  by about 16pt on a Mac whose Finder has the path bar turned off. See
+  [ADR-0013](docs/adr/0013-dmg-window-layout.md) and the
+  [fresh-Mac install procedure](docs/release-evidence/fresh-mac-install-procedure.md).
 - **The supported range ends at 2084 BS.** Expected, and stated in the UI.
 
 ## License

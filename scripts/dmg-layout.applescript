@@ -12,24 +12,25 @@
 -- two to disagree, and a caption that misses its arrow is worse than no
 -- caption.
 --
--- Usage: osascript scripts/dmg-layout.applescript <volume> <background.png> <layout.json>
+-- Usage: osascript scripts/dmg-layout.applescript <volume> <app> <background.png> <layout.json>
 
 use framework "Foundation"
 
 on run argv
 	set volumeName to item 1 of argv
-	set backgroundPath to item 2 of argv
-	set layout to (readLayout(item 3 of argv)) as record
+	set appName to item 2 of argv
+	set backgroundPath to item 3 of argv
+	set layout to (readLayout(item 4 of argv)) as record
 
 	set windowSize to layout's windowSize
 	set iconSize to layout's iconSize
-	set appIconOrigin to layout's appIconOrigin
-	set applicationsIconOrigin to layout's applicationsIconOrigin
+	set appIconCentre to layout's appIconCentre
+	set applicationsIconCentre to layout's applicationsIconCentre
 
 	-- Where the window opens on screen is not part of the layout: Finder
 	-- restores that per user, and a DMG that remembers a position is an
 	-- annoyance rather than a design. Only the size is fixed, because the
-	-- artwork is drawn to fill it.
+	-- artwork is sized to the content area inside it.
 	set windowOrigin to {200, 150}
 	set windowBounds to {item 1 of windowOrigin, item 2 of windowOrigin, ¬
 		(item 1 of windowOrigin) + item 1 of windowSize, ¬
@@ -51,8 +52,8 @@ on run argv
 			set text size of viewOptions to 12
 			set background picture of viewOptions to (POSIX file backgroundPath)
 
-			set position of item (volumeName & ".app") of container window to appIconOrigin
-			set position of item "Applications" of container window to applicationsIconOrigin
+			set position of item (appName & ".app") of container window to appIconCentre
+			set position of item "Applications" of container window to applicationsIconCentre
 
 			-- The layout reaches the volume only when the window closes, and
 			-- the .DS_Store only reaches the image when Finder is told to write
