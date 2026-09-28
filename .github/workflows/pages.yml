@@ -88,11 +88,22 @@ jobs:
           print(f"  ok    committed public key is well-formed ({len(raw)} bytes)")
           PY
 
+      - name: Stage the Pages artifact
+        if: steps.check.outputs.publish == 'true'
+        # upload-pages-artifact runs `tar --directory "$INPUT_PATH"`, so it needs
+        # a directory. Passing the file directly fails with
+        # "tar: appcast.xml: Cannot open: Not a directory".
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp appcast.xml _site/
+          ls -la _site
+
       - name: Upload Pages artifact
         if: steps.check.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: appcast.xml
+          path: _site
 
   deploy:
     name: deploy to Pages
