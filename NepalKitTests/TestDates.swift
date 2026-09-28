@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
 /// Shared UTC instant builder for app tests. One helper instead of a copy

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
 
 /// Establishes activation and focus when a command opens a normal application

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
 /// Nepal Time: the product's anchor for "today" (UTC+5:45).

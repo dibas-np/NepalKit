@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Re-run NepalKit's shipped calendar table against its two community sources.
 
 The point is reproducibility. The provenance claims in SOURCES.md — that the

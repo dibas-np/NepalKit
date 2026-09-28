@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Spot-check the shipped table against the Kathmandu Metropolitan City calendar.
 
 Why this is separate from verify-data-sources.py: that script compares pinned,

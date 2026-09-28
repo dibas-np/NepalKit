@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
 
 /// Identifies the About window scene, so the popover and the scene agree on one

@@ -17,6 +17,13 @@ Settings → Software Update once a feed exists ([ADR-0012](docs/adr/0012-sparkl
 - **Requires macOS 26 or later** (see [Why macOS 26](#why-macos-26)).
 - Not on the App Store — distributed as a notarized DMG from Releases.
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![macOS 26+](https://img.shields.io/badge/macOS-26%2B-lightgrey.svg)](#why-macos-26)
+
+New here? [CONTRIBUTING.md](CONTRIBUTING.md) covers how to build and what the
+project expects. [SUPPORT.md](SUPPORT.md) says where to ask, and
+[GOVERNANCE.md](GOVERNANCE.md) says who decides.
+
 ## Install
 
 Download the DMG from the project's Releases page, open it, and drag NepalKit

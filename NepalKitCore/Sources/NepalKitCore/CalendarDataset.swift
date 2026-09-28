@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /// A versioned Bikram Sambat month-length table with its conversion anchor.
 ///
 /// Month lengths are declared per year by the official Nepali Patro; there is
@@ -80,6 +81,11 @@ public struct CalendarDataset: Sendable {
     }
 
     /// Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
+    // The table below is NOT covered by the SPDX identifier at the top of
+    // this file. The code is GPL-3.0-or-later; the data is derived work whose
+    // licence chain does not terminate in a clear grant, and no licence this
+    // project applies can supply one. See SOURCES.md.
+    // SPDX-License-Identifier: LicenseRef-see-SOURCES.md
     public static let v2 = CalendarDataset(
         version: "2.0.0",
         years: [

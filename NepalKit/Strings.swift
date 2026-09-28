@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import NepalKitCore
 
 /// User-facing strings in one place. Not a localization system: the app ships

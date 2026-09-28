@@ -1,0 +1,30 @@
+# Who reviews what.
+#
+# CODEOWNERS is what makes branch protection meaningful: GitHub requires
+# approval from these owners before a change can merge. With a single
+# maintainer that is a small list, but the file is what turns "review required"
+# from a checkbox into an actual gate.
+#
+# If you are reading this to contribute: you are very welcome to open a pull
+# request. Being asked to review is not a prerequisite for contributing.
+
+# Default: the maintainer owns everything not claimed below.
+*                       @dibas-np
+
+# The calendar data and its provenance record. These get the closest reading:
+# a change here can be wrong in a way that compiles, tests green, and ships.
+NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift   @dibas-np
+NepalKitCore/Sources/NepalKitCore/Conversion.swift        @dibas-np
+NepalKitCore/Tests/                                       @dibas-np
+SOURCES.md                                                @dibas-np
+scripts/verify-data-sources.py                           @dibas-np
+scripts/check-kathmandu-calendar.py                      @dibas-np
+
+# The updater. The EdDSA public key and the feed URL are in Info.plist; changing
+# either invalidates every existing installation's ability to update.
+/NepalKit/Info.plist                                     @dibas-np
+/NepalKit/SparkleUpdateService.swift                     @dibas-np
+/NepalKit/UpdateCheckModel.swift                         @dibas-np
+/NepalKit/NepalKit.entitlements                          @dibas-np
+/scripts/package-release.sh                              @dibas-np
+/LICENSE                                                  @dibas-np
