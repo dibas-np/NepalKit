@@ -178,14 +178,30 @@ corroborated. It is never fetched at runtime (ADR-0002).
 APPLE_ID=... APP_SPECIFIC_PASSWORD=... TEAM_ID=... ./scripts/package-release.sh
 ```
 
+Notary credentials come from a keychain profile, so no secret reaches the process
+list:
+
+```sh
+xcrun notarytool store-credentials NepalKit-notary   # once
+export TEAM_ID=XXXXXXXXXX                            # selects the certificate
+./scripts/package-release.sh
+```
+
+`store-credentials` prompts for the Apple ID, app-specific password, and team ID.
+The script then passes `--keychain-profile` and nothing else.
+
+Passing `--password` on the command line instead would put the password in
+`argv`, which is world-readable through `ps` for as long as each submission runs.
+The environment-variable form (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, `TEAM_ID`)
+still works for CI, and the script says plainly when it is in use and warns that
+the password is visible in the process table. It reads those variables from the
+environment only — it does **not** load a `.env` file. Both `.env` and the
+environment are gitignored, so keeping a local `.env` is a convenient habit, but
+exporting the variables is what the script actually reads.
+
 Archives with Developer ID Application signing and the hardened runtime, exports,
 builds a UDZO DMG, submits to the notary service, staples the ticket, and
-verifies the mounted app with `spctl`. Credentials are read from the environment only —
-`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, and `TEAM_ID` — and the script exits if any
-is missing. It does **not** read a `.env` file; an earlier version of this
-document claimed it did, and the script has never done so. Both the environment
-and any local `.env` are gitignored, so keeping a local `.env` is a convenient
-habit, but exporting the three variables is what the script actually reads.
+verifies the mounted app with `spctl`.
 
 The script notarizes the **app** and the DMG as two separate submissions, in that
 order, and then generates and verifies the appcast. This is not redundancy. Apple
