@@ -77,7 +77,7 @@ struct DatasetBoundaryTests {
     // MARK: - The notice names the boundary
 
     @Test func boundaryNoticeNamesTheLastSupportedYearInBothScripts() {
-        let year = CalendarDataset.v1.supportedRange.upperBound
+        let year = CalendarDataset.v2.supportedRange.upperBound
         #expect(year == 2084)
         #expect(Strings.supportedThrough(year, digits: .latin) == "Supported through 2084 BS")
         #expect(Strings.supportedThrough(year, digits: .devanagari) == "Supported through २०८४ BS")

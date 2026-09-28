@@ -3,17 +3,26 @@
 /// Month lengths are declared per year by the official Nepali Patro; there is
 /// no closed-form algorithm, so conversion is table-driven.
 ///
-/// v1 provenance (ticket 02): month rows reproduce the officially approved
+/// Provenance (v1 spec ticket 02): month rows reproduce the officially approved
 /// annual Nepali Patro. Three community tables were cross-checked
 /// month-by-month (107/116 identical); all 9 disputes were arbitrated against
 /// published Patro reproductions (KMC government grids, Hamro Patro, Nepali
 /// Patro, mypatro, ashesh, rat32, khudra), with tithi-continuity, weekday, and
-/// month-handoff checks. Every New Year boundary 1970-2090 verified against
-/// an independent anchor list (two single-day typos in that list corrected:
-/// 1975, 2089). Range capped at 2084: the current officially published year;
-/// 2085+ excluded, no extrapolated years (ADR-0001).
+/// month-handoff checks. New Year boundaries were checked against an independent
+/// anchor list over 1970-2090 — a wider window than this type ships, so that a
+/// table change could be detected from either end; two single-day typos in that
+/// list were corrected (1975, 2089). Range capped at 2084: the current officially
+/// published year; 2085+ excluded, no extrapolated years (ADR-0001).
+///
+/// Dataset 2.0.0 narrows the lower bound to 1975. The five years 1970-1974
+/// were the only ones the cross-check did not corroborate against a second
+/// table, and the cross-check they were missing from is what makes the rest of
+/// the range defensible. This is a breaking change to the conversion contract
+/// and a data-contract major bump, not a fix (ADR-0010). The Gregorian lower
+/// bound is a consequence of this range, not a setting of its own: 1 Baisakh 1975
+/// is 13 April 1918, so the convertible span begins there.
 public struct CalendarDataset: Sendable {
-    /// Dataset version, e.g. "1.0.0" for the first verified table.
+    /// Dataset version, e.g. "2.0.0" for the table narrowed to 1975-2084 BS.
     public let version: String
 
     /// BS year to its twelve month lengths (Baisakh through Chaitra).
@@ -50,15 +59,10 @@ public struct CalendarDataset: Sendable {
         years[bsYear]
     }
 
-    /// v1 verified table: 1970-2084 BS.
-    public static let v1 = CalendarDataset(
-        version: "1.0.0",
+    /// Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
+    public static let v2 = CalendarDataset(
+        version: "2.0.0",
         years: [
-            1970: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-            1971: [31, 31, 32, 31, 32, 30, 30, 29, 30, 29, 30, 30],
-            1972: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
-            1973: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
-            1974: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             1975: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
             1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
             1977: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
@@ -172,7 +176,7 @@ public struct CalendarDataset: Sendable {
         ],
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
         anchorAD: GADay(year: 2025, month: 4, day: 14),
-        supportedRange: 1970 ... 2084
+        supportedRange: 1975 ... 2084
     )
 }
 

@@ -2,16 +2,18 @@ import Testing
 @testable import NepalKitCore
 
 struct CalendarDatasetTests {
-    @Test func v1DatasetDeclaresVersionAndRange() {
-        let dataset = CalendarDataset.v1
+    @Test func bundledDatasetDeclaresVersionAndRange() {
+        let dataset = CalendarDataset.v2
 
-        #expect(dataset.version == "1.0.0")
-        #expect(dataset.supportedRange == 1970 ... 2084)
+        // Dataset 2.0.0 cut 1970-1974: those five years rested on the base
+        // source alone, with no second table to corroborate them.
+        #expect(dataset.version == "2.0.0")
+        #expect(dataset.supportedRange == 1975 ... 2084)
     }
 
-    @Test(arguments: CalendarDataset.v1.supportedRange)
+    @Test(arguments: CalendarDataset.v2.supportedRange)
     func everyYearHasTwelveValidMonths(year: Int) {
-        let months = CalendarDataset.v1.monthLengths(for: year)
+        let months = CalendarDataset.v2.monthLengths(for: year)
 
         #expect(months?.count == 12, "\(year) must have 12 months")
         for length in months ?? [] {
@@ -23,13 +25,13 @@ struct CalendarDatasetTests {
     @Test func declaredRangeMatchesTableKeys() {
         // The engine indexes exactly the declared range, so a table that
         // disagrees with the range would silently produce zero-length years.
-        let dataset = CalendarDataset.v1
+        let dataset = CalendarDataset.v2
 
         #expect(Set(dataset.years.keys) == Set(dataset.supportedRange))
     }
 
     @Test func supportedRangeHasNoGaps() {
-        let dataset = CalendarDataset.v1
+        let dataset = CalendarDataset.v2
 
         for year in dataset.supportedRange {
             #expect(dataset.monthLengths(for: year) != nil, "missing data for \(year)")
@@ -39,7 +41,7 @@ struct CalendarDatasetTests {
     }
 
     @Test func yearStartIndicesAreContiguous() {
-        let dataset = CalendarDataset.v1
+        let dataset = CalendarDataset.v2
         var expected = 0
 
         for year in dataset.supportedRange {

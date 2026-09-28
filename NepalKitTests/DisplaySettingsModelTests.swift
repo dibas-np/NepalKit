@@ -36,7 +36,7 @@ struct DisplaySettingsModelTests {
             DisplaySettings(digits: .latin, monthNames: .transliterated),
             DisplaySettings(digits: .devanagari, monthNames: .nepali),
         ] {
-            guard let today = todayBS(now: now, in: .v1) else {
+            guard let today = todayBS(now: now, in: .v2) else {
                 Issue.record("no date")
                 return
             }

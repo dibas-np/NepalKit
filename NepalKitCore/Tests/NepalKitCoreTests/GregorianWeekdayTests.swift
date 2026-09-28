@@ -16,21 +16,27 @@ struct GregorianWeekdayTests {
 
     @Test func agreesWithTheBikramSambatPath() {
         // Both routes must give the same answer inside the supported range;
-        // if they ever diverge, one of them is wrong.
+        // if they ever diverge, one of them is wrong. Every date here is
+        // deliberately inside the range: outside it there is no Bikram Sambat
+        // answer to compare against, and a `continue` past a stale fixture would
+        // quietly drop the case rather than fail it.
         for ad in [GADay(year: 2026, month: 9, day: 27),
                    GADay(year: 2025, month: 4, day: 14),
                    GADay(year: 2028, month: 4, day: 12),
-                   GADay(year: 1913, month: 4, day: 13)]
+                   GADay(year: 1918, month: 4, day: 13)]
         {
-            guard let bs = adToBS(ad, in: .v1) else { continue }
-            #expect(weekday(of: ad) == weekday(of: bs, in: .v1), "disagreement at \(ad)")
+            guard let bs = adToBS(ad, in: .v2) else {
+                Issue.record("Expected a Bikram Sambat answer for \(ad), which is inside the range")
+                return
+            }
+            #expect(weekday(of: ad) == weekday(of: bs, in: .v2), "disagreement at \(ad)")
         }
     }
 
     @Test func worksOutsideTheSupportedRange() {
         // The whole point: these dates have no Bikram Sambat answer, but their
         // weekday is still well defined.
-        #expect(adToBS(GADay(year: 2028, month: 4, day: 13), in: .v1) == nil)
+        #expect(adToBS(GADay(year: 2028, month: 4, day: 13), in: .v2) == nil)
         #expect(weekday(of: GADay(year: 2028, month: 4, day: 13)) == 5)
         #expect(weekday(of: GADay(year: 2030, month: 1, day: 1)) != nil)
     }

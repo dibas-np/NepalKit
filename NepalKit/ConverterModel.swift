@@ -78,7 +78,7 @@ final class ConverterModel {
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,
         adYear: Int? = nil, adMonth: Int? = nil, adDay: Int? = nil,
-        dataset: CalendarDataset = .v1
+        dataset: CalendarDataset = .v2
     ) {
         self.dataset = dataset
         self.direction = direction

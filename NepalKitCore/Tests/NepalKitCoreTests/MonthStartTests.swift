@@ -43,7 +43,7 @@ struct MonthStartTests {
     @Test(arguments: bsToADCases)
     func publishedMonthStartBStoAD(testCase: (bs: BSDay, ad: GADay, label: String)) {
         #expect(
-            bsToAD(testCase.bs, in: .v1) == testCase.ad,
+            bsToAD(testCase.bs, in: .v2) == testCase.ad,
             "\(testCase.label)"
         )
     }
@@ -51,7 +51,7 @@ struct MonthStartTests {
     @Test(arguments: adToBSCases)
     func publishedMonthStartADtoBS(testCase: (ad: GADay, bs: BSDay, label: String)) {
         #expect(
-            adToBS(testCase.ad, in: .v1) == testCase.bs,
+            adToBS(testCase.ad, in: .v2) == testCase.bs,
             "\(testCase.label)"
         )
     }

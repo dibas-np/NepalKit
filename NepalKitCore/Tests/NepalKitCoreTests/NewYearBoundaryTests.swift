@@ -1,15 +1,12 @@
 import Testing
 @testable import NepalKitCore
 
-/// Every New Year boundary in the v1 range, from the independent anchor
-/// list (two single-day typos corrected: 1975, 2089).
+/// Every New Year boundary in the shipped range, from the independent anchor
+/// list (two single-day typos corrected: 1975, 2089). The list starts at 1975
+/// because dataset 2.0.0 cut 1970-1974, whose anchors are no longer part of the
+/// conversion contract.
 struct NewYearBoundaryTests {
     static let newYears: [(bs: Int, ad: GADay)] = [
-        (1970, GADay(year: 1913, month: 4, day: 13)),
-        (1971, GADay(year: 1914, month: 4, day: 13)),
-        (1972, GADay(year: 1915, month: 4, day: 13)),
-        (1973, GADay(year: 1916, month: 4, day: 13)),
-        (1974, GADay(year: 1917, month: 4, day: 13)),
         (1975, GADay(year: 1918, month: 4, day: 13)),
         (1976, GADay(year: 1919, month: 4, day: 13)),
         (1977, GADay(year: 1920, month: 4, day: 13)),
@@ -125,13 +122,13 @@ struct NewYearBoundaryTests {
     @Test(arguments: newYears)
     func newYearBStoAD(boundary: (bs: Int, ad: GADay)) {
         let bs = BSDay(year: boundary.bs, month: 1, day: 1)
-        #expect(bsToAD(bs, in: .v1) == boundary.ad, "1 Baisakh \(boundary.bs)")
+        #expect(bsToAD(bs, in: .v2) == boundary.ad, "1 Baisakh \(boundary.bs)")
     }
 
     @Test(arguments: newYears)
     func newYearADtoBS(boundary: (bs: Int, ad: GADay)) {
         #expect(
-            adToBS(boundary.ad, in: .v1) == BSDay(year: boundary.bs, month: 1, day: 1),
+            adToBS(boundary.ad, in: .v2) == BSDay(year: boundary.bs, month: 1, day: 1),
             "New Year \(boundary.bs)"
         )
     }

@@ -37,9 +37,9 @@ Gregorian month names are always English — the month-name setting governs
 Bikram Sambat month names and weekday names. The interface itself is English in
 v1; full UI localization is not yet supported.
 
-NepalKit converts **1970–2084 BS** (through 2028-04-12 Gregorian). That is the
-range of the bundled, verified dataset, not a product limit: past it the popover
-says so explicitly rather than showing a blank.
+NepalKit converts **1975–2084 BS** (1918-04-13 through 2028-04-12 Gregorian).
+That is the range of the bundled, verified dataset, not a product limit: past it
+the popover says so explicitly rather than showing a blank.
 
 ## Development
 
@@ -60,7 +60,7 @@ builds and tests on its own with no Xcode.
 # core: conversion, dataset, formatting          -> 44 tests, 11 suites
 cd NepalKitCore && swift test
 
-# app layer: models, settings persistence        -> 42 tests, 6 suites
+# app layer: models, settings persistence        -> 43 tests, 6 suites
 ./scripts/run-app-tests.sh
 ```
 
@@ -99,17 +99,21 @@ Conversion is table-driven, not algorithmic. Bikram Sambat month lengths have no
 closed-form rule, so the table is transcribed year by year from the officially
 approved annual **Nepali Patro**.
 
-- Dataset version `1.0.0`, covering **1970–2084 BS**
+- Dataset version `2.0.0`, covering **1975–2084 BS**
 - Year lengths cross-checked against multiple independent converters, with
   disputed months resolved by majority vote and then confirmed against
   published calendars wherever they exist
 - Every supported New Year boundary is a test in both conversion directions
 - **Nothing is extrapolated.** Years without published data are excluded rather
   than projected (ADR-0001)
+- **The range can narrow as well as extend.** Dataset 2.0.0 dropped 1970–1974,
+  the only years no second table corroborated, rather than ship them on the base
+  source alone (ADR-0010)
 
-The bundled dataset is frozen per release. Extending the supported range means
-shipping a new dataset in a subsequent release once newer official Patro data is
-published — it is never fetched at runtime (ADR-0002).
+The bundled dataset is frozen per release. Changing the supported range means
+shipping a new dataset in a subsequent release — extending it once newer official
+Patro data is published, narrowing it if the shipped table can no longer be
+corroborated. It is never fetched at runtime (ADR-0002).
 
 ## Releases
 

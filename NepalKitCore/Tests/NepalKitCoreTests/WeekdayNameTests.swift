@@ -22,7 +22,7 @@ struct WeekdayNameTests {
         let expected = ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"]
         for offset in 0 ... 6 {
             let bs = BSDay(year: 2083, month: 6, day: 11 + offset)
-            #expect(weekday(of: bs, in: .v1) == offset + 1, "weekday of \(bs)")
+            #expect(weekday(of: bs, in: .v2) == offset + 1, "weekday of \(bs)")
             #expect(weekdayName(for: offset + 1, style: .nepali) == expected[offset])
         }
     }

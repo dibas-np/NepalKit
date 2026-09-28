@@ -41,11 +41,11 @@ _Avoid_: BS weekday, AD weekday
 ## Calendar data
 
 **Supported range**:
-The span of Bikram Sambat years the bundled dataset converts in both directions. Declared by the dataset, never extrapolated past it. For v1 it ends at 2084 BS, 2028-04-12 Gregorian.
+The span of Bikram Sambat years the bundled dataset converts in both directions. Declared by the dataset, never extrapolated past it. The bundled dataset is 1975–2084 BS, 1918-04-13 through 2028-04-12 Gregorian.
 _Avoid_: Product boundary, date range, supported years
 
 **Range boundary state**:
 What the user sees once the current date passes the supported range: a plain statement that the Bikram Sambat date is unavailable, naming the last supported year, shown beside the Gregorian date and Nepal Time that remain answerable. Never a silent placeholder, and never a menu-bar warning badge.
 _Avoid_: Error state, unavailable date, out-of-range
 
-A supported range is a property of the bundled dataset, not a fixed product limit: the release process extends it by shipping a new dataset when newer official Patro data is published.
+A supported range is a property of the bundled dataset, not a fixed product limit: the release process extends it by shipping a new dataset when newer official Patro data is published, and narrows it by shipping a new dataset when the shipped table can no longer be corroborated for some of its years.

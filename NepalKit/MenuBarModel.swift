@@ -51,7 +51,7 @@ final class MenuBarModel {
     /// deliberately carries no warning badge, so the marker's job is only to stop
     /// the absence reading as a bug; the popover is where the boundary is
     /// actually stated in words.
-    func title(settings: DisplaySettings, in dataset: CalendarDataset = .v1) -> String {
+    func title(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String {
         guard let today = todayBS(now: now, in: dataset) else {
             return Strings.menuBarBeyondRange
         }

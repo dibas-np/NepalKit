@@ -16,7 +16,7 @@ struct PopoverView: View {
     let loginItem: LoginItemModel
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
-    var dataset: CalendarDataset = .v1
+    var dataset: CalendarDataset = .v2
 
     /// Last Bikram Sambat year the bundled dataset can convert. Named in the
     /// range boundary state so a user past it can tell a data limit from a bug.

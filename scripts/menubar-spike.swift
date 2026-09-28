@@ -21,8 +21,8 @@ var missing: [String] = []
 // supported range (the short form is year-independent, so the distinct set
 // is small), then measure the distinct set.
 var titles = Set<String>()
-for year in CalendarDataset.v1.supportedRange {
-    guard let lengths = CalendarDataset.v1.monthLengths(for: year) else { continue }
+for year in CalendarDataset.v2.supportedRange {
+    guard let lengths = CalendarDataset.v2.monthLengths(for: year) else { continue }
     for month in 1 ... 12 {
         for day in 1 ... lengths[month - 1] {
             let bs = BSDay(year: year, month: month, day: day)

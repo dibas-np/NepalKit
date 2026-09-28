@@ -25,7 +25,7 @@ final class ClockModel {
     }
 
     /// Today's Bikram Sambat date for the current tick, or nil outside the dataset.
-    func todayBSDate(in dataset: CalendarDataset = .v1) -> BSDay? {
+    func todayBSDate(in dataset: CalendarDataset = .v2) -> BSDay? {
         todayBS(now: now, in: dataset)
     }
 
@@ -34,7 +34,7 @@ final class ClockModel {
         todayAD(now: now)
     }
 
-    func bsString(settings: DisplaySettings, in dataset: CalendarDataset = .v1) -> String? {
+    func bsString(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String? {
         guard let bs = todayBSDate(in: dataset) else { return nil }
         return formatBS(bs, settings: settings)
     }

@@ -38,7 +38,7 @@ struct ConverterModelTests {
 
     @Test func bsPickersBoundedToSupportedRange() {
         let model = bsModel()
-        #expect(model.bsYears == Array(1970 ... 2084))
+        #expect(model.bsYears == Array(1975 ... 2084))
         #expect(model.daysInBSMonth(year: 2084, month: 3) == 32)
         #expect(model.daysInBSMonth(year: 1989, month: 8) == 29)
     }
@@ -81,27 +81,32 @@ struct ConverterModelTests {
 
     @Test func adPickersBoundedToConvertibleSpan() {
         let model = bsModel()
-        // v1: 1970-01-01 ↔ 1913-04-13, 2084-12-30 ↔ 2028-04-12.
-        #expect(model.minAD == GADay(year: 1913, month: 4, day: 13))
+        // Dataset 2.0.0: 1975-01-01 ↔ 1918-04-13, 2084-12-30 ↔ 2028-04-12.
+        // The lower bound follows from the table's first year, not from a
+        // constant here.
+        #expect(model.minAD == GADay(year: 1918, month: 4, day: 13))
         #expect(model.maxAD == GADay(year: 2028, month: 4, day: 12))
-        #expect(model.adMonths(year: 1913).first == 4)
+        #expect(model.adMonths(year: 1918).first == 4)
         #expect(model.adMonths(year: 2028).last == 4)
         #expect(model.adMonths(year: 2026).count == 12)
     }
 
     @Test func adDateClampsIntoConvertibleSpan() {
+        // Asked for 1 January 1913, five years before the range now starts.
+        // The clamp must pull it forward to the first convertible day, not
+        // leave it outside the span.
         let model = ConverterModel(
             direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11,
             adYear: 1913, adMonth: 1, adDay: 1
         )
         model.clampADDate()
-        #expect((model.adYear, model.adMonth, model.adDay) == (1913, 4, 13))
+        #expect((model.adYear, model.adMonth, model.adDay) == (1918, 4, 13))
     }
 
     @Test func adDaysBoundedAtSpanEdges() {
         let model = bsModel()
-        #expect(model.adDays(year: 1913, month: 4).first == 13)
-        #expect(model.adDays(year: 1913, month: 4).last == 30)
+        #expect(model.adDays(year: 1918, month: 4).first == 13)
+        #expect(model.adDays(year: 1918, month: 4).last == 30)
         #expect(model.adDays(year: 2028, month: 4).last == 12)
         #expect(model.adDays(year: 2026, month: 9).count == 30)
     }
@@ -110,5 +115,32 @@ struct ConverterModelTests {
         let model = bsModel()
         #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 11))
         #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
+    }
+
+    /// The picker bounds must come from the dataset, never from a range literal
+    /// in this model. ADR-0010 relies on that: a future dataset release has to
+    /// move the Gregorian span on its own. A single-year table is the proof —
+    /// its span is nowhere near the bundled one, so a baked-in constant would
+    /// fail here.
+    ///
+    /// The Gregorian dates below are not claims about the real calendar. They
+    /// fall out of the fixture by construction: 1 Baisakh 2000 is the anchor,
+    /// and the year is 365 days long, so the last day is 364 days later.
+    @Test func pickerSpanFollowsTheDatasetNotAConstant() {
+        let narrow = CalendarDataset(
+            version: "test",
+            years: [2000: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30]],
+            anchorBS: BSDay(year: 2000, month: 1, day: 1),
+            anchorAD: GADay(year: 1943, month: 4, day: 14),
+            supportedRange: 2000 ... 2000
+        )
+        let model = ConverterModel(dataset: narrow)
+
+        #expect(model.bsYears == [2000])
+        #expect(model.minAD == GADay(year: 1943, month: 4, day: 14))
+        #expect(model.maxAD == GADay(year: 1944, month: 4, day: 12))
+        #expect(model.adYears == [1943, 1944])
+        #expect(model.adMonths(year: 1943) == Array(4 ... 12))
+        #expect(model.adMonths(year: 1944) == Array(1 ... 4))
     }
 }
