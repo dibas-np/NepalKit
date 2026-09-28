@@ -106,9 +106,15 @@ Conversion is table-driven, not algorithmic. Bikram Sambat month lengths have no
 closed-form rule, so the table is the product's correctness core.
 
 - Dataset version `2.0.0`, covering **1975–2084 BS**
-- Month lengths cross-checked year by year against a second, MIT-licensed
-  community table, with the 20 months where they disagree arbitrated
-  individually and recorded
+- Month lengths cross-checked year by year against three MIT-licensed community
+  tables, with the 20 months where they disagree arbitrated individually and
+  recorded; the most contested year was settled against the Kathmandu
+  Metropolitan City calendar
+- **2084 is projected, not published.** The official almanac exists through 2083;
+  2084's determination is expected around January–February 2027. Three
+  independent sources plus the Kathmandu Metropolitan City calendar agree on that
+  year, so the values are well supported — but no authority has attested it yet.
+  See [SOURCES.md](SOURCES.md)
 - Every supported New Year boundary is a test in both conversion directions
 - **Nothing is extrapolated.** Years without published data are excluded rather
   than projected (ADR-0001)

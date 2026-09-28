@@ -37,9 +37,20 @@ PINS = {
     "askbuddie": ("https://raw.githubusercontent.com/askbuddie/bikram-sambat/"
                   "d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts",
                   "askbuddie/bikram-sambat"),
+    "go-bs": ("https://raw.githubusercontent.com/SuprimKhatri77/go-bs/"
+              "5853e0e91482d8bb6f400da4f69138fbe69a85dc/data.go",
+              "SuprimKhatri77/go-bs"),
+    "nepali-date": ("https://raw.githubusercontent.com/subeshb1/Nepali-Date/"
+                    "2183c30ada24a7fe678a24d58a5aa61ce8cdfa85/src/date-config.ts",
+                    "subeshb1/Nepali-Date"),
 }
 
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
+
+# Diagnostics raised while parsing, flushed after the source's heading. A parse
+# runs before its source is named, so printing immediately attributes its
+# warnings to whichever source was reported last.
+NOTES = []
 
 
 def load_shipped():
@@ -69,7 +80,61 @@ def fetch(name, url, offline):
 
 
 def parse_medic(body):
-    return {int(k): v for k, v in json.loads(body).items()}
+    rows = {int(k): v for k, v in json.loads(body).items()}
+    check_impossible(rows)
+    return rows
+
+
+def check_impossible(rows):
+    """Flag year totals that cannot occur. Applies to every source, not one."""
+    for year, values in sorted(rows.items()):
+        if sum(values) not in (365, 366):
+            NOTES.append("  note: %d BS sums to %d days, which is impossible; "
+                         "the source table contains an error" % (year, sum(values)))
+
+
+def parse_go_bs(body):
+    """Parse go-bs's generated Go table: rows are positional, with the year in a comment.
+
+    The array is indexed from MinBSYear rather than keyed by year, so the year has
+    to come from the trailing comment. Guessing the range instead would silently
+    shift every row if MinBSYear ever moves.
+    """
+    rows = {}
+    for lengths, year in re.findall(r"\{([\d,\s]+)\},\s*//\s*(\d{4})", body):
+        rows[int(year)] = [int(x) for x in lengths.split(",") if x.strip()]
+    if not rows:
+        return {}
+    # A year table is 365 or 366 days. Anything else means the parse went wrong,
+    # and a silently mis-parsed comparison is worse than no comparison.
+    check_impossible(rows)
+    return rows
+
+
+def parse_nepali_date(body):
+    """Parse subeshb1/Nepali-Date's date-config map.
+
+    Keyed by month *name* rather than index, so the order is taken from the type
+    declaration at the top of the file instead of being assumed. A source that
+    reordered its months would otherwise be compared month-for-month against the
+    wrong column and produce a table of plausible-looking nonsense.
+    """
+    order = re.search(r"\[year: string\]: \{(.*?)\n\}", body, re.S)
+    if not order:
+        return {}
+    months = re.findall(r"([A-Za-z]+):\s*number", order.group(1))
+    table = {}
+    for year, block in re.findall(r"'(\d{4})'\s*:\s*\{(.*?)\n  \}", body, re.S):
+        values = []
+        for month in months:
+            found = re.search(month + r":\s*(\d+)", block)
+            if not found:
+                values = None
+                break
+            values.append(int(found.group(1)))
+        if values:
+            table[int(year)] = values
+    return table
 
 
 def parse_askbuddie(body):
@@ -88,14 +153,22 @@ def main():
         if body is None:
             print("%s: unavailable, skipped\n" % name)
             continue
-        table = parse_medic(body) if name == "medic" else parse_askbuddie(body)
+        del NOTES[:]
+        table = {"medic": parse_medic, "askbuddie": parse_askbuddie,
+                 "go-bs": parse_go_bs, "nepali-date": parse_nepali_date}[name](body)
         shared = sorted(set(shipped) & set(table))
         diffs = [(y, i) for y in shared for i in range(12) if shipped[y][i] != table[y][i]]
         exact = sum(1 for y in shared if shipped[y] == table[y])
 
         print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
+        for note in NOTES:
+            print(note)
         print("  covers %d-%d BS; %d years overlap the shipped range"
               % (min(table), max(table), len(shared)))
+        uncovered = sorted(set(shipped) - set(table))
+        if uncovered:
+            print("  CANNOT COVER %d shipped year(s): %s"
+                  % (len(uncovered), ", ".join(str(y) for y in uncovered)))
         print("  %d of %d years match exactly" % (exact, len(shared)))
         print("  months compared: %d" % (len(shared) * 12))
         if diffs:
