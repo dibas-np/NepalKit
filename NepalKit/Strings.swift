@@ -41,6 +41,11 @@ enum Strings {
     /// between. The two segments are read out as bare words otherwise, which
     /// does not convey that they are a choice between views.
     static let popoverDestinationsLabel = "Destination"
+    /// The app's own name, for the popover header. Spoken-channel safe: this is
+    /// visible, and the name is what a screen-reader user needs to confirm which
+    /// app the popover belongs to, since a menu-bar extra has no Dock icon or
+    /// window title to carry it.
+    static let appName = "NepalKit"
     /// Shown on the direction toggle's segments, so abbreviated: the two full
     /// calendar names do not fit a segmented control inside a 340pt popover and
     /// the framework clips rather than wraps. "Bikram Sambat → Gregorian"

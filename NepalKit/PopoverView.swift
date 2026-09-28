@@ -60,6 +60,8 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            header
+
             Picker("", selection: $destination) {
                 ForEach(PopoverDestination.allCases, id: \.self) { option in
                     Text(option.title).tag(option)
@@ -127,6 +129,36 @@ struct PopoverView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
         .padding(.bottom, 4)
+    }
+
+    // MARK: - Header
+
+    /// Identity on the left, the live Nepal Time on the right.
+    ///
+    /// The reference this follows leads with a title bar carrying a name and a
+    /// running value, and that is what makes it read as a surface with its own
+    /// top edge rather than a loose stack of controls. The technique is taken; the
+    /// dashboard framing is not, so nothing here is a card and the row is a plain
+    /// line of text.
+    ///
+    /// The clock is the live element because it is the only value that changes
+    /// without the user acting. The date is deliberately not repeated here — it
+    /// is the hero directly below, and saying it twice would make the header
+    /// decorative.
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(Strings.appName)
+                .font(.subheadline.weight(.medium))
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            Text(clock.nptTimeString(digits: settings.settings.digits))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .accessibilityLabel(
+                    "\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: .latin))"
+                )
+        }
     }
 
     // MARK: - Today
@@ -214,28 +246,27 @@ struct PopoverView: View {
 
     // MARK: - Clocks
 
-    /// Clocks sit outside the Gregorian conditional: they are answerable
-    /// regardless of calendar data, so they must survive the range boundary.
+    /// The local-time reference, which is the one clock the header cannot carry.
     ///
-    /// `Label` supplies each row's title for free, but it announces that title
-    /// verbatim — under Devanagari that is "Nepal Time: ११:४५:००", and a clock
-    /// face is the one place where a misread digit is not obviously wrong to the
-    /// listener. So each row re-derives its own time string in Latin digits, and
-    /// the stack is a container that leaves the two rows as separate elements
-    /// rather than merging them into one unreadable run.
+    /// Sits outside the Gregorian conditional because a clock is answerable
+    /// regardless of calendar data, so it must survive the range boundary.
+    ///
+    /// `Label` supplies the row's title for free, but it announces that title
+    /// verbatim — under Devanagari that is "Local: ११:४५:००", and a clock face is
+    /// the one place where a misread digit is not obviously wrong to the listener.
+    /// So the row re-derives its own string in Latin digits, and the stack is a
+    /// container that leaves the rows as separate elements rather than merging
+    /// them into one unreadable run.
     private var clocks: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label {
-                Text(clock.nptTimeString(digits: settings.settings.digits))
-            } icon: {
-                Text(Strings.nepalTimeLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .font(.title3)
-            .monospacedDigit()
-            .accessibilityLabel("\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: .latin))")
-
+            // Nepal Time is not repeated here. The header carries it, so a second
+            // copy one row below showed the same ticking value twice and made the
+            // popover read as though it had two clocks to offer.
+            //
+            // Only the local reference remains, which is the half the header
+            // cannot carry: the header is one value, and "what time is it here
+            // compared to Nepal" is a comparison that needs both.
+            //
             // Omitted entirely when the local reading would repeat Nepal Time,
             // which is the case for every user in Nepal. Two identical clocks
             // imply the second is somehow significant, and it is not — the
