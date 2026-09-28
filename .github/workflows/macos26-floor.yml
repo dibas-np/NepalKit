@@ -51,6 +51,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Declared, and the alert below is why. This workflow checks out the code, runs
+# two test suites, builds and launches the result. It never writes back: no
+# commit, no comment, no release, no artifact upload beyond the build log. So it
+# gets `contents: read` and nothing more.
+#
+# Omitting the block does not mean "no permissions" — it means every step gets
+# the repository's *default* token, which for a public repository is usually
+# read/write on contents. `actions/checkout` also leaves that token in
+# `.git/config` for anything that can read the workspace, so a workflow with no
+# stated permissions is a workflow holding a credential larger than its job
+# needs. CodeQL flagged this as `actions/missing-workflow-permissions`.
+#
+# `contents: read` is still exactly what checkout requires, so nothing here is
+# broken by the narrowing — it is only made honest.
+permissions:
+  contents: read
+
 jobs:
   floor:
     name: build, test, and launch on macOS 26
