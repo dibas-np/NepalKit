@@ -81,7 +81,7 @@ struct SpokenDateTests {
 @MainActor
 struct SpokenSurfaceTests {
     @Test func menuBarAnnouncementUsesPronounceableDigitsAndNamesTheApp() {
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_792_272_000))
+        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_792_272_000), schedulesMidnightFire: false)
 
         let spoken = model.spokenTitle(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated))
         let shown = model.title(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated))
@@ -95,7 +95,7 @@ struct SpokenSurfaceTests {
 
     @Test func menuBarAnnouncementPastTheRangeExplainsItself() {
         // 2028-04-13 is the first day outside the shipped dataset.
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_848_096_000))
+        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_848_096_000), schedulesMidnightFire: false)
 
         let spoken = model.spokenTitle(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
 

@@ -83,7 +83,7 @@ jobs:
       XCODE_VERSION: "26.6"
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Select an explicit Xcode, not the image default
         run: |
@@ -174,7 +174,7 @@ jobs:
 
       - name: Upload the build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: NepalKit-macos26-build
           path: ${{ runner.temp }}/NepalKitDerivedData/Logs/Build

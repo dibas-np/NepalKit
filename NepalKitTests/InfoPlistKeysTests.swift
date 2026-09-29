@@ -121,12 +121,23 @@ struct InfoPlistKeysTests {
         // in the source headers and leaves LICENSE as the licence text alone —
         // prepending a project notice to LICENSE stops GitHub's Licensee from
         // identifying the licence.
-        let source = Self.repositoryRoot.appendingPathComponent("NepalKit/PopoverView.swift")
-        let header = try String(contentsOf: source, encoding: .utf8)
+        // Any source header carrying the same holder satisfies the check: the
+        // intent is "the app and the repository name the same rights holder",
+        // not "this one file does". Pinning a specific file made the most
+        // heavily edited file in the repo a single point of failure for an
+        // unrelated plist assertion.
+        let appSources = try FileManager.default.contentsOfDirectory(atPath: Self.repositoryRoot.appendingPathComponent("NepalKit").path)
+            .filter { $0.hasSuffix(".swift") }
+        #expect(!appSources.isEmpty, "no app sources found beside the project")
 
-        #expect(header.contains(copyright),
+        let headers = try appSources.map { filename in
+            try String(contentsOf: Self.repositoryRoot
+                .appendingPathComponent("NepalKit/\(filename)"), encoding: .utf8)
+        }
+        #expect(headers.contains { $0.contains(copyright) },
                 "the About surfaces and the source headers state different holders")
-        #expect(header.contains("SPDX-License-Identifier: GPL-3.0-or-later"))
+        #expect(headers.contains { $0.contains("SPDX-License-Identifier: GPL-3.0-or-later") },
+                "no source header carries the licence identifier")
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))

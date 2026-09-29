@@ -205,7 +205,7 @@ struct PopoverView: View {
         settings: DisplaySettingsModel(),
         clock: ClockModel(),
         converter: ConverterModel(),
-        dataset: .v2
+        dataset: AppData.dataset
     )
     .padding()
 }

@@ -20,15 +20,19 @@ struct ClockModelTests {
         #expect(after.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
     }
 
-    @Test func gregorianAndBSStringsHonorSettings() {
+    @Test func gregorianAndBSStringsHonorSettings() throws {
         let clock = model(at: TestDates.utc(2026, 9, 27, 12, 0))
         let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
         let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-        #expect(clock.bsString(settings: latin) == "11 Ashoj 2083")
-        #expect(clock.bsString(settings: devanagari) == "११ असोज २०८३")
-        #expect(clock.gregorianString(settings: latin) == "27 September 2026")
-        #expect(clock.gregorianString(settings: devanagari) == "२७ September २०२६")
+        // Through the same formatters the views use, so the test describes
+        // what renders rather than a parallel path.
+        let bs = try #require(clock.todayBSDate())
+        #expect(formatBS(bs, settings: latin) == "11 Ashoj 2083")
+        #expect(formatBS(bs, settings: devanagari) == "११ असोज २०८३")
+        let ad = try #require(clock.todayADDate())
+        #expect(formatAD(ad, settings: latin) == "27 September 2026")
+        #expect(formatAD(ad, settings: devanagari) == "२७ September २०२६")
     }
 
     @Test func weekdayHonorsMonthNameSetting() {
@@ -86,5 +90,36 @@ struct ClockModelTests {
         // `nepalTimeZone` would miss `Asia/Katmandu` entirely.
         #expect(ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Asia/Katmandu")!, refreshInterval: 3600).localTimeIsRedundant)
         #expect(!ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Europe/London")!, refreshInterval: 3600).localTimeIsRedundant)
+    }
+
+    @Test func localZoneFollowsAMidSessionSystemZoneChange() {
+        var current = TimeZone(identifier: "Asia/Kathmandu")!
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), systemZone: { current }, refreshInterval: 3600)
+
+        #expect(clock.localTimeIsRedundant)
+
+        current = TimeZone(identifier: "America/New_York")!
+        #expect(!clock.localTimeIsRedundant)
+        #expect(clock.localTimeString(digits: .latin) == "08:00:00")
+
+        current = TimeZone(identifier: "Asia/Kathmandu")!
+        #expect(clock.localTimeIsRedundant)
+        #expect(clock.localTimeString(digits: .latin) == clock.nptTimeString(digits: .latin))
+    }
+
+    @Test func anInjectedZoneStillWinsOverTheSystemZone() {
+        let clock = ClockModel(
+            now: TestDates.utc(2026, 9, 27, 12, 0),
+            localTimeZone: TimeZone(identifier: "Asia/Kolkata")!,
+            systemZone: { TimeZone(identifier: "America/New_York")! },
+            refreshInterval: 3600
+        )
+        #expect(clock.localTimeString(digits: .latin) == "17:30:00")
+        #expect(clock.localTimeZone.identifier == "Asia/Kolkata")
+    }
+
+    @Test func defaultClockFollowsTheSystemZone() {
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), refreshInterval: 3600)
+        #expect(clock.localTimeZone.identifier == TimeZone.autoupdatingCurrent.identifier)
     }
 }

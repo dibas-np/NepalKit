@@ -40,6 +40,5 @@ back-and-forth into a one-message resolution.
 
 ## There is no support chat
 
-There is no Discord, no forum, and no mailing list. Issues and the repository
-discussion are the whole of it. That is a deliberate trade for a project this
-size, not an oversight.
+There is no Discord, no forum, and no mailing list. Issues are the whole of
+it. That is a deliberate trade for a project this size, not an oversight.

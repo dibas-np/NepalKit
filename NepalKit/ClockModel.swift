@@ -9,18 +9,27 @@ import NepalKitCore
 ///
 /// The NPT anchoring itself lives in NepalKitCore (`todayBS`/`todayAD`);
 /// this model only owns `now` and formats it. `localTimeZone` is injected
-/// so the NPT-vs-local comparison is testable.
+/// for tests; production follows the system zone per read.
 @MainActor
 @Observable
 final class ClockModel {
     private(set) var now: Date
-    let localTimeZone: TimeZone
+    /// nil means "follow the system zone". Injected for tests. Resolved per read
+    /// rather than stored: the app runs for weeks as a login item, and a zone
+    /// captured at launch goes stale the moment the user travels.
+    private let injectedLocalTimeZone: TimeZone?
+    /// Test seam for a mid-session system-zone change. Production reads the live
+    /// system zone; tests inject a mutable box. Global `NSTimeZone.default`
+    /// mutation demonstrably does not move `TimeZone.current` on this platform,
+    /// so travel cannot be simulated any other way.
+    private let systemZone: () -> TimeZone
 
     private var timer: Timer?
 
-    init(now: Date = .now, localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1) {
+    init(now: Date = .now, localTimeZone: TimeZone? = nil, systemZone: @escaping () -> TimeZone = { .autoupdatingCurrent }, refreshInterval: TimeInterval = 1) {
         self.now = now
-        self.localTimeZone = localTimeZone
+        self.injectedLocalTimeZone = localTimeZone
+        self.systemZone = systemZone
         // The closure captures self weakly, so nothing to tear down: the timer
         // lives on the main run loop and dies with the process.
         timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
@@ -28,24 +37,20 @@ final class ClockModel {
         }
     }
 
+    /// The zone the Local row shows. Reading the live system zone per read is
+    /// what keeps a mid-session system zone change visible without a relaunch.
+    var localTimeZone: TimeZone {
+        injectedLocalTimeZone ?? systemZone()
+    }
+
     /// Today's Bikram Sambat date for the current tick, or nil outside the dataset.
-    func todayBSDate(in dataset: CalendarDataset = .v2) -> BSDay? {
+    func todayBSDate(in dataset: CalendarDataset = AppData.dataset) -> BSDay? {
         todayBS(now: now, in: dataset)
     }
 
     /// Today's Gregorian civil day in Nepal Time.
     func todayADDate() -> GADay? {
         todayAD(now: now)
-    }
-
-    func bsString(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String? {
-        guard let bs = todayBSDate(in: dataset) else { return nil }
-        return formatBS(bs, settings: settings)
-    }
-
-    func gregorianString(settings: DisplaySettings) -> String? {
-        guard let ad = todayADDate() else { return nil }
-        return formatAD(ad, settings: settings)
     }
 
     /// Weekday of today's civil day, in the selected display language.

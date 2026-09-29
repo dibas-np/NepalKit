@@ -24,7 +24,7 @@ struct DatasetBoundaryTests {
     }
 
     private func menuBar(_ date: GADay) -> MenuBarModel {
-        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshInterval: 3600)
+        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshInterval: 3600, schedulesMidnightFire: false)
     }
 
     // MARK: - The supported-range edge
@@ -56,9 +56,10 @@ struct DatasetBoundaryTests {
         #expect(title != "—")
     }
 
-    @Test func gregorianAndClocksSurviveTheBoundary() {
+    @Test func gregorianAndClocksSurviveTheBoundary() throws {
         let model = clock(firstUnsupportedAD)
-        #expect(model.gregorianString(settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "13 April 2028")
+        let ad = try #require(model.todayADDate())
+        #expect(formatAD(ad, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "13 April 2028")
         #expect(model.nptTimeString(digits: .latin) == "11:45:00")
     }
 

@@ -189,11 +189,7 @@ export TEAM_ID=XXXXXXXXXX                            # selects the certificate
 ID. The script then passes `--keychain-profile` and nothing else, so no secret
 reaches the process list. Passing `--password` on the command line instead
 would put the password in `argv`, which is world-readable through `ps` for as
-long as each submission runs. The environment-variable form (`APPLE_ID`,
-`APP_SPECIFIC_PASSWORD`, `TEAM_ID`) still works for CI, and the script says
-plainly when it is in use and warns that the password is visible in the process
-table. It reads those variables from the environment only — it does **not**
-load a `.env` file.
+long as each submission runs. A keychain profile is the only supported path, and the only one that keeps secrets out of `argv`. notarytool's environment-variable form (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`) is deliberately not implemented — it would put the app-specific password in the process table for the length of each submission, and there is no CI release path that needs it. The one environment variable the script does require is `TEAM_ID`, which selects the signing certificate and is not a secret. The script reads its configuration from arguments and the environment only — it does **not** load a `.env` file.
 
 The script archives with Developer ID Application signing and the hardened
 runtime, exports, notarizes the app and the DMG as two submissions, staples
@@ -240,10 +236,10 @@ builds and tests on its own with no Xcode.
 ### Tests
 
 ```sh
-# core: conversion, dataset, formatting          -> 48 tests, 13 suites
+# core: conversion, dataset, formatting          -> 52 tests, 14 suites
 cd NepalKitCore && swift test
 
-# app layer: models, settings persistence        -> 113 tests, 17 suites
+# app layer: models, settings persistence        -> 125 tests, 20 suites
 ./scripts/run-app-tests.sh
 ```
 

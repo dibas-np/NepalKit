@@ -16,6 +16,8 @@ xcuserdata/
 # Agent workflow (local-only, never committed)
 AGENTS.md
 docs/agents/
+.zcode/
+plans/
 
 # ...except the product spec, which is durable project knowledge and is
 # reviewed in PRs. Ignores one level below each .scratch/<feature>/ directory

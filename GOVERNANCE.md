@@ -42,7 +42,7 @@ this file. Until then, this file is the honest description.
 ## Reporting a governance problem
 
 If the maintainer's conduct is the problem, that is a real situation this
-document does not solve. Email **dibas.sigdel@gmail.com** is not an escalation
+document does not solve. The maintainer's own email is not an escalation
 path. GitHub's
 [community health documentation](https://docs.github.com/en/site-policy/communities)
 describes reporting abuse directly to GitHub, which is the appropriate route.

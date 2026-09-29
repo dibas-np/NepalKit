@@ -17,7 +17,7 @@ the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 ### Fixes
 
 - Updates install. The app was missing the Sparkle key a sandboxed app needs to launch its installer, so every in-app update aborted with an authorization error and the DMG was the only way in. From this version automatic updates work, and the update alert shows release notes.
-- About now states that the licence covers the app code, and that the bundled calendar data is licensed separately.
+- About now states that the licence covers the app code, and that the bundled calendar data carries no licence from this project.
 - The once-a-second clock tick re-renders only the parts of the popover that show live time, and clock formatting reuses its calendar instead of rebuilding it every second.
 
 Note for 1.0: this version fixes the updater itself, so a 1.0 install cannot update in place — install 1.1 from the DMG this once. Automatic updates work from 1.1 onward.

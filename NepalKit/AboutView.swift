@@ -137,7 +137,7 @@ struct AboutView: View {
 
 #if DEBUG
 #Preview("About") {
-    AboutView(metadata: .current(), dataset: .v2)
+    AboutView(metadata: .current(), dataset: AppData.dataset)
         .frame(width: 380)
 }
 #endif

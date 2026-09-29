@@ -38,7 +38,7 @@ struct NepalKitApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, dataset: .v2)
+            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, dataset: AppData.dataset)
         } label: {
             // The shown label stays the short bare date; the announcement is a
             // sentence that names the app and pronounces the date. Merging them
@@ -74,7 +74,7 @@ struct NepalKitApp: App {
         // copies. The dataset is the same one the app converts with, so the
         // range line cannot drift from the conversion contract (ADR-0010).
         Window(Strings.aboutLabel, id: AboutWindow.id) {
-            AboutView(metadata: .current(), dataset: .v2)
+            AboutView(metadata: .current(), dataset: AppData.dataset)
         }
         .windowResizability(.contentSize)
     }

@@ -37,6 +37,10 @@ gate ([macos26-floor.yml](.github/workflows/macos26-floor.yml)) pins Xcode 26.6
 on the `macos-26` runner and has completed successfully: core suite, app-layer
 suite, build, and a launch that survives and exits without a relaunch loop. The
 release pipeline uses Xcode 27, so 26.6 is the floor that matters and it holds.
+The release pipeline uses Xcode 27, and the Xcode project format stays at the
+level the floor toolchain reads — **decline Xcode 27's project-upgrade
+prompt**. Accepting it silently breaks the floor gate for every later pull
+request, with no local symptom.
 
 If you hit something 26.6 cannot compile, that is a regression against a claim
 the gate now enforces — report it rather than working around it locally.
@@ -53,9 +57,12 @@ Run both suites. They are separate on purpose: one is the calendar, the other is
 the application.
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 47 tests
-./scripts/run-app-tests.sh             # the app: 96 tests
+cd NepalKitCore && swift test          # the calendar: 52 tests
+./scripts/run-app-tests.sh             # the app: 125 tests
 ```
+
+The counts are what the runners printed when this was written. A pull request
+that changes them re-pins both numbers in the same commit.
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
 the app-layer suite goes through a SwiftPM harness instead — see
@@ -70,7 +77,7 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
   ./scripts/run-app-tests.sh
 ```
 
-Without it, four tests **skip with a reason** rather than pass silently. That
+Without it, five tests **skip with a reason** rather than pass silently. That
 is deliberate: a test that cannot check something must not report that it did.
 
 ## Style
@@ -101,8 +108,12 @@ first.
 ## Pull requests
 
 - Branch from `main`, keep the history readable, and describe **why**.
-- A pull request that changes data without re-running the verification script
-  will be asked for the output.
+- Continuous integration runs the comparison against the committed baseline
+  (`data-sources.yml`): the baseline's differing months are the recorded
+  arbitrations, so a red gate means the table, a parser, or a source changed
+  without re-arbitrating. Regenerating the baseline
+  (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
+  act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the
   deployment-floor gate: it proves the app builds, tests, and launches on the
   oldest macOS it claims to support, which is a different question from "does it
@@ -141,8 +152,10 @@ Fix the converter clamp for Ashadh
 Signed-off-by: Your Name <you@example.com>
 ```
 
-`-s` adds it for you and opens an editor; `git config commit.signoff true` makes
-it the default for every commit.
+`-s` adds the line for you — with `-m`, as above, the commit is created
+directly with no editor; drop `-m` to compose the message (sign-off included)
+in your editor. `git config commit.signoff true` makes it the default for
+every commit.
 
 **Why DCO and not a CLA.** A CLA is a bilateral legal agreement that assigns
 or licenses contributions under terms you may not want, and it adds friction and

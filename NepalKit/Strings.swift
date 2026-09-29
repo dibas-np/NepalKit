@@ -139,11 +139,12 @@ enum Strings {
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
     static let licenseLabel = "Licence"
-    /// The bundled LICENSE covers the code, not the calendar data, and the two
-    /// are licensed differently. A licence line with no such caveat would be read
-    /// as covering everything in the app, which is the opposite of the truth.
+    /// The GPL covers the app code only. The bundled calendar table carries no
+    /// licence from this project at all — a note implying it is "licensed
+    /// separately" would claim a licence exists, which is the overclaim
+    /// SOURCES.md exists to prevent (ADR-0010).
     static let licenseScopeNote =
-        "Applies to the app code. The bundled calendar data is licensed separately; see the repository."
+        "Applies to the app code. The bundled calendar data carries no licence from this project; see SOURCES.md in the repository."
     /// Says what the cross-check established and no more. The table is
     /// corroborated against a second community source, but every shipped year is
     /// still derived from one base table, so this must not read as independent

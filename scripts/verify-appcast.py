@@ -36,11 +36,31 @@ import sys
 import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
 SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 NS = {"sparkle": SPARKLE_NS}
+
+# The release-notes HTML contract shared with update-changelog.py's
+# FragmentParser: the fragments are written by this project to exactly these
+# tags. The <description> is the one part of a feed item the EdDSA signature
+# does not cover — it is checked against the contract instead of trusted.
+NOTES_TAGS = {"b", "li", "p", "ul"}
+MAX_NOTES_CHARS = 8192
+
+
+class _NotesHTMLCheck(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.offenses: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag not in NOTES_TAGS:
+            self.offenses.append(f"<{tag}>")
+
+    handle_startendtag = handle_starttag
 
 # 12-byte DER prefix for an Ed25519 SubjectPublicKeyInfo wrapping a raw 32-byte
 # key, per RFC 8410. Prepended so openssl can read the base64 key straight from
@@ -154,6 +174,21 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         ok(f"version {version}: https url, length {declared_length}, 64-byte signature")
         if minimum:
             ok(f"version {version}: minimumSystemVersion {minimum}")
+
+        description = item.findtext("description")
+        if description is None:
+            print(f"  ..    version {version}: no <description> (notes not yet injected)")
+        else:
+            if "]]>" in description:
+                fail(f"version {version}: description contains ]]> — the CDATA block was corrupted")
+            if len(description) > MAX_NOTES_CHARS:
+                fail(f"version {version}: description is {len(description)} chars, over the {MAX_NOTES_CHARS} cap")
+            checker = _NotesHTMLCheck()
+            checker.feed(description)
+            if checker.offenses:
+                fail(f"version {version}: release notes use tags outside the house contract "
+                     f"({', '.join(sorted(set(checker.offenses)))}); allowed: b, li, p, ul")
+            ok(f"version {version}: release notes match the notes contract ({len(description)} chars)")
 
         # --- 2. Enclosure bytes match the declared length -------------------
         payload: bytes | None = None

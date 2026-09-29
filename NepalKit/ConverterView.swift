@@ -189,11 +189,11 @@ private struct ADPickers: View {
             years: model.adYears,
             yearText: { formatNumber($0, digits: settings.digits) },
             months: model.adMonths(year: model.adYear),
-            monthText: { gregorianMonthNames[$0 - 1] },
+            monthText: { gregorianMonthName($0) },
             days: model.adDays(year: model.adYear, month: model.adMonth),
             dayText: { formatNumber($0, digits: settings.digits) },
             spokenYear: { SpokenDate.number($0) },
-            spokenMonth: { gregorianMonthNames[$0 - 1] },
+            spokenMonth: { gregorianMonthName($0) },
             spokenDay: { SpokenDate.number($0) }
         )
     }

@@ -4,6 +4,8 @@
 // only file that imports Sparkle, and the harness links only NepalKitCore. The
 // seam it implements — `UpdateServicing` — is Sparkle-free and fully covered by
 // the harness, so the boundary is tested even though the implementation is not.
+// The transient-launch and outcome decisions live in `UpdatePolicy.swift`, which
+// the harness compiles and tests; only framework wiring remains here.
 import Sparkle
 
 /// The production `UpdateServicing`, backed by Sparkle 2.9.6 (ADR-0012).
@@ -58,10 +60,7 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
         // never schedules automatic checks; manual checks still run off the
         // same started updater.
         let bundlePath = Bundle.main.bundleURL.path
-        let transient = bundlePath.hasPrefix("/tmp/")
-            || bundlePath.hasPrefix("/private/tmp/")
-            || bundlePath.hasPrefix("/Volumes/")
-            || bundlePath.contains("/DerivedData/")
+        let transient = UpdatePolicy.isTransientLaunch(installPath: bundlePath)
         if transient {
             // A launch-local fallback: neither writes nor overrides a real
             // preference, so the developer's own defaults are untouched.
@@ -94,13 +93,15 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     /// not. The reason enum is the public way to tell them apart.
     nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
         let reason = (error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? SPUNoUpdateFoundReason
+        let kind: UpdatePolicy.NoUpdateFoundKind
+        switch reason {
+        case .onLatestVersion: kind = .onLatestVersion
+        case .onNewerThanLatestVersion: kind = .onNewerThanLatestVersion
+        default: kind = .other
+        }
         MainActor.assumeIsolated {
-            switch reason {
-            case .onLatestVersion, .onNewerThanLatestVersion:
-                onOutcome?(.upToDate)
-            default:
-                onOutcome?(.failed(reason: error.localizedDescription))
-            }
+            onOutcome?(UpdatePolicy.outcome(forNoUpdateFound: kind,
+                                            failureReason: error.localizedDescription))
         }
     }
 }

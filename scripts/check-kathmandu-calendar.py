@@ -24,13 +24,13 @@ rather than from the markup. The record shape is ``bs_year``/``bs_month``/
 ``bs_day`` with an ``ad_date`` beside it; only the BS triple is needed here.
 """
 import json
-import pathlib
 import re
 import sys
 import urllib.error
 import urllib.request
 
-DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
+from dataset_table import shipped_table
+
 BASE = "https://kathmandu.gov.np/en/calendar?view=bs&year={year}&month={month}"
 USER_AGENT = "NepalKit-provenance-check/1.0 (calendar data verification)"
 
@@ -39,15 +39,17 @@ RECORD = re.compile(
 )
 
 
-def shipped_table():
-    text = pathlib.Path(DATASET).read_text(encoding="utf-8")
-    # Anchor on the indented literal: the bare form also matches the `public let
-    # years` declaration further up the file, and the slice would then depend on
-    # nothing before the data block containing an indented `],` by luck.
-    block = text[text.index("\n        years: ["):]
-    block = block[:block.index("\n        ],")]
-    return {int(m.group(1)): [int(x) for x in m.group(2).split(",") if x.strip()]
-            for m in re.finditer(r"(\d{4}):\s*\[([\d,\s]+)\]", block)}
+def month_lengths(days):
+    """Twelve month lengths from {month: {day,...}}, or None unless every
+    month 1-12 is present and nothing else is.
+
+    Exact key match, not a count: a stray month-0/13 record from the live
+    payload alongside one missing real month would still make len(days) 12,
+    and the caller would KeyError instead of reporting no data.
+    """
+    if set(days) != set(range(1, 13)):
+        return None
+    return [len(days[m]) for m in range(1, 13)]
 
 
 def fetch(year, month, timeout=25):
@@ -77,12 +79,10 @@ def kmc_year(year):
             if int(record_year) != year:
                 continue
             days.setdefault(int(mo), set()).add(int(day))
-    if len(days) != 12:
-        return None
     # Count distinct days rather than trusting the row count: a truncated or
     # partially-rendered month would otherwise look like a short month and be
     # reported as a real disagreement.
-    return [len(days[m]) for m in range(1, 13)]
+    return month_lengths(days)
 
 
 def main():
