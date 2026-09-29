@@ -18,7 +18,6 @@ appcast while packaging a release so the new version picks up its fresh
 pubDate. The output is deterministic — running twice changes nothing.
 """
 
-import html
 import re
 import sys
 from email.utils import parsedate_to_datetime
