@@ -178,6 +178,13 @@ jobs:
   floor:
     name: gate the tagged commit on macOS 26
     needs: preflight
+    # A called workflow is granted the intersection of what the caller allows and
+    # what the callee asks for, and the workflow-level `permissions: {}` above
+    # allows nothing. Declared per job because a reusable call cannot inherit it
+    # from the top level: `macos26-floor.yml` checks the code out, so it needs
+    # `contents: read` here or the run fails to start.
+    permissions:
+      contents: read
     uses: ./.github/workflows/macos26-floor.yml
 
   bump-tap:
