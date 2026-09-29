@@ -1,0 +1,12 @@
+# Keeps the action SHAs above from rotting: Dependabot opens one PR per new
+# action release, updating the pinned SHA and the version comment together.
+# The `swift` ecosystem is deliberately absent: NepalKitCore has no external
+# dependencies, and the app's Sparkle pin is resolved by Xcode (see
+# ADR-0012), which Dependabot's swift ecosystem does not read — its staleness
+# is covered by the scheduled check in data-sources.yml instead.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
