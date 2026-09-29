@@ -40,6 +40,8 @@ import sys
 import urllib.request
 from pathlib import Path
 
+from dataset_table import shipped_table
+
 MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashwin",
           "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"]
 
@@ -65,15 +67,6 @@ DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
 # runs before its source is named, so printing immediately attributes its
 # warnings to whichever source was reported last.
 NOTES = []
-
-
-def load_shipped():
-    """Parse the shipped table straight out of the source file."""
-    text = open(DATASET, encoding="utf-8").read()
-    rows = re.findall(r"^            (\d{4}): \[([\d,\s]+)\],", text, re.M)
-    if not rows:
-        sys.exit("no rows parsed from %s — the format changed?" % DATASET)
-    return {int(y): [int(x) for x in m.split(",")] for y, m in rows}
 
 
 def cache_dir():
@@ -260,7 +253,7 @@ def _compare_observations(observed, expected):
 
 def main():
     offline, baseline_path, update_path = _parse_argv(sys.argv[1:])
-    shipped = load_shipped()
+    shipped = shipped_table()
     compared = 0
     print("NepalKit ships %d years, %d-%d BS" % (len(shipped), min(shipped), max(shipped)))
     print("Source file: %s\n" % DATASET)
