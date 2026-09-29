@@ -162,6 +162,29 @@ The gap is narrow and cheap to close: an Ed25519 private key is 32 bytes, about
 of Apple, of any cloud account, and of this machine. Worth doing before the first
 signed artifact, and worth restoring *from* rather than merely re-reading.
 
+### This is now the top open risk in the project
+
+Raised to its own heading on 2026-09-29, after 1.0 and 1.1 shipped signed. The
+reason it matters more than it did: **two releases are now signed with this key**,
+and the moment it is unrecoverable, every existing install stops receiving
+updates and no new version can be published. Before 1.0 this was a
+housekeeping item; it is now the single failure that ends distribution.
+
+Concretely outstanding:
+
+- [ ] A copy exists outside Apple's cloud, ideally printed and stored physically
+- [ ] A restore has been *performed* and a signature produced from the restored
+      material, verified against the public key in `NepalKit/Info.plist`
+
+The second matters more than the first. A backup that has never been restored
+from is indistinguishable from no backup until the moment it is needed, and
+"the file looks right" is not a restore.
+
+The public half is not the risk and needs no custody: it is committed in
+`NepalKit/Info.plist`, pinned by `InfoPlistKeysTests`, and a lost private half is
+unrecoverable only because signing is asymmetric. A user who loses the key can
+still install any release that already exists.
+
 ## The feed is served from this repository
 
 `https://dibas-np.github.io/NepalKit/appcast.xml` — GitHub Pages, over HTTPS as

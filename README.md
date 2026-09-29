@@ -238,6 +238,13 @@ two are treated as OS behavior, not something to compensate for (ADR-0003).
 
 ## Known issues
 
+- **Installations of 1.0 cannot update in place, ever.** 1.0 was published
+  without `SUEnableInstallerLauncherService`, which a sandboxed app needs for
+  Sparkle's installer to launch at all. 1.1 fixes the updater, but that key is
+  read from the *running* application, so a copy already on 1.0 has no way to
+  reach it. **1.0 users must download and install 1.1 from the DMG once.** There
+  is no fix from this side; the cohort is small and the debt is permanent.
+  Everything from 1.1 onward updates normally.
 - **`xcodebuild test` hangs** before connecting on some toolchains. Use
   `./scripts/run-app-tests.sh`; see [ADR-0005](docs/adr/0005-app-layer-test-execution.md).
 - **`Cmd-Q` has not been functionally verified.** The shortcut is registered on
