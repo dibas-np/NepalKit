@@ -1,0 +1,39 @@
+# Data-sources provenance gate.
+#
+# The shipped calendar table deliberately differs from its community sources
+# in months that were arbitrated and recorded in SOURCES.md. So this gate does
+# not fail on any diff — it fails when the comparison *result* changes from
+# the committed baseline (scripts/data-sources-baseline.json), whose differing
+# months ARE the recorded arbitrations.
+#
+# A red run means someone changed the shipped table, a parser in
+# scripts/verify-data-sources.py, or a pinned source without re-arbitrating:
+# re-run with --update-baseline deliberately, in the same PR as the table
+# change it reflects, and say why each new diff is recorded. The pinned
+# sources are immutable by construction, so the monthly schedule only catches
+# drift in the shipped table or the script — never a silent upstream move.
+name: Data sources
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 5 2 * *"   # monthly; pinned sources are immutable, so this
+                            # only catches drift in the shipped table or the script
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: shipped table matches its recorded provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compare the shipped table against the committed baseline
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-data-sources.py --baseline scripts/data-sources-baseline.json
