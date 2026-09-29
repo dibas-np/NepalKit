@@ -11,5 +11,10 @@ import NepalKitCore
 /// identifier must not lie about the range it names — instead of grepping
 /// nine sites and hoping.
 enum AppData {
-    static let dataset = CalendarDataset.v2
+    // `nonisolated` because the project compiles with a default isolation of
+    // MainActor, which would otherwise isolate this to the main actor. Every
+    // model exposes the dataset as a default argument, and default arguments
+    // are evaluated outside the callee's isolation, so an isolated constant
+    // makes each of those declarations a concurrency warning.
+    nonisolated static let dataset = CalendarDataset.v2
 }

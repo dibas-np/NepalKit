@@ -36,10 +36,13 @@ let package = Package(
             name: "NepalKit",
             dependencies: [.product(name: "NepalKitCore", package: "NepalKitCore")],
             // NepalKitApp.swift owns @main, which a library target cannot have.
-            // Assets.xcassets belongs to the Xcode app bundle, not here.
+            // Assets.xcassets, Info.plist, and NepalKit.entitlements belong to
+            // the Xcode app bundle, not here.
             exclude: [
                 "NepalKitApp.swift",
                 "Assets.xcassets",
+                "Info.plist",
+                "NepalKit.entitlements",
                 // Imports Sparkle; the harness links only NepalKitCore. The
                 // seam it implements is Sparkle-free and fully covered here.
                 "SparkleUpdateService.swift",

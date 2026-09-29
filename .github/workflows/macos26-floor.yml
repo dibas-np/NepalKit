@@ -119,6 +119,7 @@ jobs:
             -scheme NepalKit \
             -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/NepalKitDerivedData" \
+            -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
 

@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -125,8 +126,38 @@ def fetch(url: str, timeout: int = 60) -> bytes:
         return response.read()
 
 
-def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto: bool) -> None:
+def deployment_floor(override: str | None = None) -> str | None:
+    """The macOS version the app actually ships with, as a dotted string.
+
+    Read from package-release.sh because that file's DEPLOYMENT_TARGET is the
+    value passed to the build, and Info.plist cannot be used: its
+    LSMinimumSystemVersion is the unexpanded $(MACOSX_DEPLOYMENT_TARGET)
+    substitution, so the source tree does not record the floor anywhere.
+
+    This matters because <sparkle:minimumSystemVersion> is what tells Sparkle
+    which systems an item is for. A feed that understates the floor offers an
+    update to systems the app cannot run on; one that overstates it hides the
+    update from users who could run it. Sparkle 2.10 raised its own minimum to
+    12.0 and tells authors to put 12.0 in the feed, so a bump can silently
+    rewrite this value without anyone editing the feed by hand.
+    """
+    if override:
+        return override
+    script = Path(__file__).resolve().parent / "package-release.sh"
+    try:
+        text = script.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = re.search(r"^DEPLOYMENT_TARGET=(\S+)", text, re.M)
+    return match.group(1) if match else None
+
+
+def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto: bool,
+           minimum_system_version: str | None = None) -> None:
     print(f"Verifying {appcast}")
+    floor = deployment_floor(minimum_system_version)
+    if floor:
+        print(f"App deployment floor: {floor}")
 
     # --- 1. Well-formedness and required fields -----------------------------
     try:
@@ -172,8 +203,19 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
 
         minimum = item.findtext("sparkle:minimumSystemVersion", default=None, namespaces=NS)
         ok(f"version {version}: https url, length {declared_length}, 64-byte signature")
-        if minimum:
-            ok(f"version {version}: minimumSystemVersion {minimum}")
+        if minimum is None:
+            # Absent, not wrong: an item without the element tells Sparkle
+            # nothing about the floor. Say so rather than passing in silence.
+            print(f"  ..    version {version}: no <sparkle:minimumSystemVersion>")
+        elif floor is None:
+            print(f"  ..    version {version}: minimumSystemVersion {minimum} "
+                  f"unchecked (no deployment floor available)")
+        elif minimum != floor:
+            fail(f"version {version}: minimumSystemVersion is {minimum} but the app "
+                 f"ships as {floor}. The feed would offer this update to systems "
+                 f"the app does not run on, or hide it from systems that do.")
+        else:
+            ok(f"version {version}: minimumSystemVersion {minimum} matches the app's floor")
 
         description = item.findtext("description")
         if description is None:
@@ -248,6 +290,11 @@ def main() -> int:
         "--skip-crypto", action="store_true",
         help="check structure only, without verifying the signature",
     )
+    parser.add_argument(
+        "--minimum-system-version", default=None,
+        help="the macOS version the app ships as; defaults to DEPLOYMENT_TARGET "
+             "in scripts/package-release.sh",
+    )
     args = parser.parse_args()
 
     if not args.appcast.is_file():
@@ -258,7 +305,8 @@ def main() -> int:
         return 1
 
     try:
-        verify(args.appcast, args.info_plist, args.enclosure, args.skip_crypto)
+        verify(args.appcast, args.info_plist, args.enclosure, args.skip_crypto,
+               args.minimum_system_version)
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001
