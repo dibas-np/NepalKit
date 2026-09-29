@@ -54,6 +54,8 @@ DATASET_HEADER = """\
 /// Provenance is documented in `SOURCES.md` at the repository root.
 public struct CalendarDataset {
     public let years: [Int: [Int]]
+    /// A doc example that looks like data but is not the shipped table.
+    /// 1970: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
     public static let v2 = CalendarDataset(
         version: "2.0.0",
         years: [
@@ -167,8 +169,11 @@ class ShippedTableTests(unittest.TestCase):
             return dataset_table.shipped_table(path)
 
     def test_reads_only_the_indented_literal(self):
-        # The `public let years: [Int: [Int]]` declaration is a plausible-looking
-        # decoy: anchoring on the bare form would slice from the wrong place.
+        # Two decoys precede the data block, and both must be inert. The
+        # `public let years` declaration is row-shaped to the reader but not to
+        # the row regex; the doc-comment year row is genuinely row-shaped, so a
+        # bare `years: [` anchor would swallow it and the expected rows would
+        # come back as 1970 too. Only a row-shaped decoy can prove the anchor.
         self.assertEqual(self.parse(DATASET_HEADER), SHIPPED_ROWS)
 
     def test_exits_when_no_years_block(self):
