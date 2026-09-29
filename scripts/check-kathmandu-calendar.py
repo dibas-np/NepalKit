@@ -41,7 +41,10 @@ RECORD = re.compile(
 
 def shipped_table():
     text = pathlib.Path(DATASET).read_text(encoding="utf-8")
-    block = text[text.index("years: ["):]
+    # Anchor on the indented literal: the bare form also matches the `public let
+    # years` declaration further up the file, and the slice would then depend on
+    # nothing before the data block containing an indented `],` by luck.
+    block = text[text.index("\n        years: ["):]
     block = block[:block.index("\n        ],")]
     return {int(m.group(1)): [int(x) for x in m.group(2).split(",") if x.strip()]
             for m in re.finditer(r"(\d{4}):\s*\[([\d,\s]+)\]", block)}
@@ -67,7 +70,12 @@ def kmc_year(year):
             print("  could not fetch %d-%02d: %s" % (year, month, exc),
                   file=sys.stderr)
             return None
-        for _, mo, day in RECORD.findall(body):
+        for record_year, mo, day in RECORD.findall(body):
+            # The payload embeds a "today" record for the live date, whose BS
+            # year differs from the requested one; unioning its day in would
+            # inflate that month's length for every year checked.
+            if int(record_year) != year:
+                continue
             days.setdefault(int(mo), set()).add(int(day))
     if len(days) != 12:
         return None
