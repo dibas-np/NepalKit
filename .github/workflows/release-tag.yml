@@ -1,0 +1,298 @@
+# What a release tag does, and what it cannot do.
+#
+# Pushing a `v*` tag runs two jobs: a preflight that proves the tag is one this
+# project should honour, the macOS 26 floor gate over the tagged commit, and —
+# only if both passed — a bump of the Homebrew cask in dibas-np/homebrew-tap.
+#
+# ## Push access is not authority to publish
+#
+# Anyone who can push a `v*` tag reaches a job holding a deploy key that writes
+# to the tap, and the cask is what a Homebrew user installs without reading
+# anything else. So the tag is only honoured when it was pushed by the account
+# that owns the release, and that check lives in the `if:` of each job rather
+# than in a script inside one.
+#
+# The distinction is the point. A shell check runs in a job that has already been
+# given the environment it guards; GitHub evaluates `if:` before the job exists,
+# so a job that should not run never receives the secret at all. The shell
+# assertions below are there to reject a *malformed* tag — a legitimate mistake —
+# and the `if:` is there to reject an *unauthorised* one, which is not a mistake
+# and should not be reachable by editing a line.
+#
+# ## Nothing here can produce a release
+#
+# NepalKit's releases are cut on one machine, by hand, because the EdDSA private
+# key that signs every update lives in that machine's login keychain and the
+# Developer ID and notary credentials are local too (ADR-0012). Putting any of
+# them in Actions to make this workflow complete would trade the property that
+# matters most — that a stolen repository cannot produce a signed NepalKit — for
+# a convenience nobody asked for. So this workflow reads the release; it never
+# writes one.
+#
+# The credential it does hold is a **deploy key scoped to write access on
+# dibas-np/homebrew-tap alone**. It is not a signing credential, it cannot reach
+# this repository, and it exists only because a fresh `brew install` should
+# install the release that was just tagged.
+#
+# ## The ordering is the point
+#
+# The cask bump needs the floor gate: a cask rewritten to advertise a build that
+# does not compile on the deployment floor would send every new Homebrew user
+# exactly the app the gate exists to keep off their machine. `needs:` is doing real
+# work here, not satisfying a lint.
+#
+# ## Failing is the correct outcome when the release is not published yet
+#
+# `update-cask.sh` checksums the DMG from the release page and verifies it with
+# `hdiutil`. A tag pushed before its release has the asset attached makes the
+# bump fail, deliberately: the alternative is a cask pinned to a digest computed
+# over GitHub's 404 page. Publish the release with `gh release create v<version>`
+# (which pushes the tag and so triggers this workflow) rather than pushing the tag
+# first.
+
+name: release tag
+
+on:
+  push:
+    tags: ['v[0-9]*']
+
+concurrency:
+  # Never cancel a release check. Two runs racing on the same tag would have two
+  # jobs holding the deploy key, and cancelling the loser after it pushed would
+  # leave the tap rewritten by whichever lost.
+  group: release-signing
+  cancel-in-progress: false
+
+# Neither job needs to write to this repository. The tap push is authenticated by
+# the deploy key, not by GITHUB_TOKEN, so the default token stays read-only — a
+# workflow that can push to the repository it is checking out of is a wider
+# credential than the job needs.
+permissions: {}
+
+env:
+  # Repeated as a literal in each `if:` below, because a job-level `if:` is
+  # evaluated before workflow `env` is in scope. The shell assertions use this
+  # variable; the two spellings must agree, and the `if:` is the one that
+  # enforces.
+  RELEASE_OWNER: dibas-np
+
+jobs:
+  preflight:
+    name: verify trusted release ref
+    # The identity guard. `triggering_actor` is checked alongside `actor`
+    # because a run can be re-dispatched or environment-approved by someone
+    # other than the account that pushed; the two differing means the tag was
+    # authorised once and is now being acted on by someone else.
+    if: >-
+      github.repository == 'dibas-np/NepalKit' &&
+      github.event_name == 'push' &&
+      github.ref_type == 'tag' &&
+      github.actor == 'dibas-np' &&
+      github.triggering_actor == 'dibas-np'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      commit_sha: ${{ steps.source.outputs.commit_sha }}
+      version: ${{ steps.source.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify release source
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # The tag names the release, the appcast entry, and the cask version,
+          # so a typo here writes a cask pointing at nothing. Prerelease
+          # suffixes are refused outright rather than accepted and stripped:
+          # they belong on the Sparkle beta channel, not in a cask that a fresh
+          # `brew install` would hand to someone who asked for a stable release.
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unsupported release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          COMMIT_SHA="$(git rev-parse 'HEAD^{commit}')"
+
+          # A GitHub-verified commit is one whose signature GitHub recognises, so
+          # a tag pointing at a commit whose history was rewritten lands here.
+          # This API cannot distinguish an unsigned commit from a rewritten one,
+          # which is why it has to be a hard check rather than a warning: with
+          # signing off it would pass either.
+          VERIFIED="$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT_SHA" \
+            --jq '.commit.verification.verified')"
+          if [[ "$VERIFIED" != "true" ]]; then
+            echo "Release commit is not verified by GitHub" >&2
+            echo "Register the signing key, or the first tag will fail here:" >&2
+            echo "  gh auth refresh -h github.com -s admin:ssh_signing_key" >&2
+            echo "  gh ssh-key add ~/.ssh/nepalkit_signing.pub --type signing --title 'NepalKit commit signing'" >&2
+            exit 1
+          fi
+
+          # The tagged commit must be on main. A tag on a commit that never
+          # landed is code no pull request reviewed, and publishing it would make
+          # the release the only place that code was ever built. `ahead` means
+          # main is ahead of the tag, which is the ordinary case for a release
+          # cut from main; `identical` means the tag is the tip.
+          RELATION="$(gh api "repos/$GITHUB_REPOSITORY/compare/$COMMIT_SHA...main" \
+            --jq '.status + ":" + .merge_base_commit.sha')"
+          if [[ "$RELATION" != "identical:$COMMIT_SHA" && "$RELATION" != "ahead:$COMMIT_SHA" ]]; then
+            echo "Release tag does not point to a commit on main ($RELATION)" >&2
+            exit 1
+          fi
+
+          # The tag must agree with the app it ships. A tag is also what the cask,
+          # the appcast entry and the Sparkle enclosure filename are all derived
+          # from, so a mismatch means those three disagree before a single one of
+          # them is written.
+          #
+          # Read from project.pbxproj rather than Info.plist: the plist holds the
+          # literal `$(MARKETING_VERSION)` placeholder, so it is only a version
+          # after a build, and this job deliberately runs no build. Reading the
+          # project also keeps the check on a runner that needs no Xcode, which a
+          # macOS-only reader would not.
+          APP_VERSION="$(sed -nE 's/^[[:space:]]*MARKETING_VERSION = ([^;]+);/\1/p' \
+            NepalKit.xcodeproj/project.pbxproj | sort -u)"
+          if [[ -z "$APP_VERSION" || "$APP_VERSION" == *$'\n'* ]]; then
+            echo "Expected exactly one MARKETING_VERSION in project.pbxproj, found: ${APP_VERSION:-none}" >&2
+            exit 1
+          fi
+          if [[ "$APP_VERSION" != "$VERSION" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match the app's version $APP_VERSION" >&2
+            echo "MARKETING_VERSION is the source; the tag must follow it." >&2
+            exit 1
+          fi
+
+          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  floor:
+    name: gate the tagged commit on macOS 26
+    needs: preflight
+    uses: ./.github/workflows/macos26-floor.yml
+
+  bump-tap:
+    name: bump the Homebrew cask
+    needs: [preflight, floor]
+    # Repeated on the one job that holds the deploy key, so the guard is visible
+    # where the credential is rather than implied by `needs:` one job away.
+    if: >-
+      github.repository == 'dibas-np/NepalKit' &&
+      github.event_name == 'push' &&
+      github.ref_type == 'tag' &&
+      github.actor == 'dibas-np' &&
+      github.triggering_actor == 'dibas-np'
+    runs-on: macos-26
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Leave the default token out of .git/config. This job authenticates to
+          # the tap with the deploy key below, and a token left lying in the
+          # workspace is one more credential than it needs.
+          persist-credentials: false
+
+      # The preflight ran in a different job, minutes ago, against a tag that can
+      # be moved in between. Re-read it here, in the job about to spend a deploy
+      # key: a tag rewritten to point at unreviewed history between the two would
+      # otherwise pass a check that no longer describes what is being signed.
+      - name: Reverify the release ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          COMMIT_SHA="$(git rev-parse 'HEAD^{commit}')"
+          REMOTE_COMMIT="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq '.sha')"
+          if [[ "$REMOTE_COMMIT" != "$COMMIT_SHA" ]]; then
+            echo "Release tag moved after the preflight: $COMMIT_SHA -> $REMOTE_COMMIT" >&2
+            exit 1
+          fi
+          RELATION="$(gh api "repos/$GITHUB_REPOSITORY/compare/$COMMIT_SHA...main" \
+            --jq '.status + ":" + .merge_base_commit.sha')"
+          if [[ "$RELATION" != "identical:$COMMIT_SHA" && "$RELATION" != "ahead:$COMMIT_SHA" ]]; then
+            echo "Release tag no longer points to a commit on main" >&2
+            exit 1
+          fi
+
+      - name: Configure the tap deploy key
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          # An empty secret must fail here, loudly, rather than producing a
+          # checkout that cannot push and a red job three steps later that reads
+          # like a cask problem. The failure names the missing secret instead.
+          if [ -z "$TAP_DEPLOY_KEY" ]; then
+            echo "::error::HOMEBREW_TAP_DEPLOY_KEY is empty in the release environment"
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$TAP_DEPLOY_KEY" > ~/.ssh/tap_deploy_key
+          chmod 600 ~/.ssh/tap_deploy_key
+          cat >> ~/.ssh/config <<'CONFIG'
+          Host github-tap
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/tap_deploy_key
+            IdentitiesOnly yes
+          CONFIG
+          chmod 600 ~/.ssh/config
+
+          # GitHub's host key, fetched rather than pinned. A deploy key on a
+          # third-party host is a trust decision with a live expiry, and
+          # keyscan's exposure is a connect-time MITM on the same connection that
+          # carries the push; the alternative is a hardcoded host key that has to
+          # be replaced by hand when GitHub rotates it, which is the failure this
+          # is meant to avoid. Public repositories are what this runs against.
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Clone the tap over the deploy key
+        run: |
+          set -euo pipefail
+          git clone git@github-tap:dibas-np/homebrew-tap.git "$RUNNER_TEMP/tap"
+          git -C "$RUNNER_TEMP/tap" config user.name "github-actions[bot]"
+          git -C "$RUNNER_TEMP/tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rewrite the cask for this release
+        env:
+          NEPAKIT_TAP_DIR: ${{ runner.temp }}/tap
+          # From the preflight, not re-derived from the ref: the version that was
+          # checked against the app's Info.plist is the one the cask should carry.
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: ./scripts/update-cask.sh "$VERSION"
+
+      - name: Show what changed
+        run: git -C "$RUNNER_TEMP/tap" diff
+
+      # The empty case is decided by asking whether there is anything to commit,
+      # not by catching the commit's exit status. `commit || echo` swallows every
+      # failure, not only the harmless one: a commit that failed for a real reason
+      # — no committer identity, a hook, a full disk — would be reported as
+      # "nothing to commit", and the push below would then republish the old HEAD
+      # and leave the job green with the tap silently unchanged. An `if` on the
+      # diff makes only the genuinely-empty case skip the commit, and leaves every
+      # other failure to `set -e`.
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git -C "$RUNNER_TEMP/tap" diff --quiet HEAD --; then
+            echo "nothing to commit; the cask already names this release"
+          else
+            git -C "$RUNNER_TEMP/tap" commit -am "nepalkit $VERSION"
+          fi
+          git -C "$RUNNER_TEMP/tap" push origin HEAD:main

@@ -46,6 +46,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Reusable so the release-tag workflow can gate a tag on this same check
+  # rather than restating it. Two copies of a deployment-floor claim would drift,
+  # and the one that drifts is the one nobody reads.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

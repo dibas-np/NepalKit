@@ -15,8 +15,8 @@ import Testing
 /// because a test of a hand-copied constant proves nothing.
 @MainActor
 struct BuildNumberTests {
-    /// The project file, found by walking up from this file until the checkout
-    /// root appears.
+    /// A file relative to the checkout root, found by walking up from this file
+    /// until it appears.
     ///
     /// Searched for by what is in each directory rather than by a fixed number
     /// of hops, because this file sits at a different depth in each of the two
@@ -26,19 +26,20 @@ struct BuildNumberTests {
     /// right for one of those and overshot the checkout in the other, which made
     /// every assertion here read `missing` — the test target could not build
     /// while that was true, so nothing ran it.
-    private static var projectFileURL: URL {
+    private static func checkoutFile(_ relativePath: String) -> URL {
         var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        let relative = "NepalKit.xcodeproj/project.pbxproj"
         while directory.path != "/" {
-            let candidate = directory.appendingPathComponent(relative)
+            let candidate = directory.appendingPathComponent(relativePath)
             if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
             directory.deleteLastPathComponent()
         }
         // Unreachable while this test file lives inside the checkout, and the
         // assertions below report a missing file rather than trapping, so a
         // relocation fails as a test failure with a readable message.
-        return directory.appendingPathComponent(relative)
+        return directory.appendingPathComponent(relativePath)
     }
+
+    private static var projectFileURL: URL { checkoutFile("NepalKit.xcodeproj/project.pbxproj") }
 
     /// Reads a build setting from the **app target's** configuration blocks.
     ///
@@ -88,42 +89,69 @@ struct BuildNumberTests {
         #expect((raw.flatMap(Int.init) ?? 0) >= 1)
     }
 
+    @Test func shortVersionIsSemanticVersion() {
+        // ADR-0009: Git tags, the Sparkle enclosure filename and the Homebrew
+        // cask all derive from this value, so its shape is a release contract
+        // rather than a formatting preference. Three numeric components is what
+        // makes "1.3" and "1.3.0" the same release to every one of them.
+        let short = Self.buildSetting("MARKETING_VERSION") ?? ""
+        let components = short.split(separator: ".")
+
+        #expect(
+            components.count == 3 && components.allSatisfy { Int($0) != nil },
+            "MARKETING_VERSION is not major.minor.patch with numeric components: \(short.isEmpty ? "missing" : short)"
+        )
+    }
+
     @Test func buildNumberIsDisjointFromTheShortVersion() {
-        // ADR-0009: the two are tracked independently and must stay disjoint, so
-        // the updater's comparator can never read one as the other. Compared
-        // *numerically*, not as strings — "1.0" and "1" are different strings
-        // and the same number, which is precisely the conflation this guards
-        // against. The build number is what moves on fixes a user never sees, so
-        // it must not sit at the short version's value.
-        let short = Double(Self.buildSetting("MARKETING_VERSION") ?? "") ?? -1
+        // ADR-0009: the two are tracked independently, so the updater's
+        // comparator can never read one as the other. The hazard is specific —
+        // "1.0" and "1" are different strings and the same number, so a build
+        // number sitting at the short version's value is a release the updater
+        // silently declines to offer. A three-component version cannot be read
+        // as an integer at all, which makes the disjointness structural; this
+        // guards the shape that delivers it rather than re-deriving it.
+        let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let build = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? -1
 
-        #expect(short >= 0, "MARKETING_VERSION is not a number: \(Self.buildSetting("MARKETING_VERSION") ?? "missing")")
         #expect(build >= 1, "CURRENT_PROJECT_VERSION is not a positive integer: \(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "missing")")
         #expect(
-            Double(build) != short,
-            "build number \(build) equals short version \(short) — the updater orders on the former, and About shows the latter"
+            Int(short) == nil,
+            "MARKETING_VERSION is \(short), which reads as the build number — the updater orders on the latter and About shows the former"
         )
     }
 
     @Test func buildNumberHasNotRegressedBelowTheLastReleased() {
-        // The monotonic half of the invariant. `lastReleasedBuildNumber` is
-        // raised as part of cutting a release; if someone lowers
-        // CURRENT_PROJECT_VERSION below it, every installed copy stops being
-        // offered updates, silently.
+        // The monotonic half of the invariant. If someone lowers
+        // CURRENT_PROJECT_VERSION below the highest build the feed has already
+        // offered, every installed copy stops being offered updates, silently.
         let current = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? 0
+        let floor = Self.lastReleasedBuildNumber
 
         #expect(
-            current >= Self.lastReleasedBuildNumber,
-            "build number \(current) is below the last released \(Self.lastReleasedBuildNumber)"
+            floor > 0,
+            "no published build number could be read from appcast.xml, so this guard is inert"
+        )
+        #expect(
+            current >= floor,
+            "build number \(current) is below the last released \(floor)"
         )
     }
 
-    /// The highest build number ever published. Build 3 shipped twice as 1.1 —
-    /// once, and then republished with the sandbox installer key — so it is the
-    /// real floor, and this is the value that makes "the build number went
-    /// backwards" a test failure rather than a support ticket a year later.
-    /// It sat at 1 through the 1.1 releases, which left the monotonic half of
-    /// this guard weaker than the comment above claims.
-    private static let lastReleasedBuildNumber = 3
+    /// The highest build number ever published.
+    ///
+    /// A hand-maintained constant, and it has been wrong: it read 3 for several
+    /// releases after build 4 shipped as 1.2, which left this guard
+    /// permitting a drop back to 3. The appcast is the record of what actually
+    /// shipped, so the floor is derived from it — a constant that silently lags
+    /// a release is worse than no guard, because it reads as a guard.
+    private static var lastReleasedBuildNumber: Int {
+        let appcast = checkoutFile("appcast.xml")
+        guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return 0 }
+        let pattern = try? NSRegularExpression(pattern: "<sparkle:version>(\\d+)</sparkle:version>")
+        let range = NSRange(text.startIndex..., in: text)
+        return pattern?.matches(in: text, range: range)
+            .compactMap { Int(text[Range($0.range(at: 1), in: text)!]) }
+            .max() ?? 0
+    }
 }

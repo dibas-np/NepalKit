@@ -293,8 +293,16 @@ class VerifyAppcastTest(unittest.TestCase):
             if not version or not link:
                 mismatched.append("item without version or link")
                 continue
-            expected = f"/releases/tag/{version.group(1)}"
-            if not link.group(1).endswith(expected):
+            # Tags carry a `v` from 1.3.0 on; 1.0 to 1.2 shipped without one and
+            # are not rewritten, because every enclosure url in the feed is
+            # fetched during a release and moving those tags would 404 the feed
+            # every installed copy polls. Both spellings are therefore correct
+            # for their release, and the link has to match whichever one it is.
+            acceptable = (
+                f"/releases/tag/{version.group(1)}",
+                f"/releases/tag/v{version.group(1)}",
+            )
+            if not link.group(1).endswith(acceptable):
                 mismatched.append(f"{version.group(1)} -> {link.group(1)}")
         self.assertEqual(mismatched, [], f"feed items not pointing at their release page: {mismatched}")
 
