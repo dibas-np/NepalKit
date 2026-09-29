@@ -37,3 +37,38 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/verify-data-sources.py --baseline scripts/data-sources-baseline.json
+
+  sparkle-pin-freshness:
+    name: Sparkle pin is still current (ADR-0012)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Compare the pinned Sparkle version against the latest release
+        run: |
+          set -euo pipefail
+          # The pin lives in the Xcode project (ADR-0012, exactVersion). Read
+          # it from the resolved file so the check cannot drift from what the
+          # app actually builds against.
+          PINNED=$(python3 - <<'PY'
+          import json, pathlib
+          resolved = json.loads(pathlib.Path(
+              "NepalKit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved").read_text())
+          pins = resolved.get("pins", [resolved]) if isinstance(resolved, dict) else resolved
+          for pin in pins:
+              if pin.get("identity") == "sparkle":
+                  print(pin["state"]["version"])
+                  break
+          else:
+              raise SystemExit("no sparkle pin found in Package.resolved")
+          PY
+          )
+          LATEST=$(curl -sf https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
+          echo "pinned=$PINNED latest=$LATEST"
+          if [ "$PINNED" != "$LATEST" ]; then
+            echo "::notice::Sparkle $LATEST is available; the pin is $PINNED. ADR-0012 owns the bump decision."
+            exit 1
+          fi
+          echo "Sparkle pin is current"
