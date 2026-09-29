@@ -46,9 +46,15 @@ def make_item(
     description: str | None = GOOD_NOTES,
     version: str = "1.0",
     include_enclosure: bool = True,
+    minimum_system_version: str | None = "26.0",
 ) -> str:
     parts = ["<item>", "<title>t</title>"]
     parts.append(f"<sparkle:shortVersionString>{version}</sparkle:shortVersionString>")
+    if minimum_system_version is not None:
+        parts.append(
+            f"<sparkle:minimumSystemVersion>{minimum_system_version}"
+            f"</sparkle:minimumSystemVersion>"
+        )
     if description is not None:
         if "]]>" in description:
             escaped = description.replace("]]>", "]]&gt;")
@@ -84,12 +90,21 @@ def write_plist(tmp: Path) -> Path:
     return plist
 
 
-def run_verify(test: unittest.TestCase, feed: Path, plist: Path) -> str:
+def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
+               minimum_system_version: str | None = None) -> str:
     buf = io.StringIO()
     with test.assertRaises(SystemExit) as ctx:
         with contextlib.redirect_stdout(buf):
-            va.verify(feed, plist, None, True)
+            va.verify(feed, plist, None, True, minimum_system_version)
     test.assertEqual(ctx.exception.code, 1)
+    return buf.getvalue()
+
+
+def capture_verify(feed: Path, plist: Path,
+                   minimum_system_version: str | None = None) -> str:
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        va.verify(feed, plist, None, True, minimum_system_version)
     return buf.getvalue()
 
 
@@ -199,6 +214,38 @@ class VerifyAppcastTest(unittest.TestCase):
             with contextlib.redirect_stdout(buf):
                 va.verify(feed, write_plist(tmp_path), None, True)
             self.assertIn("release notes match the notes contract", buf.getvalue())
+
+    def test_deployment_floor_is_read_from_the_release_script(self) -> None:
+        # The floor is whatever package-release.sh builds as, not a number typed
+        # into a second place that can drift from it.
+        self.assertEqual(va.deployment_floor(), "26.0")
+        self.assertEqual(va.deployment_floor("15.0"), "15.0")
+
+    def test_feed_floor_must_match_the_apps_floor(self) -> None:
+        # Sparkle 2.10 raised its own minimum to 12.0 and tells authors to put
+        # 12.0 in the feed. On a macOS 26 app that would offer updates to
+        # systems the app cannot run on, so the mismatch must stop publication.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(minimum_system_version="12.0"))
+            output = run_verify(self, feed, write_plist(tmp_path), "26.0")
+        self.assertIn("minimumSystemVersion is 12.0 but the app ships as 26.0", output)
+
+    def test_matching_feed_floor_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(minimum_system_version="26.0"))
+            output = capture_verify(feed, write_plist(tmp_path), "26.0")
+        self.assertIn("minimumSystemVersion 26.0 matches the app's floor", output)
+
+    def test_absent_feed_floor_is_reported_not_ignored(self) -> None:
+        # An item without the element tells Sparkle nothing about the floor.
+        # That is not the same as a correct value, so it must be visible.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(minimum_system_version=None))
+            output = capture_verify(feed, write_plist(tmp_path), "26.0")
+        self.assertIn("no <sparkle:minimumSystemVersion>", output)
 
     def test_crypto_round_trip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
