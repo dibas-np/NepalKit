@@ -37,6 +37,11 @@ if [[ -z "$VERSION" ]]; then
     VERSION=$(gh api "repos/$REPO/releases/latest" --jq .tag_name)
     echo "using the newest release: $VERSION"
 fi
+# Tags carry a `v` from v1.3.0 on and the cask records the version without one.
+# Stripped here rather than at each use, so an explicit argument accepts the
+# spelling a tag actually has instead of failing the check below for having a
+# prefix in front of a correct version.
+VERSION="${VERSION#v}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
     echo "'$VERSION' is not a three-component version." >&2
     echo "Releases 1.0 to 1.2 shipped two-component versions and are not" >&2

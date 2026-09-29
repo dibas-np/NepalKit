@@ -154,10 +154,21 @@ jobs:
           # the appcast entry and the Sparkle enclosure filename are all derived
           # from, so a mismatch means those three disagree before a single one of
           # them is written.
-          APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' NepalKit/Info.plist)"
+          #
+          # Read from project.pbxproj rather than Info.plist: the plist holds the
+          # literal `$(MARKETING_VERSION)` placeholder, so it is only a version
+          # after a build, and this job deliberately runs no build. Reading the
+          # project also keeps the check on a runner that needs no Xcode, which a
+          # macOS-only reader would not.
+          APP_VERSION="$(sed -nE 's/^[[:space:]]*MARKETING_VERSION = ([^;]+);/\1/p' \
+            NepalKit.xcodeproj/project.pbxproj | sort -u)"
+          if [[ -z "$APP_VERSION" || "$APP_VERSION" == *$'\n'* ]]; then
+            echo "Expected exactly one MARKETING_VERSION in project.pbxproj, found: ${APP_VERSION:-none}" >&2
+            exit 1
+          fi
           if [[ "$APP_VERSION" != "$VERSION" ]]; then
             echo "Tag $GITHUB_REF_NAME does not match the app's version $APP_VERSION" >&2
-            echo "Info.plist holds \$(MARKETING_VERSION); the tag must follow it." >&2
+            echo "MARKETING_VERSION is the source; the tag must follow it." >&2
             exit 1
           fi
 
