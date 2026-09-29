@@ -133,19 +133,12 @@ struct PopoverView: View {
 
                 Spacer(minLength: 8)
 
-                // Visible text, not icon-only.
-                //
-                // The reference this follows puts a bare gear in its footer, and
-                // that was tried here: the two actions became glyphs with no
-                // label. `System Events` reported `AXName` as *missing value* for
-                // every button in this popover, and with the text removed there
-                // is nothing left to fall back on — a screen-reader user would
-                // hear "button" twice with no way to tell them apart, and could
-                // not verify the fix from here.
-                //
-                // So the footer takes the reference's *layout* and keeps the
-                // labels. An action whose name cannot be proven announced should
-                // show its name.
+                // Visible text, not icon-only: a bare glyph on this surface
+                // exposes no accessible name (System Events reports `AXName` as
+                // missing for these buttons), and with the text removed a
+                // screen-reader user hears "button" twice with no way to tell
+                // the actions apart. An action whose name cannot be proven
+                // announced shows its name.
                 action(
                     Symbols.settings,
                     title: Strings.settingsLabel,
@@ -288,11 +281,9 @@ private struct TodaySection: View {
                 Text(formatBS(todayBS, settings: settings))
                     .font(.system(size: 28, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
-                    // Label only. Adding `children: .ignore` here collapsed the
-                    // element and left it with no role at all — the live tree
-                    // showed `AXUnknown: 12 Ashoj 2083`, which is not something
-                    // to hand a screen reader. Replacing the label on a `Text`
-                    // keeps its static-text role.
+                    // Label only: `children: .ignore` leaves a `Text` with no
+                    // accessibility role at all. Replacing the label keeps its
+                    // static-text role.
                     .accessibilityLabel(
                         SpokenDate.bs(todayBS, monthNames: settings.monthNames)
                     )

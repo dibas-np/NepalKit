@@ -23,8 +23,6 @@ enum Strings {
     /// may not read, which would leave the option unidentifiable when the two
     /// Settings pickers are read aloud. Same rule as the dates: the screen keeps
     /// the characters, only the announcement is made pronounceable.
-    ///
-    /// Found by walking the live accessibility tree, not by reading this file.
     static let digitsDevanagariSpoken = "Devanagari 0–9"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"

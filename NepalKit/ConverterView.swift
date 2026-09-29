@@ -50,9 +50,9 @@ struct ConverterView: View {
                 // "Optional(12 Ashoj 2083)" to a screen reader.
                 Text(output)
                     .font(.headline)
-                    // Label only, for the same reason as the popover headline:
-                    // `children: .ignore` left the live tree showing
-                    // `AXUnknown: Result: ...` with no role at all.
+                // Label only: `children: .ignore` leaves a `Text` with no role
+                // (same as the popover headline). Replacing the label keeps its
+                // static-text role.
                     .accessibilityLabel(
                         [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")

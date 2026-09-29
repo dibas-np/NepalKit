@@ -1,27 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  NepalKit's Info.plist, in full.
-
-  It is authoritative for every key, including the Apple-defined ones, and
-  `GENERATE_INFOPLIST_FILE` is off. Two reasons, both learned the hard way:
-
-  **A generated plist silently wins.** With `GENERATE_INFOPLIST_FILE = YES`
-  alongside an `INFOPLIST_FILE`, this file's *unknown* keys survive the merge
-  but an Apple-*known* key is owned by the generator and overwritten. That is
-  how `NSHumanReadableCopyright` was set here, accepted by a green build, and
-  then absent from the finished app. The project now states every key itself,
-  so there is no second source to disagree with.
-
-  **`INFOPLIST_KEY_*` can be accepted and discarded.** Setting a name outside
-  that allowlist produces a successful build and no key. Demonstrated on
-  `INFOPLIST_KEY_SUPublicEDKey`: build reported success, the app contained no
-  `SUPublicEDKey` at all, and a shipped app in that state could not verify a
-  single update. `InfoPlistKeysTests` reads the *built product* for this reason.
-
-  Merging the two also copied this file into `Contents/Resources/`, leaving a
-  stray second Info.plist inside the bundle — harmless at runtime, but a real
-  misconfiguration that the build warned about on every run.
+  NepalKit's Info.plist, in full. It is authoritative for every key, including
+  the Apple-defined ones, and `GENERATE_INFOPLIST_FILE` stays off: with it on,
+  the generator owns Apple-known keys and silently overwrites this file's
+  values for them. `INFOPLIST_KEY_*` settings are consumed by that same
+  generator, and a name outside its allowlist builds green while producing no
+  key at all — Sparkle's keys (SUPublicEDKey, SUFeedURL) exist nowhere else, so
+  a silently lost key is an updater that can verify nothing. InfoPlistKeysTests
+  reads the built product for exactly this reason. (With the generator on, this
+  file is also copied into Contents/Resources as a stray second Info.plist.)
 
   Versions and the bundle identifier are substituted from the build settings
   rather than duplicated here, so there is still exactly one place to change
@@ -95,30 +83,12 @@
 	  Pages keeps the appcast in version control next to the code that signs it,
 	  where CI can regenerate it on release, rather than re-attaching an asset to
 	  every release by hand and hoping it matches the artifacts.
-
-	  NOT YET SERVABLE. Pages is not enabled on the repository and the appcast
-	  does not exist, so this URL currently 404s and a check reports failure
-	  rather than a version. That is the honest failure — `UpdateCheckModel`
-	  distinguishes "could not check" from "up to date" — but it must be
-	  published before any release ships, or the app reports a broken updater to
-	  every user.
 	-->
 	<key>SUFeedURL</key>
 	<string>https://dibas-np.github.io/NepalKit/appcast.xml</string>
 
-	<!--
-	  The copyright line IS set here, and that is a change worth explaining.
-
-	  It used to be set only by INFOPLIST_KEY_NSHumanReadableCopyright, because
-	  with GENERATE_INFOPLIST_FILE on, this file's *unknown* keys (SUPublicEDKey,
-	  SUFeedURL) survived the merge but NSHumanReadableCopyright is an Apple-known
-	  key that the generator owned and overwrote — so the build settings carried
-	  it instead, and a version of this comment recorded why it was NOT here.
-
-	  The generator is now gone entirely: this file states every key itself (see
-	  the header above), the build setting was removed with it, and the line
-	  lives here next to every other key. InfoPlistKeysTests reads the built
-	  product to prove it arrives.
-	-->
+	<!-- Rendered by both About surfaces via AppMetadata, which omits the line
+	     entirely when this is absent rather than showing a blank.
+	     InfoPlistKeysTests asserts it reaches the product. -->
 </dict>
 </plist>

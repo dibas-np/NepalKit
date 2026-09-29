@@ -117,14 +117,10 @@ struct InfoPlistKeysTests {
         #expect(copyright == "Copyright (C) 2026 Dibas Sigdel")
 
         // It must match what the source files declare, or the app and the
-        // repository name different holders.
-        //
-        // This used to be checked against LICENSE, which is where the notice was
-        // originally. That arrangement was wrong: a project notice prepended to
-        // LICENSE stops GitHub's Licensee identifying the licence, and GitHub
-        // reported the repository as NOASSERTION. The GPL's own guidance puts
-        // the notice in the source headers and leaves LICENSE as the licence
-        // text alone, which is what this now checks.
+        // repository name different holders. The GPL's guidance puts the notice
+        // in the source headers and leaves LICENSE as the licence text alone —
+        // prepending a project notice to LICENSE stops GitHub's Licensee from
+        // identifying the licence.
         let source = Self.repositoryRoot.appendingPathComponent("NepalKit/PopoverView.swift")
         let header = try String(contentsOf: source, encoding: .utf8)
 
