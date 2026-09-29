@@ -49,10 +49,11 @@ trap cleanup EXIT
 
 # Resolve how to authenticate to the notary service.
 #
-# Preferred path is a keychain profile, and it is the only one that puts nothing
-# secret in argv. The env-var form still works for CI, but it is announced as
-# unsafe rather than quietly accepted, because the password genuinely is visible
-# in the process table for the length of each submission.
+# A keychain profile is the only supported path, and the only one that puts
+# nothing secret in argv. notarytool's env-var form (APPLE_ID /
+# APP_SPECIFIC_PASSWORD) is deliberately not implemented here: it would put
+# the app-specific password in the process table for the length of each
+# submission, and there is no CI release path that needs it.
 #
 # The profile's contents are NOT parsed here. notarytool stores a JSON blob under
 # service "appSpecificPassword" with account

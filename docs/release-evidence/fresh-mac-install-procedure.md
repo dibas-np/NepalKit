@@ -14,9 +14,7 @@ never seen it.
 You need two things, and only the first is a technical task:
 
 1. **The candidate.** `scripts/package-release.sh` produces a signed,
-   notarized, stapled `.dmg`. It needs `TEAM_ID`, `APPLE_ID` and
-   `APP_SPECIFIC_PASSWORD`; the app-specific password is created at
-   <https://account.apple.com>. The app is **not** published publicly while
+   notarized, stapled `.dmg`. It needs `TEAM_ID` and a notarytool keychain profile (created once with `xcrun notarytool store-credentials NepalKit-notary`, which prompts for the Apple ID and an app-specific password and stores them in your keychain). The app is **not** published publicly while
    being tested — use AirDrop, a USB stick, or any transfer that is not a
    public download link.
 2. **A Mac you have not touched.** Prefer one **not** on the current macOS
