@@ -14,16 +14,16 @@ import Sparkle
 /// security risk, since the installer flow is what the framework's signature
 /// verification is built around.
 ///
-    /// **No custom fronting is needed.** An `LSUIElement` app's activation policy suppresses becoming
-    /// frontmost, so the update window could plausibly appear behind whatever the
-    /// user is looking at. `SPUStandardUserDriver` handles it itself, calling
-    /// `activateIgnoringOtherApps:YES` before showing a modal window, with the
-    /// comment that `[NSApp activate]` "does not always work reliably from
-    /// backgrounded apps when the user initiates checks for updates." That is the
-    /// same accessory-app activation problem measured in ADR-0011, hit
-    /// independently by Sparkle's own authors — and it is why that deprecated call
-    /// is still in the framework. Using the standard user driver is therefore both
-    /// simpler and more correct than layering `WindowPresentation` on top.
+/// **No custom fronting is needed.** An `LSUIElement` app's activation policy suppresses becoming
+/// frontmost, so the update window could plausibly appear behind whatever the
+/// user is looking at. `SPUStandardUserDriver` handles it itself, calling
+/// `activateIgnoringOtherApps:YES` before showing a modal window, with the
+/// comment that `[NSApp activate]` "does not always work reliably from
+/// backgrounded apps when the user initiates checks for updates." That is the
+/// same accessory-app activation problem measured in ADR-0011, hit
+/// independently by Sparkle's own authors — and it is why that deprecated call
+/// is still in the framework. Using the standard user driver is therefore both
+/// simpler and more correct than layering `WindowPresentation` on top.
 @MainActor
 final class SparkleUpdateService: NSObject, UpdateServicing {
     /// Assigned in `init` after `super.init()`, because the controller needs
