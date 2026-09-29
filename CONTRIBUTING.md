@@ -57,9 +57,12 @@ Run both suites. They are separate on purpose: one is the calendar, the other is
 the application.
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 48 tests
-./scripts/run-app-tests.sh             # the app: 118 tests
+cd NepalKitCore && swift test          # the calendar: 52 tests
+./scripts/run-app-tests.sh             # the app: 125 tests
 ```
+
+The counts are what the runners printed when this was written. A pull request
+that changes them re-pins both numbers in the same commit.
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
 the app-layer suite goes through a SwiftPM harness instead — see
