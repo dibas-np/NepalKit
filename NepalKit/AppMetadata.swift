@@ -14,8 +14,16 @@ import AppKit
 /// dictionary and prove the surface reads metadata instead of hardcoding it.
 struct AppMetadata: Equatable {
     /// The source repository, as a single named constant rather than a literal
-    /// in a view. Kept in step with `git remote origin`: if the repository
-    /// moves, this constant, the README, and the release script that reads it
+    /// in a view.
+    ///
+    /// It is *not* an `INFOPLIST_KEY_` build setting, though that is where it
+    /// belongs conceptually. The project generates its Info.plist, and Xcode
+    /// honours only a known allowlist of `INFOPLIST_KEY_*` names — an unknown
+    /// one is dropped in silence, leaving no key and no diagnostic. Carrying it
+    /// here is the honest option until the project ships a real Info.plist.
+    ///
+    /// Kept in step with `git remote origin`. If the repository moves, this
+    /// constant, the README, and the release script that reads it
     /// (scripts/verify-appcast.sh) are the places that follow.
     static let defaultRepositoryURL = URL(string: "https://github.com/dibas-np/NepalKit")!
 

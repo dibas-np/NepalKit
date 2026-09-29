@@ -168,9 +168,11 @@ struct SpokenOptionLabelTests {
         // spoken channel is a defect even when the string reads correctly, which
         // is why this sweeps the whole set rather than the one known case.
         //
-        // Exercised over every month, both month languages, both digit scripts
-        // and the boundary states, because a glyph can hide in a branch that a
-        // single representative sample never reaches.
+        // Exercised over every month, both month languages and the boundary
+        // states, because a glyph can hide in a branch that a single
+        // representative sample never reaches. Only one digit script needs
+        // sweeping: the spoken channel is always Latin by construction, so
+        // there is no Devanagari-spoken branch that could hide a glyph.
         let forbidden: Set<Character> = [
             "\u{2013}", "\u{2014}",  // en dash, em dash
             "\u{00B7}",              // middle dot, used between the two dates
@@ -198,18 +200,15 @@ struct SpokenOptionLabelTests {
         }
 
         let date = GADay(year: 2026, month: 9, day: 27)
-        for digits in [DigitScript.latin, .devanagari] {
-            for style in [MonthNameStyle.nepali, .transliterated] {
-                let spoken = SpokenDate.gregorianAnnouncement(date: date, weekday: weekdayName(for: weekday(of: date) ?? 1, style: style))
-                if spoken.contains(where: { forbidden.contains($0) }) {
-                    offenders.append("gregorian announcement \(spoken)")
-                }
-                let numeric = SpokenDate.number(2083)
-                if numeric != numeric.trimmingCharacters(in: .whitespaces) {
-                    offenders.append("number carries padding: \(numeric)")
-                }
-                _ = digits
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            let spoken = SpokenDate.gregorianAnnouncement(date: date, weekday: weekdayName(for: weekday(of: date) ?? 1, style: style))
+            if spoken.contains(where: { forbidden.contains($0) }) {
+                offenders.append("gregorian announcement \(spoken)")
             }
+        }
+        let numeric = SpokenDate.number(2083)
+        if numeric != numeric.trimmingCharacters(in: .whitespaces) {
+            offenders.append("number carries padding: \(numeric)")
         }
 
         // The boundary strings, including the menu-bar variants, which are the

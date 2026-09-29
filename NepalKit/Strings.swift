@@ -7,9 +7,14 @@ import NepalKitCore
 /// setting, not a second UI language).
 enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
-    /// Separator between a date and its weekday on a shown date line, and the
-    /// one composer for that line: the pairing appears on the popover's
-    /// Gregorian line and in the converter's shown result.
+    /// Separator between a date and its weekday on a shown date line.
+    ///
+    /// Shared by both places the pairing appears — the popover's Gregorian
+    /// line, which lays the two halves out as separate `Text`s in an `HStack`
+    /// so they wrap independently, and the converter's shown result, which
+    /// composes them through `datedWithWeekday`. The popover therefore does not
+    /// call the composer; what must not drift is the separator itself, because
+    /// the spoken channel has to avoid it in both.
     static let weekdaySeparator = "·"
     static func datedWithWeekday(_ date: String, _ weekday: String) -> String {
         "\(date) \(weekdaySeparator) \(weekday)"

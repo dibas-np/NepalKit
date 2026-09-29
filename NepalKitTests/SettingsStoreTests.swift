@@ -49,21 +49,12 @@ struct SettingsStoreTests {
 
         #expect(store.settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
     }
-    @Test func theStoreIsNotScopedByAnythingAnUpdateWouldChange() {
-        // The question ticket 12 asks: do settings survive an in-place update?
-        // `SettingsStore` uses `UserDefaults.standard`, so the preferences are
-        // written to the app's own plist keyed by bundle identifier. An in-place
-        // update replaces the binary and leaves that plist alone.
-        //
-        // An earlier version of this test asked `UserDefaults` which domains were
-        // volatile and failed to notice when the store was deliberately
-        // re-scoped to a versioned suite - the domain list does not reflect an
-        // explicitly created suite, so the assertion was checking nothing. It is
-        // replaced with the direct property: the store must hold `.standard`.
-        let store = SettingsStore()
-        #expect(
-            store.persistenceIsVersionIndependent,
-            "the defaults store is scoped to something an update would replace"
-        )
-    }
+    // Ticket 12's question — do settings survive an in-place update? — is
+    // answered by `SettingsStore.init`'s contract rather than by a test. The
+    // property it needed to be asked (`persistenceIsVersionIndependent`)
+    // existed only to be read here, and asserted nothing a caller could not
+    // already see in the default argument three lines away; testing the real
+    // thing instead would mean writing to `UserDefaults.standard`, which
+    // clobbers the developer's own settings. The constraint is stated where a
+    // re-scoping would be made.
 }

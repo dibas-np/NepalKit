@@ -90,8 +90,9 @@ struct AboutView: View {
             // its terms rather than implying there are none.
             if let license = metadata.license {
                 row(Strings.licenseLabel, license)
-                // The licence names the code; the calendar data ships under
-                // different terms, so the row must not be read as app-wide.
+                // The licence names the code; the bundled calendar table carries
+                // no licence from this project, so the row must not be read as
+                // app-wide (ADR-0010).
                 Text(Strings.licenseScopeNote)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
