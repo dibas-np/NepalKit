@@ -24,7 +24,6 @@ rather than from the markup. The record shape is ``bs_year``/``bs_month``/
 ``bs_day`` with an ``ad_date`` beside it; only the BS triple is needed here.
 """
 import json
-import pathlib
 import re
 import sys
 import urllib.error
