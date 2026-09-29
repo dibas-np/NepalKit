@@ -53,16 +53,6 @@ final class ClockModel {
         todayAD(now: now)
     }
 
-    func bsString(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String? {
-        guard let bs = todayBSDate(in: dataset) else { return nil }
-        return formatBS(bs, settings: settings)
-    }
-
-    func gregorianString(settings: DisplaySettings) -> String? {
-        guard let ad = todayADDate() else { return nil }
-        return formatAD(ad, settings: settings)
-    }
-
     /// Weekday of today's civil day, in the selected display language.
     ///
     /// Derived from the Nepal Time Gregorian day rather than from a Bikram
