@@ -133,6 +133,9 @@ def describe(match: "re.Match[str]") -> str:
     if not notes.exists():
         sys.exit(f"no release notes for version {version}: expected {notes}")
     body = notes.read_text(encoding="utf-8").strip()
+    if "]]>" in body:
+        sys.exit(f"{notes.name}: contains ]]>, which would terminate the CDATA "
+                 f"block early and corrupt the feed")
     return re.sub(
         r"(\s*)<enclosure ",
         lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
