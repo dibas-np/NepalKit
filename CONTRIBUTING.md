@@ -101,8 +101,12 @@ first.
 ## Pull requests
 
 - Branch from `main`, keep the history readable, and describe **why**.
-- A pull request that changes data without re-running the verification script
-  will be asked for the output.
+- Continuous integration runs the comparison against the committed baseline
+  (`data-sources.yml`): the baseline's differing months are the recorded
+  arbitrations, so a red gate means the table, a parser, or a source changed
+  without re-arbitrating. Regenerating the baseline
+  (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
+  act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the
   deployment-floor gate: it proves the app builds, tests, and launches on the
   oldest macOS it claims to support, which is a different question from "does it
