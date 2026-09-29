@@ -33,6 +33,10 @@ Sparkle enclosure filename, and the Homebrew cask all derive from it —
 there is exactly one version string to keep correct, and its shape is a release
 contract rather than a formatting preference.
 
+Tags are prefixed `v`, so the tag for 1.3.0 is `v1.3.0`. The prefix is what
+makes a tag name distinguishable from a branch name at a glance, and it is the
+form `on: push: tags:` filters read as the release signal.
+
 Three components is what makes `1.3` and `1.3.0` the same release to all three
 consumers, and it is also what keeps the version disjoint from the build number
 structurally: a dotted three-component string cannot be parsed as an integer at
@@ -40,11 +44,12 @@ all, so no comparator can read one as the other. Under the earlier two-component
 scheme that disjointness had to be maintained separately, because `1.0` and `1`
 are different strings expressing the same number.
 
-**Releases 1.0 through 1.2 shipped two-component versions and are not
-rewritten.** Their tags, feed entries and release assets stay as published:
-`verify-appcast.py` fetches every enclosure URL in the feed and fails the release
-gate on a 404, so retagging history would invalidate the live feed that every
-installed copy polls. Semver begins at 1.3.0.
+**Releases 1.0 through 1.2 shipped two-component versions and bare tags, and
+neither is rewritten.** `verify-appcast.py` fetches every enclosure URL in the
+feed and fails the release gate on a 404, so retagging history would invalidate
+the live feed that every installed copy polls. A tag-triggered workflow has to
+match `v*` and will therefore ignore those three tags, which is correct: they
+are already released, and a release is not cut twice.
 
 ## The guards read the project file, and the appcast, not a copied constant
 
@@ -73,6 +78,12 @@ fetches every enclosure URL in the feed and fails the release gate when one 404s
 so moving the 1.0, 1.1 and 1.2 tags means rewriting three published URLs in the
 feed that every installed copy reads, and breaking every `/releases/tag/1.2`
 link, to make the tag scheme uniform across three releases nobody is installing.
+
+**Tag with a `v` prefix anyway.** Not a rejection so much as a cost: the feed
+then carries two tag schemes, and `test_every_feed_item_links_to_its_own_release_page`
+has to accept both spellings rather than one derived form. That test is the only
+place the two schemes are visible, and accepting two exact suffixes keeps it
+tight — a link to any other tag still fails it.
 
 **Drop the patch component for releases that are not patches.** Rejected. The
 cost is a version string whose meaning depends on which release you are looking

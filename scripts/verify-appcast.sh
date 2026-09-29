@@ -57,8 +57,9 @@ if [[ -z "$URL_PREFIX" ]]; then
     NEWEST=(${ARCHIVES_DIR}/*.zip(Nom[1]))
     [[ -e "$NEWEST" ]] || NEWEST=(${ARCHIVES_DIR}/*.dmg(Nom[1]))
     [[ -e "$NEWEST" ]] || { echo "no archives in $ARCHIVES_DIR" >&2; exit 1; }
-    TAG="${NEWEST:t:r}"          # NepalKit-1.0.zip -> NepalKit-1.0
-    TAG="${TAG#*-}"             # -> 1.0
+    VERSION="${NEWEST:t:r}"      # NepalKit-1.3.0.zip -> NepalKit-1.3.0
+    VERSION="${VERSION#*-}"     # -> 1.3.0
+    TAG="v$VERSION"
     URL_PREFIX="$REPO_URL/releases/download/$TAG"
     RELEASE_LINK="$REPO_URL/releases/tag/$TAG"
     echo "derived release tag '$TAG' from ${NEWEST:t}"

@@ -44,7 +44,7 @@ fi
     exit 1
 }
 
-DMG_URL="https://github.com/$REPO/releases/download/$VERSION/NepalKit.dmg"
+DMG_URL="https://github.com/$REPO/releases/download/v$VERSION/NepalKit.dmg"
 echo "==> fetching $DMG_URL"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -77,13 +77,18 @@ echo "==> cask is at $CURRENT, moving it to $VERSION"
 # digest in place, which reads as a successful bump and installs the old build.
 grep -q '^  version "' "$CASK" || { echo "no version stanza in $CASK" >&2; exit 1; }
 grep -q '^  sha256 "' "$CASK" || { echo "no sha256 stanza in $CASK" >&2; exit 1; }
+grep -q '^  url ".*releases/download/' "$CASK" || { echo "no release-download url stanza in $CASK" >&2; exit 1; }
 
+# The url is rewritten alongside the version, because its tag segment carries the
+# `v` and the `#{version}` substitution cannot express that on its own.
 perl -pi -e 's/^  version ".*"$/  version "'"$VERSION"'"/' "$CASK"
 perl -pi -e 's/^  sha256 ".*"$/  sha256 "'"$SHA256"'"/' "$CASK"
+perl -pi -e 's{^(  url ".*)/releases/download/v?[^/]+(/.*)$}{$1/releases/download/v#{version}$2}' "$CASK"
 
 echo "==> verifying the result actually names $VERSION"
 grep -q "^  version \"$VERSION\"\$" "$CASK" || { echo "version stanza was not updated" >&2; exit 1; }
 grep -q "^  sha256 \"$SHA256\"\$" "$CASK" || { echo "sha256 stanza was not updated" >&2; exit 1; }
+grep -Fq "releases/download/v#{version}/" "$CASK" || { echo "url was not updated to the v-prefixed tag" >&2; exit 1; }
 
 if command -v brew >/dev/null; then
     echo "==> brew audit"
