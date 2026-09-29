@@ -5,9 +5,21 @@
 
 <p align="center">
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/tag/dibas-np/NepalKit?label=version&style=flat-square" alt="Version"></a>
+  <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
   <a href="#why-macos-26"><img src="https://img.shields.io/badge/macOS-26%2B-lightgrey.svg?style=flat-square" alt="macOS 26+"></a>
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=macOS%2026%20floor&style=flat-square" alt="macOS 26 floor"></a>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#privacy">Privacy</a> ·
+  <a href="#the-calendar-data">Calendar data</a> ·
+  <a href="#how-it-updates">Updates</a> ·
+  <a href="#known-issues">Known issues</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="#license">License</a>
 </p>
 
 <p align="center">
@@ -37,15 +49,18 @@ project expects. [SUPPORT.md](SUPPORT.md) says where to ask, and
   Sparkle against an EdDSA-verified feed; each update's alert carries release
   notes.
 
-Everything the app *does* is offline. Conversion, the calendar dataset, today's
-date, and settings are all local. No analytics, no telemetry. The one exception
-is the software update check, which is the only thing the app is granted network
-access for.
+## Privacy
 
-## Quick Start
+Everything the app *does* is offline. Conversion, the calendar dataset, today's
+date, and settings are all local. No analytics, no telemetry, no account. The
+one exception is the software update check, which is the only thing the app is
+granted network access for.
+
+## Install
 
 NepalKit requires **macOS 26 or later** (see [Why macOS 26](#why-macos-26)) and
-is not on the App Store — it is distributed as a notarized DMG.
+runs natively on both Apple Silicon and Intel Macs. It is not on the App Store —
+it is distributed as a notarized DMG.
 
 1. Download the DMG from the
    [Releases page](https://github.com/dibas-np/NepalKit/releases/latest), open
@@ -157,7 +172,7 @@ check reports the failure rather than claiming you are current.
   alert renders them as HTML.
 - **Signed updates.** The enclosure carries an EdDSA signature over its bytes,
   verifiable by anyone against the public key committed in `Info.plist`
-  (see [Quick Start](#quick-start)). Appcast signing needs the private key, so
+  (see [Install](#install)). Appcast signing needs the private key, so
   it happens on the release machine and never in CI.
 
 <details>
