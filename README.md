@@ -38,9 +38,14 @@ project expects. [SUPPORT.md](SUPPORT.md) says where to ask, and
 
 ## Install
 
-Download the DMG from the project's [Releases page](https://github.com/dibas-np/NepalKit/releases/tag/1.0),
+Download the DMG from the project's [Releases page](https://github.com/dibas-np/NepalKit/releases/latest),
 open it, and drag NepalKit into Applications. The app is Developer ID signed and
-notarized, so Gatekeeper accepts it without a right-click workaround.
+notarized, so Gatekeeper accepts it without a right-click workaround. Installed
+copies update in the app, and each update's alert carries release notes.
+
+One exception: installations of the original 1.0 cannot update in place (see
+[Known issues](#known-issues)) — if you are on 1.0, install 1.1 from the DMG
+once. Everything from 1.1 onward updates normally.
 
 The notarization ticket is stapled to the app bundle itself, not only to the disk
 image. That is deliberate: in-place Sparkle updates copy the `.app` rather than
@@ -53,11 +58,12 @@ default and can be toggled in Settings → Startup.
 
 ## Using it
 
-The popover has two parts: **Today** (both calendars, Nepal Time, your local
-time as a reference) and a **converter** with a direction toggle and bounded
-pickers, plus routes into **Settings**, **About**, and **Quit**. Display
-settings and launch-at-login live in the Settings window (Settings… in the
-popover, or Cmd-,).
+The popover puts **Today** — both calendars and the clocks — and **Convert** on
+equal tabs, under a header that names the app and shows live Nepal Time. A
+footer names where you are and carries the routes into **Settings**, **About**,
+and **Quit**. The local-time clock appears only when your zone actually differs
+from Nepal Time. Display settings and launch-at-login live in the Settings
+window (Settings… in the popover, or Cmd-,).
 
 Two independent display settings apply to every date on every surface:
 
@@ -94,10 +100,10 @@ builds and tests on its own with no Xcode.
 ### Tests
 
 ```sh
-# core: conversion, dataset, formatting          -> 47 tests, 13 suites
+# core: conversion, dataset, formatting          -> 48 tests, 13 suites
 cd NepalKitCore && swift test
 
-# app layer: models, settings persistence        -> 96 tests, 15 suites
+# app layer: models, settings persistence        -> 110 tests, 17 suites
 ./scripts/run-app-tests.sh
 ```
 
@@ -228,6 +234,12 @@ Signing the appcast needs the private key from the keychain, so it happens on th
 release machine and not in CI. `sign_update` blocks on a keychain access prompt;
 run it in the foreground where the prompt can be answered rather than in a batch
 that will hang.
+
+Release notes are part of the pipeline, not a hand edit afterwards: each
+version's notes live at `scripts/release-notes/<version>.html`, and the appcast
+step injects them into the generated feed item. A version without a notes file
+fails the release — the update alert renders them as HTML, so an unnoted update
+cannot ship.
 
 ## Why macOS 26
 
