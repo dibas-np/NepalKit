@@ -15,6 +15,11 @@
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
+# The repository URL has one home: AppMetadata.defaultRepositoryURL. Deriving
+# it here keeps the generated feed's enclosure URLs and link from outliving a
+# repository move that updated the app and the README but not this script.
+REPO_URL="$(sed -n 's/.*defaultRepositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | head -1)"
+[[ -n "$REPO_URL" ]] || { echo "could not read defaultRepositoryURL from NepalKit/AppMetadata.swift" >&2; exit 1; }
 ARCHIVES_DIR="${1:?usage: $0 <archives-dir> [download-url-prefix]}"
 # Default assumes a GitHub release tag matching the marketing version. Override
 # for any other layout, e.g. a flat asset path.
@@ -54,7 +59,7 @@ if [[ -z "$URL_PREFIX" ]]; then
     [[ -e "$NEWEST" ]] || { echo "no archives in $ARCHIVES_DIR" >&2; exit 1; }
     TAG="${NEWEST:t:r}"          # NepalKit-1.0.zip -> NepalKit-1.0
     TAG="${TAG#*-}"             # -> 1.0
-    URL_PREFIX="https://github.com/dibas-np/NepalKit/releases/download/$TAG"
+    URL_PREFIX="$REPO_URL/releases/download/$TAG"
     echo "derived release tag '$TAG' from ${NEWEST:t}"
 fi
 
@@ -75,7 +80,7 @@ echo "release url prefix: $URL_PREFIX"
 # Signing happens here, from the keychain, where a human can approve the prompt.
 "$GENERATE_APPCAST" \
     --download-url-prefix "https://nepalkit.invalid/placeholder" \
-    --link "https://github.com/dibas-np/NepalKit" \
+    --link "$REPO_URL" \
     "$ARCHIVES_DIR"
 
 APPCAST="$ARCHIVES_DIR/appcast.xml"

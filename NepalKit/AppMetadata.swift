@@ -15,7 +15,8 @@ import AppKit
 struct AppMetadata: Equatable {
     /// The source repository, as a single named constant rather than a literal
     /// in a view. Kept in step with `git remote origin`: if the repository
-    /// moves, this and the README are the two places to change.
+    /// moves, this constant, the README, and the release script that reads it
+    /// (scripts/verify-appcast.sh) are the places that follow.
     static let defaultRepositoryURL = URL(string: "https://github.com/dibas-np/NepalKit")!
 
     let name: String
