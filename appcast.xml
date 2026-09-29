@@ -3,6 +3,27 @@
     <channel>
         <title>NepalKit</title>
         <item>
+            <title>1.3.0</title>
+            <pubDate>Wed, 30 Sep 2026 00:03:20 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.3.0</link>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>Nothing in the app itself has changed.</b>
+<p>This release exists because how NepalKit is numbered and installed changed, not because anything you can see or use did. If you are already on 1.2, there is no reason to take this one.</p>
+<b>Install:</b>
+<ul>
+<li>NepalKit can now be installed with Homebrew, from the project’s own tap: brew install --cask dibas-np/tap/nepalkit. Pick that or the DMG, not both — Homebrew installs to the same place NepalKit does, and while Homebrew is told the app updates itself (so it will not reinstall over one that has moved forward), a Sparkle update after a Homebrew install leaves the two disagreeing about which version is installed.</li>
+</ul>
+<b>Numbering:</b>
+<ul>
+<li>Versions now read three components — 1.3.0, not 1.3. The About window, the Git tag, and the Homebrew cask all show the same number because they are all derived from one value. Releases 1.0 to 1.2 keep the numbers they shipped with; their tags and downloads are not rewritten.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="/>
+        </item>
+        <item>
             <title>1.2</title>
             <pubDate>Tue, 29 Sep 2026 18:35:47 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit/releases/tag/1.2</link>
@@ -45,23 +66,6 @@
 <p>Note for 1.0: this version fixes the updater itself, so a 1.0 install cannot update in place — install 1.1 from the DMG this once. Automatic updates work from 1.1 onward.</p>
 ]]></description>
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.1/NepalKit-1.1.zip" length="3092158" type="application/octet-stream" sparkle:edSignature="/0QcgG2ZncQHX1SmX/DxphL1vpKani0LqJoOOQvQ6Xq2cNAfAnd7EMe2JinwGre3u1J+wmYtAQixuXFtCaaqDg=="/>
-        </item>
-        <item>
-            <title>1.0</title>
-            <pubDate>Mon, 28 Sep 2026 20:26:45 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/1.0</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[
-<b>New:</b>
-<ul>
-<li>First release: today's Bikram Sambat date in the menu bar, with a popover carrying the full date, the Gregorian day beside it, and a Nepal Time clock anchored to UTC+5:45 regardless of the system time zone.</li>
-<li>A bounded Bikram Sambat ↔ Gregorian converter: day pickers follow the real month lengths and the dataset's supported range, so an invalid date cannot be picked.</li>
-<li>Launch at login on by default, digits in Latin or Devanagari, and month names in Nepali or transliterated — set once in Settings.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.0/NepalKit-1.0.zip" length="3042439" type="application/octet-stream" sparkle:edSignature="ecusJsbPPaEv2Md3mNxgicquzDHYDouGMauza+DuXHAyQfLLWWtaI5qY+ygqrmrTD+qfC3KEaT2rntefMQ/CBA=="/>
         </item>
     </channel>
 </rss>
