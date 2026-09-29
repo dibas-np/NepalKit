@@ -291,6 +291,13 @@ cp "$DIST_ZIP" "$APPCAST_DIR/"
     exit 1
 }
 
+# CHANGELOG.md is generated, not hand-edited: the same notes files the
+# appcast step just embedded render as its markdown sections, and the new
+# version's date comes from the fresh pubDate in the staged appcast. The
+# working-tree change is committed with the appcast, never re-typed later.
+python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
+
 echo "Gatekeeper-clean DMG: $DMG"
 echo "Sparkle enclosure (stapled, zipped): $DIST_ZIP"
 echo "Signed appcast: $APPCAST_DIR/appcast.xml"
+echo "Changelog updated: $ROOT/CHANGELOG.md"

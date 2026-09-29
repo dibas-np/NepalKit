@@ -168,8 +168,9 @@ check reports the failure rather than claiming you are current.
   The release runs `spctl` against the app itself for the same reason.
 - **Release notes are a build step.** Each version's notes live at
   `scripts/release-notes/<version>.html`; the appcast step injects them into
-  the feed item, and a version without notes fails the release — the update
-  alert renders them as HTML.
+  the feed item, `CHANGELOG.md` is regenerated from the same fragments, and a
+  version without notes fails the release — the update alert renders them as
+  HTML.
 - **Signed updates.** The enclosure carries an EdDSA signature over its bytes,
   verifiable by anyone against the public key committed in `Info.plist`
   (see [Install](#install)). Appcast signing needs the private key, so
