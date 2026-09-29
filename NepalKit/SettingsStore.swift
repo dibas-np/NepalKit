@@ -11,6 +11,20 @@ struct SettingsStore {
 
     private let defaults: UserDefaults
 
+  /// Whether this store writes somewhere an in-place update would not disturb.
+  ///
+  /// True only for the standard defaults, which resolve to the app's own
+  /// preference domain keyed by bundle identifier. A versioned suite name, a
+  /// build-numbered key, or a custom container would each survive a rebuild and
+  /// silently reset every user's settings on upgrade, and none of that is visible
+  /// from the outside - so it is stated as a property a test can read.
+  var persistenceIsVersionIndependent: Bool {
+      // `.standard` is a distinct instance from any suite-backed store, so
+      // identity is the honest test: a caller passing a suite gets a different
+      // object and this reports false.
+      defaults === UserDefaults.standard
+  }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }

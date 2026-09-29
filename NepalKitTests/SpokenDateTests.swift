@@ -161,4 +161,80 @@ struct SpokenOptionLabelTests {
         #expect(Strings.digitsDevanagariSpoken == "Devanagari 0–9")
         #expect(!Strings.digitsDevanagariSpoken.contains("०"))
     }
+    @Test func noSpokenStringCarriesTypographicPunctuationOrSymbols() {
+        // The en dash in "1975–2084 BS" is right on screen and unpredictable
+        // aloud - some voices say "1975 dash 2084", some pause, some drop it. The
+        // same goes for separators and symbols. Anything typographic in the
+        // spoken channel is a defect even when the string reads correctly, which
+        // is why this sweeps the whole set rather than the one known case.
+        //
+        // Exercised over every month, both month languages, both digit scripts
+        // and the boundary states, because a glyph can hide in a branch that a
+        // single representative sample never reaches.
+        let forbidden: Set<Character> = [
+            "\u{2013}", "\u{2014}",  // en dash, em dash
+            "\u{00B7}",              // middle dot, used between the two dates
+            "\u{2192}", "\u{2190}", // arrows, used in the direction segments
+            "\u{2699}", "\u{24D8}", // gear, circled i
+            "\u{00B0}", "\u{2032}", "\u{2033}", // degree, prime, double prime
+            "\u{2026}",              // ellipsis, in "Settings\u{2026}"
+        ]
+        var offenders: [String] = []
+
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            for month in 1 ... 12 {
+                let name = monthName(month: month, style: style)
+                if name.contains(where: { forbidden.contains($0) }) {
+                    offenders.append("month name \(name)")
+                }
+            }
+        }
+
+        for month in 1 ... 12 {
+            let gregorian = gregorianMonthName(month)
+            if gregorian.contains(where: { forbidden.contains($0) }) {
+                offenders.append("gregorian month \(gregorian)")
+            }
+        }
+
+        let date = GADay(year: 2026, month: 9, day: 27)
+        for digits in [DigitScript.latin, .devanagari] {
+            for style in [MonthNameStyle.nepali, .transliterated] {
+                let spoken = SpokenDate.gregorianAnnouncement(date: date, weekday: weekdayName(for: weekday(of: date) ?? 1, style: style))
+                if spoken.contains(where: { forbidden.contains($0) }) {
+                    offenders.append("gregorian announcement \(spoken)")
+                }
+                let numeric = SpokenDate.number(2083)
+                if numeric != numeric.trimmingCharacters(in: .whitespaces) {
+                    offenders.append("number carries padding: \(numeric)")
+                }
+                _ = digits
+            }
+        }
+
+        // The boundary strings, including the menu-bar variants, which are the
+        // ones a user past the range hears instead of a date.
+        let bs = BSDay(year: 2083, month: 6, day: 11)
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            for spoken in [
+                SpokenDate.bs(bs, monthNames: style),
+                SpokenDate.menuBar(today: bs, monthNames: style, dataset: .v2),
+                SpokenDate.menuBar(today: nil, monthNames: style, dataset: .v2),
+            ] {
+                if spoken.contains(where: { forbidden.contains($0) }) {
+                    offenders.append("bs spoken form \(spoken)")
+                }
+            }
+        }
+
+        #expect(offenders.isEmpty, "typographic characters in the spoken channel: \(offenders)")
+    }
+
+    @Test func spokenSupportedRangeAvoidsTheEnDash() {
+        // Pins the one case the sweep above is really about, named explicitly so
+        // a regression points at the cause rather than the sweep.
+        let spoken = Strings.supportedRangeSpoken(1975 ... 2084)
+        #expect(!spoken.contains("\u{2013}"), "en dash survives in the spoken range: \(spoken)")
+        #expect(spoken == "1975 to 2084 BS")
+    }
 }
