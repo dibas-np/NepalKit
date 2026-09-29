@@ -57,6 +57,11 @@ jobs:
           echo "publish=true" >> "$GITHUB_OUTPUT"
           wc -c appcast.xml
 
+      - name: Appcast verifier self-test
+        run: |
+          set -euo pipefail
+          python3 scripts/test_verify_appcast.py
+
       - name: Verify the appcast
         if: steps.check.outputs.publish == 'true'
         run: |
