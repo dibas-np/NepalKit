@@ -72,6 +72,9 @@ jobs:
   floor:
     name: build, test, and launch on macOS 26
     runs-on: macos-26
+    # macOS runners are the expensive kind; a hung build should die long
+    # before the 360-minute default.
+    timeout-minutes: 45
 
     env:
       # Pinned explicitly. The runner image's default Xcode has already moved
