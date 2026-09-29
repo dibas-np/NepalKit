@@ -33,6 +33,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: The provenance parsers still parse
+        run: |
+          set -euo pipefail
+          python3 scripts/test_dataset_parsers.py
       - name: Compare the shipped table against the committed baseline
         run: |
           set -euo pipefail
