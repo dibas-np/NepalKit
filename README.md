@@ -29,12 +29,15 @@
 
 Requires **macOS 26 or later**. Runs natively on Apple Silicon.
 
-1. Download the DMG from the [latest release](https://github.com/dibas-np/NepalKit/releases/latest).
-2. Drag NepalKit into Applications and open it.
+```sh
+brew install --cask dibas-np/tap/nepalkit
+```
 
-NepalKit is signed, notarized, and updates itself in place via [Sparkle](https://sparkle-project.org).
+Or download the DMG from the [latest release](https://github.com/dibas-np/NepalKit/releases/latest) and drag NepalKit into Applications.
 
-> **Upgrading from 1.0?** Version 1.0 can't update itself. Install 1.1 from the DMG once; every version after that updates automatically.
+NepalKit is signed, notarized, and updates itself in place via [Sparkle](https://sparkle-project.org). **Pick one updater.** Homebrew installs the same app to the same place, so installing it with `brew` and then letting Sparkle move it forward leaves the two disagreeing about which version is installed. Homebrew is told this app updates itself, so `brew upgrade` leaves it alone rather than reinstalling over it.
+
+> **Upgrading from 1.0?** Version 1.0 can't update itself. Install 1.1 or later once; every version after that updates automatically.
 
 ## Usage
 
