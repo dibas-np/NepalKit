@@ -137,6 +137,18 @@ def main() -> int:
     if appcast.exists():
         dates.update(release_dates(appcast))
 
+    # A date already written to the changelog is the durable record, so a
+    # regeneration must not drop one. Neither feed can be trusted to hold every
+    # release on its own: `generate_appcast` prunes, so 1.0 fell out of
+    # appcast.xml when 1.3.0 shipped, and reading only the feed turned 1.0 back
+    # into "unreleased" on the next run. Reading the changelog's own headings
+    # closes that, and makes a no-argument run non-destructive rather than merely
+    # idempotent.
+    for heading in re.finditer(
+        r"^## (\S+) — (\d{4}-\d{2}-\d{2})$", CHANGELOG.read_text(encoding="utf-8"), re.MULTILINE
+    ):
+        dates.setdefault(heading.group(1), heading.group(2))
+
     sections = []
     for path in sorted(NOTES_DIR.glob("*.html"), key=lambda p: version_key(p.stem), reverse=True):
         date = dates.get(path.stem, "unreleased")
