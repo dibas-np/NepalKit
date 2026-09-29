@@ -158,7 +158,11 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         # --- 2. Enclosure bytes match the declared length -------------------
         payload: bytes | None = None
         if enclosure is not None:
-            payload = enclosure.read_bytes()
+            # The feed keeps one item per release ever published, while
+            # verify-appcast.sh runs one invocation per archive; only the item
+            # whose enclosure names this file can be checked against it.
+            if Path(parsed.path).name == enclosure.name:
+                payload = enclosure.read_bytes()
         elif not skip_crypto:
             print(f"  ..    fetching {url}")
             try:
