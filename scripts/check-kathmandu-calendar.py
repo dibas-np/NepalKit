@@ -77,7 +77,10 @@ def kmc_year(year):
             if int(record_year) != year:
                 continue
             days.setdefault(int(mo), set()).add(int(day))
-    if len(days) != 12:
+    # Exact key match, not a count: a stray month-0/13 record from the live
+    # payload alongside one missing real month would still make len(days) 12,
+    # and the return below would KeyError instead of reporting no data.
+    if set(days) != set(range(1, 13)):
         return None
     # Count distinct days rather than trusting the row count: a truncated or
     # partially-rendered month would otherwise look like a short month and be
