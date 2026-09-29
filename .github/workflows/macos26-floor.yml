@@ -102,13 +102,6 @@ jobs:
         working-directory: NepalKitCore
         run: swift test
 
-      # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
-      # builds the app clean and then hangs before connecting, reproducibly and
-      # including with an empty test; it is a toolchain issue, not a reason to
-      # delete the app-layer tests. See ADR-0005.
-      - name: App-layer suite
-        run: ./scripts/run-app-tests.sh
-
       # Signing is disabled: the project sets a development team target-wide, and
       # a pull-request job must need no credentials and be unable to reach any.
       - name: Build the application
@@ -122,6 +115,21 @@ jobs:
             -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
+          echo "NEPAKIT_BUILT_PLIST=$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/Info.plist" >> "$GITHUB_ENV"
+
+      # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
+      # builds the app clean and then hangs before connecting, reproducibly and
+      # including with an empty test; it is a toolchain issue, not a reason to
+      # delete the app-layer tests. See ADR-0005.
+      #
+      # After the build, and with the product pointed at: `InfoPlistKeysTests`
+      # checks the built Info.plist rather than the project, because a key the
+      # build discards cannot be caught by reading the project. Run before the
+      # build, or without that variable, they skip - and a skipped test still
+      # reports as passing, so the Sparkle public key and LSUIElement would be
+      # unguarded while the job stayed green.
+      - name: App-layer suite
+        run: ./scripts/run-app-tests.sh
 
       # The check that matters most, per the ticket: an LSUIElement app that
       # dies or respawns in a loop on its own floor is a real shipping defect,

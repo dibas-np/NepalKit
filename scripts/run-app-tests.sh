@@ -38,6 +38,28 @@ for pair in "Sources/NepalKit:NepalKit" "Tests/NepalKitTests:NepalKitTests"; do
     fi
 done
 
+# `InfoPlistKeysTests` checks the *built* product rather than the project,
+# because a key the build discards cannot be caught by reading the project.
+# The harness has no app bundle of its own, so it is pointed at one here.
+#
+# Nothing set this before, which meant those five tests were skipped in every
+# run and still counted as passing - the Sparkle public key, LSUIElement and
+# the installer-launcher key were unguarded in practice. A build is discovered
+# if one exists and is never built here: this script's reason to exist is that
+# it needs no Xcode, and the gate stays honest by skipping with a stated
+# reason when there is genuinely nothing to check.
+if [ -z "${NEPAKIT_BUILT_PLIST:-}" ]; then
+    for candidate in "$repo_root"/build/Products/Debug/NepalKit.app \
+                     "$HOME"/Library/Developer/Xcode/DerivedData/NepalKit-*/Build/Products/Debug/NepalKit.app; do
+        if [ -f "$candidate/Contents/Info.plist" ]; then
+            NEPAKIT_BUILT_PLIST="$candidate/Contents/Info.plist"
+            export NEPAKIT_BUILT_PLIST
+            echo "==> checking the built product at $candidate"
+            break
+        fi
+    done
+fi
+
 echo "==> app-layer tests (scripts/apptests)"
 cd "$harness"
 exec swift test "$@"

@@ -15,18 +15,29 @@ import Testing
 /// because a test of a hand-copied constant proves nothing.
 @MainActor
 struct BuildNumberTests {
-    /// The repo root, found by walking up from this file's location at runtime.
-    /// The harness symlinks the real sources, so `NepalKitTests` resolves
-    /// through `scripts/apptests/Tests/NepalKitTests` to the real directory;
-    /// walking up from `#filePath` therefore lands in the repo either way.
+    /// The project file, found by walking up from this file until the checkout
+    /// root appears.
+    ///
+    /// Searched for by what is in each directory rather than by a fixed number
+    /// of hops, because this file sits at a different depth in each of the two
+    /// ways it is compiled: two levels under the repo root in the Xcode
+    /// `NepalKitTests` target, and five in the `scripts/apptests` harness,
+    /// which reaches these sources through a symlink. A fixed hop count was
+    /// right for one of those and overshot the checkout in the other, which made
+    /// every assertion here read `missing` — the test target could not build
+    /// while that was true, so nothing ran it.
     private static var projectFileURL: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()   // NepalKitTests
-            .deletingLastPathComponent()   // Tests
-            .deletingLastPathComponent()   // apptests or NepalKitCore
-            .deletingLastPathComponent()   // scripts or NepalKit
-            .deletingLastPathComponent()
-            .appendingPathComponent("NepalKit.xcodeproj/project.pbxproj")
+        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        let relative = "NepalKit.xcodeproj/project.pbxproj"
+        while directory.path != "/" {
+            let candidate = directory.appendingPathComponent(relative)
+            if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
+            directory.deleteLastPathComponent()
+        }
+        // Unreachable while this test file lives inside the checkout, and the
+        // assertions below report a missing file rather than trapping, so a
+        // relocation fails as a test failure with a readable message.
+        return directory.appendingPathComponent(relative)
     }
 
     /// Reads a build setting from the **app target's** configuration blocks.

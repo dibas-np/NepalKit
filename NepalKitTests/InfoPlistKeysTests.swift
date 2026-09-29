@@ -12,15 +12,47 @@ import Testing
 /// `SUPublicEDKey` in it at all. A shipped app in that state could not verify a
 /// single update, and the only evidence anything was wrong was a green build.
 ///
-/// So these tests read the product, not the project. When no build is present
-/// they are skipped rather than passed, because a test that cannot check
-/// something must not report that it did.
+/// So these tests read the product, not the project. With no build available
+/// they are skipped with a stated reason, which is not the same as passing —
+/// a skipped test still counts as passed, and for a while that was the only
+/// thing that happened: nothing set `NEPAKIT_BUILT_PLIST`, every run skipped
+/// these five, and the release-critical keys they guard went unchecked while
+/// the suite reported green. `run-app-tests.sh` now discovers a product and
+/// CI exports one, so the checks actually run.
 struct InfoPlistKeysTests {
-    /// Where `scripts/run-app-tests.sh` and the CI build both put the product.
-    /// Overridable so a build in another location can still be checked.
-    private static let builtPlist = URL(fileURLWithPath: ProcessInfo.processInfo.environment["NEPAKIT_BUILT_PLIST"] ?? "")
+    /// The app's bundle identifier, which is what tells the app's own Info.plist
+    /// apart from some other bundle's.
+    private static let appBundleIdentifier = "com.dibas.NepalKit.NepalKit"
+
+    /// The built app's Info.plist, or nil when no product is available.
+    ///
+    /// Two sources, in order. `NEPAKIT_BUILT_PLIST` is an explicit override for
+    /// a build somewhere else — the harness, and CI, which builds to a
+    /// `-derivedDataPath` of its own. Failing that, Xcode's test target is
+    /// *hosted by* the app it tests (`TEST_HOST`), so the product under
+    /// examination is this very process's bundle and needs no configuration.
+    ///
+    /// The identifier check is not a nicety. Under the SwiftPM harness
+    /// `Bundle.main` is the test runner, not the app, and reading its plist
+    /// would compare the app's release-critical keys against an unrelated
+    /// bundle — failing on every key, or worse, passing on none of them. Only
+    /// a plist that names the app counts as the app's.
+    private static let builtPlist: URL? = {
+        func usable(_ url: URL) -> URL? {
+            guard let info = NSDictionary(contentsOf: url) as? [String: Any],
+                  info["CFBundleIdentifier"] as? String == appBundleIdentifier
+            else { return nil }
+            return url
+        }
+
+        if let override = ProcessInfo.processInfo.environment["NEPAKIT_BUILT_PLIST"], !override.isEmpty {
+            return usable(URL(fileURLWithPath: override))
+        }
+        return usable(Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
+    }()
+
     private static var builtInfo: [String: Any]? {
-        guard FileManager.default.fileExists(atPath: builtPlist.path) else { return nil }
+        guard let builtPlist else { return nil }
         return NSDictionary(contentsOf: builtPlist) as? [String: Any]
     }
 
@@ -149,7 +181,8 @@ struct InfoPlistKeysTests {
         //
         // Checked in the built product, because the interesting failure is a
         // resource build phase that quietly stopped copying the file.
-        let bundle = Self.builtPlist.deletingLastPathComponent()
+        let bundle = try #require(Self.builtPlist)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()   // NepalKit.app
         let shipped = bundle.appendingPathComponent("Contents/Resources/LICENSE")
         #expect(FileManager.default.fileExists(atPath: shipped.path), "the app ships without its licence")
