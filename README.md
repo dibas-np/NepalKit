@@ -7,7 +7,9 @@
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/tag/dibas-np/NepalKit?label=version&style=flat-square" alt="Version"></a>
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
-  <a href="#why-macos-26"><img src="https://img.shields.io/badge/macOS-26%2B-lightgrey.svg?style=flat-square" alt="macOS 26+"></a>
+  <a href="https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews"><img src="https://img.shields.io/coderabbit/prs/github/dibas-np/NepalKit?utm_source=oss&utm_medium=github&utm_campaign=dibas-np%2FNepalKit&labelColor=171717&color=FF570A"/></a>
+  <img src="https://img.shields.io/badge/macOS-26%2B-black?style=flat-square&logo=apple" alt="macOS 26+">
+  <img src="https://img.shields.io/badge/Swift-6.4%2B-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4+">
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=macOS%2026%20floor&style=flat-square" alt="macOS 26 floor"></a>
 </p>
 
@@ -25,10 +27,6 @@
 <p align="center">
   <img src="docs/img/popover.png" alt="The NepalKit popover: today's Bikram Sambat date as the hero, Nepal Time beside it, and the converter below" width="420" />
 </p>
-
-New here? [CONTRIBUTING.md](CONTRIBUTING.md) covers how to build and what the
-project expects. [SUPPORT.md](SUPPORT.md) says where to ask, and
-[GOVERNANCE.md](GOVERNANCE.md) says who decides.
 
 ## Features
 

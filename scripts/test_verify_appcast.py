@@ -17,7 +17,9 @@ import contextlib
 import importlib.util
 import io
 import os
+import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -246,6 +248,86 @@ class VerifyAppcastTest(unittest.TestCase):
             feed = write_feed(tmp_path, make_item(minimum_system_version=None))
             output = capture_verify(feed, write_plist(tmp_path), "26.0")
         self.assertIn("no <sparkle:minimumSystemVersion>", output)
+
+    def test_generation_seeds_the_staging_dir_with_the_live_feed(self) -> None:
+        # `generate_appcast` merges into an existing appcast only when one is
+        # reachable in the archives directory it is pointed at, and
+        # package-release.sh hands it a freshly created one holding just the
+        # new zip. Without a seeded predecessor it starts from empty and writes
+        # a feed containing this release alone - which no other check here
+        # would notice, because a one-item feed is a perfectly valid feed. It
+        # has to be pinned in the script, not assumed of the tool.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        seed = script.index('cp "$ROOT/appcast.xml"')
+        # The invocation, not the variable: the name is also referenced earlier
+        # when locating the binary, and matching that would test nothing.
+        generate = script.index('"$GENERATE_APPCAST" \\')
+        self.assertLess(seed, generate, "the feed must be seeded before generate_appcast runs")
+        self.assertIn('"$ARCHIVES_DIR/appcast.xml"', script)
+
+    def test_the_committed_feed_carries_more_than_one_release(self) -> None:
+        # The consequence, stated on the repository's own feed: a feed that has
+        # lost its history looks exactly like a successful release, so the
+        # only place the loss is visible is here.
+        feed = Path(__file__).resolve().parent.parent / "appcast.xml"
+        items = feed.read_text(encoding="utf-8").count("<item>")
+        self.assertGreaterEqual(items, 2, "the committed feed has lost release history")
+
+    def test_generation_links_to_the_release_page_not_the_repository(self) -> None:
+        # Sparkle surfaces <link> as the update's "Learn More" destination, so
+        # the repository URL drops the release notes the user is being offered.
+        # It was hand-corrected to the tag form for 1.1 while the script still
+        # emitted the repository, which is how it silently reverted for 1.2.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        self.assertIn('RELEASE_LINK="$REPO_URL/releases/tag/$TAG"', script)
+        self.assertIn('--link "$RELEASE_LINK"', script)
+        self.assertNotIn('--link "$REPO_URL" \\', script)
+
+    def test_every_feed_item_links_to_its_own_release_page(self) -> None:
+        feed = Path(__file__).resolve().parent.parent / "appcast.xml"
+        raw = feed.read_text(encoding="utf-8")
+        mismatched = []
+        for item in re.findall(r"<item>.*?</item>", raw, flags=re.S):
+            version = re.search(r"<sparkle:shortVersionString>([^<]+)</", item)
+            link = re.search(r"<link>([^<]+)</link>", item)
+            if not version or not link:
+                mismatched.append("item without version or link")
+                continue
+            expected = f"/releases/tag/{version.group(1)}"
+            if not link.group(1).endswith(expected):
+                mismatched.append(f"{version.group(1)} -> {link.group(1)}")
+        self.assertEqual(mismatched, [], f"feed items not pointing at their release page: {mismatched}")
+
+    def test_the_download_prefix_keeps_its_trailing_slash(self) -> None:
+        # generate_appcast joins the archive name with `URL(string:relativeTo:)`,
+        # and Foundation REPLACES a base URL's last path component when there
+        # is no trailing slash. Without the slash the url came out as
+        # `releases/download/NepalKit-1.2.zip` and 404'd, which is why this
+        # script used to generate against a placeholder and rewrite every
+        # enclosure afterwards - and that rewrite is what repointed 1.0 and
+        # 1.1 into the new release's directory. Normalising the prefix deletes
+        # the step instead of guarding it.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        self.assertIn('URL_PREFIX="${URL_PREFIX%/}/"', script)
+        self.assertIn('--download-url-prefix "$URL_PREFIX"', script)
+        self.assertNotIn("nepalkit.invalid/placeholder", script)
+        self.assertNotIn("PYEOF\nimport re", script.split("# Embed the release notes")[0])
+
+    def test_a_slashed_prefix_appends_where_an_unslashed_one_replaces(self) -> None:
+        # The Foundation rule the prefix normalisation exists for, pinned
+        # against Foundation itself so the comment cannot drift from the
+        # behaviour.
+        import urllib.parse
+        base_unslashed = "https://github.com/dibas-np/NepalKit/releases/download/1.2"
+        base_slashed = base_unslashed + "/"
+        self.assertEqual(
+            urllib.parse.urljoin(base_unslashed, "NepalKit-1.2.zip"),
+            "https://github.com/dibas-np/NepalKit/releases/download/NepalKit-1.2.zip",
+        )
+        self.assertEqual(
+            urllib.parse.urljoin(base_slashed, "NepalKit-1.2.zip"),
+            "https://github.com/dibas-np/NepalKit/releases/download/1.2/NepalKit-1.2.zip",
+        )
 
     def test_crypto_round_trip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

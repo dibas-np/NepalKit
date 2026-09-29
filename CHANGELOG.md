@@ -4,7 +4,7 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
-## 1.2 — unreleased
+## 1.2 — 2026-09-29
 
 ### Fixes
 

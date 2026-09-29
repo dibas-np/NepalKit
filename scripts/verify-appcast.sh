@@ -60,64 +60,76 @@ if [[ -z "$URL_PREFIX" ]]; then
     TAG="${NEWEST:t:r}"          # NepalKit-1.0.zip -> NepalKit-1.0
     TAG="${TAG#*-}"             # -> 1.0
     URL_PREFIX="$REPO_URL/releases/download/$TAG"
+    RELEASE_LINK="$REPO_URL/releases/tag/$TAG"
     echo "derived release tag '$TAG' from ${NEWEST:t}"
+else
+    # A caller-supplied prefix is for layouts with no release pages (a flat
+    # asset path, say), where a `/releases/tag/...` link would 404. Sparkle
+    # shows this as the update's "Learn More" destination, so the repository is
+    # the honest fallback rather than a link to nowhere.
+    RELEASE_LINK="$REPO_URL"
+fi
+
+# The trailing slash is load-bearing, not cosmetic. generate_appcast joins the
+# archive name onto this prefix with `URL(string:relativeTo:)`, and Foundation
+# resolves a base with no trailing slash by REPLACING its last path component:
+# `.../releases/download/1.2` + `NepalKit-1.2.zip` yields
+# `.../releases/download/NepalKit-1.2.zip`, which 404s. With the slash it
+# appends, and the url is right.
+#
+# This used to be worked around by generating against a placeholder prefix and
+# rewriting every enclosure afterwards, which put this script one post-hoc
+# substitution away from repointing the earlier releases into the new release's
+# directory - where they 404 too. That is not a hypothetical: it happened, and
+# it survived every existing check, because a feed that looks complete and
+# serves nothing is still a well-formed feed. Normalising the prefix removes
+# the step rather than guarding it.
+URL_PREFIX="${URL_PREFIX%/}/"
+
+# Seed the staging directory with the feed this release supersedes.
+#
+# `generate_appcast` merges into an existing appcast only when one is reachable
+# in the archives directory it was pointed at; with none there it starts from
+# empty and writes a feed containing this release alone. The staging directory
+# is deliberately fresh (it is per-run and private, see package-release.sh), so
+# without this the published feed loses 1.0 and 1.1 and every install that
+# resolved an update through them loses its path back.
+#
+# Read from the repository rather than from a copy: the committed appcast is
+# what the previous release published, so it is the one that must be carried
+# forward. A missing file is not an error - the very first release has no
+# predecessor - but it is worth saying out loud, because a feed that has lost
+# its history otherwise looks exactly like a successful run.
+if [[ -f "$ROOT/appcast.xml" ]]; then
+    cp "$ROOT/appcast.xml" "$ARCHIVES_DIR/appcast.xml"
+    echo "carried forward $(grep -c '<item>' "$ROOT/appcast.xml") existing feed item(s)"
+else
+    echo "no committed appcast.xml; this will be the first release in the feed"
 fi
 
 echo "generating appcast in $ARCHIVES_DIR"
 echo "release url prefix: $URL_PREFIX"
 
-# `--download-url-prefix` replaces the prefix's last path component with the
-# archive filename rather than appending to it, so a `1.0/` release-tag segment
-# in the prefix is silently dropped: the generated url came out as
-# `releases/download/NepalKit-1.0.zip`, which 404s. The url is therefore
-# generated with a throwaway prefix and then corrected, rather than trusting a
-# flag whose composition rule is not append.
-#
-# Rewriting the url afterwards is safe. The Ed25519 signature covers the
-# enclosure *bytes*, not the url, so it is unaffected - and the verifier below
-# proves that rather than assuming it. Re-running generate_appcast over an
-# edited appcast would restore the bad url, so this runs exactly once.
-# Signing happens here, from the keychain, where a human can approve the prompt.
+# `--download-url-prefix` carries the version directory itself, so the url
+# generate_appcast writes is already the published one and there is nothing to
+# correct afterwards. Prior items are read back from the seeded feed and keep
+# the urls they were published under. Signing happens here, from the keychain,
+# where a human can approve the prompt.
+# The link is the release page, not the repository: Sparkle shows it as the
+# update's "Learn More" destination, so the bare repo URL drops the release
+# notes a user is being offered.
 "$GENERATE_APPCAST" \
-    --download-url-prefix "https://nepalkit.invalid/placeholder" \
-    --link "$REPO_URL" \
+    --download-url-prefix "$URL_PREFIX" \
+    --link "$RELEASE_LINK" \
     "$ARCHIVES_DIR"
 
 APPCAST="$ARCHIVES_DIR/appcast.xml"
 [[ -f "$APPCAST" ]] || { echo "generate_appcast did not write an appcast" >&2; exit 1; }
 
-# Repoint each enclosure at prefix + filename-as-uploaded. Done as a targeted
-# text substitution rather than by reserialising the XML tree, so every other
-# byte of the file - including the signature Sparkle just wrote - is untouched.
-python3 - "$APPCAST" "$URL_PREFIX" <<'PYEOF'
-import re
-import sys
-from pathlib import Path
-
-appcast, prefix = Path(sys.argv[1]), sys.argv[2].rstrip("/")
-raw = appcast.read_text(encoding="utf-8")
-
-def repoint(match: "re.Match[str]") -> str:
-    name = match.group(2).rsplit("/", 1)[-1]
-    return f"{match.group(1)}{prefix}/{name}{match.group(3)}"
-
-patched, count = re.subn(
-    r'(<enclosure\b[^>]*\burl=")([^"]*)(")',
-    repoint,
-    raw,
-)
-if count == 0:
-    print("  WARNING: no <enclosure> url found; the feed advertises nothing")
-for match in re.finditer(r'<enclosure\b[^>]*\burl="([^"]*)"', patched):
-    print(f"  url -> {match.group(1)}")
-appcast.write_text(patched, encoding="utf-8")
-PYEOF
-
 # Embed the release notes. generate_appcast never writes descriptions, so
 # without this step every release would depend on remembering a hand edit
-# after generation — the same class of exactly-once edit as the url repoint
-# above. Notes live in scripts/release-notes/<version>.html as HTML fragments,
-# which Sparkle's alert renders, and are matched to items by
+# after generation. Notes live in scripts/release-notes/<version>.html as HTML
+# fragments, which Sparkle's alert renders, and are matched to items by
 # sparkle:shortVersionString. An item whose version has no notes file fails
 # the release: an unnoted update alert is the drift this step exists to
 # prevent. Re-running over an already-described item is a no-op.
