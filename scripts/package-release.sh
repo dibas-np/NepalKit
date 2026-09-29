@@ -6,19 +6,25 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 APP=NepalKit
+# Every intermediate artifact lives in a per-run private directory, not in
+# fixed /tmp/<name> paths: /tmp is world-writable and sticky, so a predictable
+# path there can be pre-planted with a symlink by any local account, and two
+# concurrent releases would collide. mktemp -d creates a 0700 directory whose
+# name cannot be guessed.
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
 DEPLOYMENT_TARGET=26.0
-ARCHIVE=/tmp/$APP.xcarchive
-EXPORT_DIR=/tmp/${APP}-export
+ARCHIVE="$WORK/$APP.xcarchive"
+EXPORT_DIR="$WORK/${APP}-export"
 APP_PATH="$EXPORT_DIR/$APP.app"
-DMG=/tmp/$APP.dmg
+DMG="$WORK/$APP.dmg"
 # Submitted to Apple. Rebuilt later as $DIST_ZIP, after the staple lands.
-NOTARY_ZIP=/tmp/${APP}-for-notary.zip
+NOTARY_ZIP="$WORK/${APP}-for-notary.zip"
 
 # The drag-install DMG and the writable image its window is laid out on. See
 # the DMG section below for why there are two images and why hdiutil is
 # involved; the paths live here because the cleanup trap needs them.
 BACKGROUND=dmg-background@2x.png
-DMG_LAYOUT=/tmp/${APP}-layout.dmg
+DMG_LAYOUT="$WORK/${APP}-layout.dmg"
 # Unique on purpose. The volume's own name has to be $APP — the background's
 # alias is recorded against it — but Finder identifies a mounted disk by the
 # last component of wherever it is mounted, so a name already in use on this
@@ -43,6 +49,7 @@ cleanup() {
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
     [[ -n "$DMG_LAYOUT_DEVICE" ]] && diskutil eject "$DMG_LAYOUT_DEVICE" >/dev/null 2>&1
+    rm -rf "$WORK"
     return 0
 }
 trap cleanup EXIT
@@ -84,7 +91,7 @@ IDENTITY="$(security find-identity -v -p codesigning \
 }
 echo "signing as: $IDENTITY"
 
-cat > /tmp/${APP}-ExportOptions.plist <<EOF
+cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -112,12 +119,12 @@ MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcod
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
-    -exportPath "$EXPORT_DIR" -exportOptionsPlist /tmp/${APP}-ExportOptions.plist
+    -exportPath "$EXPORT_DIR" -exportOptionsPlist "$WORK/${APP}-ExportOptions.plist"
 
 # Verify the exported app before it goes anywhere near a DMG.
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/${APP}-codesign.txt
-grep -q "flags=.*runtime" /tmp/${APP}-codesign.txt || {
+codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee "$WORK/${APP}-codesign.txt"
+grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
     echo "hardened runtime flag missing from signature"
     exit 1
 }
@@ -165,7 +172,7 @@ echo "app notarized and stapled: $APP_PATH"
 # at `diskutil image create from`, which fails with EBUSY on a disk-image
 # source. The warnings are filtered out below, because a release log that
 # always carries a deprecation notice teaches people to stop reading it.
-HDIUTIL_LOG=/tmp/${APP}-hdiutil.log
+HDIUTIL_LOG="$WORK/${APP}-hdiutil.log"
 hdiutil_run() {
     hdiutil "$@" 2>"$HDIUTIL_LOG" || {
         echo "hdiutil $1 failed:" >&2
@@ -272,18 +279,18 @@ pkill -f "$MNT/$APP.app/Contents/MacOS/$APP" || true
 # staple and would ship without one.
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
     "$APP_PATH/Contents/Info.plist")
-DIST_ZIP=/tmp/${APP}-${VERSION}.zip
+DIST_ZIP="$WORK/${APP}-${VERSION}.zip"
 rm -f "$DIST_ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ZIP"
 # Same signature check as the DMG: Sparkle verifies this exact file, so it is
 # the artifact that actually has to be Gatekeeper-accepting.
-unzip -qo "$DIST_ZIP" -d /tmp/${APP}-dist-verify
-spctl -a -t execute -vv "/tmp/${APP}-dist-verify/$APP.app"
-rm -rf "/tmp/${APP}-dist-verify"
+unzip -qo "$DIST_ZIP" -d "$WORK/${APP}-dist-verify"
+spctl -a -t execute -vv "$WORK/${APP}-dist-verify/$APP.app"
+rm -rf "$WORK/${APP}-dist-verify"
 
 # Build and verify the appcast for this version. Signing needs the keychain, so
 # this runs on the release machine, never in CI.
-APPCAST_DIR=/tmp/${APP}-appcast-$VERSION
+APPCAST_DIR="$WORK/${APP}-appcast-$VERSION"
 rm -rf "$APPCAST_DIR"
 mkdir -p "$APPCAST_DIR"
 cp "$DIST_ZIP" "$APPCAST_DIR/"
@@ -298,7 +305,13 @@ cp "$DIST_ZIP" "$APPCAST_DIR/"
 # working-tree change is committed with the appcast, never re-typed later.
 python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 
-echo "Gatekeeper-clean DMG: $DMG"
-echo "Sparkle enclosure (stapled, zipped): $DIST_ZIP"
-echo "Signed appcast: $APPCAST_DIR/appcast.xml"
+# The workspace dies with the run, but the release outputs do not: they are
+# copied to a directory beside it that the operator keeps.
+OUT_DIR="${TMPDIR:-/tmp}/NepalKit-release-output-$$"
+mkdir -p "$OUT_DIR"
+cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
+
+echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
+echo "Sparkle enclosure (stapled, zipped): $OUT_DIR/$(basename "$DIST_ZIP")"
+echo "Signed appcast: $OUT_DIR/appcast.xml"
 echo "Changelog updated: $ROOT/CHANGELOG.md"
