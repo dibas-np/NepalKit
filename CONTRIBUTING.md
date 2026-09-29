@@ -149,8 +149,10 @@ Fix the converter clamp for Ashadh
 Signed-off-by: Your Name <you@example.com>
 ```
 
-`-s` adds it for you and opens an editor; `git config commit.signoff true` makes
-it the default for every commit.
+`-s` adds the line for you — with `-m`, as above, the commit is created
+directly with no editor; drop `-m` to compose the message (sign-off included)
+in your editor. `git config commit.signoff true` makes it the default for
+every commit.
 
 **Why DCO and not a CLA.** A CLA is a bilateral legal agreement that assigns
 or licenses contributions under terms you may not want, and it adds friction and
