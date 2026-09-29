@@ -108,10 +108,11 @@ struct BuildNumberTests {
         )
     }
 
-    /// The highest build number ever published. No release has been published
-    /// yet, so this is 1 — the first release must carry a build number at or
-    /// above it, and cutting a release raises it. This is the value that makes
-    /// "the build number went backwards" a test failure rather than a support
-    /// ticket a year later.
-    private static let lastReleasedBuildNumber = 1
+    /// The highest build number ever published. Build 3 shipped twice as 1.1 —
+    /// once, and then republished with the sandbox installer key — so it is the
+    /// real floor, and this is the value that makes "the build number went
+    /// backwards" a test failure rather than a support ticket a year later.
+    /// It sat at 1 through the 1.1 releases, which left the monotonic half of
+    /// this guard weaker than the comment above claims.
+    private static let lastReleasedBuildNumber = 3
 }

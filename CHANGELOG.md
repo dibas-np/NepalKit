@@ -4,6 +4,14 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.2 — unreleased
+
+### Fixes
+
+- Launch at login now behaves. macOS can put the login item into “requires approval” and ask you to confirm it in System Settings; the app read that state as “not registered”, so the toggle sprang back to off the moment you returned, with nothing on screen to explain why. Turning it on when it was already on also raised a confusing “already registered” error. Both came from the same cause: the app was not tracking the real registration state, and it told the system to re-register items it already had.
+- The Local clock now follows your system time zone while the app is running. It was read once, when the app launched, so if you changed zones — travelling, or macOS updating it on its own — Local kept showing the zone you were in at launch until you restarted the app. In the worst case the row disappeared: launch in Nepal, land somewhere else, and the app still believed your local time matched Nepal Time, so it hid Local as redundant and left you with no local reference at all.
+- About no longer says the bundled calendar data is “licensed separately”. No such licence exists — the data carries no licence from this project, which is what SOURCES.md has said throughout. The corrected line ships in this version.
+
 ## 1.1 — 2026-09-29
 
 ### Features
