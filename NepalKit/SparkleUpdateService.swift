@@ -49,23 +49,6 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
     }
 
     func start() {
-        // Automatic checks only make sense for an installed copy: updating
-        // replaces the running bundle in place, which cannot succeed from a
-        // build directory (the sandbox cannot grant the installer access to
-        // the path) or from a mounted read-only DMG — from either, Autoupdate
-        // aborts with "the bundle being updated … has no CFBundleVersion".
-        // Measured when a /tmp Debug copy failed its self-update (2026-09-28);
-        // the DMG layout gate also opens the packaged app straight off the
-        // mounted image, so that launch is transient too. A transient launch
-        // never schedules automatic checks; manual checks still run off the
-        // same started updater.
-        let bundlePath = Bundle.main.bundleURL.path
-        let transient = UpdatePolicy.isTransientLaunch(installPath: bundlePath)
-        if transient {
-            // A launch-local fallback: neither writes nor overrides a real
-            // preference, so the developer's own defaults are untouched.
-            UserDefaults.standard.register(defaults: ["SUEnableAutomaticChecks": false])
-        }
         // `startUpdater` schedules the background check, so it is a one-time
         // call at launch. Throwing means the updater could not be started at
         // all — a real failure worth surfacing rather than swallowing, because
@@ -83,6 +66,41 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
 }
 
 extension SparkleUpdateService: SPUUpdaterDelegate {
+    /// Refuses a scheduled check on a transient launch, where an in-place
+    /// self-update cannot succeed: updating replaces the running bundle in
+    /// place, which fails from a build directory (the sandbox cannot grant the
+    /// installer access to the path) or from a mounted read-only DMG — from
+    /// either, Autoupdate aborts with "the bundle being updated … has no
+    /// CFBundleVersion". Measured when a /tmp Debug copy failed its self-update
+    /// (2026-09-28); the DMG layout gate also opens the packaged app straight
+    /// off the mounted image, so that launch is transient too.
+    ///
+    /// The framework's per-check delegate hook rather than a setting, because
+    /// the two available settings both outlive the launch. `register(defaults:)`
+    /// only supplies a fallback that an explicit `SUEnableAutomaticChecks`
+    /// overrides, and writing the value through `SPUUpdater` persists it — so a
+    /// developer build would then disable automatic checks for the installed
+    /// copy too. Vetoing the check itself touches no preference and cannot
+    /// outlive the process. A manual check is not a scheduled one, so it still
+    /// runs, which is what makes a transient build's "Check for Updates…" work.
+    nonisolated func updater(
+        _ updater: SPUUpdater,
+        mayPerformUpdateCheck updateCheck: SPUUpdateCheck,
+        error: ()
+    ) throws {
+        guard updateCheck != .updatesInBackground else { return }
+        let transient = MainActor.assumeIsolated {
+            UpdatePolicy.isTransientLaunch(installPath: Bundle.main.bundleURL.path)
+        }
+        guard !transient else {
+            throw NSError(
+                domain: "NepalKit.Update",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Skipped: this build cannot update itself in place"]
+            )
+        }
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         MainActor.assumeIsolated { onOutcome?(.updateAvailable) }
     }
