@@ -17,7 +17,8 @@ with a two-source coin toss.
 Usage:  python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
 
   --offline   skip the network fetch and only report what is already cached in
-              /tmp, for use where the network is unavailable.
+               ~/.cache/nepalkit-data-sources/, for use where the network is
+               unavailable.
   --baseline <path>
               compare the live observation against the committed JSON baseline
               and exit 1 on any difference. Combines with --offline.
@@ -33,6 +34,7 @@ adopted a licence its upstream never had.
 """
 
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -74,8 +76,22 @@ def load_shipped():
     return {int(y): [int(x) for x in m.split(",")] for y, m in rows}
 
 
+def cache_dir():
+    """Where fetched source tables are cached between runs.
+
+    A per-user directory, not /tmp: --offline reads whatever is cached there,
+    and a fixed world-writable path would let planted bytes flow into a
+    comparison this project treats as provenance evidence. Override with
+    NEPAKIT_DATA_CACHE for tests or read-only environments.
+    """
+    root = os.environ.get("NEPAKIT_DATA_CACHE") or str(Path.home() / ".cache" / "nepalkit-data-sources")
+    path = Path(root)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def fetch(name, url, offline):
-    cache = "/tmp/%s-days.json" % name
+    cache = str(cache_dir() / ("%s-days.json" % name))
     if offline:
         try:
             return open(cache, encoding="utf-8").read()
