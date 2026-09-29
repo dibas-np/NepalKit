@@ -87,4 +87,35 @@ struct ClockModelTests {
         #expect(ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Asia/Katmandu")!, refreshInterval: 3600).localTimeIsRedundant)
         #expect(!ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Europe/London")!, refreshInterval: 3600).localTimeIsRedundant)
     }
+
+    @Test func localZoneFollowsAMidSessionSystemZoneChange() {
+        var current = TimeZone(identifier: "Asia/Kathmandu")!
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), systemZone: { current }, refreshInterval: 3600)
+
+        #expect(clock.localTimeIsRedundant)
+
+        current = TimeZone(identifier: "America/New_York")!
+        #expect(!clock.localTimeIsRedundant)
+        #expect(clock.localTimeString(digits: .latin) == "08:00:00")
+
+        current = TimeZone(identifier: "Asia/Kathmandu")!
+        #expect(clock.localTimeIsRedundant)
+        #expect(clock.localTimeString(digits: .latin) == clock.nptTimeString(digits: .latin))
+    }
+
+    @Test func anInjectedZoneStillWinsOverTheSystemZone() {
+        let clock = ClockModel(
+            now: TestDates.utc(2026, 9, 27, 12, 0),
+            localTimeZone: TimeZone(identifier: "Asia/Kolkata")!,
+            systemZone: { TimeZone(identifier: "America/New_York")! },
+            refreshInterval: 3600
+        )
+        #expect(clock.localTimeString(digits: .latin) == "17:30:00")
+        #expect(clock.localTimeZone.identifier == "Asia/Kolkata")
+    }
+
+    @Test func defaultClockFollowsTheSystemZone() {
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), refreshInterval: 3600)
+        #expect(clock.localTimeZone.identifier == TimeZone.autoupdatingCurrent.identifier)
+    }
 }
