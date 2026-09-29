@@ -23,21 +23,32 @@ final class MenuBarModel {
     private var timer: Timer?
     private var midnightTimer: Timer?
 
-    init(now: Date = .now, refreshInterval: TimeInterval = 30) {
+    /// - Parameter schedulesMidnightFire: production keeps the default; tests
+    ///   that do not exercise the midnight flip pass `false` so they do not
+    ///   leave real one-shot timers behind.
+    init(now: Date = .now, refreshInterval: TimeInterval = 30, schedulesMidnightFire: Bool = true) {
         self.now = now
         // The closure captures self weakly, so nothing to tear down: the timer
         // lives on the main run loop and dies with the process.
         timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
             self?.now = .now
         }
-        scheduleMidnightFire()
+        if schedulesMidnightFire {
+            scheduleMidnightFire()
+        }
+    }
+
+    /// Seconds from `date` until just after the next NPT midnight (+1s so the
+    /// civil day has definitively rolled over). Internal and pure so the flip's
+    /// scheduling is assertable without real timers.
+    static nonisolated func midnightFireInterval(after date: Date) -> TimeInterval? {
+        guard let nextMidnight = nextNPTMidnight(after: date) else { return nil }
+        return max(1, nextMidnight.timeIntervalSince(date) + 1)
     }
 
     private func scheduleMidnightFire() {
         midnightTimer?.invalidate()
-        guard let nextMidnight = nextNPTMidnight(after: .now) else { return }
-        // +1s so the NPT civil day has definitively rolled over.
-        let interval = max(1, nextMidnight.timeIntervalSince(.now) + 1)
+        guard let interval = Self.midnightFireInterval(after: now) else { return }
         midnightTimer = scheduledMainActorTimer(withTimeInterval: interval, repeats: false) { [weak self] in
             self?.now = .now
             self?.scheduleMidnightFire()

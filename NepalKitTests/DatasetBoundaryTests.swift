@@ -24,7 +24,7 @@ struct DatasetBoundaryTests {
     }
 
     private func menuBar(_ date: GADay) -> MenuBarModel {
-        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshInterval: 3600)
+        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshInterval: 3600, schedulesMidnightFire: false)
     }
 
     // MARK: - The supported-range edge
