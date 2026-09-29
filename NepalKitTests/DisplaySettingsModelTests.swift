@@ -29,6 +29,48 @@ struct DisplaySettingsModelTests {
         #expect(bar.title(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)) == "११ Ashoj")
     }
 
+    @Test("An update awaiting attention marks the menu-bar date")
+    func updateMarkerPrefixesTheDateRatherThanReplacingIt() {
+        // A scheduled check is run by a windowless app, so its alert can go
+        // unseen. The menu bar is the surface this user actually looks at, so
+        // the reminder goes there - and the date stays, because showing today's
+        // date is the reason the item is in the menu bar at all.
+        let bar = menuBar()
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+
+        #expect(bar.title(settings: settings, updateAvailable: true) == "! 11 Ashoj")
+        #expect(bar.title(settings: settings, updateAvailable: false) == "11 Ashoj")
+    }
+
+    @Test("The update marker is announced as words, not as the glyph")
+    func updateMarkerIsSpokenAsWords() {
+        // A voice cannot read "!", and this is the one thing on the menu bar
+        // that changes what the user should do, so the spoken channel carries
+        // the meaning the glyph carries visually.
+        let bar = menuBar()
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+
+        let spoken = bar.spokenTitle(settings: settings, updateAvailable: true)
+        #expect(spoken.hasPrefix(Strings.updateAvailableSpoken))
+        #expect(!spoken.contains(Strings.menuBarUpdateMarker))
+        #expect(spoken.contains(Strings.appNameForSpeech), "the date is still announced after the reminder")
+        #expect(bar.spokenTitle(settings: settings, updateAvailable: false) == bar.spokenTitle(settings: settings))
+    }
+
+    @Test("The marker never appears in the spoken channel of an unmarked menu bar")
+    func noMarkerWithoutAnUpdate() {
+        // The existing sweep forbids typographic punctuation in every spoken
+        // string, so the marker must not leak into one that has no update.
+        let bar = menuBar()
+
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            let spoken = bar.spokenTitle(
+                settings: DisplaySettings(digits: .latin, monthNames: style)
+            )
+            #expect(!spoken.contains("!"), "an exclamation mark reached the spoken channel: \(spoken)")
+        }
+    }
+
     @Test("Menu bar and popover render the same date for the same settings")
     func menuBarMatchesPopoverForSameSettings() {
         let now = RoundTripFixtures.date(2026, 9, 27, 12, 0)

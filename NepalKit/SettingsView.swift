@@ -101,6 +101,7 @@ struct SettingsView: View {
 /// conformance only satisfies that protocol where default isolation agrees.
 @MainActor private final class PreviewUpdateService: UpdateServicing {
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
+    var onReminder: (@MainActor (Bool) -> Void)?
     var automaticallyChecksForUpdates = true
     func start() {}
     func checkForUpdates() {}

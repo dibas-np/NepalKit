@@ -63,15 +63,26 @@ final class MenuBarModel {
     /// Short Bikram Sambat date for the menu-bar extra, honoring the given display settings.
     ///
     /// Past the dataset's supported range this returns a compact boundary marker
-    /// rather than a bare "—". The menu bar has no room to explain itself and
-    /// deliberately carries no warning badge, so the marker's job is only to stop
-    /// the absence reading as a bug; the popover is where the boundary is
-    /// actually stated in words.
-    func title(settings: DisplaySettings, in dataset: CalendarDataset = AppData.dataset) -> String {
+    /// rather than a bare "—". That marker is a statement of fact, not a warning:
+    /// the menu bar has no room to explain itself, so its job is only to stop the
+    /// absence reading as a bug; the popover is where the boundary is stated in
+    /// words.
+    ///
+    /// - Parameter updateAvailable: prefixes a warning marker, which is a
+    ///   different thing from the boundary marker above — this one asks the user
+    ///   to do something. The date is kept rather than replaced, because showing
+    ///   today's date is the reason the item is in the menu bar at all, and an
+    ///   update alert raised by a windowless app is easy to never notice.
+    func title(
+        settings: DisplaySettings,
+        in dataset: CalendarDataset = AppData.dataset,
+        updateAvailable: Bool = false
+    ) -> String {
         guard let today = todayBS(now: now, in: dataset) else {
             return Strings.menuBarBeyondRange
         }
-        return formatBSShort(today, settings: settings)
+        let date = formatBSShort(today, settings: settings)
+        return updateAvailable ? Strings.menuBarUpdateMarker + date : date
     }
 
     /// What VoiceOver announces for the menu-bar extra.
@@ -82,11 +93,20 @@ final class MenuBarModel {
     /// form a voice can actually pronounce. Splitting them is what keeps the
     /// menu bar from being made worse for everybody in order to help someone
     /// using speech — the visual stays exactly as short as it was.
-    func spokenTitle(settings: DisplaySettings, in dataset: CalendarDataset = AppData.dataset) -> String {
-        SpokenDate.menuBar(
+    ///
+    /// The update is announced as words rather than as the marker glyph, for the
+    /// same reason the date is: a voice cannot read "!", and the marker is the
+    /// one thing on this surface that changes what the user should do.
+    func spokenTitle(
+        settings: DisplaySettings,
+        in dataset: CalendarDataset = AppData.dataset,
+        updateAvailable: Bool = false
+    ) -> String {
+        let date = SpokenDate.menuBar(
             today: todayBS(now: now, in: dataset),
             monthNames: settings.monthNames,
             dataset: dataset
         )
+        return updateAvailable ? "\(Strings.updateAvailableSpoken). \(date)" : date
     }
 }

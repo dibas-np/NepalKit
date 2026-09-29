@@ -12,12 +12,16 @@ final class FakeUpdateService: UpdateServicing {
     private(set) var checkCount = 0
     var automaticallyChecksForUpdates = true
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
+    var onReminder: (@MainActor (Bool) -> Void)?
 
     func start() { startCount += 1 }
     func checkForUpdates() { checkCount += 1 }
 
     /// Simulate the framework reporting a result.
     func report(_ outcome: UpdateOutcome) { onOutcome?(outcome) }
+
+    /// Simulate the framework raising or clearing the gentle reminder.
+    func remind(_ showing: Bool) { onReminder?(showing) }
 }
 
 @MainActor
@@ -125,5 +129,41 @@ struct UpdateCheckModelTests {
 
         model.automaticallyChecks = true
         #expect(service.automaticallyChecksForUpdates == true)
+    }
+
+    @Test func theReminderIsIndependentOfTheReportedOutcome() {
+        // The two answer different questions and must not be conflated. An
+        // alert raised by a windowless app can be missed entirely, so the
+        // marker stays up after the outcome says an update is available, and a
+        // later "up to date" does not retract it on its own.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+
+        #expect(model.isShowingReminder == false)
+
+        service.remind(true)
+        #expect(model.isShowingReminder)
+
+        service.report(.updateAvailable)
+        #expect(model.isShowingReminder, "the outcome is not evidence that the user saw anything")
+
+        service.report(.upToDate)
+        #expect(model.isShowingReminder)
+
+        service.remind(false)
+        #expect(model.isShowingReminder == false)
+    }
+
+    @Test func repeatedReminderTransitionsSettleOnTheLastOne() {
+        // The framework can present an update again after the user returns to
+        // it, and the end of a session repeats the dismissal. Both are plain
+        // assignments, so ordering is the only thing that can go wrong.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+
+        for showing in [true, false, true, false, false] {
+            service.remind(showing)
+            #expect(model.isShowingReminder == showing)
+        }
     }
 }

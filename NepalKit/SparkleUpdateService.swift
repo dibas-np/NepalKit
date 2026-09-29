@@ -32,7 +32,17 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
     /// `self` as its delegate and `self` does not exist until then.
     private var controller: SPUStandardUpdaterController!
 
+    /// Held for the life of the service because `SPUStandardUserDriver` keeps
+    /// only a weak reference to its delegate; a local would be deallocated and
+    /// the reminder would stop firing without any visible symptom.
+    private let userDriverDelegate: SparkleUserDriverDelegate
+
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
+
+    /// Called as the framework presents a scheduled update, and once the user
+    /// has attended to it. Drives the menu-bar marker; see
+    /// `UpdateCheckModel.isShowingReminder`.
+    var onReminder: (@MainActor (Bool) -> Void)?
 
     var automaticallyChecksForUpdates: Bool {
         get { controller.updater.automaticallyChecksForUpdates }
@@ -40,11 +50,17 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
     }
 
     init(startingUpdater: Bool = true) {
+        // Set before `super.init()`: this is an NSObject subclass, so every
+        // stored property is initialized first. The closure that needs `self`
+        // is attached afterwards, once `self` exists.
+        let driver = SparkleUserDriverDelegate()
+        userDriverDelegate = driver
         super.init()
+        driver.onReminderChange = { [weak self] showing in self?.onReminder?(showing) }
         controller = SPUStandardUpdaterController(
             startingUpdater: startingUpdater,
             updaterDelegate: self,
-            userDriverDelegate: nil
+            userDriverDelegate: driver
         )
     }
 
@@ -121,5 +137,58 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
             onOutcome?(UpdatePolicy.outcome(forNoUpdateFound: kind,
                                             failureReason: error.localizedDescription))
         }
+    }
+}
+
+/// The gentle reminder: a menu-bar marker while a scheduled update waits to be
+/// noticed.
+///
+/// NepalKit has no Dock icon and no window, so the alert the framework raises
+/// for a background check can appear behind other windows to a user who never
+/// sees it — Sparkle logs a warning for exactly this case, and it is a real gap
+/// here rather than a false positive. The menu bar is the one surface this user
+/// actually looks at, so that is where the reminder goes.
+///
+/// `SPUStandardUserDriver` presents the alert itself; only the marker is added
+/// on top, so the install flow is the framework's and is not reimplemented.
+private final class SparkleUserDriverDelegate: NSObject, SPUStandardUserDriverDelegate {
+    var onReminderChange: (@MainActor (Bool) -> Void)?
+
+    /// Declared only because the two callbacks below implement it. Returning
+    /// YES with nothing implemented would silence Sparkle's warning while
+    /// leaving the reminder missing, which is the failure the warning exists to
+    /// catch.
+    var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    /// YES keeps Sparkle's own alert; the marker is additive, not a replacement.
+    /// Taking over presentation would mean reimplementing the update window and
+    /// the install flow the standard driver already gets right.
+    nonisolated func standardUserDriverShouldHandleShowingScheduledUpdate(
+        _ update: SUAppcastItem,
+        andInImmediateFocus immediateFocus: Bool
+    ) -> Bool { true }
+
+    /// `state.userInitiated` is excluded: the user asked, and is looking at the
+    /// result, so there is nothing to remind them of. The framework does not
+    /// call this again when a known update is brought back to focus, so the
+    /// marker cannot be left behind by the user returning to an alert they have
+    /// already seen.
+    nonisolated func standardUserDriverWillHandleShowingUpdate(
+        _ handleShowingUpdate: Bool,
+        forUpdate update: SUAppcastItem,
+        state: SPUUserUpdateState
+    ) {
+        guard !state.userInitiated else { return }
+        MainActor.assumeIsolated { onReminderChange?(true) }
+    }
+
+    nonisolated func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
+        MainActor.assumeIsolated { onReminderChange?(false) }
+    }
+
+    /// Backstop for the paths that never reach attention — an install that
+    /// completes, or a session ended by the app quitting to update.
+    nonisolated func standardUserDriverWillFinishUpdateSession() {
+        MainActor.assumeIsolated { onReminderChange?(false) }
     }
 }

@@ -36,6 +36,10 @@ protocol UpdateServicing: AnyObject {
 
     /// Called as the framework reports the outcome of a check.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? { get set }
+
+    /// Called with `true` as a scheduled update is presented, and `false` once
+    /// the user has attended to it or the update session has finished.
+    var onReminder: (@MainActor (Bool) -> Void)? { get set }
 }
 
 /// The outcomes a check can have, as distinct answers rather than a boolean.
@@ -56,12 +60,25 @@ final class UpdateCheckModel {
     /// Last reported outcome, or nil when nothing has been checked yet.
     private(set) var outcome: UpdateOutcome?
 
+    /// Whether a scheduled update is being shown and still needs the user's
+    /// attention. Drawn as a marker on the menu-bar date.
+    ///
+    /// Not derived from `outcome`, which answers "what did the last check
+    /// find" and stays put once an update is found. This answers the different
+    /// question the marker exists for: has the user actually looked. An alert
+    /// raised by a windowless app is easy to miss entirely, so the marker
+    /// persists until the framework reports attention or the session ends.
+    private(set) var isShowingReminder = false
+
     private let service: any UpdateServicing
 
     init(service: any UpdateServicing) {
         self.service = service
         self.service.onOutcome = { [weak self] outcome in
             self?.outcome = outcome
+        }
+        self.service.onReminder = { [weak self] showing in
+            if showing { self?.showReminder() } else { self?.dismissReminder() }
         }
     }
 
@@ -74,6 +91,17 @@ final class UpdateCheckModel {
 
     func checkNow() {
         service.checkForUpdates()
+    }
+
+    /// Called as the framework is about to present a scheduled update.
+    func showReminder() {
+        isShowingReminder = true
+    }
+
+    /// Called once the user has attended to the update — brought the alert to
+    /// focus, or chosen to install, skip, or defer it.
+    func dismissReminder() {
+        isShowingReminder = false
     }
 
     var automaticallyChecks: Bool {

@@ -26,6 +26,12 @@ enum Strings {
     /// Compact menu-bar marker for the range boundary. The popover states the
     /// boundary in words; the menu bar only has room to avoid looking broken.
     static let menuBarBeyondRange = "n/a"
+    /// Prefix on the menu-bar date while a scheduled update is still awaiting
+    /// the user's attention. A scheduled check is run by a windowless app, so
+    /// its alert is easy to never see; the menu bar is the one surface this user
+    /// actually looks at. The spoken form says it in words instead.
+    static let menuBarUpdateMarker = "! "
+    static let updateAvailableSpoken = "update available"
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"
     static let digitsDevanagari = "Devanagari ०–९"
