@@ -37,6 +37,10 @@ gate ([macos26-floor.yml](.github/workflows/macos26-floor.yml)) pins Xcode 26.6
 on the `macos-26` runner and has completed successfully: core suite, app-layer
 suite, build, and a launch that survives and exits without a relaunch loop. The
 release pipeline uses Xcode 27, so 26.6 is the floor that matters and it holds.
+The release pipeline uses Xcode 27, and the Xcode project format stays at the
+level the floor toolchain reads — **decline Xcode 27's project-upgrade
+prompt**. Accepting it silently breaks the floor gate for every later pull
+request, with no local symptom.
 
 If you hit something 26.6 cannot compile, that is a regression against a claim
 the gate now enforces — report it rather than working around it locally.
