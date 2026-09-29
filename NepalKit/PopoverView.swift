@@ -100,8 +100,6 @@ struct PopoverView: View {
         // two different x positions and the block looks accidentally staggered.
         .frame(maxWidth: .infinity, alignment: .leading)
 
-        Divider()
-
         // Settings, About and Quit live below the content rather than inside
         // either destination. They open other windows or end the process, so
         // they are not a step in navigating Today and Convert, and burying them
@@ -202,9 +200,11 @@ struct PopoverView: View {
 #if DEBUG
 #Preview("Popover") {
     PopoverView(
-        settings: DisplaySettingsModel(),
-        clock: ClockModel(),
-        converter: ConverterModel(),
+        settings: .preview,
+        // `refreshes: false` because a live clock schedules a main-run-loop
+        // timer on every redraw that nothing ever invalidates.
+        clock: ClockModel(now: AppData.previewInstant, refreshes: false),
+        converter: ConverterModel(now: AppData.previewInstant),
         dataset: AppData.dataset
     )
     .padding()

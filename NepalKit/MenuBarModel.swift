@@ -23,15 +23,20 @@ final class MenuBarModel {
     private var timer: Timer?
     private var midnightTimer: Timer?
 
+    /// - Parameter refreshes: whether to schedule the timer that advances `now`
+    ///   from the system clock. Production keeps the default; a caller that only
+    ///   needs a fixed instant passes `false`. Nothing invalidates either timer —
+    ///   the run loop retains them and a weak capture only lets this model go —
+    ///   so both would otherwise outlive the caller.
     /// - Parameter schedulesMidnightFire: production keeps the default; tests
     ///   that do not exercise the midnight flip pass `false` so they do not
     ///   leave real one-shot timers behind.
-    init(now: Date = .now, refreshInterval: TimeInterval = 30, schedulesMidnightFire: Bool = true) {
+    init(now: Date = .now, refreshInterval: TimeInterval = 30, refreshes: Bool = true, schedulesMidnightFire: Bool = true) {
         self.now = now
-        // The closure captures self weakly, so nothing to tear down: the timer
-        // lives on the main run loop and dies with the process.
-        timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
-            self?.now = .now
+        if refreshes {
+            timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
+                self?.now = .now
+            }
         }
         if schedulesMidnightFire {
             scheduleMidnightFire()

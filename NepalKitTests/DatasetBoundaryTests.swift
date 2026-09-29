@@ -19,12 +19,12 @@ struct DatasetBoundaryTests {
         ClockModel(
             now: TestDates.utc(date.year, date.month, date.day, 6, 0),
             localTimeZone: TimeZone(identifier: "America/New_York")!,
-            refreshInterval: 3600
+            refreshes: false
         )
     }
 
     private func menuBar(_ date: GADay) -> MenuBarModel {
-        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshInterval: 3600, schedulesMidnightFire: false)
+        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     // MARK: - The supported-range edge

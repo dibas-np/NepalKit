@@ -50,9 +50,9 @@ struct ConverterView: View {
                 // "Optional(12 Ashoj 2083)" to a screen reader.
                 Text(output)
                     .font(.headline)
-                // Label only: `children: .ignore` leaves a `Text` with no role
-                // (same as the popover headline). Replacing the label keeps its
-                // static-text role.
+                    // Label only: `children: .ignore` leaves a `Text` with no role
+                    // (same as the popover headline). Replacing the label keeps its
+                    // static-text role.
                     .accessibilityLabel(
                         [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")
@@ -202,7 +202,7 @@ private struct ADPickers: View {
 #if DEBUG
 #Preview("Converter") {
     ConverterView(
-        model: ConverterModel(),
+        model: ConverterModel(now: AppData.previewInstant),
         settings: DisplaySettings(digits: .latin, monthNames: .transliterated)
     )
     .padding()

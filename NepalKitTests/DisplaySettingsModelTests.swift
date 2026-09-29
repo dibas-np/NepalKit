@@ -16,7 +16,7 @@ struct DisplaySettingsModelTests {
     }
 
     private func menuBar() -> MenuBarModel {
-        MenuBarModel(now: RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshInterval: 3600, schedulesMidnightFire: false)
+        MenuBarModel(now: RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     @Test("Menu-bar title honors both display axes")

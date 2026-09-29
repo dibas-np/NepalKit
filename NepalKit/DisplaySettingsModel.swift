@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import Foundation
 import Observation
 import NepalKitCore
 
@@ -50,4 +51,25 @@ final class DisplaySettingsModel {
         get { settings.monthNames }
         set { save(monthNames: newValue) }
     }
+
+    #if DEBUG
+    /// A model over a throwaway preferences domain, seeded to the non-default
+    /// pair.
+    ///
+    /// `DisplaySettingsModel()` in a preview reads `UserDefaults.standard`, so
+    /// the canvas shows whatever the developer's own settings happen to be and
+    /// a change in them looks like a change in the view. The domain is named
+    /// apart and cleared first, so the values are fixed and reading them cannot
+    /// depend on anything already stored. Devanagari and Nepali month names are
+    /// the interesting case: they exercise the non-Latin paths, which the
+    /// defaults would never show.
+    static var preview: DisplaySettingsModel {
+        let suite = "NepalKit.PreviewSettings"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(DigitScript.devanagari.rawValue, forKey: SettingsStore.digitScriptKey)
+        defaults.set(MonthNameStyle.nepali.rawValue, forKey: SettingsStore.monthNameStyleKey)
+        return DisplaySettingsModel(store: SettingsStore(defaults: defaults))
+    }
+    #endif
 }

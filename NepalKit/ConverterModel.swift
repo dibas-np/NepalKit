@@ -69,15 +69,18 @@ final class ConverterModel {
 
     private let dataset: CalendarDataset
 
+    /// - Parameter now: the instant the pickers start from. Injected rather than
+    ///   read from the wall clock so the initial selection is reproducible — a
+    ///   preview or a test should not depend on the day it happens to run.
     init(
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,
         adYear: Int? = nil, adMonth: Int? = nil, adDay: Int? = nil,
-        dataset: CalendarDataset = AppData.dataset
+        dataset: CalendarDataset = AppData.dataset,
+        now: Date = .now
     ) {
         self.dataset = dataset
         self.direction = direction
-        let now = Date.now
         let todayBSDate = todayBS(now: now, in: dataset)
         // todayBS is nil past the supported range (and only then); the picker
         // defaults to the range's first day rather than a literal date.
@@ -130,7 +133,9 @@ final class ConverterModel {
         precondition(dataset.supportedRange.contains(year), "BS year \(year) is outside the supported range")
         precondition((1 ... 12).contains(month), "BS month \(month) is outside 1...12")
         // Non-nil by the year precondition: the dataset's own init rejects a
-        // supported-range year without a month row.
+        // supported-range year that is missing or does not have a twelve-month
+        // row, so both the nil and the short-row cases are closed at
+        // construction.
         return dataset.monthLengths(for: year)![month - 1]
     }
 

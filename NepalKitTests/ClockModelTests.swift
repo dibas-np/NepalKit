@@ -9,7 +9,7 @@ import NepalKitCore
 struct ClockModelTests {
 
     private func model(at date: Date, local: String = "America/New_York") -> ClockModel {
-        ClockModel(now: date, localTimeZone: TimeZone(identifier: local)!, refreshInterval: 3600)
+        ClockModel(now: date, localTimeZone: TimeZone(identifier: local)!, refreshes: false)
     }
 
     @Test func bsDateFlipsAtNPTMidnight() {
@@ -72,7 +72,7 @@ struct ClockModelTests {
         let offsetZone = ClockModel(
             now: TestDates.utc(2026, 9, 27, 12, 0),
             localTimeZone: TimeZone(secondsFromGMT: 20700)!,
-            refreshInterval: 3600
+            refreshes: false
         )
         #expect(offsetZone.localTimeIsRedundant)
     }
@@ -88,13 +88,13 @@ struct ClockModelTests {
         // The two spellings are the point: they are distinct TimeZone values
         // that both resolve to +05:45, so an identity comparison against
         // `nepalTimeZone` would miss `Asia/Katmandu` entirely.
-        #expect(ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Asia/Katmandu")!, refreshInterval: 3600).localTimeIsRedundant)
-        #expect(!ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Europe/London")!, refreshInterval: 3600).localTimeIsRedundant)
+        #expect(ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Asia/Katmandu")!, refreshes: false).localTimeIsRedundant)
+        #expect(!ClockModel(now: .now, localTimeZone: TimeZone(identifier: "Europe/London")!, refreshes: false).localTimeIsRedundant)
     }
 
     @Test func localZoneFollowsAMidSessionSystemZoneChange() {
         var current = TimeZone(identifier: "Asia/Kathmandu")!
-        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), systemZone: { current }, refreshInterval: 3600)
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), systemZone: { current }, refreshes: false)
 
         #expect(clock.localTimeIsRedundant)
 
@@ -112,14 +112,14 @@ struct ClockModelTests {
             now: TestDates.utc(2026, 9, 27, 12, 0),
             localTimeZone: TimeZone(identifier: "Asia/Kolkata")!,
             systemZone: { TimeZone(identifier: "America/New_York")! },
-            refreshInterval: 3600
+            refreshes: false
         )
         #expect(clock.localTimeString(digits: .latin) == "17:30:00")
         #expect(clock.localTimeZone.identifier == "Asia/Kolkata")
     }
 
     @Test func defaultClockFollowsTheSystemZone() {
-        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), refreshInterval: 3600)
+        let clock = ClockModel(now: TestDates.utc(2026, 9, 27, 12, 0), refreshes: false)
         #expect(clock.localTimeZone.identifier == TimeZone.autoupdatingCurrent.identifier)
     }
 }

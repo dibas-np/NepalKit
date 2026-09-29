@@ -26,12 +26,23 @@ final class ClockModel {
 
     private var timer: Timer?
 
-    init(now: Date = .now, localTimeZone: TimeZone? = nil, systemZone: @escaping () -> TimeZone = { .autoupdatingCurrent }, refreshInterval: TimeInterval = 1) {
+    /// - Parameter refreshes: whether to schedule the timer that advances `now`
+    ///   from the system clock. Production keeps the default. Pass `false` for
+    ///   a still clock — a preview, or a test that only needs a fixed instant —
+    ///   so no timer is left running.
+    ///
+    ///   The `Timer` returned by `scheduledTimer` is retained by the main run
+    ///   loop, not by this model, and nothing here invalidates it: a weak
+    ///   capture means the model can deallocate while the timer keeps firing
+    ///   every second for the life of the process. A `#Preview` body is
+    ///   re-evaluated whenever the canvas refreshes, and each evaluation would
+    ///   schedule another one, so a preview built from the default leaked a
+    ///   live timer per redraw.
+    init(now: Date = .now, localTimeZone: TimeZone? = nil, systemZone: @escaping () -> TimeZone = { .autoupdatingCurrent }, refreshInterval: TimeInterval = 1, refreshes: Bool = true) {
         self.now = now
         self.injectedLocalTimeZone = localTimeZone
         self.systemZone = systemZone
-        // The closure captures self weakly, so nothing to tear down: the timer
-        // lives on the main run loop and dies with the process.
+        guard refreshes else { return }
         timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
             self?.now = .now
         }

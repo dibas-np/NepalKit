@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import Foundation
 import NepalKitCore
 
 /// The dataset the app converts with, named once.
@@ -18,3 +19,16 @@ enum AppData {
     // makes each of those declarations a concurrency warning.
     nonisolated static let dataset = CalendarDataset.v2
 }
+
+#if DEBUG
+extension AppData {
+    /// The instant every preview that shows a date renders at: 2026-10-18
+    /// 03:05 Nepal Time, a Sunday inside the dataset's supported range.
+    ///
+    /// Fixed because the models these previews drive seed their pickers from
+    /// "today". Left on the wall clock, a canvas shows a different date each day
+    /// and — worse — differs from the screenshot in a review, so a date change
+    /// cannot be told apart from a date bug.
+    nonisolated static let previewInstant = Date(timeIntervalSince1970: 1_792_272_000)
+}
+#endif

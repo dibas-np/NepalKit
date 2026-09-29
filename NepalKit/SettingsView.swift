@@ -114,7 +114,7 @@ private final class PreviewLoginService: LoginItemServicing {
 
 #Preview("Settings") {
     SettingsView(
-        settings: DisplaySettingsModel(),
+        settings: .preview,
         loginItem: LoginItemModel(service: PreviewLoginService()),
         updates: UpdateCheckModel(service: PreviewUpdateService())
     )
