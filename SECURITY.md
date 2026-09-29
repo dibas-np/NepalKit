@@ -2,14 +2,14 @@
 
 ## Supported versions
 
-NepalKit is at 1.0. Security fixes land on the latest release. There is no
-long-term-support branch; the project is young enough that backporting would
-cost more than it saves.
+Security fixes land on the latest release. There is no long-term-support
+branch; the project is young enough that backporting would cost more than it
+saves.
 
 | Version | Supported |
 | --- | --- |
-| 1.0.x | yes |
-| < 1.0 | no |
+| latest release (see [CHANGELOG.md](CHANGELOG.md)) | yes |
+| anything older | no |
 
 ## Reporting a vulnerability
 
