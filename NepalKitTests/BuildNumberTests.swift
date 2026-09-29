@@ -66,13 +66,13 @@ struct BuildNumberTests {
     @Test func buildNumberIsAnInteger() {
         // Sparkle requires a properly formatted, increasing integer. Anything
         // else is silently unordered.
-        let raw = try? #require(Self.buildSetting("CURRENT_PROJECT_VERSION"))
+        let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
 
         #expect(raw.flatMap(Int.init) != nil, "CURRENT_PROJECT_VERSION is not an integer: \(raw ?? "missing")")
     }
 
     @Test func buildNumberIsPositive() {
-        let raw = try? #require(Self.buildSetting("CURRENT_PROJECT_VERSION"))
+        let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
 
         #expect((raw.flatMap(Int.init) ?? 0) >= 1)
     }
