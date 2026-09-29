@@ -243,7 +243,7 @@ builds and tests on its own with no Xcode.
 # core: conversion, dataset, formatting          -> 48 tests, 13 suites
 cd NepalKitCore && swift test
 
-# app layer: models, settings persistence        -> 113 tests, 17 suites
+# app layer: models, settings persistence        -> 118 tests, 17 suites
 ./scripts/run-app-tests.sh
 ```
 

@@ -53,8 +53,8 @@ Run both suites. They are separate on purpose: one is the calendar, the other is
 the application.
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 47 tests
-./scripts/run-app-tests.sh             # the app: 96 tests
+cd NepalKitCore && swift test          # the calendar: 48 tests
+./scripts/run-app-tests.sh             # the app: 118 tests
 ```
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
@@ -70,7 +70,7 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
   ./scripts/run-app-tests.sh
 ```
 
-Without it, four tests **skip with a reason** rather than pass silently. That
+Without it, five tests **skip with a reason** rather than pass silently. That
 is deliberate: a test that cannot check something must not report that it did.
 
 ## Style
