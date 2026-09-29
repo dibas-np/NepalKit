@@ -81,8 +81,49 @@ struct NepalKitApp: App {
         // copies. The dataset is the same one the app converts with, so the
         // range line cannot drift from the conversion contract (ADR-0010).
         Window(Strings.aboutLabel, id: AboutWindow.id) {
-            AboutView(metadata: .current(), dataset: AppData.dataset)
+            AboutScene(dataset: AppData.dataset)
         }
         .windowResizability(.contentSize)
     }
 }
+
+/// The About surface, and the reason its metadata is not read until now.
+///
+/// `Window`'s content closure is evaluated at launch even for a window that is
+/// never opened, so `AppMetadata.current()` placed there reads the bundled
+/// 35 KB LICENSE and asks AppKit for the app icon on every launch — paid for a
+/// window most sessions never show. Moving the call into this view's `body`
+/// defers it to the first time the window is actually presented, which is the
+/// only point at which any of it is needed.
+private struct AboutScene: View {
+    let dataset: CalendarDataset
+    @State private var deferred = DeferredAppMetadata()
+
+    var body: some View {
+        AboutView(metadata: deferred.value, dataset: dataset)
+    }
+}
+
+/// `AppMetadata.current()` on first use, then cached.
+///
+/// A view is re-evaluated far more often than a window is opened, so the result
+/// is held rather than re-read: without this the LICENSE would be parsed on
+/// every redraw of the About window.
+@MainActor
+private final class DeferredAppMetadata {
+    private var cached: AppMetadata?
+
+    var value: AppMetadata {
+        if let cached { return cached }
+        let fresh = AppMetadata.current()
+        cached = fresh
+        return fresh
+    }
+}
+
+#if DEBUG
+#Preview("About scene") {
+    AboutScene(dataset: AppData.dataset)
+        .frame(width: 380)
+}
+#endif
