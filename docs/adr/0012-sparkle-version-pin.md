@@ -215,3 +215,14 @@ not lie about what the update is. Given this framework's recent history — 2.6.
 allowed a signed update to be replaced with another payload, bypassing its
 (Ed)DSA checks — signing the feed as well is the difference between trusting the
 transport and not having to trust the publisher's account.
+
+## Freshness of this pin
+
+A pin nobody re-visits is a pin that rots: this ADR's premise is that Sparkle
+releases carry security fixes, so the pin's safety argument has an expiry
+date. The check is mechanised rather than remembered:
+`data-sources.yml` runs `sparkle-pin-freshness` on a monthly schedule, reads
+the pin from `Package.resolved` (what the app actually builds against), and
+fails against the live latest release when they differ. A red run is the
+trigger to re-read this ADR — not an automatic bump. Bumping remains the
+release-contract decision this document describes.
