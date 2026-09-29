@@ -106,6 +106,9 @@ jobs:
     # Swift on the deployment floor; the interpreted languages on ubuntu, which
     # is quicker and cheaper and does not need a Mac.
     runs-on: ${{ (matrix.language == 'swift' && 'macos-26') || 'ubuntu-latest' }}
+    # The swift leg runs two traced builds on a macOS runner; bound the hang
+    # case well under the 360-minute default.
+    timeout-minutes: 45
 
     strategy:
       fail-fast: false

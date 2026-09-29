@@ -22,10 +22,11 @@ on:
   # verifier itself.
   workflow_dispatch:
 
+# Least privilege: verify runs untrusted-by-default repo content and needs
+# nothing but a read; only deploy touches Pages, so the write scopes live on
+# that job and are not inherited by verify.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # One deployment at a time: two concurrent publishes could interleave and leave
 # the live feed pointing at the older release.
@@ -37,6 +38,7 @@ jobs:
   verify:
     name: verify appcast
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       # A dispatch with no committed feed has nothing to publish.
       publish: ${{ steps.check.outputs.publish }}
@@ -110,6 +112,10 @@ jobs:
     needs: verify
     if: needs.verify.outputs.publish == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

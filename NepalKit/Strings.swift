@@ -6,8 +6,14 @@ import NepalKitCore
 /// one UI language (the month-name language setting is a date-presentation
 /// setting, not a second UI language).
 enum Strings {
-    static let dateUnavailable = "Date unavailable"
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
+    /// Separator between a date and its weekday on a shown date line, and the
+    /// one composer for that line: the pairing appears on the popover's
+    /// Gregorian line and in the converter's shown result.
+    static let weekdaySeparator = "·"
+    static func datedWithWeekday(_ date: String, _ weekday: String) -> String {
+        "\(date) \(weekdaySeparator) \(weekday)"
+    }
     /// Honors the digit-script setting like every other number the app renders.
     static func supportedThrough(_ bsYear: Int, digits: DigitScript) -> String {
         "Supported through \(formatNumber(bsYear, digits: digits)) BS"

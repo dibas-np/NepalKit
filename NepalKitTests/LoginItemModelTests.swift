@@ -96,6 +96,28 @@ struct LoginItemModelTests {
         #expect(model.isOn)
     }
 
+    @Test func toggleOnWhenAlreadyRegisteredDoesNotRestateTheService() {
+        let service = MockService(registered: true)
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+
+        model.setOn(true)
+
+        #expect(service.registerCalls == 0)
+        #expect(model.isOn)
+        #expect(model.setupError == nil)
+    }
+
+    @Test func toggleOffWhenAlreadyUnregisteredDoesNotRestateTheService() {
+        let service = MockService()
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+
+        model.setOn(false)
+
+        #expect(service.unregisterCalls == 0)
+        #expect(!model.isOn)
+        #expect(model.setupError == nil)
+    }
+
     @Test func failedRegistrationLeavesToggleOffAndSurfacesAnError() {
         let service = MockService()
         service.error = Boom()

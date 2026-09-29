@@ -255,7 +255,7 @@ final class ConverterModel {
                   let weekday = weekdayText(for: bsDate, style: settings.monthNames)
             else { return nil }
             return (
-                "\(formatAD(ad, settings: settings)) · \(weekday)",
+                Strings.datedWithWeekday(formatAD(ad, settings: settings), weekday),
                 "\(SpokenDate.ad(ad)), \(weekday)"
             )
         case .adToBS:
@@ -263,7 +263,7 @@ final class ConverterModel {
                   let weekday = weekdayText(for: bs, style: settings.monthNames)
             else { return nil }
             return (
-                "\(formatBS(bs, settings: settings)) · \(weekday)",
+                Strings.datedWithWeekday(formatBS(bs, settings: settings), weekday),
                 "\(SpokenDate.bs(bs, monthNames: settings.monthNames)), \(weekday)"
             )
         }

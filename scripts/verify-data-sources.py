@@ -148,6 +148,7 @@ def parse_askbuddie(body):
 def main():
     offline = "--offline" in sys.argv
     shipped = load_shipped()
+    compared = 0
     print("NepalKit ships %d years, %d-%d BS" % (len(shipped), min(shipped), max(shipped)))
     print("Source file: %s\n" % DATASET)
 
@@ -160,6 +161,7 @@ def main():
         table = {"medic": parse_medic, "askbuddie": parse_askbuddie,
                  "go-bs": parse_go_bs, "nepali-date": parse_nepali_date}[name](body)
         shared = sorted(set(shipped) & set(table))
+        compared += len(shared)
         diffs = [(y, i) for y in shared for i in range(12) if shipped[y][i] != table[y][i]]
         exact = sum(1 for y in shared if shipped[y] == table[y])
 
@@ -184,11 +186,12 @@ def main():
         print()
 
     # A comparison that silently compares nothing is worse than no comparison:
-    # it reports success having checked nothing. Assert the work happened.
-    total = sum(1 for y in shipped for _ in range(12))
-    if total == 0:
-        sys.exit("BUG: nothing was compared — the shipped table is empty")
-    print("%d month values in the shipped table across %d years." % (total, len(shipped)))
+    # it reports success having checked nothing. Every fetch can fail, so a
+    # green exit must mean at least one source actually overlapped the table.
+    if compared == 0:
+        sys.exit("nothing was compared — no source was reachable or none overlap the shipped range")
+    print("%d month values in the shipped table across %d years; %d year(s) were checked."
+          % (len(shipped) * 12, len(shipped), compared))
 
 
 if __name__ == "__main__":

@@ -321,7 +321,7 @@ private struct TodaySection: View {
                 HStack(spacing: 4) {
                     Text(formatAD(todayAD, settings: settings))
                     if let weekday {
-                        Text("· \(weekday)")
+                        Text("\(Strings.weekdaySeparator) \(weekday)")
                     }
                 }
                 .font(.callout)

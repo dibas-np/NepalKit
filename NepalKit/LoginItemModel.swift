@@ -16,7 +16,13 @@ protocol LoginItemServicing {
 /// Live login-item service backed by the modern system login-item API.
 /// No entitlement is needed for the main app's own login item.
 struct LiveLoginItemService: LoginItemServicing {
-    var isRegistered: Bool { SMAppService.mainApp.status == .enabled }
+    // A pending approval is a registration waiting on the user in System
+    // Settings: register() returns without throwing for it, so counting it as
+    // unregistered would spring the toggle back with no error to explain why.
+    var isRegistered: Bool {
+        let status = SMAppService.mainApp.status
+        return status == .enabled || status == .requiresApproval
+    }
 
     func register() throws {
         try SMAppService.mainApp.register()
@@ -75,10 +81,12 @@ final class LoginItemModel {
 
     func setOn(_ on: Bool) {
         do {
+            // The service throws a confusing already-registered error when asked
+            // to restate its current state; only drive it when state must change.
             if on {
-                try service.register()
+                if !service.isRegistered { try service.register() }
             } else {
-                try service.unregister()
+                if service.isRegistered { try service.unregister() }
             }
             setupError = nil
         } catch {

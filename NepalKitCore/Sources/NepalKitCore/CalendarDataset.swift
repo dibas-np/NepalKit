@@ -72,12 +72,12 @@ public struct CalendarDataset: Sendable {
         var cursor = 0
         for year in supportedRange {
             starts[year] = cursor
-            // A declared range year with no month row would silently contribute
-            // zero days here, shifting every later year's index and corrupting
-            // every conversion after it. A broken dataset must fail loudly at
-            // construction, not convert wrong.
-            guard let lengths = years[year] else {
-                preconditionFailure("CalendarDataset \(version): supported-range year \(year) has no month-length row")
+            // A declared range year with a missing or non-twelve-month row would
+            // either silently shift every later year's index or crash at the
+            // month lookup, corrupting conversions either way. A broken dataset
+            // must fail loudly at construction, not convert wrong.
+            guard let lengths = years[year], lengths.count == 12 else {
+                preconditionFailure("CalendarDataset \(version): supported-range year \(year) does not have a twelve-month row")
             }
             cursor += lengths.reduce(0, +)
         }
