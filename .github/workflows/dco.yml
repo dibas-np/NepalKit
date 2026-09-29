@@ -1,0 +1,66 @@
+# Developer Certificate of Origin, as promised in CONTRIBUTING.md.
+#
+# CONTRIBUTING.md asks every submitter to certify, per commit, that the work is
+# theirs or that they have the right to submit it under GPL-3.0-or-later. That
+# promise was unenforced: the repository had no DCO check, and the history shows
+# why that is a real gap rather than a formality — the check never ran, so no
+# commit has ever carried a `Signed-off-by` trailer, and the rule had quietly
+# become aspirational.
+#
+# This workflow makes it enforced rather than aspirational. It is deliberately a
+# plain `git log` check with no third-party action: the rule is two lines of
+# grep, and a provenance control should not itself be a supply-chain dependency
+# with a mutable tag.
+#
+# ## What this does not do
+#
+# A `Signed-off-by` line is a self-certification. It is not a signature: anyone
+# can write any name into it. What this gate establishes is that a certificate
+# was *given*, so that provenance is a question with an answer rather than one
+# nobody asked. It does not establish that the certificate is true.
+#
+# A determined submitter can also bypass it by rewriting history after the fact
+# (the check re-runs on every push, so a rewrite does not hide the commits — it
+# only changes who certified them). DCO's real teeth are the copyright holder's
+# response to a disputed certificate, not this job.
+name: DCO
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  signoff:
+    name: every commit carries a DCO sign-off
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # The certificate lives in the commit message, so the check needs the
+          # messages, not just the tree.
+          fetch-depth: 0
+      - name: Check for a Signed-off-by trailer on each commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          while read -r sha; do
+            if ! git log -1 --format='%B' "$sha" | grep -qiE '^[[:space:]]*Signed-off-by:[[:space:]]*.+$'; then
+              subject=$(git log -1 --format='%s' "$sha")
+              echo "::error file=CONTRIBUTING.md::Missing 'Signed-off-by:' in $sha — $subject"
+              missing=$((missing + 1))
+            fi
+          done < <(git rev-list "${BASE}..${HEAD}")
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "$missing commit(s) without a DCO certificate."
+            echo "Add one without rewriting anything else:"
+            echo "  git rebase --signoff origin/main && git push --force-with-lease"
+            exit 1
+          fi
+          echo "Every commit carries a Signed-off-by line."
