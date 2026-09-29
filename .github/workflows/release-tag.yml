@@ -277,15 +277,22 @@ jobs:
       - name: Show what changed
         run: git -C "$RUNNER_TEMP/tap" diff
 
-      # A no-op bump means the tag and the cask already agree, which is only true
-      # when this workflow has run twice for one release. Push anyway: the commit
-      # is empty and git declines to create it, so the job ends green rather than
-      # failing on a condition that is not a fault.
+      # The empty case is decided by asking whether there is anything to commit,
+      # not by catching the commit's exit status. `commit || echo` swallows every
+      # failure, not only the harmless one: a commit that failed for a real reason
+      # — no committer identity, a hook, a full disk — would be reported as
+      # "nothing to commit", and the push below would then republish the old HEAD
+      # and leave the job green with the tap silently unchanged. An `if` on the
+      # diff makes only the genuinely-empty case skip the commit, and leaves every
+      # other failure to `set -e`.
       - name: Commit and push
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
           set -euo pipefail
-          git -C "$RUNNER_TEMP/tap" commit -am "nepalkit $VERSION" || \
+          if git -C "$RUNNER_TEMP/tap" diff --quiet HEAD --; then
             echo "nothing to commit; the cask already names this release"
+          else
+            git -C "$RUNNER_TEMP/tap" commit -am "nepalkit $VERSION"
+          fi
           git -C "$RUNNER_TEMP/tap" push origin HEAD:main
