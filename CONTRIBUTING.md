@@ -58,7 +58,7 @@ the application.
 
 ```sh
 cd NepalKitCore && swift test          # the calendar: 52 tests
-./scripts/run-app-tests.sh             # the app: 125 tests
+./scripts/run-app-tests.sh             # the app: 131 tests
 ```
 
 The counts are what the runners printed when this was written. A pull request
