@@ -102,11 +102,11 @@ final class MenuBarModel {
         in dataset: CalendarDataset = AppData.dataset,
         updateAvailable: Bool = false
     ) -> String {
-        let date = SpokenDate.menuBar(
+        SpokenDate.menuBar(
             today: todayBS(now: now, in: dataset),
             monthNames: settings.monthNames,
-            dataset: dataset
+            dataset: dataset,
+            updateAvailable: updateAvailable
         )
-        return updateAvailable ? "\(Strings.updateAvailableSpoken). \(date)" : date
     }
 }

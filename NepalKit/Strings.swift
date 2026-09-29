@@ -29,8 +29,14 @@ enum Strings {
     /// Prefix on the menu-bar date while a scheduled update is still awaiting
     /// the user's attention. A scheduled check is run by a windowless app, so
     /// its alert is easy to never see; the menu bar is the one surface this user
-    /// actually looks at. The spoken form says it in words instead.
+    /// actually looks at. Carries its own trailing space, so the prefix stays
+    /// one unit rather than a glyph and a separator at the call site.
     static let menuBarUpdateMarker = "! "
+    /// Spoken form of the same reminder. Said in words rather than read as the
+    /// glyph, for the same reason the date is spoken and not spelled out: a
+    /// voice cannot read "!", and this is the one thing on the menu bar that
+    /// changes what the user should do. A clause rather than a sentence, since
+    /// `SpokenDate.menuBar` composes it between the app name and the date.
     static let updateAvailableSpoken = "update available"
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"

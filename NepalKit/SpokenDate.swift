@@ -62,7 +62,18 @@ enum SpokenDate {
     /// navigating by menu-bar extras is relying on this one string entirely.
     /// Naming the app costs a word and makes the item identifiable out of
     /// context.
-    static func menuBar(today: BSDay?, monthNames: MonthNameStyle, dataset: CalendarDataset) -> String {
+    ///
+    /// - Parameter updateAvailable: adds the reminder clause. It goes *after* the
+    ///   app name and *before* the date, because nothing may precede the name —
+    ///   that is what makes the item identifiable — and the reminder is the part
+    ///   that asks the user to act.
+    static func menuBar(
+        today: BSDay?,
+        monthNames: MonthNameStyle,
+        dataset: CalendarDataset,
+        updateAvailable: Bool = false
+    ) -> String {
+        let reminder = updateAvailable ? "\(Strings.updateAvailableSpoken), " : ""
         guard let today else {
             // Past the supported range the label is a marker, not a date, and a
             // bare "n/a" spoken alone is meaningless — it reads as a broken
@@ -70,10 +81,10 @@ enum SpokenDate {
             // the dataset itself, so a table change moves this sentence with it
             // (ADR-0010: no range literal outside the dataset).
             guard let end = dataset.gregorianEnd else {
-                return "\(Strings.appNameForSpeech), \(Strings.bsDateUnavailable)"
+                return "\(Strings.appNameForSpeech), \(reminder)\(Strings.bsDateUnavailable)"
             }
-            return "\(Strings.appNameForSpeech), \(Strings.spokenDateBeyondRange(ad(end)))"
+            return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(ad(end)))"
         }
-        return "\(Strings.appNameForSpeech), \(bs(today, monthNames: monthNames))"
+        return "\(Strings.appNameForSpeech), \(reminder)\(bs(today, monthNames: monthNames))"
     }
 }

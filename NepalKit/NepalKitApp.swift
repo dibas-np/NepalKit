@@ -40,9 +40,10 @@ struct NepalKitApp: App {
         MenuBarExtra {
             PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, dataset: AppData.dataset)
         } label: {
-            // The shown label stays the short bare date; the announcement is a
-            // sentence that names the app and pronounces the date. Merging them
-            // would put "NepalKit," in the menu bar itself.
+            // The shown label stays the short date, prefixed only while an update
+            // is unattended; the announcement is a sentence that names the app
+            // and pronounces the date. Merging them would put "NepalKit," in the
+            // menu bar itself.
             Text(menuBarModel.title(
                 settings: settingsModel.settings,
                 updateAvailable: updateCheckModel.isShowingReminder

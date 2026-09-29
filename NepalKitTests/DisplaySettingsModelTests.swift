@@ -51,10 +51,26 @@ struct DisplaySettingsModelTests {
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         let spoken = bar.spokenTitle(settings: settings, updateAvailable: true)
-        #expect(spoken.hasPrefix(Strings.updateAvailableSpoken))
         #expect(!spoken.contains(Strings.menuBarUpdateMarker))
-        #expect(spoken.contains(Strings.appNameForSpeech), "the date is still announced after the reminder")
+        #expect(spoken.hasPrefix(Strings.appNameForSpeech), "the app name must stay first: \(spoken)")
+        #expect(spoken.contains(Strings.updateAvailableSpoken))
+        #expect(spoken.contains("Ashoj"), "the date is still announced after the reminder")
         #expect(bar.spokenTitle(settings: settings, updateAvailable: false) == bar.spokenTitle(settings: settings))
+    }
+
+    @Test("The reminder is still announced past the supported range")
+    func reminderSurvivesTheRangeBoundary() {
+        // The boundary replaces the date with an explanation, which is the
+        // longest thing this label ever says. A reminder that silently
+        // disappeared there would leave the user with no signal at all, in
+        // exactly the state where the menu bar is least useful.
+        let bar = MenuBarModel(
+            now: TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
+        )
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+
+        #expect(bar.title(settings: settings) == Strings.menuBarBeyondRange)
+        #expect(bar.spokenTitle(settings: settings, updateAvailable: true).contains(Strings.updateAvailableSpoken))
     }
 
     @Test("The marker never appears in the spoken channel of an unmarked menu bar")
