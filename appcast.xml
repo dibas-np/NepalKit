@@ -5,28 +5,45 @@
         <item>
             <title>1.1</title>
             <pubDate>Tue, 29 Sep 2026 01:04:35 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit</link>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/1.1</link>
             <sparkle:version>3</sparkle:version>
             <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <description sparkle:descriptionFormat="plain-text"><![CDATA[
-The popover is redesigned around the date:
-
-- Today's Bikram Sambat date is the hero — shown large, with the Gregorian
-  date and weekday beneath it. Today and Convert are now equal tabs.
-- A header bar carries the app name and the live Nepal Time clock.
-- A footer bar carries where you are on the left, and Settings, About, and
-  Quit on the right.
-- The local-time clock appears only when the local zone differs from Nepal Time.
-
-About now states that the licence covers the app code, and that the bundled
-calendar data is licensed separately.
-
-Note for 1.0 users: this version fixes the updater itself, so 1.0 cannot
-update in place — please install this one from the DMG. Automatic updates
-work from 1.1 onward.
+            <description><![CDATA[
+<b>Features:</b>
+<ul>
+<li>The popover is redesigned around the date: the Bikram Sambat date is the hero, shown large with the Gregorian date and weekday beneath it, and Today and Convert are now equal tabs — opening the popover to read the date no longer also presents three pickers and a conversion result.</li>
+<li>A header bar carries the app name and the live Nepal Time clock.</li>
+<li>A footer bar carries where you are on the left, and Settings, About and Quit on the right.</li>
+<li>The local-time clock appears only when the local zone actually differs from Nepal Time. Two identical clocks said nothing.</li>
+<li>Switching tabs cross-fades instead of replacing the content.</li>
+</ul>
+<b>Fixes:</b>
+<ul>
+<li>Updates install. The app was missing the Sparkle key a sandboxed app needs to launch its installer, so every in-app update aborted with an authorization error and the DMG was the only way in. From this version automatic updates work, and the update alert shows release notes.</li>
+<li>About now states that the licence covers the app code, and that the bundled calendar data is licensed separately.</li>
+<li>The once-a-second clock tick re-renders only the parts of the popover that show live time, and clock formatting reuses its calendar instead of rebuilding it every second.</li>
+</ul>
+<p>Note for 1.0: this version fixes the updater itself, so a 1.0 install cannot update in place — install 1.1 from the DMG this once. Automatic updates work from 1.1 onward.</p>
 ]]></description>
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.1/NepalKit-1.1.zip" length="3092158" type="application/octet-stream" sparkle:edSignature="/0QcgG2ZncQHX1SmX/DxphL1vpKani0LqJoOOQvQ6Xq2cNAfAnd7EMe2JinwGre3u1J+wmYtAQixuXFtCaaqDg=="/>
+        </item>
+        <item>
+            <title>1.0</title>
+            <pubDate>Mon, 28 Sep 2026 20:26:45 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/1.0</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>New:</b>
+<ul>
+<li>First release: today's Bikram Sambat date in the menu bar, with a popover carrying the full date, the Gregorian day beside it, and a Nepal Time clock anchored to UTC+5:45 regardless of the system time zone.</li>
+<li>A bounded Bikram Sambat ↔ Gregorian converter: day pickers follow the real month lengths and the dataset's supported range, so an invalid date cannot be picked.</li>
+<li>Launch at login on by default, digits in Latin or Devanagari, and month names in Nepali or transliterated — set once in Settings.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.0/NepalKit-1.0.zip" length="3042439" type="application/octet-stream" sparkle:edSignature="ecusJsbPPaEv2Md3mNxgicquzDHYDouGMauza+DuXHAyQfLLWWtaI5qY+ygqrmrTD+qfC3KEaT2rntefMQ/CBA=="/>
         </item>
     </channel>
 </rss>

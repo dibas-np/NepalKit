@@ -108,6 +108,42 @@ for match in re.finditer(r'<enclosure\b[^>]*\burl="([^"]*)"', patched):
 appcast.write_text(patched, encoding="utf-8")
 PYEOF
 
+# Embed the release notes. generate_appcast never writes descriptions, so
+# without this step every release would depend on remembering a hand edit
+# after generation — the same class of exactly-once edit as the url repoint
+# above. Notes live in scripts/release-notes/<version>.html as HTML fragments,
+# which Sparkle's alert renders, and are matched to items by
+# sparkle:shortVersionString. An item whose version has no notes file fails
+# the release: an unnoted update alert is the drift this step exists to
+# prevent. Re-running over an already-described item is a no-op.
+python3 - "$APPCAST" "${0:A:h}/release-notes" <<'PYEOF'
+import re
+import sys
+from pathlib import Path
+
+appcast, notes_dir = Path(sys.argv[1]), Path(sys.argv[2])
+raw = appcast.read_text(encoding="utf-8")
+
+def describe(match: "re.Match[str]") -> str:
+    block = match.group(0)
+    if "<description" in block:
+        return block
+    version = re.search(r"<sparkle:shortVersionString>([^<]+)</", block).group(1)
+    notes = notes_dir / f"{version}.html"
+    if not notes.exists():
+        sys.exit(f"no release notes for version {version}: expected {notes}")
+    body = notes.read_text(encoding="utf-8").strip()
+    return re.sub(
+        r"(\s*)<enclosure ",
+        lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
+        block,
+        count=1,
+    )
+
+described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
+appcast.write_text(described, encoding="utf-8")
+PYEOF
+
 # Verify each enclosure locally. Uses only the committed public key, so this is
 # safe to run anywhere - including CI, where the private key must never exist.
 STATUS=0
