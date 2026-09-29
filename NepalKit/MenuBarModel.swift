@@ -62,7 +62,7 @@ final class MenuBarModel {
     /// deliberately carries no warning badge, so the marker's job is only to stop
     /// the absence reading as a bug; the popover is where the boundary is
     /// actually stated in words.
-    func title(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String {
+    func title(settings: DisplaySettings, in dataset: CalendarDataset = AppData.dataset) -> String {
         guard let today = todayBS(now: now, in: dataset) else {
             return Strings.menuBarBeyondRange
         }
@@ -77,7 +77,7 @@ final class MenuBarModel {
     /// form a voice can actually pronounce. Splitting them is what keeps the
     /// menu bar from being made worse for everybody in order to help someone
     /// using speech — the visual stays exactly as short as it was.
-    func spokenTitle(settings: DisplaySettings, in dataset: CalendarDataset = .v2) -> String {
+    func spokenTitle(settings: DisplaySettings, in dataset: CalendarDataset = AppData.dataset) -> String {
         SpokenDate.menuBar(
             today: todayBS(now: now, in: dataset),
             monthNames: settings.monthNames,
