@@ -114,7 +114,21 @@ def release_dates(appcast: Path) -> dict[str, str]:
 
 
 def main() -> int:
-    appcast = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_APPCAST
+    name = Path(sys.argv[0]).name
+    if len(sys.argv) > 2:
+        print(f"usage: {name} [appcast.xml]", file=sys.stderr)
+        return 2
+
+    explicit = len(sys.argv) == 2
+    appcast = Path(sys.argv[1]) if explicit else DEFAULT_APPCAST
+    if explicit and not appcast.exists():
+        # Not the same as a repository that has shipped nothing yet. Both yield
+        # no dates, so treating them alike rewrote every released version as
+        # "unreleased" and wrote that to CHANGELOG.md with no diagnostic — and
+        # the release script commits the changelog it produces. A mistyped or
+        # not-yet-staged path has to fail here, where the operator can see it.
+        print(f"error: no appcast at {appcast}", file=sys.stderr)
+        return 1
     dates = release_dates(appcast) if appcast.exists() else {}
 
     sections = []
