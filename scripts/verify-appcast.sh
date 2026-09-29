@@ -93,8 +93,16 @@ URL_PREFIX="${URL_PREFIX%/}/"
 # in the archives directory it was pointed at; with none there it starts from
 # empty and writes a feed containing this release alone. The staging directory
 # is deliberately fresh (it is per-run and private, see package-release.sh), so
-# without this the published feed loses 1.0 and 1.1 and every install that
-# resolved an update through them loses its path back.
+# without this the feed would carry no history at all.
+#
+# Seeding is necessary but not sufficient: `generate_appcast` then keeps only the
+# newest few items and drops the rest on its own — seeding three prior releases
+# and adding a fourth yields three, with the oldest removed. That is the tool's
+# behaviour rather than a loss this script causes, and it strands nobody, since
+# an install on a pruned release is still offered the newest item. What it did
+# break was the changelog: `update-changelog.py` read its dates from the feed it
+# was handed, so a pruned release became "unreleased". It now takes history from
+# the committed feed and only the new date from staging.
 #
 # Read from the repository rather than from a copy: the committed appcast is
 # what the previous release published, so it is the one that must be carried

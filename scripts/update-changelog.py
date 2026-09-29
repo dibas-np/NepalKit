@@ -129,7 +129,13 @@ def main() -> int:
         # not-yet-staged path has to fail here, where the operator can see it.
         print(f"error: no appcast at {appcast}", file=sys.stderr)
         return 1
-    dates = release_dates(appcast) if appcast.exists() else {}
+    # History comes from the committed feed and only the new release's date from
+    # staging. `generate_appcast` prunes a feed to its newest few items, so the
+    # staged one legitimately stops carrying older releases — and a release that
+    # fell out of the feed must not become "unreleased" in the changelog.
+    dates = release_dates(DEFAULT_APPCAST) if DEFAULT_APPCAST.exists() else {}
+    if appcast.exists():
+        dates.update(release_dates(appcast))
 
     sections = []
     for path in sorted(NOTES_DIR.glob("*.html"), key=lambda p: version_key(p.stem), reverse=True):

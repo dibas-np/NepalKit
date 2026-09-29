@@ -4,6 +4,20 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.3.0 — unreleased
+
+### Nothing in the app itself has changed.
+
+This release exists because how NepalKit is numbered and installed changed, not because anything you can see or use did. If you are already on 1.2, there is no reason to take this one.
+
+### Install
+
+- NepalKit can now be installed with Homebrew, from the project’s own tap: brew install --cask dibas-np/tap/nepalkit. Pick that or the DMG, not both — Homebrew installs to the same place NepalKit does, and while Homebrew is told the app updates itself (so it will not reinstall over one that has moved forward), a Sparkle update after a Homebrew install leaves the two disagreeing about which version is installed.
+
+### Numbering
+
+- Versions now read three components — 1.3.0, not 1.3. The About window, the Git tag, and the Homebrew cask all show the same number because they are all derived from one value. Releases 1.0 to 1.2 keep the numbers they shipped with; their tags and downloads are not rewritten.
+
 ## 1.2 — 2026-09-29
 
 ### Fixes
