@@ -1,6 +1,10 @@
-# macOS 26+ floor, designed primarily against macOS 27
+# macOS 26.6 floor, designed primarily against macOS 27
 
-**Supersedes the Q7 floor decision (macOS 14+).** Minimum deployment target is macOS 26 (Tahoe); NepalKit is designed primarily against macOS 27, with no compatibility shims and no degraded UI paths for older systems. Apple HIG compliance is a standing principle throughout.
+**Supersedes the Q7 floor decision (macOS 14+).** Minimum deployment target is **macOS 26.6**; NepalKit is designed primarily against macOS 27, with no compatibility shims and no degraded UI paths for older systems. Apple HIG compliance is a standing principle throughout.
+
+The floor was 26.0 when this ADR was first written and is now 26.6, which is a narrowing and therefore a product decision like any other: it drops support for 26.0 through 26.5. It was raised to match what the app target had actually been building against — see the amendment below, which records a drift this repository had no gate for.
+
+`MACOSX_DEPLOYMENT_TARGET = 26.6` is stated in all four `XCBuildConfiguration` blocks. The two project-level ones matter as much as the app target's, because the test target inherits them and was still building against 26.0 while the app it tests required 26.6.
 
 macOS 26 and 27 may render Liquid Glass materials somewhat differently; those differences are OS behavior, not something NepalKit compensates for. Test on both and treat Apple's rendering differences as expected.
 
@@ -26,3 +30,41 @@ Why the footer specifically. Both its buttons carried `.buttonStyle(.plain)`, wh
 This is consistent with the floor rather than in tension with it. `.glass`, `GlassEffectContainer` and `.glassProminent` are all macOS 26 APIs — verified by compiling against the floor SDK with no `#available` gate, which is exactly the property ADR-0007's CI job checks. Nothing here is gated above the floor, so no availability check is needed anywhere.
 
 Note for the next audit: `Glass` has no `.prominent`. Emphasis is `.regular.tint(_:)` with an opacity. The footer deliberately uses `.glass` rather than `.glassProminent` on both buttons — Quit is the less likely of the two actions and tinting it would outrank Settings for someone who opened the app to read a date.
+
+## Amendment: the floor had drifted, and the feed followed it wrongly
+
+Raising the floor to 26.6 exposed a live bug rather than merely a stale number.
+
+The app target had been building at `MACOSX_DEPLOYMENT_TARGET = 26.6` while the two
+project-level configurations still said 26.0, and `package-release.sh` — the value
+`verify-appcast.py` reads as "the app's floor" — said 26.0 as well. So the
+built app carried `LSMinimumSystemVersion = 26.6` while the published feed
+declared `<sparkle:minimumSystemVersion>26.0` on all three items, and the
+verifier reported `minimumSystemVersion 26.0 matches the app's floor` and
+`Appcast is sound.`
+
+**That combination is the bug**: Sparkle offers an update to any system whose
+version is at or above the item's declared minimum, so macOS 26.0 through 26.5
+were being offered an update to a build that cannot launch there. The gate was
+green because it compared the feed against a *declared* floor that had drifted
+from the real one — the same failure mode as a control that is never exercised,
+just with a number instead of a control.
+
+Two things had to move together, and only one of them was code:
+
+- `MACOSX_DEPLOYMENT_TARGET` in all four configurations, and
+  `DEPLOYMENT_TARGET` in `package-release.sh`, are now 26.6. The verifier
+  derives its answer from the latter, so the two cannot now disagree.
+- The published `appcast.xml` was re-declared at 26.6 and **re-signed**. Editing
+  the feed invalidates its signature — the same ordering constraint as any other
+  feed change, for the same reason: `sign_update` signs the exact bytes it is
+  handed.
+
+The standing gap this leaves is worth naming. `verify-appcast.py` cannot read the
+floor from the source tree at all, because a source `Info.plist` carries the
+unexpanded `$(MACOSX_DEPLOYMENT_TARGET)` token; it reads `package-release.sh`
+instead. That indirection is a single point of failure with no gate on it — the
+build's own floor could drift from the release script's without anything failing.
+A gate that compared `package-release.sh` against the project file, or that read
+`LSMinimumSystemVersion` out of a freshly built product, would have caught it
+before a user could. Not done here; recorded.

@@ -9,7 +9,7 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.3.0</link>
             <sparkle:version>5</sparkle:version>
             <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <b>Nothing in the app itself has changed.</b>
 <p>This release exists because how NepalKit is numbered and installed changed, not because anything you can see or use did. If you are already on 1.2, there is no reason to take this one.</p>
@@ -30,7 +30,7 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <link>https://github.com/dibas-np/NepalKit/releases/tag/1.2</link>
             <sparkle:version>4</sparkle:version>
             <sparkle:shortVersionString>1.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <b>Fixes:</b>
 <ul>
@@ -48,7 +48,7 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <link>https://github.com/dibas-np/NepalKit/releases/tag/1.1</link>
             <sparkle:version>3</sparkle:version>
             <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <b>Features:</b>
 <ul>
@@ -70,6 +70,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: tywOAvy9hfKO86Y1iOIXVWIk0wO38K9TCb5Oqu2/qe2Qr9x7SrhL5BRq5fcwR6pDmB1zzV9Zt7NA65GvLdziBg==
+edSignature: VMyrezVvV2rIoFWosT97cv+sN87Egza/5Pyhpdaqtx48ui0WL7G9ykjhSnqNi90eIgDHWi3ILk3rTovJEHlNAg==
 length: 6821
 -->

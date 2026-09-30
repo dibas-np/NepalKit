@@ -12,7 +12,7 @@ APP=NepalKit
 # concurrent releases would collide. mktemp -d creates a 0700 directory whose
 # name cannot be guessed.
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
-DEPLOYMENT_TARGET=26.0
+DEPLOYMENT_TARGET=26.6
 ARCHIVE="$WORK/$APP.xcarchive"
 EXPORT_DIR="$WORK/${APP}-export"
 APP_PATH="$EXPORT_DIR/$APP.app"

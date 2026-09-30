@@ -48,7 +48,7 @@ def make_item(
     description: str | None = GOOD_NOTES,
     version: str = "1.0",
     include_enclosure: bool = True,
-    minimum_system_version: str | None = "26.0",
+    minimum_system_version: str | None = "26.6",
 ) -> str:
     parts = ["<item>", "<title>t</title>"]
     parts.append(f"<sparkle:shortVersionString>{version}</sparkle:shortVersionString>")
@@ -392,7 +392,7 @@ class VerifyAppcastTest(unittest.TestCase):
     def test_deployment_floor_is_read_from_the_release_script(self) -> None:
         # The floor is whatever package-release.sh builds as, not a number typed
         # into a second place that can drift from it.
-        self.assertEqual(va.deployment_floor(), "26.0")
+        self.assertEqual(va.deployment_floor(), "26.6")
         self.assertEqual(va.deployment_floor("15.0"), "15.0")
 
     def test_feed_floor_must_match_the_apps_floor(self) -> None:
@@ -402,16 +402,16 @@ class VerifyAppcastTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item(minimum_system_version="12.0"))
-            output = run_verify(self, feed, write_plist(tmp_path), "26.0")
-        self.assertIn("minimumSystemVersion is 12.0 but the app ships as 26.0", output)
+            output = run_verify(self, feed, write_plist(tmp_path), "26.6")
+        self.assertIn("minimumSystemVersion is 12.0 but the app ships as 26.6", output)
 
     def test_matching_feed_floor_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
-            feed = sign_feed(tmp_path, make_item(minimum_system_version="26.0"), priv)
-            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.0")
-        self.assertIn("minimumSystemVersion 26.0 matches the app's floor", output)
+            feed = sign_feed(tmp_path, make_item(minimum_system_version="26.6"), priv)
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.6")
+        self.assertIn("minimumSystemVersion 26.6 matches the app's floor", output)
 
     def test_absent_feed_floor_is_reported_not_ignored(self) -> None:
         # An item without the element tells Sparkle nothing about the floor.
@@ -420,7 +420,7 @@ class VerifyAppcastTest(unittest.TestCase):
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
             feed = sign_feed(tmp_path, make_item(minimum_system_version=None), priv)
-            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.0")
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.6")
         self.assertIn("no <sparkle:minimumSystemVersion>", output)
 
     def test_generation_seeds_the_staging_dir_with_the_live_feed(self) -> None:
