@@ -135,7 +135,11 @@ to assert:
   both version numbers), because if that merge ever stopped happening NepalKit
   would silently become a Dock app — the most visible regression available to
   this change, and equally invisible to a green build;
-- `SUFeedURL` is still absent, deliberately, until a feed is published.
+- `SUFeedURL` is present, and its shape is pinned as well as its value: HTTPS,
+  absolute, and served from this repository's own Pages host. It was deliberately
+  absent until the first feed was published and was added when the feed appeared;
+  pinning it is deliberate, because a feed URL that moves strands every
+  installed copy at once.
 
 Both of the first two were verified to fail when injected, with messages that
 name the consequence rather than the assertion.
@@ -200,13 +204,19 @@ installed copy reads — so it belongs under review with everything else.
 The URL is pinned by a test, because it is the one value here that cannot move
 without breaking updates for every installation at once.
 
-**Preconditions, none of which hold yet.** The repository is public and
-reachable, but it is **empty**: no branches, no commits, no releases, and Pages
-is not enabled. Every local commit exists only on this machine. So the feed URL
-is presently a declaration of intent and the appcast does not exist. A check
-against it returns "could not check" rather than a version, which the update
-model reports honestly rather than as up to date — but that must be fixed before
-any release ships, or every user is told the updater is broken.
+**Preconditions when this was written, none of which held yet.** At the time of
+this decision the repository was public and reachable but **empty** — no
+branches, no commits, no releases, and Pages not enabled, so every local commit
+existed only on the author's machine, and the feed URL was a declaration of
+intent rather than an address. A check against it returned "could not check"
+rather than a version, which the update model reported honestly rather than as
+up to date.
+
+**All of them now hold.** Corrected on 2026-09-30, when the feed had been
+published for three releases: `appcast.xml` is committed at the repository root
+and carries 1.1, 1.2 and 1.3.0, and Pages serves the URL above. The history is
+kept because the precondition is why the URL was pinned by a test rather than
+merely written down — a value nothing checks is a value that moves.
 
 **Sign the appcast, not only the archive.** `generate_appcast` can sign the
 appcast itself with the same EdDSA key. A signed archive proves the download was
