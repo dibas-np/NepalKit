@@ -140,6 +140,7 @@ struct PopoverView: View {
                 action(
                     Symbols.settings,
                     title: Strings.settingsLabel,
+                    spoken: Strings.settingsLabelSpoken,
                     help: Strings.settingsHelp
                 ) {
                     WindowPresentation.present(open: { openSettings() })
@@ -179,9 +180,16 @@ struct PopoverView: View {
     /// Tighter than a full-width row so three of them fit beside the position
     /// label, but still text: see the note at the call site for why these are not
     /// icon-only. The hint carries the purpose, which a glyph cannot.
+    ///
+    /// `spoken` exists because `title` feeds both channels from one argument:
+    /// `Label` shows it, `.accessibilityLabel` announces it, and a title may be
+    /// written with punctuation a voice misreads. Passing the announcement
+    /// separately is `AboutView.row`'s pattern; defaulting to the shown title
+    /// keeps every call site that has nothing to improve unchanged.
     private func action(
         _ symbol: String,
         title: String,
+        spoken: String? = nil,
         help: String,
         perform: @escaping () -> Void
     ) -> some View {
@@ -192,7 +200,7 @@ struct PopoverView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
+        .accessibilityLabel(spoken ?? title)
         .accessibilityHint(help)
     }
 }

@@ -40,13 +40,24 @@ enum Strings {
     static let updateAvailableSpoken = "update available"
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"
+    /// Spoken form of the Latin digit option. The shown label keeps its en dash
+    /// for the same reason `digitsDevanagariSpoken` keeps its Devanagari digits:
+    /// on screen the label is describing the range it selects, and only the
+    /// announcement is made pronounceable.
+    static let digitsLatinSpoken = "Latin 0-9"
     static let digitsDevanagari = "Devanagari ०–९"
     /// Spoken form of the Devanagari digit option. The shown label deliberately
     /// shows the digits it selects, but those are exactly the characters a voice
     /// may not read, which would leave the option unidentifiable when the two
     /// Settings pickers are read aloud. Same rule as the dates: the screen keeps
     /// the characters, only the announcement is made pronounceable.
-    static let digitsDevanagariSpoken = "Devanagari 0–9"
+    ///
+    /// The separator is a plain hyphen for the reason `supportedRangeSpoken`
+    /// spells its dash out: an en dash is unpredictable aloud — some voices say
+    /// "0 dash 9", some pause, some drop it. This string exists only to be
+    /// spoken, so unlike `digitsLatin` there is no shown counterpart whose
+    /// punctuation it has to keep.
+    static let digitsDevanagariSpoken = "Devanagari 0-9"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "Transliterated"
@@ -96,6 +107,10 @@ enum Strings {
     static let aboutHelp = "Opens the About window"
     static let quitHelp = "Quits NepalKit"
     static let settingsLabel = "Settings…"
+    /// Spoken form: the ellipsis is a visual affordance marking an action that
+    /// continues past the footer, and there is nothing to add by saying it —
+    /// "Settings" is the whole action.
+    static let settingsLabelSpoken = "Settings"
     // Spoken-channel strings. These are *said*, never shown: the visual date
     // always renders as configured, and only the accessibility representation
     // differs (SpokenDate).
@@ -116,6 +131,10 @@ enum Strings {
     static let updatesSection = "Software Update"
     static let updateAutomaticallyLabel = "Check automatically"
     static let checkForUpdatesLabel = "Check for Updates…"
+    /// Spoken form: the ellipsis is a visual affordance, not a spoken one. Shown,
+    /// it marks a control that opens a sheet elsewhere; aloud it buys a pause and
+    /// no meaning.
+    static let checkForUpdatesLabelSpoken = "Check for Updates"
     static let updateStatusNotChecked = "Not checked yet"
     static let updateStatusUpToDate = "NepalKit is up to date"
     static let updateStatusUpdateAvailable = "An update is available"

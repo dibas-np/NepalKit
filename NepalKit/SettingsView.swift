@@ -29,7 +29,12 @@ struct SettingsView: View {
         Form {
             Section(Strings.displaySection) {
                 Picker(Strings.digitScriptLabel, selection: $settings.digits) {
-                    Text(Strings.digitsLatin).tag(DigitScript.latin)
+                    // The en dash shows the range on screen, where it reads
+                    // correctly; announced, it is unpredictable, so this option
+                    // speaks a plain hyphen. Same split as the option below.
+                    Text(Strings.digitsLatin)
+                        .tag(DigitScript.latin)
+                        .accessibilityLabel(Strings.digitsLatinSpoken)
                     Text(Strings.digitsDevanagari)
                         .tag(DigitScript.devanagari)
                         // The option announces with Latin digits so it stays
@@ -68,7 +73,12 @@ struct SettingsView: View {
             }
 
             Section(Strings.updatesSection) {
+                // The shown title keeps its ellipsis, which marks a control that
+                // opens a sheet elsewhere. Spoken it is a pause and no meaning,
+                // so the announcement drops it. No `.combine` is needed for the
+                // label to win, exactly as for the launch-at-login control below.
                 Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
+                    .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
 
                 Toggle(isOn: $updates.automaticallyChecks) {
                     Text(Strings.updateAutomaticallyLabel)
