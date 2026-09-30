@@ -5,7 +5,12 @@ import NepalKitCore
 
 /// Persists the two display axes in UserDefaults. The store stays
 /// dumb and injectable so persistence is testable without the app running.
-struct SettingsStore {
+///
+/// `nonisolated` because the Siri intents read it from `perform()`, which
+/// runs off the main actor (ticket 03's mechanic: no UI launch, no actor
+/// hop). UserDefaults operations are thread-safe, and every member is a
+/// trivial value read or write, so nothing here needs an actor.
+nonisolated struct SettingsStore {
     static let digitScriptKey = "digitScript"
     static let monthNameStyleKey = "monthNameStyle"
 
