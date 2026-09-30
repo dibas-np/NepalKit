@@ -134,15 +134,71 @@ def ed25519_keypair_and_signature(tmp: Path, payload: bytes) -> tuple[str, str]:
     return base64.b64encode(public_key).decode(), base64.b64encode(sig.read_bytes()).decode()
 
 
-def run_cli(*args: str) -> subprocess.CompletedProcess:
+def run_cli(*args: str, cwd: str | None = None) -> subprocess.CompletedProcess:
     """Run the verifier the way CI and the release script do, as a subprocess.
 
     The return code is the part under test, so it has to come from the process
     boundary rather than from an in-process call.
     """
     return subprocess.run(
-        [sys.executable, str(_MODULE), *args], capture_output=True, text=True
+        [sys.executable, str(_MODULE), *args], capture_output=True, text=True, cwd=cwd
     )
+
+
+def write_notes_dir(tmp: Path, notes: dict[str, str]) -> Path:
+    """A scratch release-notes directory: `notes` maps version to HTML body."""
+    notes_dir = tmp / "release-notes"
+    notes_dir.mkdir(exist_ok=True)
+    for version, body in notes.items():
+        (notes_dir / f"{version}.html").write_text(body, encoding="utf-8")
+    return notes_dir
+
+
+def make_generated_item(version: str, description: str | None = None) -> str:
+    """An item shaped the way generate_appcast writes one, newlines included.
+
+    `make_item` is a single line, so the `(\\s*)<enclosure ` splice is only ever
+    exercised against an empty whitespace group there. This one puts the
+    enclosure on its own 12-space line, which is what the committed feed looks
+    like, so the replacement template's indent is pinned against real input
+    rather than only against a one-line fixture.
+    """
+    parts = [
+        "        <item>\n",
+        f"            <title>{version}</title>\n",
+        f"            <sparkle:shortVersionString>{version}</sparkle:shortVersionString>\n",
+    ]
+    if description is not None:
+        parts.append(f"            <description><![CDATA[\n{description}\n]]></description>\n")
+    parts.append(
+        f'            <enclosure url="https://example.com/NepalKit-{version}.zip" '
+        f'length="1234" sparkle:edSignature="{VALID_SIGNATURE}"/>\n'
+        "        </item>\n"
+    )
+    return "".join(parts)
+
+
+def run_embed(test: unittest.TestCase, feed: Path, notes_dir: Path) -> str:
+    """Call embed_notes expecting a release-stopping SystemExit; return its message.
+
+    The message is the SystemExit's code, not 1: these two failures are
+    `sys.exit(f"...")`, which puts the text on stderr, where `fail()`'s stdout
+    reporting could not go. That difference is the contract, so it is asserted
+    rather than flattened into an exit status.
+    """
+    with test.assertRaises(SystemExit) as ctx:
+        with contextlib.redirect_stdout(io.StringIO()):
+            va.embed_notes(feed, notes_dir)
+    test.assertIsInstance(ctx.exception.code, str)
+    return ctx.exception.code
+
+
+def capture_embed(feed: Path, notes_dir: Path) -> str:
+    """Embed for real, returning what it printed."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        va.embed_notes(feed, notes_dir)
+    return buf.getvalue()
 
 
 def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
@@ -506,6 +562,198 @@ class VerifyAppcastTest(unittest.TestCase):
             self.assertEqual(len(signature), 64)
             self.assertTrue(va.verify_signature(public_key, data, signature))
             self.assertFalse(va.verify_signature(public_key, data + b"x", signature))
+
+
+class EmbedNotesTest(unittest.TestCase):
+    """The release-notes injection, which is a mutation and not a check.
+
+    Every one of these used to be reachable only by running a full release: the
+    logic was a heredoc inside verify-appcast.sh, so a bug in it surfaced as a
+    published feed rather than as a red test. It is a different operation from
+    verification - it rewrites the file, and it is what makes the verifier's own
+    `<description>` contract meaningful a moment later - so it is pinned here
+    rather than through the CLI's verify path.
+    """
+
+    def test_an_undescribed_item_gets_the_notes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            original = feed.read_text(encoding="utf-8")
+            capture_embed(feed, write_notes_dir(tmp_path, {"0.0": GOOD_NOTES}))
+            out = feed.read_text(encoding="utf-8")
+        self.assertIn(f"<description><![CDATA[\n{GOOD_NOTES}\n]]></description>", out)
+        # Exactly one block, and removing it gives the input back byte for byte:
+        # the description is the only thing this operation may change.
+        inserted = f"\n            <description><![CDATA[\n{GOOD_NOTES}\n]]></description>\n            "
+        self.assertEqual(out.count(inserted), 1)
+        self.assertEqual(out.replace(inserted, ""), original)
+        # ...and it landed where the contract says: immediately before the
+        # enclosure, taking the whitespace that preceded it.
+        self.assertIn(f"]]></description>\n            <enclosure ", out)
+
+    def test_the_splice_matches_the_committed_feeds_own_indentation(self) -> None:
+        # The replacement template hardcodes a 12-space indent, and the committed
+        # feed's formatting depends on it: an item spliced at any other depth is
+        # a feed that reads as hand-edited in the middle of a generated document.
+        body = "<p>one</p>"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_generated_item("0.0"))
+            original = feed.read_text(encoding="utf-8")
+            capture_embed(feed, write_notes_dir(tmp_path, {"0.0": body}))
+            out = feed.read_text(encoding="utf-8")
+        self.assertIn(
+            f"            <description><![CDATA[\n{body}\n]]></description>\n"
+            f"            <enclosure url=",
+            out,
+        )
+        # The 12 spaces that preceded the enclosure are consumed, not doubled.
+        self.assertEqual(out.replace(f"\n            <description><![CDATA[\n{body}\n"
+                                     f"]]></description>\n            <enclosure ", "\n            <enclosure "), original)
+
+    def test_running_twice_changes_nothing_the_second_time(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            notes_dir = write_notes_dir(tmp_path, {"0.0": GOOD_NOTES})
+            capture_embed(feed, notes_dir)
+            once = feed.read_bytes()
+            capture_embed(feed, notes_dir)
+            twice = feed.read_bytes()
+        self.assertEqual(twice, once)
+
+    def test_an_already_described_item_is_left_alone(self) -> None:
+        # Both halves of the exactly-once rule. First: a notes file exists for
+        # this version and says something *different*, and the description
+        # already in the feed still wins - otherwise a re-run over a published
+        # feed would quietly rewrite release history. Second: an item with no
+        # notes file at all is also left alone, so the early return has to come
+        # before the lookup; a re-run would otherwise start failing a release the
+        # moment a notes file was renamed or removed.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            described = write_feed(tmp_path, make_item(version="1.0"))
+            # A second feed at its own path: write_feed always names feed.xml.
+            undescribed = tmp_path / "undescribed.xml"
+            undescribed.write_text(
+                RSS_OPEN + make_item(description=None, version="1.0") + RSS_CLOSE,
+                encoding="utf-8",
+            )
+            original = described.read_bytes()
+            # A notes file for the same version saying something different.
+            conflicting = write_notes_dir(tmp_path, {"1.0": "<p>SOMETHING ELSE</p>"})
+            reported = capture_embed(described, conflicting)
+            after = described.read_bytes()
+            # Now the other half: describe it, then take its notes away and run
+            # again. The second run has nothing to embed and nothing to look up.
+            capture_embed(undescribed, conflicting)
+            (conflicting / "1.0.html").unlink()
+            capture_embed(undescribed, conflicting)
+            after_undescribed = undescribed.read_bytes()
+        self.assertEqual(after, original)
+        self.assertNotIn(b"SOMETHING ELSE", after)
+        # Described on the first run, and the second run did not add a second
+        # description to it.
+        self.assertEqual(after_undescribed.count(b"<description>"), 1)
+        # It still says what it did. A step that silently rewrites a file about
+        # to be published is the kind of absence nobody notices.
+        self.assertTrue(reported.startswith("  ok    "), reported)
+
+    def test_the_notes_file_is_trimmed_before_it_is_embedded(self) -> None:
+        # Every notes file in scripts/release-notes/ ends with a newline, so
+        # without the strip every release embeds a trailing blank line into the
+        # description. That is invisible in the feed and shows up as a diff
+        # against the committed file, so the trim is pinned here.
+        body = "\n  <p>one</p>\n\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            original = feed.read_text(encoding="utf-8")
+            capture_embed(feed, write_notes_dir(tmp_path, {"0.0": body}))
+            out = feed.read_text(encoding="utf-8")
+        self.assertIn("<description><![CDATA[\n<p>one</p>\n]]></description>", out)
+        self.assertEqual(out.replace(f"\n            <description><![CDATA[\n<p>one</p>\n"
+                                     f"]]></description>\n            ", ""), original)
+
+    def test_a_version_with_no_notes_file_stops_the_release(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            original = feed.read_bytes()
+            notes_dir = write_notes_dir(tmp_path, {"9.9": GOOD_NOTES})
+            message = run_embed(self, feed, notes_dir)
+            self.assertIn(f"no release notes for version 0.0: expected {notes_dir / '0.0.html'}", message)
+            after = feed.read_bytes()
+        # The unnoted feed must not be written on the way out. An update alert
+        # with no release notes is the drift; a half-written file is worse.
+        self.assertEqual(after, original)
+
+    def test_notes_containing_cdata_end_are_refused(self) -> None:
+        # A `]]>` inside the body would close the CDATA block early, so the rest
+        # of the fragment would be parsed as markup by every reader.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            original = feed.read_bytes()
+            notes_dir = write_notes_dir(tmp_path, {"0.0": "<p>a]]>b</p>"})
+            message = run_embed(self, feed, notes_dir)
+            self.assertIn("0.0.html: contains ]]>", message)
+            self.assertIn("corrupt the feed", message)
+            after = feed.read_bytes()
+        self.assertEqual(after, original)
+
+    def test_one_missing_file_aborts_the_whole_pass_without_writing(self) -> None:
+        # The first item has notes and the second does not. The injection is
+        # built entirely in memory and written once at the end, so the item that
+        # could be described is *not* persisted: a partial embed would publish a
+        # feed with a silent hole in it, which is strictly worse than a release
+        # that stopped.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(
+                tmp_path,
+                make_item(description=None, version="0.0")
+                + make_item(description=None, version="0.1", url="https://example.com/NepalKit-0.1.zip"),
+            )
+            original = feed.read_bytes()
+            notes_dir = write_notes_dir(tmp_path, {"0.0": GOOD_NOTES})
+            message = run_embed(self, feed, notes_dir)
+            self.assertIn("no release notes for version 0.1", message)
+            after = feed.read_bytes()
+        self.assertEqual(after, original)
+
+    def test_the_embed_needs_no_info_plist_and_runs_no_check(self) -> None:
+        # It is a mutation, not a verification: no public key, no enclosure, no
+        # fetch. The cwd below holds no Info.plist, so this passes only because
+        # main() short-circuits before the --info-plist existence test - and the
+        # second half of the pair is the control, proving that test is still
+        # there for the mode that does need it.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
+            notes_dir = write_notes_dir(tmp_path, {"0.0": GOOD_NOTES})
+            embedded = run_cli(str(feed), "--embed-notes", str(notes_dir), cwd=str(tmp_path))
+            verify = run_cli(str(feed), "--skip-crypto", cwd=str(tmp_path))
+        self.assertEqual(embedded.returncode, 0, f"{embedded.stdout}{embedded.stderr}")
+        self.assertNotEqual(verify.returncode, 0)
+        self.assertIn("does not exist", verify.stdout)
+
+    def test_the_shell_delegates_the_embed_to_the_verifier(self) -> None:
+        # The heredoc is gone: the same contract, in a place that has a suite.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        self.assertNotIn("PYEOF", script)
+        self.assertIn(
+            'python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"', script
+        )
+        # Still before the verification loop, and still its own top-level step:
+        # under `set -e` a non-zero exit here has to stop the release, and an
+        # `|| STATUS=1` swallow would let an unnoted feed through to publication.
+        embed_at = script.index('--embed-notes "${0:A:h}/release-notes"')
+        verify_at = script.index('--enclosure "$archive"')
+        self.assertLess(embed_at, verify_at)
+        line = script[:embed_at].rsplit("\n", 1)[-1]
+        self.assertTrue(line.startswith("python3 "), f"embed call is not a bare command: {line!r}")
 
 
 if __name__ == "__main__":
