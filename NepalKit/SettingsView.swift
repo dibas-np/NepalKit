@@ -163,9 +163,21 @@ private struct SettingsIdentityStrip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        // Glass, on the strip's own content, for the reason the Menu Bar tab's
+        // value gives at length: Liquid Glass is only visible where nothing paints
+        // over it, and `.bar` is opaque. Applying the material to a transparent
+        // layer *inside* the strip and letting the content sit on top of it is
+        // what makes it show, rather than putting a `glassEffect` somewhere
+        // further out where the strip's own background covers it.
+        .background {
+            GlassEffectContainer(spacing: 0) {
+                Rectangle()
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect)
+            }
+        }
         // A Divider above, because without it the strip reads as content belonging
         // to whichever tab is selected rather than as part of the window.
-        .background(.bar)
         .overlay(alignment: .top) { Divider() }
     }
 }

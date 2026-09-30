@@ -27,17 +27,29 @@ struct MenuBarSettingsView: View {
     var body: some View {
         Form {
             Section {
+                // Glass on the value itself, not on the form.
+                //
+                // Liquid Glass is only visible where nothing paints over it, and a
+                // `Form(.grouped)` section paints its own background across the
+                // full width. An earlier attempt put `.glassEffect` on the whole
+                // window instead, where it was invisible for the same reason and
+                // then swallowed clicks. The rule worth keeping: the material goes
+                // on the control, never behind the chrome.
                 Text(preview)
                     .font(.body.monospacedDigit())
-                    // The value is the point of the row, so it is not decoration.
                     .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                    // The value is the point of the row, so it is not decoration.
                     .accessibilityLabel(Strings.menuBarPreviewCaption)
                     .accessibilityValue(preview)
             } header: {
                 Text(Strings.menuBarPreviewCaption)
             } footer: {
-                // Names what the two lines are, since the value alone ("12 Ashoj
-                // 2083") gives no clue it is a menu bar.
+                // Names what the spoken form is, since the value alone
+                // ("12 Ashoj 2083") gives no clue it is a menu bar.
                 Text(spokenPreview)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
