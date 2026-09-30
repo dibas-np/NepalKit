@@ -226,7 +226,7 @@ Then, in the data block:
    construction rather than corrupting conversions.
 3. **Verify `gregorianEnd`; never hand-edit what derives.** It is computed from
    `supportedRange.upperBound`'s Chaitra month length, is documented as "derived,
-   never stored", and is what both the About surface and the spoken boundary
+   never stored", and is what both the About tab's supported-range row and the spoken boundary
    sentence read — so the table change moves the Gregorian end on its own and
    there is no Gregorian literal to hunt down. Confirm the new value rather than
    typing one in.

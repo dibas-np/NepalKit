@@ -24,9 +24,9 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
-    /// The updater is constructed and started at launch (NepalKitApp), so the tab
-    /// always has a model to read; its outcome state comes from the same instance
-    /// the background check reports into.
+    /// The updater is constructed and started at launch (NepalKitApp), so the About
+    /// tab always has a model to read; its outcome state comes from the same
+    /// instance the background check reports into.
     @Bindable var updates: UpdateCheckModel
     /// Read by the Menu Bar preview so that tab cannot disagree with the real
     /// menu-bar label. Deliberately not `@Bindable`: the preview shows the label,
@@ -42,12 +42,17 @@ struct SettingsView: View {
     @State private var tab: SettingsTab = SettingsTab.landingTab
 
     var body: some View {
-        // A split view rather than a `TabView` with `.sidebarTabViewStyle`, and
-        // the reason is the footer: a `TabView` sidebar owns its whole column, so
-        // there is nowhere to put the app icon, version and repository link below
-        // the destinations. A split-view sidebar is a `List` this view builds, so
-        // the last row can be anything. Three destinations in a list is also the
-        // shape System Settings itself uses.
+        // A split view rather than a `TabView`, and the reason is the footer: a
+        // `TabView` owns its whole sidebar column, so there is nowhere to put the
+        // identity strip below the destinations. A split-view sidebar is a `List`
+        // this view builds, so the last row can be anything.
+        //
+        // Worth recording that the sidebar styles were not a free choice here. On
+        // this SDK the available `TabViewStyle` statics are `automatic`, `carousel`,
+        // `grouped`, `page`, `sidebarAdaptable`, `tabBarOnly` and `verticalPage` —
+        // there is no `sidebarTabViewStyle`. `sidebarAdaptable` is the sidebar one,
+        // and it adapts to a tab bar in compact layouts, which a fixed-width
+        // preferences window never is.
         NavigationSplitView {
             sidebar
         } detail: {
@@ -98,11 +103,14 @@ struct SettingsView: View {
         case .general:
             GeneralSettingsView(
                 settings: settings,
-                loginItem: loginItem,
-                updates: updates
+                loginItem: loginItem
             )
         case .about:
-            AboutView(metadata: metadata, dataset: dataset)
+            AboutSettingsView(
+                updates: updates,
+                metadata: metadata,
+                dataset: dataset
+            )
         }
     }
 }
@@ -148,16 +156,11 @@ private struct SettingsSidebarFooter: View {
             // comes from the build's metadata, so it cannot drift from the remote
             // the app was published from.
             if let repository = metadata.repositoryURL {
-                Link(destination: repository) {
-                    Label(Strings.repositoryLabel, systemImage: Symbols.repository)
-                        .font(.caption)
-                        .symbolRenderingMode(.monochrome)
-                }
-                .accessibilityLabel(Strings.repositoryLabel)
-                // The title says what the link is; the destination is the part a
-                // sighted user reads off the screen and a blind user otherwise
-                // never learns, so it becomes the value.
-                .accessibilityValue(repository.absoluteString)
+                RepositoryGhostLink(repository: repository)
+                    // Trailing, so it sits against the sidebar's right edge the way
+                    // a window's toolbar accessory does rather than starting a row
+                    // of its own under the version.
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .padding(.horizontal, 12)
@@ -167,6 +170,49 @@ private struct SettingsSidebarFooter: View {
         // the identity strip reading as a fourth, unselectable destination.
         .background(.bar)
         .overlay(alignment: .top) { Divider() }
+    }
+}
+
+/// The repository link, as a glyph that only becomes a button when you point at it.
+///
+/// Ghost treatment: invisible at rest, `.clear` glass on hover, `.regular`
+/// interactive glass while hovered. The three states matter separately — `.clear`
+/// keeps the shape sampling but shows no material, so the resting strip has no
+/// visual weight at all, and `.interactive()` on the hovered state is what makes
+/// it respond to the pointer rather than only to the cursor's position.
+///
+/// A square hit target around a small glyph: 22pt is under the 28pt minimum
+/// comfortable target, so the frame is what makes it reliably clickable rather
+/// than an icon you have to aim at.
+///
+/// The title is kept on the label and hidden with `.iconOnly`, so the accessible
+/// name survives — the same reason the popover's gear does it that way. A bare
+/// `Image` here would be announced as nothing at all, and this is the one control
+/// in the window whose entire job is to be identified.
+private struct RepositoryGhostLink: View {
+    let repository: URL
+    @State private var hovering = false
+
+    var body: some View {
+        Link(destination: repository) {
+            Label(Strings.repositoryLabel, systemImage: Symbols.repository)
+                .labelStyle(.iconOnly)
+                .font(.caption)
+                .symbolRenderingMode(.monochrome)
+                .frame(width: 22, height: 22)
+        }
+        .buttonStyle(.plain)
+        // Ghost: `.clear` at rest so nothing shows until the pointer arrives, then
+        // real glass. Applied after the frame and the label style, because glass
+        // wraps whatever layout it is given and sampling the wrong bounds is what
+        // makes it look detached from its content.
+        .glassEffect(hovering ? .regular.interactive() : .clear, in: .rect(cornerRadius: 6))
+        .onHover { hovering = $0 }
+        .accessibilityLabel(Strings.repositoryLabel)
+        // The label says what the link is; the destination is the part a sighted
+        // user reads off the screen and a blind user otherwise never learns, so it
+        // becomes the value.
+        .accessibilityValue(repository.absoluteString)
     }
 }
 

@@ -226,11 +226,14 @@ struct SpokenOptionLabelTests {
         let shownThatNeverAnnounces: Set<String> = ["weekdaySeparator"]
         // A `static let` this cannot read a value out of is a hole in the sweep,
         // so it is named rather than skipped — which is what makes the constant
-        // added tomorrow fail instead of going unchecked. These two are
-        // multi-line prose shown verbatim on the About surface and neither
-        // carries typographic punctuation: a claim about their text rather than
-        // a machine check, so it is checkable at the declaration.
-        let proseTheParserCannotRead: Set<String> = ["licenseScopeNote", "calendarDataAttribution"]
+        // added tomorrow fail instead of going unchecked. `licenseScopeNote` was
+        // one: multi-line prose shown verbatim on the About surface, carrying no
+        // typographic punctuation, so it could only be checked by reading it. It
+        // went with that surface. The set is kept rather than deleted because the
+        // parser's blind spot is real — the next multi-line string added will hit
+        // it — and an empty set here is the honest way to say "none today" while
+        // leaving the exemption mechanism in place.
+        let proseTheParserCannotRead: Set<String> = []
 
         var offenders: [String] = []
         let constants = try declaredStringConstants()

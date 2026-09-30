@@ -144,6 +144,10 @@ nonisolated enum Strings {
     static let menuBarTabTitle = "Menu Bar"
     static let generalTabTitle = "General"
     static let aboutTabTitle = "About"
+    /// Stands in for the build's provenance on the About tab's version row. The
+    /// row names the version; this says that is the version you are running, as
+    /// opposed to a version some other build reports.
+    static let aboutCurrentBuild = "This build"
     /// What the Menu Bar tab shows: the literal menu-bar text. The caption names
     /// where the value is actually rendered, because a date in a preferences
     /// window is otherwise indistinguishable from a setting.
@@ -220,7 +224,6 @@ nonisolated enum Strings {
     /// About surface. The calendar range is formatted from the dataset's own
     /// bounds, so narrowing or extending the table moves this line with it.
     static func versionLabel(_ version: String) -> String { "Version \(version)" }
-    static func datasetVersionLabel(_ version: String) -> String { "Dataset \(version)" }
     static func supportedRange(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound)–\(range.upperBound) BS"
     }
@@ -231,24 +234,6 @@ nonisolated enum Strings {
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
     }
-    static let calendarDataLabel = "Calendar data"
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
-    static let licenseLabel = "Licence"
-    /// The GPL covers the app code only. The bundled calendar table carries no
-    /// licence from this project at all — a note implying it is "licensed
-    /// separately" would claim a licence exists, which is the overclaim
-    /// SOURCES.md exists to prevent (ADR-0010).
-    static let licenseScopeNote =
-        "Applies to the app code. The bundled calendar data carries no licence from "
-        + "this project; see SOURCES.md in the repository."
-    /// Says what the cross-check established and no more. The table is
-    /// corroborated against a second community source, but every shipped year is
-    /// still derived from one base table, so this must not read as independent
-    /// licensing (ADR-0010).
-    static let calendarDataAttribution = """
-        Month lengths follow the officially published Nepali Patro and are \
-        cross-checked month-by-month against community tables. The table is \
-        derived from those sources across its whole range.
-        """
 }

@@ -3,23 +3,18 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "General" tab: display, startup, and software update.
+/// The "General" tab: what the app shows, and whether it starts at login.
 ///
-/// Split out of `SettingsView` because that type is now the window — a split
-/// view with a sidebar and a tab switcher — and the three sections are one
-/// destination among three. Keeping them in the window's own type would mean a
-/// file holding a layout and three unrelated forms.
+/// Split out of `SettingsView` because that type is now the window — a split view
+/// with a sidebar and a tab switcher — and these two sections are one destination
+/// among three. Keeping them in the window's own type would mean a file holding a
+/// layout and two unrelated forms.
 ///
-/// Nothing here moved or changed meaning; the sections and their order are the
-/// ones the single-column form had. What changed is the container: a tab's `Form`
-/// carries its own inset and grouping, so the width floor moved with the content.
+/// Software update is not here. It moved to the About tab, beside the version it
+/// updates, so the updater is no longer split across two destinations.
 struct GeneralSettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
-    /// The updater is constructed and started at launch (NepalKitApp), so the
-    /// section always exists; it reads its outcome state from the same model
-    /// the background check reports into.
-    @Bindable var updates: UpdateCheckModel
 
     var body: some View {
         Form {
@@ -68,47 +63,18 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            Section(Strings.updatesSection) {
-                // The shown title keeps its ellipsis, which marks a control that
-                // opens a sheet elsewhere. Spoken it is a pause and no meaning,
-                // so the announcement drops it. No `.combine` is needed for the
-                // label to win, exactly as for the launch-at-login control above.
-                Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
-                    .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
-
-                Toggle(isOn: $updates.automaticallyChecks) {
-                    Text(Strings.updateAutomaticallyLabel)
-                }
-
-                if let status = updates.statusText {
-                    // A plain Text already announces itself. Left
-                    // unmodified rather than given a redundant label.
-                    Text(status)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
         .formStyle(.grouped)
     }
 }
 
 #if DEBUG
-/// Preview stand-ins so the canvas renders without Sparkle, the login-item
-/// service, or persistence side effects. Nothing else may use these: the
-/// production seams live in NepalKitApp, and a mock that leaked past #if DEBUG
-/// would silently replace the real services. `PreviewUpdateService` is
-/// MainActor because `UpdateServicing` requires it; `PreviewLoginService` stays
-/// nonisolated because `LoginItemServicing` is nonisolated, and a MainActor
-/// conformance only satisfies that protocol where default isolation agrees.
-@MainActor private final class PreviewUpdateService: UpdateServicing {
-    var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
-    var onReminder: (@MainActor (Bool) -> Void)?
-    var automaticallyChecksForUpdates = true
-    func start() {}
-    func checkForUpdates() {}
-}
-
+/// Preview stand-in so the canvas renders without the login-item service or
+/// persistence side effects. Nothing else may use this: the production seam lives
+/// in NepalKitApp, and a mock that leaked past #if DEBUG would silently replace
+/// the real service. It stays nonisolated because `LoginItemServicing` is
+/// nonisolated, and a MainActor conformance only satisfies that protocol where
+/// default isolation agrees.
 private final class PreviewLoginService: LoginItemServicing {
     var isRegistered = true
     func register() throws {}
@@ -118,8 +84,7 @@ private final class PreviewLoginService: LoginItemServicing {
 #Preview("General tab") {
     GeneralSettingsView(
         settings: .preview,
-        loginItem: LoginItemModel(service: PreviewLoginService()),
-        updates: UpdateCheckModel(service: PreviewUpdateService())
+        loginItem: LoginItemModel(service: PreviewLoginService())
     )
     .frame(width: 460)
 }
