@@ -127,25 +127,29 @@ struct PopoverView: View {
 
                 Spacer(minLength: 8)
 
-                // Icon only. The gear is the conventional mark for this action on
-                // macOS and it is unambiguous to a sighted user, so the words buy
-                // nothing next to it in a 340pt bar. The accessible name is set
-                // explicitly below, which is what a bare glyph otherwise lacks —
-                // System Events reports `AXName` as missing for an unlabelled one,
-                // and the surviving text-free button would then be announced as
-                // just "button".
+                // Icon only, and the gear is the conventional mark for this action
+                // on macOS, so the words buy nothing beside it in a 340pt bar.
                 //
-                // This is the one place in the app where a glyph is shown without
-                // its text, so it carries the naming burden the other actions used
-                // to carry with visible titles.
-                Button {
+                // `.labelStyle(.iconOnly)` rather than a bare `Image`. Apple's
+                // guidance is to keep the title on the label and drop it visually,
+                // so the name survives in the accessibility tree instead of being
+                // re-attached by hand: a label that is only an image has no name of
+                // its own, and the documented alternative to a hand-written
+                // `.accessibilityLabel` is to not discard the title in the first
+                // place. It is also what lets this button render correctly if it is
+                // ever moved into a toolbar or a menu, where SwiftUI decides
+                // whether to show the title.
+                Button(Strings.settingsLabel, systemImage: Symbols.settings) {
                     WindowPresentation.present(open: { openSettings() })
-                } label: {
-                    Image(systemName: Symbols.settings)
-                        .symbolRenderingMode(.monochrome)
                 }
+                .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
                 .font(.caption)
+                .symbolRenderingMode(.monochrome)
+                // The title keeps its ellipsis, which marks an action that
+                // continues past this surface. That is a visual affordance and
+                // reads as nothing aloud, so the announcement drops it — the same
+                // two-channel split the title-and-glyph buttons below use.
                 .accessibilityLabel(Strings.settingsLabelSpoken)
                 .accessibilityHint(Strings.settingsHelp)
 
