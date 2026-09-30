@@ -45,6 +45,15 @@ request, with no local symptom.
 If you hit something 26.6 cannot compile, that is a regression against a claim
 the gate now enforces — report it rather than working around it locally.
 
+**The app target compiles in Swift 6 language mode** — `SWIFT_VERSION = 6.0`
+with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, in `project.pbxproj` — and the
+SwiftPM harness must stay in that same language mode. The two are separate
+compilers over the same sources: `xcodebuild build` compiles what ships and
+`./scripts/run-app-tests.sh` compiles the sources it symlinks, and the harness
+excludes the two files most in need of strict checking, so if the modes drift
+apart the shipping configuration is left unchecked by any gate. Change one and
+change the other in the same commit.
+
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
 cd NepalKit

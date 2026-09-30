@@ -8,7 +8,7 @@
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B-black?style=flat-square&logo=apple" alt="macOS 26+">
-  <img src="https://img.shields.io/badge/Swift-6.4%2B-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4+">
+  <img src="https://img.shields.io/badge/Xcode-26.6%2B-0B84F3?style=flat-square&logo=xcode" alt="Xcode 26.6+">
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=Build&style=flat-square" alt="Build"></a>
 </p>
 
