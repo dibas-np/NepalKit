@@ -80,7 +80,7 @@ run the `verify-*` provenance and release scripts, which need network access —
 see [CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
 
 ```
-NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting (Foundation only)
+NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting, spoken forms (Foundation only)
 NepalKit/       Menu-bar app: UI, settings, models
 NepalKitTests/  App-layer tests
 scripts/        Test runner, release packaging, appcast verification

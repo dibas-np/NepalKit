@@ -6,13 +6,22 @@ conflicts with the code, fix one or the other — don't leave them disagreeing.
 
 ## Module boundary
 
-`NepalKitCore` is pure logic: the calendar dataset, BS ↔ Gregorian conversion,
-and formatting. It imports `Foundation` only, never AppKit or SwiftUI, and does
-not know the app exists. The app target holds menu-bar UI, settings persistence,
-and app-specific behavior, and depends on the core package.
+`NepalKitCore` is pure logic. It imports `Foundation` only, never AppKit or
+SwiftUI, and does not know the app exists. The app target holds menu-bar UI,
+settings persistence, and app-specific behavior, and depends on the core
+package.
 
 Core is where testable behavior goes. If logic can be expressed without a view,
 it belongs in the core, not in a model.
+
+Which types those are is not listed here on purpose. An inventory of a package
+written into a standards document goes stale the moment a type crosses the
+boundary, which is exactly when a reader most needs it to be accurate. This one
+was wrong: it said the core held "the calendar dataset, BS ↔ Gregorian
+conversion, and formatting" and stayed that way after `8c0b155` moved the spoken
+forms in beside the formatters they mirror, so a reader deciding where
+`SpokenDate` belonged would have been told it was not in the core at all. Read
+`NepalKitCore/Sources/`.
 
 ## Naming
 
