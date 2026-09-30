@@ -27,9 +27,40 @@ written and stopped being true within a day.
 `scripts/apptests/` now symlinks `Sources/NepalKit` and `Tests/NepalKitTests`
 straight to the real directories, and names the target `NepalKit` so the real
 test files compile with no edits. Drift is no longer discouraged, it is
-impossible: there is only one copy of the source.
+impossible: there is only one copy of the source. That claim is about the
+*sources*, and it is worth being exact about that — one copy removes the
+possibility of the tested text differing from the shipped text, but it says
+nothing on its own about which files are in the tested set. Those are the next
+paragraph's subject, and the two are separate.
 `scripts/run-app-tests.sh` fails with exit 1 if either path stops being a
 symlink, so a well-meaning copy cannot silently reintroduce the problem.
 
-Two exclusions are deliberate: `NepalKitApp.swift` owns `@main`, which a library
-target cannot have, and `Assets.xcassets` belongs to the Xcode app bundle.
+## The five files outside the test boundary
+
+`scripts/apptests/Package.swift:41-49` excludes five paths, and the list is
+worth reading in full because the fifth is the one with a consequence:
+
+- `NepalKitApp.swift` owns `@main`, which a library target cannot have.
+- `Assets.xcassets`, `Info.plist` and `NepalKit.entitlements` belong to the
+  Xcode app bundle rather than to a SwiftPM library target.
+- `SparkleUpdateService.swift` imports Sparkle, and the harness links only
+  `NepalKitCore`.
+
+The first four cost coverage that nothing depends on. The fifth does not, and
+the reason is worth stating precisely rather than leaving to the exclusion
+list's own comment.
+
+`SparkleUpdateService.swift:131-135` maps Sparkle's `SPUNoUpdateFoundReason`
+onto `UpdatePolicy.NoUpdateFoundKind`, and that mapping is **outside** the test
+boundary. It is the boundary's real cost: a typo there reports a feed that
+could not be fetched or verified as "you are on the latest version", which is
+the one error a user cannot detect for themselves, and no test in this harness
+can catch it — the file cannot be compiled without the framework the harness
+deliberately does not link.
+
+The `UpdatePolicy` half *is* covered, by the harness that does compile it:
+`NepalKitTests/UpdatePolicyTests.swift:21-26` asserts the classification for all
+three kinds, so the policy and its outcomes are tested even though the mapping
+into it is not. A test of the mapping would have to reach Sparkle's enum
+through a framework the harness does not link, so it is recorded here as known
+uncovered rather than left to look like an oversight.
