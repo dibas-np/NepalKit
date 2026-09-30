@@ -42,9 +42,12 @@ MNT=/Volumes/${APP}-release-check
 DIST_ZIP=
 
 # Everything this script mounts is unmounted on the way out, including when it
-# fails partway. A read-write image left attached is not merely untidy: it is
-# EBUSY, and the next run's conversion then fails with a message that never
-# mentions attachments.
+# fails partway and including when it is signalled. EXIT on its own is not that
+# guarantee: it does not fire for SIGHUP or SIGTERM, and both of those arrive
+# exactly while an image is attached — a cancelled CI run, or a terminal closed
+# during the Finder layout scripting. A read-write image left attached is not
+# merely untidy: it is EBUSY, and the next run's conversion then fails with a
+# message that never mentions attachments.
 cleanup() {
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
@@ -53,6 +56,13 @@ cleanup() {
     return 0
 }
 trap cleanup EXIT
+# 128 + signal number, the shell's convention (HUP 1, INT 2, TERM 15), so a
+# signalled run reports why it stopped. cleanup runs again on the EXIT these
+# exit calls trigger; that is deliberate rather than guarded against, because
+# every command in it is already fault-tolerant and it ends in `return 0`.
+trap 'cleanup; exit 129' HUP
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 # Resolve how to authenticate to the notary service.
 #
