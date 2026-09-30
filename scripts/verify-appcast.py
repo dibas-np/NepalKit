@@ -15,6 +15,9 @@ each of which catches something the others cannot:
   3. Cryptographic verification of the Ed25519 signature against the *committed
      public key*, using stock openssl. No private key, no keychain, so this runs
      anywhere - including CI, where the private key must never be present.
+  4. The same, one level up: the *feed* is signed too. A signed archive proves
+     the download was not swapped; a signed feed proves the feed did not lie
+     about what the download is. See `extract_feed_signature` for the format.
 
 Why openssl and not Sparkle's own `sign_update --verify`: verification with
 sign_update needs the private key (`--ed-key-file` is rejected for public keys,
@@ -67,6 +70,26 @@ class _NotesHTMLCheck(HTMLParser):
 # key, per RFC 8410. Prepended so openssl can read the base64 key straight from
 # Info.plist without a PEM round-trip.
 ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
+
+# --- How Sparkle signs a feed ---------------------------------------------
+# Sparkle 2 does not sign the feed with an XML attribute. `sign_update` appends
+# a trailing comment and signs the bytes that precede it:
+#
+#     <!-- sparkle-signatures:
+#     edSignature: <base64 Ed25519 signature>
+#     length: <byte count of the signed content>
+#     -->
+#
+# The client splits the block off with a *backwards* search for the prefix and
+# verifies the signature over everything before it (SPUExtractSignedFeed.m,
+# SPUExtractAppcastContent, in the pinned Sparkle 2.9.6). So the signed content
+# is the entire feed - channel element, every item, every description - minus
+# that comment. It is not the channel element, and there is no
+# `sparkle:dsaSignature` attribute in this Sparkle version: the DSA fields in
+# it are legacy support for signing *archives*, which `SUAppcastDriver` passes
+# as nil. Do not go looking for the attribute; it is not what gets written.
+FEED_SIGNING_PREFIX = b"<!-- sparkle-signatures:\n"
+FEED_SIGNING_SUFFIX = b"-->"
 
 
 def fail(message: str) -> "NoReturn":  # type: ignore[valid-type]
@@ -124,6 +147,96 @@ def fetch(url: str, timeout: int = 60) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": "NepalKit-appcast-verify"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
+
+
+def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
+    """Split a feed's signing block off, the way Sparkle's client does.
+
+    Returns `(content, ed_signature_base64, declared_length)`. `content` is the
+    bytes the signature is computed over: everything before the block. The
+    search for the block runs backwards, as Sparkle's does, so a stray earlier
+    occurrence cannot move the boundary. A feed with no block yields the whole
+    file as content and `None, None` - which is why the caller has to treat
+    "no block" as a failure rather than as an empty signature.
+    """
+    start = raw.rfind(FEED_SIGNING_PREFIX)
+    if start == -1:
+        return raw, None, None
+    end = raw.find(FEED_SIGNING_SUFFIX, start + len(FEED_SIGNING_PREFIX))
+    if end == -1:
+        # An unterminated block. Sparkle's extractor returns the data untouched
+        # here, so there is no signature to read out of it.
+        return raw, None, None
+    block = raw[start + len(FEED_SIGNING_PREFIX) : end].decode("utf-8", "replace")
+
+    signature_b64: str | None = None
+    declared_length: int | None = None
+    for line in block.splitlines():
+        if line.startswith("edSignature:"):
+            signature_b64 = line[len("edSignature:") :].strip()
+        elif line.startswith("length:"):
+            value = line[len("length:") :].strip()
+            declared_length = int(value) if value.isdigit() else None
+    return raw[:start], signature_b64, declared_length
+
+
+def verify_feed_signature(appcast: Path, info_plist: Path) -> None:
+    """Require the feed itself to be signed, and check the signature.
+
+    This runs regardless of `--skip-crypto`, unlike the enclosure checks. The
+    flag exists because the archives are release assets rather than repository
+    files, so their bytes are unavailable in CI; it has nothing to do with the
+    feed, which is the very file under test and is right here. Skipping this
+    layer under `--skip-crypto` would switch off the one check that runs
+    against the published feed in `.github/workflows/pages.yml`, which is the
+    only place in the repository that sees the real thing.
+    """
+    raw = appcast.read_bytes()
+    content, signature_b64, declared_length = extract_feed_signature(raw)
+
+    if signature_b64 is None:
+        fail(
+            "the feed is not signed: no <!-- sparkle-signatures: --> block. The "
+            "archive signatures below prove each download was not swapped, but "
+            "nothing here authenticates what the feed *says* about them - "
+            "sparkle:shortVersionString, sparkle:version, "
+            "sparkle:minimumSystemVersion, pubDate, item order and the enclosure "
+            "urls are all attacker-editable, and a feed can be rewritten to "
+            "offer an update to a system the app does not run on. Sign the feed "
+            "with the same EdDSA key as the archives: "
+            "`sign_update appcast.xml`, as the last step after the release notes "
+            "are injected, because it signs the exact bytes it is given."
+        )
+    try:
+        signature_bytes = base64.b64decode(signature_b64, validate=True)
+    except Exception as exc:  # noqa: BLE001
+        fail(f"feed signature is not valid base64: {exc}")
+    if len(signature_bytes) != 64:
+        fail(f"feed signature is {len(signature_bytes)} bytes, expected 64")
+
+    if declared_length is not None and declared_length != len(content):
+        # Sparkle reads this only to explain a failure ("the expected content
+        # length ... differs from the downloaded file length"); it verifies the
+        # real bytes either way. So a mismatch here would not by itself stop a
+        # client accepting the feed. It does mean the block was assembled by
+        # something other than `sign_update`, which is precisely the
+        # hand-fabricated-signature case this check exists to refuse.
+        fail(
+            f"feed signature block declares {declared_length} bytes of signed "
+            f"content but {len(content)} bytes precede it. The block was not "
+            f"written by sign_update; re-sign rather than editing it."
+        )
+
+    public_key = load_public_key(info_plist)
+    if verify_signature(public_key, content, signature_bytes):
+        ok("feed signature verifies against the committed public key "
+           f"({len(content)} bytes of feed content)")
+    else:
+        fail(
+            f"feed signature does NOT verify against the key in "
+            f"{info_plist.name}. The feed has been altered since it was signed, "
+            f"or was signed with a different key. Do not publish this feed."
+        )
 
 
 def deployment_floor(override: str | None = None) -> str | None:
@@ -271,6 +384,11 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                     )
         else:
             print(f"  skip  version {version}: no enclosure bytes available to verify")
+
+    # --- 4. The feed's own signature ----------------------------------------
+    # Last, so a feed that is broken in some more basic way is reported for
+    # that reason rather than for this one.
+    verify_feed_signature(appcast, info_plist)
 
     print("Appcast is sound.")
 

@@ -92,6 +92,105 @@ def write_plist(tmp: Path) -> Path:
     return plist
 
 
+def write_plist_with_key(tmp: Path, key_b64: str) -> Path:
+    """An Info.plist carrying a specific SUPublicEDKey."""
+    plist = tmp / "keyed-Info.plist"
+    plist.write_text(
+        '<?xml version="1.0"?><plist><dict><key>SUPublicEDKey</key>'
+        f"<string>{key_b64}</string></dict></plist>",
+        encoding="utf-8",
+    )
+    return plist
+
+
+# --- Feed signing fixtures -------------------------------------------------
+# The feed signature has to be made with a real key, so these build a throwaway
+# Ed25519 pair with the same openssl the verifier checks with. Nothing here
+# touches a keychain or a private key belonging to the project.
+#
+# One case cannot be built this way: proof that the verifier agrees with the
+# *tool* about which bytes are signed. A verifier tested only against
+# signatures it produced itself agrees with its own assumptions by
+# construction. GOLDEN_SIGNED_FEED below is the real output of Sparkle's own
+# `sign_update`, captured verbatim, and is checked against the throwaway
+# public key that signed it - so the format is pinned to what Sparkle
+# actually writes rather than to what this file believes Sparkle writes.
+GOLDEN_SIGNED_FEED_B64 = (
+    "PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJ5ZXMiPz4KPHJzcyB4bWxuczpzcGFya2xl"
+    "PSJodHRwOi8vd3d3LmFuZHltYXR1c2NoYWsub3JnL3htbC1uYW1lc3BhY2VzL3NwYXJrbGUiIHZl"
+    "cnNpb249IjIuMCI+CiAgICA8Y2hhbm5lbD4KICAgICAgICA8dGl0bGU+UHJvYmVBcHA8L3RpdGxl"
+    "PgogICAgICAgIDxpdGVtPgogICAgICAgICAgICA8dGl0bGU+Mi4wPC90aXRsZT4KICAgICAgICAg"
+    "ICAgPHB1YkRhdGU+V2VkLCAzMCBTZXAgMjAyNiAxNDo0Mzo1MSArMDU0NTwvcHViRGF0ZT4KICAg"
+    "ICAgICAgICAgPGxpbms+aHR0cHM6Ly9leGFtcGxlLmNvbTwvbGluaz4KICAgICAgICAgICAgPHNw"
+    "YXJrbGU6dmVyc2lvbj4yMDA8L3NwYXJrbGU6dmVyc2lvbj4KICAgICAgICAgICAgPHNwYXJrbGU6"
+    "c2hvcnRWZXJzaW9uU3RyaW5nPjIuMDwvc3BhcmtsZTpzaG9ydFZlcnNpb25TdHJpbmc+CiAgICAg"
+    "ICAgICAgIDxzcGFya2xlOm1pbmltdW1TeXN0ZW1WZXJzaW9uPjI2LjA8L3NwYXJrbGU6bWluaW11"
+    "bVN5c3RlbVZlcnNpb24+CiAgICAgICAgICAgIDxlbmNsb3N1cmUgdXJsPSJodHRwczovL2V4YW1w"
+    "bGUuY29tL2RsL3YyLjAvUHJvYmVBcHAtMi4wLnppcCIgbGVuZ3RoPSIyODkyIiB0eXBlPSJhcHBs"
+    "aWNhdGlvbi9vY3RldC1zdHJlYW0iLz4KICAgICAgICA8L2l0ZW0+CiAgICA8L2NoYW5uZWw+Cjwv"
+    "cnNzPjwhLS0gc3BhcmtsZS1zaWduYXR1cmVzOgplZFNpZ25hdHVyZTogdGNKY0JEUHl4cUozNmVz"
+    "aHlxWmlLdTU2MmpiN0JRUDFhV3J6Sno4SksrMGxqUUFiNWtPcGM5Lzh3QmNmQ2w1MG1WSGlVakZI"
+    "RGplTmhSeXpDSzRoQVE9PQpsZW5ndGg6IDY4OAotLT4K"
+)
+GOLDEN_SIGNED_FEED_KEY_B64 = "y9S6PPgQ+ObSuKALymgxuJ5vFxP3qjQOgb5Qmh7aBAc="
+
+
+def ed25519_keypair(tmp: Path, name: str = "feed") -> tuple[str, Path]:
+    """Return (public key base64, private key PEM path) for a throwaway key."""
+    priv = tmp / f"{name}-priv.pem"
+    pub_der = tmp / f"{name}-pub.der"
+    subprocess.run(
+        ["openssl", "genpkey", "-algorithm", "ed25519", "-out", str(priv)],
+        check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["openssl", "pkey", "-in", str(priv), "-pubout", "-outform", "DER",
+         "-out", str(pub_der)],
+        check=True, capture_output=True,
+    )
+    der = pub_der.read_bytes()
+    assert der[:12] == va.ED25519_SPKI_PREFIX, "unexpected SubjectPublicKeyInfo"
+    return base64.b64encode(der[12:]).decode(), priv
+
+
+def ed25519_sign(priv: Path, tmp: Path, data: bytes) -> bytes:
+    data_file = tmp / "to-sign.bin"
+    sig_file = tmp / "made-signature.bin"
+    data_file.write_bytes(data)
+    subprocess.run(
+        ["openssl", "pkeyutl", "-sign", "-rawin", "-inkey", str(priv),
+         "-in", str(data_file), "-out", str(sig_file)],
+        check=True, capture_output=True,
+    )
+    return sig_file.read_bytes()
+
+
+def sign_feed(tmp: Path, body: str, priv: Path, *, signature: bytes | None = None,
+              sign: bool = True, declared_length: int | None = None,
+              name: str = "signed-feed.xml") -> Path:
+    """Write `body` as a feed, signed the way sign_update signs one.
+
+    `signature` overrides the real signature (for the malformed cases);
+    `sign=False` leaves the block off entirely; `declared_length` overrides the
+    byte count written into the block.
+    """
+    content = (RSS_OPEN + body + RSS_CLOSE).encode("utf-8")
+    if not sign:
+        path = tmp / name
+        path.write_bytes(content)
+        return path
+    sig = ed25519_sign(priv, tmp, content) if signature is None else signature
+    block = (
+        f"<!-- sparkle-signatures:\n"
+        f"edSignature: {base64.b64encode(sig).decode()}\n"
+        f"length: {len(content) if declared_length is None else declared_length}\n"
+        f"-->\n"
+    )
+    path = tmp / name
+    path.write_bytes(content + block.encode("utf-8"))
+    return path
+
+
 def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
                minimum_system_version: str | None = None) -> str:
     buf = io.StringIO()
@@ -211,10 +310,13 @@ class VerifyAppcastTest(unittest.TestCase):
     def test_happy_path_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item())
+            # A signed feed, because the signature is now part of the happy
+            # path: reaching the end of verify() requires one.
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv)
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
-                va.verify(feed, write_plist(tmp_path), None, True)
+                va.verify(feed, write_plist_with_key(tmp_path, key), None, True)
             self.assertIn("release notes match the notes contract", buf.getvalue())
 
     def test_deployment_floor_is_read_from_the_release_script(self) -> None:
@@ -236,8 +338,9 @@ class VerifyAppcastTest(unittest.TestCase):
     def test_matching_feed_floor_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(minimum_system_version="26.0"))
-            output = capture_verify(feed, write_plist(tmp_path), "26.0")
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(minimum_system_version="26.0"), priv)
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.0")
         self.assertIn("minimumSystemVersion 26.0 matches the app's floor", output)
 
     def test_absent_feed_floor_is_reported_not_ignored(self) -> None:
@@ -245,8 +348,9 @@ class VerifyAppcastTest(unittest.TestCase):
         # That is not the same as a correct value, so it must be visible.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(minimum_system_version=None))
-            output = capture_verify(feed, write_plist(tmp_path), "26.0")
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(minimum_system_version=None), priv)
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.0")
         self.assertIn("no <sparkle:minimumSystemVersion>", output)
 
     def test_generation_seeds_the_staging_dir_with_the_live_feed(self) -> None:
@@ -376,6 +480,159 @@ class VerifyAppcastTest(unittest.TestCase):
             self.assertEqual(len(signature), 64)
             self.assertTrue(va.verify_signature(public_key, data, signature))
             self.assertFalse(va.verify_signature(public_key, data + b"x", signature))
+
+
+class FeedSignatureTest(unittest.TestCase):
+    """The feed's own signature, as distinct from the archives'.
+
+    A signed archive proves the download was not swapped. It says nothing about
+    whether the feed lied about that download, so the feed is signed too, and
+    these pin that layer separately from the enclosure one - including that the
+    two are independent and that adding the feed check did not replace anything.
+    """
+
+    def test_signed_feed_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv)
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key))
+        self.assertIn("feed signature verifies against the committed public key",
+                      output)
+        self.assertIn("Appcast is sound.", output)
+
+    def test_unsigned_feed_fails(self) -> None:
+        # The gap this plan exists to close: a feed with three perfectly good
+        # archive signatures and no signature of its own used to pass every
+        # check in the repository and still be the published feed.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item())
+            output = run_verify(self, feed, write_plist(tmp_path))
+        self.assertIn("the feed is not signed", output)
+        self.assertIn("sign_update", output)
+
+    def test_wrong_feed_signature_fails(self) -> None:
+        # Signed, but over something else - the case a feed edited in transit
+        # produces. A check that only asked "is there a block here" would pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            wrong = ed25519_sign(priv, tmp_path, b"a different document")
+            feed = sign_feed(tmp_path, make_item(), priv, signature=wrong)
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, key))
+        self.assertIn("feed signature does NOT verify", output)
+
+    def test_feed_signature_from_a_different_key_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            _signing_key, priv = ed25519_keypair(tmp_path, "signer")
+            other_key, _ = ed25519_keypair(tmp_path, "other")
+            self.assertNotEqual(_signing_key, other_key)
+            feed = sign_feed(tmp_path, make_item(), priv)
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, other_key))
+        self.assertIn("feed signature does NOT verify", output)
+
+    def test_tampered_version_string_fails(self) -> None:
+        # The threat ADR-0012 describes, made mechanical: a feed whose signature
+        # is valid, edited to claim a different version. The signature covers
+        # the item metadata, so this must not pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv)
+            raw = feed.read_bytes().replace(b">1.0<", b">9.9<", 1)
+            tampered = tmp_path / "tampered.xml"
+            tampered.write_bytes(raw)
+            output = run_verify(self, tampered, write_plist_with_key(tmp_path, key))
+        self.assertIn("feed signature does NOT verify", output)
+
+    def test_broken_enclosure_still_fails_when_the_feed_is_signed(self) -> None:
+        # The new check must sit alongside the old one, not on top of it: a
+        # valid feed signature does not excuse a missing archive signature.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(signature=None), priv)
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, key))
+        self.assertIn("no sparkle:edSignature", output)
+
+    def test_feed_signature_not_base64_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv)
+            raw = re.sub(rb"edSignature: \S+", b"edSignature: !!!", feed.read_bytes())
+            broken = tmp_path / "bad-b64.xml"
+            broken.write_bytes(raw)
+            output = run_verify(self, broken, write_plist_with_key(tmp_path, key))
+        self.assertIn("feed signature is not valid base64", output)
+
+    def test_feed_signature_wrong_length_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv)
+            raw = re.sub(rb"edSignature: \S+", b"edSignature: QUJD", feed.read_bytes())
+            broken = tmp_path / "short-sig.xml"
+            broken.write_bytes(raw)
+            output = run_verify(self, broken, write_plist_with_key(tmp_path, key))
+        self.assertIn("feed signature is 3 bytes, expected 64", output)
+
+    def test_misdeclared_block_length_fails(self) -> None:
+        # Sparkle only reads `length` to explain a failure, so this one would
+        # not stop a client accepting the feed. It still means the block was
+        # assembled by hand rather than by sign_update, which is the thing that
+        # must not pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(), priv, declared_length=1)
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, key))
+        self.assertIn("The block was not written by sign_update", output)
+
+    def test_unsigned_feed_fails_under_skip_crypto(self) -> None:
+        # `--skip-crypto` exists because CI has no archive bytes. The feed is
+        # the file under test and is present, so this layer must still fire -
+        # otherwise the only job in the repository that reads the real
+        # appcast.xml (pages.yml) would skip the check that matters.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item())
+            output = run_verify(self, feed, write_plist(tmp_path))
+        self.assertIn("the feed is not signed", output)
+
+    def test_canonical_form_matches_sparkle_sign_update(self) -> None:
+        # The anti-false-green case. This feed is Sparkle's own sign_update
+        # output, byte for byte, and the key that signed it is gone; the public
+        # half travels with the fixture. If the canonical form this file
+        # computes ever drifts from the tool's, this fails - and it is the one
+        # check in the suite that was not signed by the same code it tests.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            raw = base64.b64decode(GOLDEN_SIGNED_FEED_B64)
+            feed = tmp_path / "golden.xml"
+            feed.write_bytes(raw)
+            content, signature_b64, declared_length = va.extract_feed_signature(raw)
+            self.assertIsNotNone(signature_b64)
+            self.assertEqual(len(content), declared_length)
+            self.assertTrue(raw.startswith(content))
+            self.assertTrue(
+                va.verify_signature(
+                    base64.b64decode(GOLDEN_SIGNED_FEED_KEY_B64),
+                    content,
+                    base64.b64decode(signature_b64),
+                )
+            )
+            # And the whole file must not verify - that is what makes "the
+            # bytes before the block" the real answer rather than a coincidence.
+            self.assertFalse(
+                va.verify_signature(
+                    base64.b64decode(GOLDEN_SIGNED_FEED_KEY_B64),
+                    raw,
+                    base64.b64decode(signature_b64),
+                )
+            )
 
 
 if __name__ == "__main__":

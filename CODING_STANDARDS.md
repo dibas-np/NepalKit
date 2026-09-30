@@ -308,7 +308,9 @@ secret. `.env.example` is the place they are described, with each one's actual
 default:
 
 - `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
-  `generate_appcast`. Unset, it searches DerivedData.
+  `generate_appcast`. Unset, it searches DerivedData. `sign_update` lives in the
+  same directory, and is what signs the feed itself; `generate_appcast` only
+  writes items and signs archives.
 - `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched
   provenance tables. Unset, it uses `~/.cache/nepalkit-data-sources`; it caches
   in both cases, so this is not a switch for caching off.
@@ -333,6 +335,11 @@ script but not in that file is a claim no reader can check.
   found, and filed as a known issue if it is still outstanding.
 - If a supported-range boundary moved, every guarded historical fixture was
   reviewed by hand and the tree re-grepped for the old bound.
+- If you touched `appcast.xml` or the release pipeline, the feed is signed as
+  well as the archives, and the signature is the **last** thing written:
+  `sign_update appcast.xml`, after the notes injection, because it signs the
+  exact bytes it is given. `scripts/verify-appcast.py` requires that block and
+  fails without it, so an unsigned feed cannot be published by accident.
 - Every new `systemImage` name was checked to resolve, and its pairing with its
   label actually reads. See *Apple platform conventions*.
 - SwiftLint was **not** run. This project does not use it: there is no

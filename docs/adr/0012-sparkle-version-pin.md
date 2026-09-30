@@ -218,13 +218,43 @@ and carries 1.1, 1.2 and 1.3.0, and Pages serves the URL above. The history is
 kept because the precondition is why the URL was pinned by a test rather than
 merely written down — a value nothing checks is a value that moves.
 
-**Sign the appcast, not only the archive.** `generate_appcast` can sign the
-appcast itself with the same EdDSA key. A signed archive proves the download was
-not tampered with in transit; a signed appcast additionally proves the *feed* did
-not lie about what the update is. Given this framework's recent history — 2.6.4
+**Sign the appcast, not only the archive.** A signed archive proves the download
+was not tampered with in transit; a signed appcast additionally proves the *feed*
+did not lie about what the update is. Given this framework's recent history — 2.6.4
 allowed a signed update to be replaced with another payload, bypassing its
 (Ed)DSA checks — signing the feed as well is the difference between trusting the
 transport and not having to trust the publisher's account.
+
+**The tool is `sign_update`, not `generate_appcast`.** An earlier version of this
+paragraph named `generate_appcast`, which was wrong: it writes items and signs
+*archives*, and has no option to sign the feed. `sign_update` takes the feed
+itself and appends a block to it:
+
+    <!-- sparkle-signatures:
+    edSignature: <base64 Ed25519 signature>
+    length: <byte count of the signed content>
+    -->
+
+The signature covers every byte of the file *before* that block — the channel
+element, every item, every description — not the channel element on its own.
+There is no `sparkle:dsaSignature` attribute in Sparkle 2.9.6: its DSA fields are
+legacy support for signing archives, and `SUAppcastDriver` passes nil for the
+feed. This was read out of `SPUExtractSignedFeed.m` and then reproduced against
+real `sign_update` output, rather than reasoned about, because a verifier that
+guesses the canonical form rejects valid feeds and one that only tests its own
+signatures looks green while being wrong.
+
+It signs exact bytes, so it has to be the last step of a release: the notes
+injection in `verify-appcast.sh` rewrites the feed, and anything signed before it
+is invalidated.
+
+`scripts/verify-appcast.py` now **requires** the block and verifies it against
+the same `SUPublicEDKey` the archives use — no private key, so it runs in CI
+like every other check here. That is why the committed feed currently fails it:
+it carries three `sparkle:edSignature` values and no feed signature, and no gate
+in this repository could see that before. Re-signing it means producing a
+signature with the private key, which is a keychain operation for a maintainer
+and deliberately not something a commit can do.
 
 ## Freshness of this pin
 
