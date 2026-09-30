@@ -40,9 +40,6 @@ struct PopoverView: View {
     /// Settings open through SwiftUI's own action rather than a hand-built
     /// window; the activation half is `WindowPresentation`'s (ADR-0011).
     @Environment(\.openSettings) private var openSettings
-    /// About is a named window scene, opened the same way — same activation
-    /// behaviour, not a second mechanism (ADR-0011).
-    @Environment(\.openWindow) private var openWindow
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
     let dataset: CalendarDataset
@@ -109,7 +106,7 @@ struct PopoverView: View {
 
     // MARK: - Footer
 
-    /// A bar along the bottom: the selected destination on the left, the three
+    /// A bar along the bottom: the selected destination on the left, the two
     /// actions on the right.
     ///
     /// This follows the reference layout, where the footer names where you are
@@ -118,9 +115,8 @@ struct PopoverView: View {
     /// popover is read as a whole: the control is a control, and this is the
     /// surface's own statement of position.
     ///
-    /// Each action pairs a symbol with its visible title and carries a spoken
-    /// hint. Why the titles are not dropped in favour of the reference's bare
-    /// glyphs is recorded at the call site below.
+    /// The two actions are deliberately drawn differently — Settings as a bare
+    /// glyph, Quit as text. Why each is what it is is recorded at its call site.
     private var footer: some View {
         VStack(spacing: 0) {
             Divider()
@@ -131,39 +127,45 @@ struct PopoverView: View {
 
                 Spacer(minLength: 8)
 
-                // Visible text, not icon-only: a bare glyph on this surface
-                // exposes no accessible name (System Events reports `AXName` as
-                // missing for these buttons), and with the text removed a
-                // screen-reader user hears "button" twice with no way to tell
-                // the actions apart. An action whose name cannot be proven
-                // announced shows its name.
-                action(
-                    Symbols.settings,
-                    title: Strings.settingsLabel,
-                    spoken: Strings.settingsLabelSpoken,
-                    help: Strings.settingsHelp
-                ) {
+                // Icon only. The gear is the conventional mark for this action on
+                // macOS and it is unambiguous to a sighted user, so the words buy
+                // nothing next to it in a 340pt bar. The accessible name is set
+                // explicitly below, which is what a bare glyph otherwise lacks —
+                // System Events reports `AXName` as missing for an unlabelled one,
+                // and the surviving text-free button would then be announced as
+                // just "button".
+                //
+                // This is the one place in the app where a glyph is shown without
+                // its text, so it carries the naming burden the other actions used
+                // to carry with visible titles.
+                Button {
                     WindowPresentation.present(open: { openSettings() })
+                } label: {
+                    Image(systemName: Symbols.settings)
+                        .symbolRenderingMode(.monochrome)
                 }
-
-                action(
-                    Symbols.about,
-                    title: Strings.aboutLabel,
-                    help: Strings.aboutHelp
-                ) {
-                    WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
-                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .accessibilityLabel(Strings.settingsLabelSpoken)
+                .accessibilityHint(Strings.settingsHelp)
 
                 // Quit keeps its text. It is the only action in a menu-bar-only
                 // app that ends the process, and the one a first-time user most
-                // likely to hunt for; the others have conventional glyphs, this
-                // does not.
+                // likely to hunt for; there is no conventional glyph for it, and a
+                // glyph here would be decoration standing in for the one label in
+                // this footer that has to be unmistakable.
+                //
+                // Shown short. `Strings.quitLabel` names the app because the app
+                // menu needs to ("Quit NepalKit"); inside the app's own popover the
+                // name is already on screen in the header two lines up, so the
+                // footer says only "Quit" and gives the width back to the
+                // destination label. The announcement keeps the full name.
                 //
                 // The ⌘Q shortcut lives on the app's termination command group
                 // (NepalKitApp.swift) so it works when the app is frontmost
                 // without the popover open. This is the discoverable control for
                 // the same action.
-                Button(Strings.quitLabel, action: AppTermination.quit)
+                Button(Strings.quitFooterLabel, action: AppTermination.quit)
                     .buttonStyle(.plain)
                     .font(.caption)
                     .accessibilityElement(children: .combine)
@@ -177,32 +179,6 @@ struct PopoverView: View {
 
     /// A compact symbol-and-title action for the footer.
     ///
-    /// Tighter than a full-width row so three of them fit beside the position
-    /// label, but still text: see the note at the call site for why these are not
-    /// icon-only. The hint carries the purpose, which a glyph cannot.
-    ///
-    /// `spoken` exists because `title` feeds both channels from one argument:
-    /// `Label` shows it, `.accessibilityLabel` announces it, and a title may be
-    /// written with punctuation a voice misreads. Passing the announcement
-    /// separately is `AboutView.row`'s pattern; defaulting to the shown title
-    /// keeps every call site that has nothing to improve unchanged.
-    private func action(
-        _ symbol: String,
-        title: String,
-        spoken: String? = nil,
-        help: String,
-        perform: @escaping () -> Void
-    ) -> some View {
-        Button(action: perform) {
-            Label(title, systemImage: symbol)
-                .font(.caption)
-                .symbolRenderingMode(.monochrome)
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(spoken ?? title)
-        .accessibilityHint(help)
-    }
 }
 
 #if DEBUG

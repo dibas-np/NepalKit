@@ -3,13 +3,12 @@
 import NepalKitCore
 import SwiftUI
 
-/// The native Settings surface.
+/// The native Settings surface: a sidebar of three destinations.
 ///
-/// This relocates the controls that were inline in the popover; it adds no new
-/// setting. The models passed in are the same ones the popover already read, so
-/// there is exactly one source of truth and no value is writable from two
-/// places. Persistence stays in `SettingsStore` keyed by bundle identifier, so
-/// settings survive relaunch and updates.
+/// The relocation from the popover added no new setting. The models passed in are
+/// the ones the popover already read, so there is exactly one source of truth and
+/// no value is writable from two places. Persistence stays in `SettingsStore`
+/// keyed by bundle identifier, so settings survive relaunch and updates.
 ///
 /// Control types are carried over unchanged from the popover deliberately: a
 /// user who knows the segmented pickers should not have to relearn them.
@@ -17,87 +16,157 @@ import SwiftUI
 /// Sambat and weekday names only, so a date may carry a Devanagari day and
 /// year, an English Gregorian month name, and a weekday in either language at
 /// once. That combination is intended (CONTEXT.md).
+///
+/// The selected destination is ephemeral for the same reason the popover's is:
+/// Settings is not where anyone begins a task, so remembering the last one would
+/// open a window onto a page the user did not ask for. `SettingsTab.landingTab`
+/// is the resting state.
 struct SettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
-    /// The updater is constructed and started at launch (NepalKitApp), so the
-    /// section always exists; it reads its outcome state from the same model
+    /// The updater is constructed and started at launch (NepalKitApp), so the tab
+    /// always has a model to read; its outcome state comes from the same instance
     /// the background check reports into.
     @Bindable var updates: UpdateCheckModel
+    /// Read by the Menu Bar preview so that tab cannot disagree with the real
+    /// menu-bar label. Deliberately not `@Bindable`: the preview shows the label,
+    /// it does not drive it, and a binding would invite writing to it here.
+    let menuBar: MenuBarModel
+    /// Read once, lazily, and cached — see `DeferredAppMetadata` for why the
+    /// bundled LICENSE is not read at launch.
+    let metadata: AppMetadata
+    /// Injected so the calendar facts are the same dataset the rest of the app
+    /// converts with, and so a test can control them.
+    let dataset: CalendarDataset
+
+    @State private var tab: SettingsTab = SettingsTab.landingTab
 
     var body: some View {
-        Form {
-            Section(Strings.displaySection) {
-                Picker(Strings.digitScriptLabel, selection: $settings.digits) {
-                    // The en dash shows the range on screen, where it reads
-                    // correctly; announced, it is unpredictable, so this option
-                    // speaks a plain hyphen. Same split as the option below.
-                    Text(Strings.digitsLatin)
-                        .tag(DigitScript.latin)
-                        .accessibilityLabel(Strings.digitsLatinSpoken)
-                    Text(Strings.digitsDevanagari)
-                        .tag(DigitScript.devanagari)
-                        // The option announces with Latin digits so it stays
-                        // identifiable aloud; the screen keeps the Devanagari
-                        // characters it is describing.
-                        .accessibilityLabel(Strings.digitsDevanagariSpoken)
-                }
-                .pickerStyle(.segmented)
+        // A split view rather than a `TabView` with `.sidebarTabViewStyle`, and
+        // the reason is the footer: a `TabView` sidebar owns its whole column, so
+        // there is nowhere to put the app icon, version and repository link below
+        // the destinations. A split-view sidebar is a `List` this view builds, so
+        // the last row can be anything. Three destinations in a list is also the
+        // shape System Settings itself uses.
+        NavigationSplitView {
+            sidebar
+        } detail: {
+            detail
+        }
+        // Wide enough for the longest detail (About's Devanagari range line and a
+        // full URL) beside the sidebar without clipping, and tall enough that the
+        // General form's three sections do not need to scroll to reach Startup.
+        // A minimum, not a fixed size: the window still opens at whatever the
+        // user last set, it just refuses to go below the point where the content
+        // stops fitting.
+        .frame(minWidth: 640, minHeight: 440)
+    }
 
-                Picker(Strings.monthNameLabel, selection: $settings.monthNames) {
-                    Text(Strings.monthsNepali).tag(MonthNameStyle.nepali)
-                    Text(Strings.monthsTransliterated).tag(MonthNameStyle.transliterated)
-                }
-                .pickerStyle(.segmented)
-            }
+    // MARK: - Sidebar
 
-            Section(Strings.startupSection) {
-                Toggle(isOn: $loginItem.launchAtLogin) {
-                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
-                        .symbolRenderingMode(.monochrome)
-                }
-                // The symbol is decoration beside a control that is already
-                // named. Left in the label, some VoiceOver voices announce the
-                // symbol name too ("power symbol button, launch at login, on"),
-                // which is noise in front of the real name.
-                .accessibilityLabel(Strings.launchAtLoginLabel)
-
-                if let failure = loginItem.setupError {
-                    // A failed register/unregister is invisible on the toggle:
-                    // `isOn` follows the system, so it springs back without
-                    // ever saying why. This line is where the reason lands.
-                    Text(Strings.loginItemFailureReason(failure))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section(Strings.updatesSection) {
-                // The shown title keeps its ellipsis, which marks a control that
-                // opens a sheet elsewhere. Spoken it is a pause and no meaning,
-                // so the announcement drops it. No `.combine` is needed for the
-                // label to win, exactly as for the launch-at-login control above.
-                Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
-                    .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
-
-                Toggle(isOn: $updates.automaticallyChecks) {
-                    Text(Strings.updateAutomaticallyLabel)
-                }
-
-                if let status = updates.statusText {
-                    // A plain Text already announces itself. Left
-                    // unmodified rather than given a redundant label.
-                    Text(status)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+    private var sidebar: some View {
+        List(selection: $tab) {
+            ForEach(SettingsTab.allCases) { destination in
+                Label(destination.title, systemImage: destination.symbol)
+                    .tag(destination)
             }
         }
-        .formStyle(.grouped)
-        // A minimum for the same reason as About: pinned at 460 the window
-        // clips at larger accessibility text sizes, and the segmented pickers
-        // with translated labels are what overflow first.
-        .frame(minWidth: 460)
+        .listStyle(.sidebar)
+        // A fixed-ish width, in the range System Settings uses. The floor is what
+        // keeps "Menu Bar" on one line at large accessibility text sizes; the
+        // ideal is what it opens at on a default display.
+        .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Below the destinations rather than inside the list: this is the
+            // window's own identity, not a destination, and making it selectable
+            // would put "NepalKit 1.3.0" in the tab order next to real tabs.
+            SettingsSidebarFooter(metadata: metadata)
+        }
+    }
+
+    // MARK: - Detail
+
+    @ViewBuilder
+    private var detail: some View {
+        switch tab {
+        case .menuBar:
+            MenuBarSettingsView(
+                menuBar: menuBar,
+                settings: settings.settings,
+                updateAvailable: updates.isShowingReminder
+            )
+        case .general:
+            GeneralSettingsView(
+                settings: settings,
+                loginItem: loginItem,
+                updates: updates
+            )
+        case .about:
+            AboutView(metadata: metadata, dataset: dataset)
+        }
+    }
+}
+
+/// The window's own identity, below the sidebar's destinations.
+///
+/// Icon, name, version and a link to the source. This is the answer to "what am I
+/// running, and where do I go to tell someone?" — the two questions a person opens
+/// Settings with most often, answered without hunting for the About tab.
+///
+/// It duplicates what the About tab says on purpose. That tab is the full record
+/// (licence text, dataset provenance, the range boundary in words); this is the
+/// always-visible strip. A version number that is only findable on one tab is not
+/// findable when you are trying to read it off a screenshot.
+private struct SettingsSidebarFooter: View {
+    let metadata: AppMetadata
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                if let icon = metadata.applicationIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                        // Decorative: the name is beside it and is what identifies
+                        // the build. Exposed, this is a stop that only says
+                        // "image" before the name that carries the meaning.
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(metadata.name)
+                        .font(.callout.weight(.medium))
+                        .lineLimit(1)
+                    Text(Strings.versionLabel(metadata.versionDescription))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+
+            // A real link, never text styled to look like one. The repository URL
+            // comes from the build's metadata, so it cannot drift from the remote
+            // the app was published from.
+            if let repository = metadata.repositoryURL {
+                Link(destination: repository) {
+                    Label(Strings.repositoryLabel, systemImage: Symbols.repository)
+                        .font(.caption)
+                        .symbolRenderingMode(.monochrome)
+                }
+                .accessibilityLabel(Strings.repositoryLabel)
+                // The title says what the link is; the destination is the part a
+                // sighted user reads off the screen and a blind user otherwise
+                // never learns, so it becomes the value.
+                .accessibilityValue(repository.absoluteString)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Above the footer is the destination list, and a Divider is what stops
+        // the identity strip reading as a fourth, unselectable destination.
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 }
 
@@ -123,12 +192,15 @@ private final class PreviewLoginService: LoginItemServicing {
     func unregister() throws {}
 }
 
-#Preview("Settings") {
+#Preview("Settings window") {
     SettingsView(
         settings: .preview,
         loginItem: LoginItemModel(service: PreviewLoginService()),
-        updates: UpdateCheckModel(service: PreviewUpdateService())
+        updates: UpdateCheckModel(service: PreviewUpdateService()),
+        menuBar: MenuBarModel(now: AppData.previewInstant, refreshes: false),
+        metadata: .current(),
+        dataset: AppData.dataset
     )
-    .frame(width: 460)
+    .frame(width: 700, height: 460)
 }
 #endif

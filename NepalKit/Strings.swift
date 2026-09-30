@@ -98,14 +98,25 @@ nonisolated enum Strings {
     static let monthLabel = "Month"
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
+    /// The menu command's title, in the app menu. Apple's convention there is the
+    /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"
-    /// Spoken purposes for the footer's icon-only buttons. A symbol with no
-    /// accessible name is the worst case in the whole app: a screen-reader user
-    /// hears "button" three times and cannot tell the actions apart, while a
-    /// sighted user sees three distinct glyphs and reads them instantly.
+    /// The popover footer's Quit, where the app name is neither needed nor
+    /// wanted — the button sits beside the app's own popover, so naming the app
+    /// again is the visual equivalent of "NepalKit" appearing twice in the menu
+    /// bar. Still announced as `quitLabel` by the caller.
+    static let quitFooterLabel = "Quit"
+    /// Spoken purposes for the footer's buttons. A symbol with no accessible name
+    /// is the worst case in the whole app: a screen-reader user hears "button"
+    /// twice and cannot tell the actions apart, while a sighted user sees two
+    /// distinct glyphs and reads them instantly. So the Settings button is drawn
+    /// as a bare glyph and still *named* here — that is the whole reason the
+    /// string survives the text being removed.
     static let settingsHelp = "Opens the Settings window"
-    static let aboutHelp = "Opens the About window"
     static let quitHelp = "Quits NepalKit"
+    /// Unused as drawn: the footer's Settings button shows the glyph alone. Kept
+    /// because it is the announced name, and a button whose label is only ever
+    /// spoken still needs the string.
     static let settingsLabel = "Settings…"
     /// Spoken form: the ellipsis is a visual affordance marking an action that
     /// continues past the footer, and there is nothing to add by saying it —
@@ -125,7 +136,18 @@ nonisolated enum Strings {
     static func spokenDateBeyondRange(_ gregorianEnd: String) -> String {
         "date unavailable, calendar data ends \(gregorianEnd)"
     }
-    static let aboutLabel = "About NepalKit"
+    // MARK: - Settings window
+    //
+    // Three tabs, in sidebar order. The titles are deliberately short: a sidebar
+    // row is one line, and "Software Update" as a tab name would truncate while
+    // its own Section header below still spells it out in full.
+    static let menuBarTabTitle = "Menu Bar"
+    static let generalTabTitle = "General"
+    static let aboutTabTitle = "About"
+    /// What the Menu Bar tab shows: the literal menu-bar text. The caption names
+    /// where the value is actually rendered, because a date in a preferences
+    /// window is otherwise indistinguishable from a setting.
+    static let menuBarPreviewCaption = "The menu bar shows"
     static let displaySection = "Display"
     static let startupSection = "Startup"
     static let updatesSection = "Software Update"
@@ -218,7 +240,8 @@ nonisolated enum Strings {
     /// separately" would claim a licence exists, which is the overclaim
     /// SOURCES.md exists to prevent (ADR-0010).
     static let licenseScopeNote =
-        "Applies to the app code. The bundled calendar data carries no licence from this project; see SOURCES.md in the repository."
+        "Applies to the app code. The bundled calendar data carries no licence from "
+        + "this project; see SOURCES.md in the repository."
     /// Says what the cross-check established and no more. The table is
     /// corroborated against a second community source, but every shipped year is
     /// still derived from one base table, so this must not read as independent

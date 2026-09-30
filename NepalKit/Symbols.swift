@@ -28,7 +28,22 @@ enum Symbols {
     /// "About NepalKit" — the standard macOS information glyph.
     static let about = "info.circle"
 
+    /// "Menu Bar" — the Settings sidebar row for the menu-bar item's own
+    /// appearance. The glyph is the menu bar itself rather than a clock, because
+    /// what the tab governs is the item's presence and format, not the time.
+    static let menuBar = "menubar.rectangle"
+
+    /// "General" — the remaining preferences. Deliberately *not* `gearshape`:
+    /// that glyph is the Settings button in the popover footer, and putting the
+    /// same gear on a row inside Settings would read as "the settings for these
+    /// settings". Sliders say "adjustable preferences" and stay distinct.
+    static let general = "slider.horizontal.3"
+
+    /// "Source repository" — the conventional source-control glyph, in the
+    /// Settings sidebar footer where there is no room for the words.
+    static let repository = "chevron.left.forwardslash.chevron.right"
+
     static let all: [String] = [
-        launchAtLogin, settings, about,
+        launchAtLogin, settings, about, menuBar, general, repository
     ]
 }
