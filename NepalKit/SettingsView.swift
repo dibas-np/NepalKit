@@ -48,98 +48,48 @@ struct SettingsView: View {
     @State private var tab: SettingsTab? = SettingsTab.landingTab
 
     var body: some View {
-        // A split view rather than a `TabView`, and the reason is the footer: a
-        // `TabView` owns its whole sidebar column, so there is nowhere to put the
-        // identity strip below the destinations. A split-view sidebar is a `List`
-        // this view builds, so the last row can be anything.
+        // A system `TabView` sidebar, not a split view with a hand-built `List`.
         //
-        // Worth recording that the sidebar styles were not a free choice here. On
-        // this SDK the available `TabViewStyle` statics are `automatic`, `carousel`,
-        // `grouped`, `page`, `sidebarAdaptable`, `tabBarOnly` and `verticalPage` —
-        // there is no `sidebarTabViewStyle`. `sidebarAdaptable` is the sidebar one,
-        // and it adapts to a tab bar in compact layouts, which a fixed-width
-        // preferences window never is.
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detail
+        // Three attempts to remove the collapse button from a
+        // `NavigationSplitView` failed, and the third cost the window its traffic
+        // lights, so the sidebar this view drew itself is the thing that had to go.
+        // A `TabView` sidebar is drawn by the system: there is no toggle to remove
+        // because there is no collapse affordance to begin with, and the material,
+        // selection highlight and inset behaviour are the platform's own rather
+        // than a `List(.sidebar)` imitating them.
+        //
+        // `sidebarAdaptable` is the only sidebar style on this SDK - there is no
+        // `sidebarTabViewStyle` - and "adaptable" means sidebar in a window of this
+        // size, switching to a tab bar only when the space is genuinely compact.
+        TabView(selection: $tab) {
+            ForEach(SettingsTab.allCases) { destination in
+                Tab(destination.title, systemImage: destination.symbol, value: destination) {
+                    content(for: destination)
+                }
+            }
         }
-        // No sidebar toggle. Three destinations in a column the window already
-        // sizes — there is nothing to collapse *to*, and the button only ever
-        // produced a one-destination-wide window with no way back that was not the
-        // button itself. Removed rather than hidden so it does not come back with
-        // a future toolbar default.
-        // The sidebar toggle is removed by hiding the window toolbar outright.
-        //
-        // `.toolbar(removing: .sidebarToggle)` is the documented lever and it is
-        // the only one — `ToolbarDefaultItemKind` has exactly three members
-        // (sidebarToggle, title, search) — and it does nothing here. It compiled,
-        // the signature was right, and the button stayed.
-        //
-        // It is also not cosmetic. macOS 26 draws that toggle at the top of the
-        // sidebar column when there is no title bar to hold it, where it sits over
-        // the destinations: it took a row of space the first three rows did not
-        // have, and the row underneath it stopped taking clicks, so the whole
-        // window was unusable. `List(selection:)` was also unwired, which is fixed
-        // separately; this is the other half.
-        //
-        // The cost is the window's title. "NepalKit Settings" comes from the
-        // `Settings` scene and the toolbar is where it lives, so hiding the toolbar
-        // hides it. That is the trade, and it is a deliberate one: a settings
-        // window with three destinations in a fixed-size column has nothing to
-        // collapse, and a button whose only effect is to make the window unusable
-        // is worse than a missing title. If the title turns out to matter more,
-        // the way back is one line and the alternative is accepting the toggle.
-        .toolbar(.hidden, for: .windowToolbar)
-        // No window-level `.glassEffect`, deliberately. It was here for two commits
-        // and it did nothing visible: the sidebar is a `List(.sidebar)` and the
-        // detail is a `Form(.grouped)`, and both paint their own material over
-        // anything behind them, so the glass was never visible. Worse, a glass
-        // layer over the whole split view sat on top of the tab list and stopped
-        // the rows taking clicks.
-        //
-        // Making this window's chrome glass means not painting opaque backgrounds
-        // over it — giving up the system's own sidebar and form styling. That is a
-        // product decision, not a modifier, and it is not taken here.
-        // Wide enough for the longest detail (About's Devanagari range line and a
-        // full URL) beside the sidebar without clipping, and tall enough that the
-        // General form's two sections do not need to scroll.
-        // A minimum, not a fixed size: the window still opens at whatever the
-        // user last set, it just refuses to go below the point where the content
-        // stops fitting.
+        .tabViewStyle(.sidebarAdaptable)
+        // The identity strip moves to the bottom of the *window* rather than the
+        // bottom of the sidebar. That is the trade for using the system sidebar: it
+        // owns its column, so nothing can be placed under the destinations. The
+        // strip is the window's identity rather than a destination, and spanning
+        // the full width is where a window's status material belongs anyway.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SettingsIdentityStrip(metadata: metadata)
+        }
+        // Wide enough for the longest detail (About's Devanagari range line) beside
+        // the sidebar without clipping, and tall enough that the General form's two
+        // sections do not need to scroll. A minimum, not a fixed size: the window
+        // opens at whatever the user last set, and refuses to go below the point
+        // where the content stops fitting.
         .frame(minWidth: 640, minHeight: 440)
     }
 
-    // MARK: - Sidebar
-
-    private var sidebar: some View {
-        List(selection: $tab) {
-            ForEach(SettingsTab.allCases) { destination in
-                Label(destination.title, systemImage: destination.symbol)
-                    .tag(destination)
-            }
-        }
-        .listStyle(.sidebar)
-        // A fixed-ish width, in the range System Settings uses. The floor is what
-        // keeps "Menu Bar" on one line at large accessibility text sizes; the
-        // ideal is what it opens at on a default display.
-        .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            // Below the destinations rather than inside the list: this is the
-            // window's own identity, not a destination, and making it selectable
-            // would put "NepalKit 1.3.0" in the tab order next to real tabs.
-            SettingsSidebarFooter(metadata: metadata)
-        }
-    }
-
-    // MARK: - Detail
+    // MARK: - Destinations
 
     @ViewBuilder
-    private var detail: some View {
-        // Falls back to the landing tab rather than trapping on `nil`: the sidebar
-        // can in principle end up with no selection, and an empty detail pane would
-        // be a worse answer than the page the window opens on.
-        switch tab ?? SettingsTab.landingTab {
+    private func content(for destination: SettingsTab) -> some View {
+        switch destination {
         case .menuBar:
             MenuBarSettingsView(
                 menuBar: menuBar,
@@ -161,7 +111,10 @@ struct SettingsView: View {
     }
 }
 
-/// The window's own identity, below the sidebar's destinations.
+/// The window's own identity, along the bottom of the window.
+///
+/// Named for what it is rather than where it used to live: it is no longer a
+/// sidebar footer.
 ///
 /// Icon, name, version and a link to the source. This is the answer to "what am I
 /// running, and where do I go to tell someone?" — the two questions a person opens
@@ -171,32 +124,35 @@ struct SettingsView: View {
 /// to read it deliberately; this is the always-visible strip. A version number
 /// that is only findable on one tab is not findable when you are trying to read it
 /// off a screenshot.
-private struct SettingsSidebarFooter: View {
+private struct SettingsIdentityStrip: View {
     let metadata: AppMetadata
 
+    /// One row, not a stack.
+    ///
+    /// It was a two-row column when it lived under the sidebar's destinations, where
+    /// the column was narrow and the width had to be spent. Across the full window
+    /// there is room for everything on one line, and a strip that is one row reads
+    /// as window furniture rather than as a fourth destination.
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                if let icon = metadata.applicationIcon {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        // Decorative: the name is beside it and is what identifies
-                        // the build. Exposed, this is a stop that only says
-                        // "image" before the name that carries the meaning.
-                        .accessibilityHidden(true)
-                }
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(metadata.name)
-                        .font(.callout.weight(.medium))
-                        .lineLimit(1)
-                    Text(Strings.versionLabel(metadata.versionDescription))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
+        HStack(spacing: 8) {
+            if let icon = metadata.applicationIcon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    // Decorative: the name is beside it and is what identifies the
+                    // build. Exposed, this is a stop that only says "image" before
+                    // the name that carries the meaning.
+                    .accessibilityHidden(true)
             }
+            Text(metadata.name)
+                .font(.callout.weight(.medium))
+                .lineLimit(1)
+            Text(Strings.versionLabel(metadata.versionDescription))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
 
             // A real link, never text styled to look like one. The repository URL
             // comes from the build's metadata, so it cannot drift from the remote
@@ -206,10 +162,9 @@ private struct SettingsSidebarFooter: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // Above the footer is the destination list, and a Divider is what stops
-        // the identity strip reading as a fourth, unselectable destination.
+        .padding(.vertical, 6)
+        // A Divider above, because without it the strip reads as content belonging
+        // to whichever tab is selected rather than as part of the window.
         .background(.bar)
         .overlay(alignment: .top) { Divider() }
     }
