@@ -142,36 +142,12 @@ APPCAST="$ARCHIVES_DIR/appcast.xml"
 # sparkle:shortVersionString. An item whose version has no notes file fails
 # the release: an unnoted update alert is the drift this step exists to
 # prevent. Re-running over an already-described item is a no-op.
-python3 - "$APPCAST" "${0:A:h}/release-notes" <<'PYEOF'
-import re
-import sys
-from pathlib import Path
-
-appcast, notes_dir = Path(sys.argv[1]), Path(sys.argv[2])
-raw = appcast.read_text(encoding="utf-8")
-
-def describe(match: "re.Match[str]") -> str:
-    block = match.group(0)
-    if "<description" in block:
-        return block
-    version = re.search(r"<sparkle:shortVersionString>([^<]+)</", block).group(1)
-    notes = notes_dir / f"{version}.html"
-    if not notes.exists():
-        sys.exit(f"no release notes for version {version}: expected {notes}")
-    body = notes.read_text(encoding="utf-8").strip()
-    if "]]>" in body:
-        sys.exit(f"{notes.name}: contains ]]>, which would terminate the CDATA "
-                 f"block early and corrupt the feed")
-    return re.sub(
-        r"(\s*)<enclosure ",
-        lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
-        block,
-        count=1,
-    )
-
-described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
-appcast.write_text(described, encoding="utf-8")
-PYEOF
+#
+# The splice lives in verify-appcast.py (--embed-notes) rather than in a heredoc
+# here, so it is fixture-testable next to the rest of the feed tooling instead
+# of being reachable only by running a release. The contract is unchanged, and
+# it is deliberately still two steps: embed, then verify each enclosure below.
+python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"
 
 # Verify each enclosure locally. Uses only the committed public key, so this is
 # safe to run anywhere - including CI, where the private key must never exist.

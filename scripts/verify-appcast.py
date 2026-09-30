@@ -35,6 +35,9 @@ suppresses the signature check *and*, through the fetch branch, the byte check
 too, so a run using it verifies structure and nothing else. `--allow-partial`
 is the release-time escape hatch: it reports unverified items and still exits
 0, for the invocation that only has the newly staged archive on disk.
+`--embed-notes <dir>` is not a check at all: it rewrites the feed, injecting
+release-notes HTML into each item's <description>, and exits. The release
+script runs it before its own verification loop.
 """
 
 from __future__ import annotations
@@ -161,6 +164,51 @@ def deployment_floor(override: str | None = None) -> str | None:
         return None
     match = re.search(r"^DEPLOYMENT_TARGET=(\S+)", text, re.M)
     return match.group(1) if match else None
+
+
+def embed_notes(appcast: Path, notes_dir: Path) -> None:
+    """Embed scripts/release-notes/<version>.html into each item's <description>.
+
+    Exactly-once by design: an item that already has a description is left
+    untouched, so re-running over a described feed is a no-op. The splice is
+    a targeted text substitution rather than an XML reserialisation, so every
+    other byte of the file — including anything Sparkle wrote — is untouched.
+    """
+    raw = appcast.read_text(encoding="utf-8")
+
+    def describe(match: re.Match[str]) -> str:
+        block = match.group(0)
+        if "<description" in block:
+            return block
+        version = re.search(r"<sparkle:shortVersionString>([^<]+)</", block).group(1)
+        notes = notes_dir / f"{version}.html"
+        # sys.exit, not fail(): these two are release-stopping conditions the
+        # shell's `set -e` turns into a dead pipeline, and the caller's contract
+        # for them is a message on stderr and a non-zero exit. fail() would
+        # print to stdout inside a report that otherwise reads as a list of
+        # checks, implying a check had run and rejected something.
+        if not notes.exists():
+            sys.exit(f"no release notes for version {version}: expected {notes}")
+        body = notes.read_text(encoding="utf-8").strip()
+        if "]]>" in body:
+            sys.exit(f"{notes.name}: contains ]]>, which would terminate the CDATA "
+                     f"block early and corrupt the feed")
+        # The 12-space indent is not cosmetic: the committed feed's formatting
+        # depends on it, and an item spliced at a different indent is a feed
+        # that reads as hand-edited in the middle of a generated document.
+        return re.sub(
+            r"(\s*)<enclosure ",
+            lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
+            block,
+            count=1,
+        )
+
+    # Nothing is written until the whole pass has succeeded: a half-described
+    # feed is a published feed with a silent hole in it, which is strictly worse
+    # than a release that stopped.
+    described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
+    appcast.write_text(described, encoding="utf-8")
+    ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
 
 
 def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto: bool,
@@ -335,11 +383,28 @@ def main() -> int:
         help="the macOS version the app ships as; defaults to DEPLOYMENT_TARGET "
              "in scripts/package-release.sh",
     )
+    parser.add_argument(
+        "--embed-notes", type=Path, default=None,
+        help="embed release-notes HTML from the given directory into each item's "
+             "<description>, then exit; mutually exclusive with verifying enclosure bytes",
+    )
     args = parser.parse_args()
 
     if not args.appcast.is_file():
         print(f"  FAIL  {args.appcast} does not exist")
         return 1
+    if args.embed_notes is not None:
+        # Short-circuited here, in main(), rather than inside verify(): this is a
+        # mutation, not a check, and it reads neither the public key nor any
+        # enclosure. Putting it after the --info-plist existence test would fail
+        # a release over a file the run never opens; putting it inside verify()
+        # would leave a mode that can fetch enclosures and sign-check a feed it
+        # is in the middle of rewriting, and would leave verify() reporting on
+        # bytes it had just changed. The script embeds first and verifies each
+        # enclosure in its own loop afterwards, so there is no verdict here to
+        # combine with the injection's.
+        embed_notes(args.appcast, args.embed_notes)
+        return 0
     if not args.info_plist.is_file():
         print(f"  FAIL  {args.info_plist} does not exist")
         return 1
