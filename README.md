@@ -64,12 +64,20 @@ open NepalKit.xcodeproj
 ```
 
 ```sh
-# Core library (conversion, dataset, formatting)
-cd NepalKitCore && swift test
+# Every gate the project runs locally, in one command
+./scripts/check-all.sh
 
-# App layer
-./scripts/run-app-tests.sh
+# Or one at a time
+cd NepalKitCore && swift test        # core library: conversion, dataset, formatting
+./scripts/run-app-tests.sh           # app layer
+python3 scripts/test_dataset_parsers.py    # the month-length table against the parsers
+python3 scripts/test_update_changelog.py   # the changelog generator against CHANGELOG.md
+python3 scripts/test_verify_appcast.py     # the appcast verifier
 ```
+
+`check-all.sh` runs the five suites above and reports each one. It does **not**
+run the `verify-*` provenance and release scripts, which need network access —
+see [CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
 
 ```
 NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting (Foundation only)

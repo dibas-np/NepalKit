@@ -62,16 +62,35 @@ open NepalKit.xcodeproj
 
 ## Before you open a pull request
 
-Run both suites. They are separate on purpose: one is the calendar, the other is
-the application.
+One command runs every automated gate, and names each one as it goes:
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 53 tests
-./scripts/run-app-tests.sh             # the app: 131 tests
+./scripts/check-all.sh
+```
+
+It runs these five, in this order:
+
+```sh
+cd NepalKitCore && swift test               # the calendar: 53 tests
+./scripts/run-app-tests.sh                  # the app: 131 tests
+python3 scripts/test_dataset_parsers.py     # the month table against the parsers
+python3 scripts/test_update_changelog.py    # the changelog generator
+python3 scripts/test_verify_appcast.py      # the appcast verifier
 ```
 
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
+
+`check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
+that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:
+it needs network access, and it is the first thing to reach for whenever the
+calendar table, the supported range or [SOURCES.md](SOURCES.md) changes — see
+"The one thing that matters most" above. The others are release-time gates over
+packaged artifacts and the published feed. CI runs all of them on any change
+that touches them, so this command is the local half and not a replacement.
+
+The two Swift suites stay separate on purpose: one is the calendar, the other is
+the application.
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
 the app-layer suite goes through a SwiftPM harness instead — see
@@ -86,8 +105,13 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
   ./scripts/run-app-tests.sh
 ```
 
-Without it, five tests **skip with a reason** rather than pass silently. That
-is deliberate: a test that cannot check something must not report that it did.
+Prefer that recipe to leaving it to discovery. A discovered product is used only
+when it is **newer than the source that builds it**; an older one is refused,
+because those five tests exist to catch keys that reach the product — and a
+product from last week is not what this source produces. Either way the run
+prints what it found and what it compared against. Without a usable product,
+five tests **skip with a reason** rather than pass silently. That is deliberate:
+a test that cannot check something must not report that it did.
 
 ## Style
 

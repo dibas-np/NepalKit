@@ -210,9 +210,10 @@ read the skip as coverage.
 
 ## Commands
 
+- Everything: `scripts/check-all.sh`, the five local suites.
 - Core tests: `swift test` in `NepalKitCore/`.
-- App-layer tests: run the committed harness (see `README.md` and ADR-0005).
-  `xcodebuild test` currently hangs before connecting and is not the runner.
+- App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
+  before connecting and is not the runner (see `README.md` and ADR-0005).
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 
