@@ -39,7 +39,13 @@ struct SettingsView: View {
     /// converts with, and so a test can control them.
     let dataset: CalendarDataset
 
-    @State private var tab: SettingsTab = SettingsTab.landingTab
+    /// Optional, because `List(selection:)` single-selection takes
+    /// `Binding<SelectionValue?>` and nothing else. With a non-optional binding the
+    /// sidebar did not wire up at all: it highlighted its own first row instead of
+    /// `landingTab`, and clicking a row changed nothing. Two destinations in, the
+    /// window was unusable — and it compiled, and every gate passed, because the
+    /// binding's type is legal either way. See the commit message.
+    @State private var tab: SettingsTab? = SettingsTab.landingTab
 
     var body: some View {
         // A split view rather than a `TabView`, and the reason is the footer: a
@@ -64,15 +70,16 @@ struct SettingsView: View {
         // button itself. Removed rather than hidden so it does not come back with
         // a future toolbar default.
         .toolbar(removing: .sidebarToggle)
-        // Liquid Glass behind the whole window, so the sidebar and the detail are
-        // one surface rather than two materials meeting at a seam. `.rect` rather
-        // than a rounded shape: the window already clips its own corners, so a
-        // radius here would only risk a sliver of unglassed background at the
-        // corners when the user resizes.
+        // No window-level `.glassEffect`, deliberately. It was here for two commits
+        // and it did nothing visible: the sidebar is a `List(.sidebar)` and the
+        // detail is a `Form(.grouped)`, and both paint their own material over
+        // anything behind them, so the glass was never visible. Worse, a glass
+        // layer over the whole split view sat on top of the tab list and stopped
+        // the rows taking clicks.
         //
-        // Applied after the frame, because glass wraps whatever layout it is given
-        // and sampling bounds taken before layout are the ones that render wrong.
-        .glassEffect(.regular, in: .rect)
+        // Making this window's chrome glass means not painting opaque backgrounds
+        // over it — giving up the system's own sidebar and form styling. That is a
+        // product decision, not a modifier, and it is not taken here.
         // Wide enough for the longest detail (About's Devanagari range line and a
         // full URL) beside the sidebar without clipping, and tall enough that the
         // General form's two sections do not need to scroll.
@@ -108,7 +115,10 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var detail: some View {
-        switch tab {
+        // Falls back to the landing tab rather than trapping on `nil`: the sidebar
+        // can in principle end up with no selection, and an empty detail pane would
+        // be a worse answer than the page the window opens on.
+        switch tab ?? SettingsTab.landingTab {
         case .menuBar:
             MenuBarSettingsView(
                 menuBar: menuBar,
