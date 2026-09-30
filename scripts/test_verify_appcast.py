@@ -447,6 +447,51 @@ class VerifyAppcastTest(unittest.TestCase):
         items = feed.read_text(encoding="utf-8").count("<item>")
         self.assertGreaterEqual(items, 2, "the committed feed has lost release history")
 
+    def test_the_feed_is_signed_after_everything_that_rewrites_it(self) -> None:
+        # A real release failure, not a hypothetical. Nothing in the release path
+        # re-signed the feed, so generate_appcast added the new item and
+        # --embed-notes rewrote the descriptions while the signature block was
+        # carried forward unchanged. That is worse than an unsigned feed: it looks
+        # signed while being stale, and it surfaced as a byte-count mismatch:
+        #
+        #   FAIL  feed signature block declares 5731 bytes of signed content but
+        #   6791 bytes precede it.
+        #
+        # Ordering is the whole contract. sign_update signs exact bytes, so it has
+        # to run after generate_appcast and after --embed-notes, and nothing may
+        # write to the feed after it.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        generate = script.index('"$GENERATE_APPCAST" \\')
+        # The invocation, not the flag: the signing block's own comment mentions
+        # --embed-notes, so searching for the bare flag finds that prose first and
+        # the ordering assertion silently measures a comment.
+        embed = script.index('python3 "$PY" "$APPCAST" --embed-notes')
+        sign = script.index('"$SIGN_UPDATE" "$APPCAST"')
+        first_verify = script.index('python3 "$PY" "$APPCAST" --info-plist')
+
+        self.assertLess(generate, sign, "the feed is signed before generate_appcast rewrites it")
+        self.assertLess(embed, sign, "the feed is signed before the notes are embedded")
+        self.assertLess(sign, first_verify, "the feed is verified before it is signed")
+
+    def test_signing_is_skipped_when_the_private_key_is_absent(self) -> None:
+        # CI must never hold signing material, and pages.yml runs this script
+        # against the committed feed. So the absence of sign_update skips signing
+        # rather than failing - and, critically, the staleness check still runs
+        # afterwards, so skipping cannot hide the bug the signing step fixes.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        sign = script.index('"$SIGN_UPDATE" "$APPCAST"')
+        conditional = script.rindex("if [[ -x \"$SIGN_UPDATE\" ]]", 0, sign)
+        self.assertGreater(conditional, 0, "signing must be conditional on sign_update existing")
+        self.assertIn("no sign_update", script, "the skip has to say so, not fail quietly")
+
+    def test_the_signing_binary_is_derived_from_the_one_already_found(self) -> None:
+        # SPARKLE_BIN is only set when the caller supplies it and is unset on the
+        # discovery path, so "$SPARKLE_BIN/sign_update" expands to "/sign_update"
+        # and silently finds nothing. Deriving from GENERATE_APPCAST cannot.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        self.assertIn('SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"', script)
+        self.assertNotIn('SIGN_UPDATE="$SPARKLE_BIN/sign_update"', script)
+
     def test_generation_links_to_the_release_page_not_the_repository(self) -> None:
         # Sparkle surfaces <link> as the update's "Learn More" destination, so
         # the repository URL drops the release notes the user is being offered.

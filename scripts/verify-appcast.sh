@@ -149,6 +149,45 @@ APPCAST="$ARCHIVES_DIR/appcast.xml"
 # it is deliberately still two steps: embed, then verify each enclosure below.
 python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"
 
+# Sign the feed, and do it HERE - after the notes are embedded, never before.
+#
+# Everything above rewrites bytes that Sparkle's signature covers: generate_appcast
+# adds the new item, and --embed-notes rewrites every <description>. The committed
+# appcast.xml arrives here already carrying a signature block, and carrying it
+# forward unchanged is worse than having none: it looks signed while being stale,
+# and the failure surfaces as a confusing byte-count mismatch rather than as an
+# unsigned feed.
+#
+# This was a real release failure, not a hypothetical. A release run reported
+#
+#   FAIL  feed signature block declares 5731 bytes of signed content but 6791
+#   bytes precede it.
+#
+# because nothing in this path ever re-signed. Verified rather than assumed: a
+# one-byte edit inside the signed region of the real feed produces the same class
+# of error, and re-signing it with the project's key makes it verify again.
+#
+# Last, because sign_update signs the exact bytes it is given - anything written
+# after this point invalidates it again.
+#
+# Skipped when the private key is absent, which is the CI case: pages.yml runs
+# this script to check the committed feed, and must never hold signing material.
+# The staleness check below still runs there and still fails on a stale block, so
+# skipping the signing cannot hide the bug this step fixes.
+# Derived from GENERATE_APPCAST rather than from $SPARKLE_BIN: that variable is
+# only set when the caller supplies it, and is unset on the discovery path above,
+# so "$SPARKLE_BIN/sign_update" would silently expand to "/sign_update".
+SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"
+if [[ -x "$SIGN_UPDATE" ]]; then
+  echo "signing the feed: ${SIGN_UPDATE##*/}"
+  "$SIGN_UPDATE" "$APPCAST" || {
+      echo "sign_update failed; refusing to report a publishable release" >&2
+      exit 1
+  }
+else
+  echo "no sign_update at $SIGN_UPDATE; verifying the feed as committed (CI path)"
+fi
+
 # Verify each enclosure locally. Uses only the committed public key, so this is
 # safe to run anywhere - including CI, where the private key must never exist.
 #
