@@ -197,13 +197,15 @@ for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
     printf '%s\n' "$output"
     # Read back out of the verifier's own lines rather than re-derived here, so
-    # the tally below cannot disagree with the report printed above it. The
-    # versions are collected rather than counted, because the loop can stage
-    # more than one archive and every invocation skips the same un-staged items.
+    # the tally below cannot disagree with the report printed above it. Matched
+    # on the message text, not on the `ok`/`skip` column layout, so reformatting
+    # a prefix does not quietly turn this into a count of zero. The versions are
+    # collected rather than counted, because the loop can stage more than one
+    # archive and every invocation skips the same un-staged items.
     VERIFIED_VERSIONS="$VERIFIED_VERSIONS
-$(printf '%s\n' "$output" | sed -n 's/^  ok    version \([^:]*\): enclosure length matches.*/\1/p')"
+$(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"
     UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS
-$(printf '%s\n' "$output" | sed -n 's/^  skip  version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
+$(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
 done
 VERIFIED=$(printf '%s\n' "$VERIFIED_VERSIONS" | sort -u | grep -c . || true)
 UNVERIFIED=$(printf '%s\n' "$UNVERIFIED_VERSIONS" | sort -u | grep -c . || true)
