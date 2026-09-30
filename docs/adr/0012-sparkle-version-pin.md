@@ -1,4 +1,4 @@
-# Sparkle 2.9.6, pinned clear of CVE-2026-47122
+# Sparkle 2.10.0, pinned clear of CVE-2026-47122
 
 **Part of ticket 07. The pinned version is a release-contract item: it is what
 ships, and it is what the security position rests on.**
@@ -9,6 +9,17 @@ carried security fixes and "whatever is newest at integration time" is not a
 position anyone can defend later.
 
 **Chosen: Sparkle 2.9.6** (released 17 August 2026), the current release.
+
+**Bumped to 2.10.0 on 2026-09-30** (released 13 September 2026), the current
+release — the freshness check below closing its first loop, deliberately by
+decision rather than automatically. 2.10.0's changes sit on paths this app now
+exercises: release-notes and signed-feed diagnostics, an appcast length
+fallback when a server reports no content size, binary-delta and
+temporary-file hardening, and a fix for first updates to bundles with
+irregular extensions. Its macOS 12 deployment floor sits far below this app's,
+and the CocoaPods support it drops was never part of this SPM-only
+integration. The pin stays `exactVersion`; the resolved revision is checked
+against the upstream tag (`eef1a539…`).
 
 ## The advisory this decision is about
 
