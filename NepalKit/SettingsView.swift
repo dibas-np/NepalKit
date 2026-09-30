@@ -202,9 +202,21 @@ private struct SourceLink: View {
 
     var body: some View {
         Link(destination: repository) {
-            Label(Strings.sourceLinkTitle, systemImage: Symbols.repository)
-                .font(.caption)
-                .symbolRenderingMode(.monochrome)
+            // An explicit HStack, not a `Label`.
+            //
+            // `Label("Source", systemImage:)` under `.buttonStyle(.glass)` rendered
+            // as the bare glyph: the word was simply not there. Whether the glass
+            // style collapses a Label or the sidebar clipped it, `Label` leaves that
+            // ambiguous — a Label is *allowed* to show only its icon, so the failure
+            // is silent and looks intentional. `Text` beside `Image` has no such
+            // mode: if the word is missing now, something is actually broken rather
+            // than the label doing its job.
+            HStack(spacing: 4) {
+                Image(systemName: Symbols.repository)
+                    .symbolRenderingMode(.monochrome)
+                Text(Strings.sourceLinkTitle)
+            }
+            .font(.caption)
         }
         .buttonStyle(.glass)
         .lineLimit(1)
