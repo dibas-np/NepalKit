@@ -1,0 +1,94 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Convert a Bikram Sambat date to Gregorian with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert a Bikram Sambat date to Gregorian with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Convert a date to Bikram Sambat with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert a date to Bikram Sambat with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Today's Nepali date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Nepali date"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to convert from Bikram Sambat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use ${applicationName} to convert from Bikram Sambat"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to convert to Bikram Sambat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use ${applicationName} to convert to Bikram Sambat"
+          }
+        }
+      }
+    },
+    "What is my ${applicationName} date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is my ${applicationName} date"
+          }
+        }
+      }
+    },
+    "What is today in Bikram Sambat with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is today in Bikram Sambat with ${applicationName}"
+          }
+        }
+      }
+    },
+    "What is today's Nepali date with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is today's Nepali date with ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

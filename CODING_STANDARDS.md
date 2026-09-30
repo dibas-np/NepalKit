@@ -163,6 +163,12 @@ month-name setting applies to Bikram Sambat month names and weekday names only.
 Gregorian month names are always English (`Formatting.swift:105`) — don't route
 them through the setting.
 
+App Intents metadata is the exception. Intent titles, descriptions, parameter
+summaries, phrases, and entity representations must be build-time literals at
+their declaration site: the toolchain extracts them from source, and a
+`LocalizedStringResource` cannot wrap a `Strings` constant. Runtime intent
+dialogs are literal `LocalizedStringResource` values for the same reason.
+
 `AppTermination.quit()` is the app's single exit path. Both the popover's Quit
 button and the ⌘Q command call it, so termination logic has one home.
 

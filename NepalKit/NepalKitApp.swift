@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
+import AppIntents
 import NepalKitCore
 import SwiftUI
 
@@ -26,6 +27,14 @@ struct NepalKitApp: App {
     @State private var metadataCache = DeferredAppMetadata()
 
     init() {
+        // App Shortcuts registration: the documented push telling the App
+        // Intents framework these shortcuts exist (wayfinder ticket 01,
+        // finding 1.9). Parameterless shortcuts are said to register on
+        // install alone, but observation showed the Shortcuts database stayed
+        // empty until this call ran at launch — one of the prototype's
+        // findings, and the reason it lives in init: every launch re-asserts
+        // the registration, cold or warm.
+        NepalKitShortcuts.updateAppShortcutParameters()
         // Default on: the date is in the menu bar from the moment of sign-in.
         // Configured through a local so init never touches wrapper storage.
         let login = LoginItemModel()
