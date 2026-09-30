@@ -92,6 +92,59 @@ def write_plist(tmp: Path) -> Path:
     return plist
 
 
+def write_plist_with_key(tmp: Path, key_b64: str) -> Path:
+    """A plist carrying `key_b64` as SUPublicEDKey, for a generated keypair."""
+    plist = tmp / "Info.plist"
+    plist.write_text(
+        '<?xml version="1.0"?><plist><dict><key>SUPublicEDKey</key>'
+        f"<string>{key_b64}</string></dict></plist>",
+        encoding="utf-8",
+    )
+    return plist
+
+
+def ed25519_keypair_and_signature(tmp: Path, payload: bytes) -> tuple[str, str]:
+    """Generate a keypair in `tmp` and sign `payload` with it.
+
+    Returns (public key, signature), both base64. A key is generated here
+    rather than read from the machine on purpose: the release signing key is not
+    present in CI and is not what is under test. The verifier only ever reads
+    the public half out of the plist it is handed, so a throwaway pair exercises
+    the same code path the committed key does.
+    """
+    priv = tmp / "throwaway-priv.pem"
+    pub_der = tmp / "throwaway-pub.der"
+    data = tmp / "throwaway-data.bin"
+    sig = tmp / "throwaway-sig.bin"
+    subprocess.run(
+        ["openssl", "genpkey", "-algorithm", "ed25519", "-out", str(priv)],
+        check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["openssl", "pkey", "-in", str(priv), "-pubout", "-outform", "DER", "-out", str(pub_der)],
+        check=True, capture_output=True,
+    )
+    data.write_bytes(payload)
+    subprocess.run(
+        ["openssl", "pkeyutl", "-sign", "-rawin", "-inkey", str(priv),
+         "-in", str(data), "-out", str(sig)],
+        check=True, capture_output=True,
+    )
+    public_key = pub_der.read_bytes()[len(va.ED25519_SPKI_PREFIX):]
+    return base64.b64encode(public_key).decode(), base64.b64encode(sig.read_bytes()).decode()
+
+
+def run_cli(*args: str) -> subprocess.CompletedProcess:
+    """Run the verifier the way CI and the release script do, as a subprocess.
+
+    The return code is the part under test, so it has to come from the process
+    boundary rather than from an in-process call.
+    """
+    return subprocess.run(
+        [sys.executable, str(_MODULE), *args], capture_output=True, text=True
+    )
+
+
 def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
                minimum_system_version: str | None = None) -> str:
     buf = io.StringIO()
@@ -216,6 +269,83 @@ class VerifyAppcastTest(unittest.TestCase):
             with contextlib.redirect_stdout(buf):
                 va.verify(feed, write_plist(tmp_path), None, True)
             self.assertIn("release notes match the notes contract", buf.getvalue())
+
+    def test_a_skipped_item_fails_the_run(self) -> None:
+        # An item whose bytes were never looked at is not an item that passed.
+        # This run checks structure and nothing else, and it has to say so in
+        # the exit code: the old code printed a skip line and then "Appcast is
+        # sound." and returned 0, which is how CI stayed green having verified
+        # no item in the feed at all.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item())
+            result = run_cli(str(feed), "--info-plist", str(write_plist(tmp_path)),
+                             "--skip-crypto")
+        self.assertNotEqual(result.returncode, 0, f"a skipped item passed:\n{result.stdout}")
+        self.assertIn("Appcast NOT verified", result.stdout)
+        # The version is named, not just counted: a reader has to know which.
+        self.assertIn("1.0", result.stdout.split("Appcast NOT verified", 1)[1])
+
+    def test_a_fully_verified_item_still_passes(self) -> None:
+        # The other half of the pair above: an item whose real bytes are on
+        # disk and correctly signed clears every layer and is reported sound.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = b"the real bytes of the archive"
+            archive = tmp_path / "NepalKit-1.0.zip"
+            archive.write_bytes(payload)
+            key_b64, signature = ed25519_keypair_and_signature(tmp_path, payload)
+            feed = write_feed(tmp_path, make_item(length=str(len(payload)), signature=signature))
+            result = run_cli(str(feed), "--info-plist", str(write_plist_with_key(tmp_path, key_b64)),
+                             "--enclosure", str(archive))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("enclosure length matches", result.stdout)
+        self.assertIn("signature verifies against the committed public key", result.stdout)
+        self.assertIn("Appcast is sound.", result.stdout)
+
+    def test_a_skipped_item_never_reports_the_appcast_as_sound(self) -> None:
+        # The precise regression: the old code printed the skip line *and* the
+        # success line in the same run, so a log reader saw a clean pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item())
+            result = run_cli(str(feed), "--info-plist", str(write_plist(tmp_path)),
+                             "--skip-crypto")
+        self.assertNotIn("Appcast is sound.", result.stdout)
+        # The skip line itself stays. The information was useful; it was the
+        # conclusion drawn from it that was wrong.
+        self.assertIn("skip  version 1.0: no enclosure bytes available to verify", result.stdout)
+
+    def test_a_partial_release_run_is_named_but_does_not_fail(self) -> None:
+        # The release-time shape: the feed keeps every release ever published
+        # while the staging directory holds one archive, so every other item has
+        # no bytes to check. That gap is documented and expected, and blocking
+        # a release on it would be wrong - but it has to be named, and the
+        # default (no --allow-partial) still refuses to call it a pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = b"the real bytes of the archive"
+            archive = tmp_path / "NepalKit-1.1.zip"
+            archive.write_bytes(payload)
+            key_b64, signature = ed25519_keypair_and_signature(tmp_path, payload)
+            plist = write_plist_with_key(tmp_path, key_b64)
+            feed = write_feed(
+                tmp_path,
+                make_item(url="https://example.com/NepalKit-1.1.zip", version="1.1",
+                          length=str(len(payload)), signature=signature)
+                + make_item(version="1.0", length="1234", signature=signature),
+            )
+            partial = run_cli(str(feed), "--info-plist", str(plist),
+                              "--enclosure", str(archive), "--allow-partial")
+            default = run_cli(str(feed), "--info-plist", str(plist),
+                              "--enclosure", str(archive))
+        # The staged item is checked for real, in both runs.
+        for result in (partial, default):
+            self.assertIn("signature verifies against the committed public key", result.stdout)
+            self.assertIn("1.0", result.stdout.split("Appcast NOT verified", 1)[1])
+        # Same feed, same skip; only the policy differs.
+        self.assertEqual(partial.returncode, 0, partial.stdout)
+        self.assertNotEqual(default.returncode, 0, default.stdout)
 
     def test_deployment_floor_is_read_from_the_release_script(self) -> None:
         # The floor is whatever package-release.sh builds as, not a number typed
