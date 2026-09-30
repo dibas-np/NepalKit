@@ -5,10 +5,10 @@
 # where a human is looking. The two are deliberately not confused.
 #
 # This workflow is the *implementation* of that gate. It has now run: see
-# ticket 04. That is why it is kept rather than retired once. The claim it
-# enforces is published in the README, and it rots silently - a commit reaching
-# for a macOS 27-only API compiles fine on a maintainer's Xcode 27 and breaks the
-# floor for everyone on macOS 26.
+# ADR-0007 and the README's floor claim. That is why it is kept rather than
+# retired once. The claim it enforces is published in the README, and it rots
+# silently - a commit reaching for a macOS 27-only API compiles fine on a
+# maintainer's Xcode 27 and breaks the floor for everyone on macOS 26.
 #
 # ## When this fails because the toolchain was retired
 #
@@ -135,7 +135,7 @@ jobs:
       - name: App-layer suite
         run: ./scripts/run-app-tests.sh
 
-      # The check that matters most, per the ticket: an LSUIElement app that
+      # The check that matters most: an LSUIElement app that
       # dies or respawns in a loop on its own floor is a real shipping defect,
       # and cosmetic differences are not.
       #

@@ -96,8 +96,8 @@ permissions:
 env:
   # 26.6 is proven: the floor gate (macos26-floor.yml) ran green on a macos-26
   # runner with this exact pin — core suite, app-layer suite, build, launch.
-  # See ticket 04. The two pins must not drift; that workflow's header carries
-  # the raising-the-pin policy.
+  # See ADR-0007 and macos26-floor.yml's header. The two pins must not drift;
+  # that header carries the raising-the-pin policy.
   XCODE_VERSION: "26.6"
 
 jobs:

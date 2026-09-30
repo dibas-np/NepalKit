@@ -1,5 +1,5 @@
 #!/usr/bin/env swift
-// Rendering spike (ticket 07): verify every possible menu-bar title renders
+// Rendering spike: verify every possible menu-bar title renders
 // with full glyph coverage (no tofu) in the menu-bar font, and report the
 // widest string so truncation risk in the status bar can be judged.
 // Runs against the real NepalKitCore formatting seam (formatBSShort).

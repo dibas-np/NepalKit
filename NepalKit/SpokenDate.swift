@@ -8,7 +8,7 @@ import NepalKitCore
 extension SpokenDate {
     /// A full announcement for the menu-bar extra.
     ///
-    /// The hardest surface in the app, and the ticket's most visible one: it is
+    /// The hardest and most visible surface in the app: it is
     /// the only thing a blind user meets before opening anything. A bare date
     /// like "11 Ashoj" says nothing about *which* app it belongs to, and someone
     /// navigating by menu-bar extras is relying on this one string entirely.

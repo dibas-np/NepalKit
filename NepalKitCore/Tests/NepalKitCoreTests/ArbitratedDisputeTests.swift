@@ -11,7 +11,7 @@ import NepalKitCore
 /// routine tidy of `MonthStartTests` cannot quietly drop them. `allDisputesAre
 /// Asserted` fails if a case is removed rather than replaced.
 ///
-/// Two arbitration phases, both recorded in the v1 spec's ticket 02:
+/// Two arbitration phases, both recorded in SOURCES.md:
 ///
 /// 1. **Majority vote.** The base table and a second community table disagreed
 ///    on 9 of 116 months; a third python table broke the ties, and the winners
