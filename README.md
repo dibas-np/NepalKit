@@ -73,11 +73,14 @@ cd NepalKitCore && swift test        # core library: conversion, dataset, format
 python3 scripts/test_dataset_parsers.py    # the month-length table against the parsers
 python3 scripts/test_update_changelog.py   # the changelog generator against CHANGELOG.md
 python3 scripts/test_verify_appcast.py     # the appcast verifier
+python3 scripts/verify-deployment-floor.py # the macOS floor is one number everywhere
 ```
 
-`check-all.sh` runs the five suites above and reports each one. It does **not**
-run the `verify-*` provenance and release scripts, which need network access —
-see [CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
+`check-all.sh` also compiles the app first, which none of the commands above do.
+
+`check-all.sh` runs everything above and reports each one. It does **not** run the
+`verify-*` provenance and release scripts, which need network access — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
 
 ```
 NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting, spoken forms (Foundation only)

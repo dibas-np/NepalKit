@@ -60,11 +60,25 @@ Two things had to move together, and only one of them was code:
   feed change, for the same reason: `sign_update` signs the exact bytes it is
   handed.
 
-The standing gap this leaves is worth naming. `verify-appcast.py` cannot read the
-floor from the source tree at all, because a source `Info.plist` carries the
-unexpanded `$(MACOSX_DEPLOYMENT_TARGET)` token; it reads `package-release.sh`
-instead. That indirection is a single point of failure with no gate on it — the
-build's own floor could drift from the release script's without anything failing.
-A gate that compared `package-release.sh` against the project file, or that read
-`LSMinimumSystemVersion` out of a freshly built product, would have caught it
-before a user could. Not done here; recorded.
+The standing gap this leaves had a gate written for it, and now has one.
+`verify-appcast.py` cannot read the floor from the source tree at all, because a
+source `Info.plist` carries the unexpanded `$(MACOSX_DEPLOYMENT_TARGET)` token; it
+reads `package-release.sh` instead. That indirection is a single point of failure,
+and nothing gated it — the build's own floor could drift from the release
+script's without anything failing, which is precisely what happened.
+
+`scripts/verify-deployment-floor.py` closes it. It compares the *sources* against
+each other — every `XCBuildConfiguration`, `package-release.sh`, and the
+`LSMinimumSystemVersion` of a built product when one is available — so the
+declared number is the thing under test rather than the premise. It is the last
+gate in `check-all.sh`, which builds first so the product is there to compare, and
+it runs in `pages.yml` before the feed check that trusts the floor. Eighteen
+tests cover it, including a negative control per drift shape; the one that
+reproduces this bug sets a project-level configuration back to 26.0 and asserts
+the gate fails and names the line.
+
+The point of the gate is the one the drift teaches: a check that compares a
+declared value against another declared value cannot detect that both are wrong.
+`verify-appcast.py` will keep reporting "matches the app's floor" as long as the
+feed and the release script agree, even if the app targets something else
+entirely. Comparing the sources is the only form of this check that can fail.

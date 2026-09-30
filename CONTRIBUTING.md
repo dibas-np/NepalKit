@@ -68,18 +68,40 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these five, in this order:
+It runs these seven, in this order:
 
 ```sh
-cd NepalKitCore && swift test               # the calendar: 62 tests
-./scripts/run-app-tests.sh                  # the app: 136 tests
-python3 scripts/test_dataset_parsers.py     # the month table against the parsers
-python3 scripts/test_update_changelog.py    # the changelog generator
-python3 scripts/test_verify_appcast.py      # the appcast verifier
+# 1. compile the app, because no other gate here does
+xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
+    CODE_SIGNING_ALLOWED=NO build
+
+cd NepalKitCore && swift test               # 2. the calendar: 62 tests
+./scripts/run-app-tests.sh                  # 3. the app: 136 tests
+python3 scripts/test_dataset_parsers.py     # 4. the month table against the parsers
+python3 scripts/test_update_changelog.py    # 5. the changelog generator
+python3 scripts/test_verify_appcast.py      # 6. the appcast verifier
+python3 scripts/verify-deployment-floor.py  # 7. the floor is one number everywhere
 ```
 
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
+
+Two of those seven are the direct consequence of gates that once reported green
+while something was wrong, so they are worth explaining rather than just
+listing.
+
+**The build is first** because nothing else compiles the app: both test suites run
+through a SwiftPM harness that excludes `NepalKitApp.swift` and
+`SparkleUpdateService.swift`, correctly, and the script suites do not build Swift
+at all. Plan 021 set `SWIFT_VERSION = 6.0` and shipped a file the app could not
+compile, and twenty-two plans passed every gate in this list.
+
+**The floor check is last** because it compares the sources against each other
+rather than trusting any one of them. The app target built at 26.6 while
+`package-release.sh` said 26.0, so the appcast gate — which reads the floor from
+that file — reported `26.0 matches the app's floor` and passed, while the feed
+offered updates to systems that could not launch the build. Nothing in the list
+above it could have caught that, because they all agreed with each other.
 
 `check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
 that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:

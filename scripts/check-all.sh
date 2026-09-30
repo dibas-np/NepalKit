@@ -50,7 +50,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=6
+total=7
 ran=0
 summary=""
 current=""
@@ -114,3 +114,9 @@ gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
 gate "dataset parser suite" python3 "$repo_root/scripts/test_dataset_parsers.py"
 gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
+# After the build gate, so the built product exists and the check can compare
+# the floor the app actually shipped against the ones only declared. This is
+# the gate that would have caught the 26.0/26.6 drift before a user did:
+# every other gate here agreed, because they all trusted a declared number
+# rather than comparing the sources to each other.
+gate "deployment floor consistency" python3 "$repo_root/scripts/verify-deployment-floor.py"
