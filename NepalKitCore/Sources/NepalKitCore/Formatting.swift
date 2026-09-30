@@ -81,7 +81,12 @@ public func monthName(month: Int, style: MonthNameStyle) -> String {
     // `devanagariString` uses. The pickers and the dataset bound months to
     // 1...12, so reaching this line means an unclamped value got here, and
     // showing "13" beats inventing a name or trapping on the way to the menu bar.
-    guard names.indices.contains(month - 1) else { return String(month) }
+    // The bound is checked against `month` and not against `month - 1`: these
+    // names are 1-based, so the index form has to subtract first, and
+    // `Int.min` minus one overflows and traps inside the very function
+    // promising never to. `devanagariString` gets away with checking the value
+    // directly because digit values are never negative.
+    guard (1 ... names.count).contains(month) else { return String(month) }
     return names[month - 1]
 }
 
@@ -126,10 +131,12 @@ public let gregorianMonthNames = [
 ]
 
 /// Gregorian month name for 1 (January) through 12 (December). Out-of-range
-/// months render as their number — same pass-through rule as `monthName`.
+/// months render as their number — same pass-through rule as `monthName`, and
+/// for the same reason: the bound is checked against the month, never against
+/// a pre-subtracted index, so `Int.min` returns rather than trapping.
 /// The one lookup `formatAD` and `SpokenDate.ad` share.
 public func gregorianMonthName(_ month: Int) -> String {
-    guard gregorianMonthNames.indices.contains(month - 1) else { return String(month) }
+    guard (1 ... gregorianMonthNames.count).contains(month) else { return String(month) }
     return gregorianMonthNames[month - 1]
 }
 
