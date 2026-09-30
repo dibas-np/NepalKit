@@ -67,4 +67,6 @@ that is the finding that matters most.
 ## Disclosure
 
 Security advisories for this project are tracked with GitHub Security
-Advisories once the project is public, and linked from the release notes.
+Advisories, and linked from the release notes. The repository is public, so
+those advisories can be filed from the repository's own Security tab rather than
+by email.
