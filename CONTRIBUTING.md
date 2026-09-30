@@ -80,20 +80,26 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these seven, in this order:
+It runs these eight, in this order:
 
 ```sh
 # 1. compile the app, because no other gate here does
 xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     CODE_SIGNING_ALLOWED=NO build
+./scripts/swiftlint.sh lint --strict       # 2. all maintained Swift files
 
-cd NepalKitCore && swift test               # 2. the calendar: 62 tests
-./scripts/run-app-tests.sh                  # 3. the app: 136 tests
-python3 scripts/test_dataset_parsers.py     # 4. the month table against the parsers
-python3 scripts/test_update_changelog.py    # 5. the changelog generator
-python3 scripts/test_verify_appcast.py      # 6. the appcast verifier
-python3 scripts/verify-deployment-floor.py  # 7. the floor is one number everywhere
+cd NepalKitCore && swift test               # 3. the calendar: 62 tests
+./scripts/run-app-tests.sh                  # 4. the app: 136 tests
+python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
+python3 scripts/test_update_changelog.py    # 6. the changelog generator
+python3 scripts/test_verify_appcast.py      # 7. the appcast verifier
+python3 scripts/verify-deployment-floor.py  # 8. the floor is one number everywhere
 ```
+
+The first lint run downloads SwiftLint 0.65.1 into the ignored `.build/tools`
+cache after checking its published checksum. For compiler-backed unused-import
+and unused-declaration checks, run `./scripts/swiftlint.sh analyze
+--compiler-log-path <log>` with a log from a successful Xcode build.
 
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.

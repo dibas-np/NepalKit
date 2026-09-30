@@ -50,7 +50,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=7
+total=8
 ran=0
 summary=""
 current=""
@@ -109,6 +109,7 @@ if [ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]; then
     export NEPAKIT_BUILT_PLIST
 fi
 
+gate "SwiftLint" "$repo_root/scripts/swiftlint.sh" lint --strict
 gate "core tests (NepalKitCore)" bash -c 'cd "$1" && swift test' _ "$repo_root/NepalKitCore"
 gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
 gate "dataset parser suite" python3 "$repo_root/scripts/test_dataset_parsers.py"

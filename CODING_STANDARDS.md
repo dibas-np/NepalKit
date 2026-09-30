@@ -359,11 +359,12 @@ script but not in that file is a claim no reader can check.
   fails without it, so an unsigned feed cannot be published by accident.
 - Every new `systemImage` name was checked to resolve, and its pairing with its
   label actually reads. See *Apple platform conventions*.
-- SwiftLint was **not** run. This project does not use it: there is no
-  `.swiftlint.yml`, no lint step in any workflow, and no agreed rule set. A
-  run on the current tree under SwiftLint's defaults reports 231 violations the
-  project has never accepted — half of them `identifier_name` and `line_length`,
-  which are house-style arguments rather than defects. "Make SwiftLint clean"
-  is therefore not a bar this codebase has set, and a gate nobody can pass is
-  worse than no gate. This document is the standard; review is where it is
-  applied.
+- Run `./scripts/swiftlint.sh lint --strict` for the pinned SwiftLint gate.
+  CI runs the same command in the existing CodeQL workflow's Swift job on pull
+  requests and pushes to `main`.
+  `.swiftlint.yml` disables `identifier_name`, `line_length`, and
+  `trailing_comma` because they conflict with established domain vocabulary,
+  readable line wrapping, and collection style. The committed baseline tracks
+  existing findings; remove entries as the affected code is improved. The
+  separate analyzer rules (`unused_declaration` and `unused_import`) require a
+  compiler log and are not part of the fast lint gate.

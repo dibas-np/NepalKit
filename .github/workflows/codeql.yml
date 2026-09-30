@@ -181,6 +181,10 @@ jobs:
           echo "Using DEVELOPER_DIR=$candidate"
           xcodebuild -version
 
+      - name: SwiftLint
+        if: matrix.language == 'swift'
+        run: ./scripts/swiftlint.sh lint --strict
+
       # Xcode 26 cannot open an object-version-110 project, and this repository
       # is 110 because a maintainer's Xcode 27 rewrites it whenever the project is
       # opened. So this job downgrades the format before building, in the runner's

@@ -1,0 +1,31 @@
+baseline: .swiftlint.baseline
+
+excluded:
+  # Build products include generated SwiftPM test and resource accessors:
+  # NepalKitCore/.build/out/Intermediates.noindex/NepalKitCore.build/Debug/NepalKitCoreTests-p.build/DerivedSources/test_entry_point.swift
+  # scripts/apptests/.build/out/Intermediates.noindex/NepalKitAppTests.build/Debug/NepalKit-t.build/DerivedSources/resource_bundle_accessor.swift
+  - "**/.build/**"
+  - "**/DerivedData/**"
+  # Git metadata and hooks are not application or tool source.
+  - .git
+  # This historical menu-bar experiment intentionally probes forced casts and
+  # prints diagnostics; it is not part of the shipped app or maintained tooling.
+  - scripts/menubar-spike.swift
+
+disabled_rules:
+  # Domain abbreviations such as `bs` and `ad` are established project vocabulary.
+  - identifier_name
+  # Existing code uses readable longer expressions; a fixed column limit obscures them.
+  - line_length
+  # This repository's Swift style omits trailing commas from multiline collections.
+  - trailing_comma
+
+opt_in_rules:
+  - force_unwrapping # Surface implicit crashes; baseline records existing fixture and constant unwraps.
+
+analyzer_rules:
+  - unused_declaration # Compiler-backed analysis catches dead declarations in maintained targets.
+  - unused_import # Compiler-backed analysis catches imports unused in their target context.
+
+force_unwrapping:
+  severity: warning
