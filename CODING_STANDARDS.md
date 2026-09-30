@@ -294,6 +294,25 @@ read the skip as coverage.
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 
+Four environment variables are read by those scripts, and none of them is
+secret. `.env.example` is the place they are described, with each one's actual
+default:
+
+- `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
+  `generate_appcast`. Unset, it searches DerivedData.
+- `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched
+  provenance tables. Unset, it uses `~/.cache/nepalkit-data-sources`; it caches
+  in both cases, so this is not a switch for caching off.
+- `NEPAKIT_TAP_DIR` — a local clone of the Homebrew tap for `update-cask.sh`.
+  Unset, it uses `../homebrew-tap`.
+- `NEPAKIT_BUILT_PLIST` — a built app's `Info.plist`, so `run-app-tests.sh`
+  checks the shipped product rather than skipping five tests. Unset, the script
+  discovers one and accepts it only if it is newer than the sources.
+
+A new script that reads an environment variable adds it to `.env.example` in the
+same commit, with the same "unset means" line. A variable that appears in a
+script but not in that file is a claim no reader can check.
+
 ## Before you commit
 
 - Glossary terms used, `_Avoid_` synonyms absent.

@@ -112,7 +112,7 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
             throw NSError(
                 domain: "NepalKit.Update",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Skipped: this build cannot update itself in place"]
+                userInfo: [NSLocalizedDescriptionKey: Strings.updateCheckSkippedTransientLaunch]
             )
         }
     }

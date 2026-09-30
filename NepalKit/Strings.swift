@@ -157,6 +157,21 @@ enum Strings {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
     }
 
+    /// Refused rather than failed: the check was declined before it ran, because
+    /// this build could not have acted on any answer. Said rather than silent,
+    /// because a user who asked to check and got nothing back cannot tell that
+    /// apart from a network problem.
+    ///
+    /// Ours rather than the framework's — the reason beside it is the one the
+    /// updater phrases for itself and this file only passes along, and this is
+    /// the single sentence the app raises itself. So it lives here with the rest
+    /// instead of as a literal at the throw site.
+    ///
+    /// One line with its literal on purpose: `SpokenDateTests` parses this file
+    /// to sweep the spoken channel, and a declaration it cannot read a value out
+    /// of fails that test rather than going unchecked.
+    static let updateCheckSkippedTransientLaunch = "Skipped: this build cannot update itself in place"
+
     /// A refused register/unregister is invisible on the toggle: `isOn` follows
     /// the system, so the toggle springs back without ever saying why. This
     /// sentence is where the reason lands.
