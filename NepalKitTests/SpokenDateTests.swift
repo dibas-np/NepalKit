@@ -5,11 +5,16 @@ import NepalKitCore
 import Testing
 @testable import NepalKit
 
-/// Covers the *transformation* — that the spoken form uses pronounceable digits
-/// while keeping the user's month-name language, and that it agrees with the
-/// visual form when there is no reason to differ.
+/// Covers the app-side *composition* — the sentence a blind user actually meets
+/// from the menu-bar extra: that it names the app so it is identifiable out of
+/// context, and that it explains the range boundary rather than saying nothing.
 ///
-/// It does not assert what VoiceOver says. Spoken output is a platform
+/// The copy-free *transformation* those sentences are built from — pronounceable
+/// digits, the user's month-name language, agreement with the visual form when
+/// there is no reason to differ — is pure logic and now lives in `NepalKitCore`,
+/// covered by `NepalKitCoreTests.SpokenDateTests`.
+///
+/// Neither suite asserts what VoiceOver says. Spoken output is a platform
 /// rendering property; asserting it here would test nothing. The platform side
 /// is checked by walking the real accessibility tree of the running app.
 struct SpokenDateTests {
