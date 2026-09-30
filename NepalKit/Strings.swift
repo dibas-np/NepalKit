@@ -5,7 +5,7 @@ import NepalKitCore
 /// User-facing strings in one place. Not a localization system: the app ships
 /// one UI language (the month-name language setting is a date-presentation
 /// setting, not a second UI language).
-enum Strings {
+nonisolated enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
     /// Separator between a date and its weekday on a shown date line.
     ///
