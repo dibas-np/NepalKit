@@ -146,6 +146,83 @@ them through the setting.
 `AppTermination.quit()` is the app's single exit path. Both the popover's Quit
 button and the ⌘Q command call it, so termination logic has one home.
 
+## SwiftUI and language conventions
+
+These are the language- and framework-level rules. They are written down here,
+and not left to review, because the failure they prevent is quiet: a superseded
+spelling of a correct API still compiles, still passes every suite, and ships.
+A pull request that uses one is wrong in a way only a reader will catch, and
+most of them look like perfectly good Swift.
+
+This list also lives in `AGENTS.md`, which is agent tooling and is gitignored —
+so it reaches no contributor and no fresh clone. This is the copy that does, and
+it is the authoritative one; the other is kept in step by hand.
+
+### Swift
+
+- Strict concurrency is assumed throughout. An isolation you did not write is
+  not something to work around.
+- Shared state is `@Observable`, never `ObservableObject`/`@Published`. Every
+  `@Observable` class is `@MainActor` unless the project has default actor
+  isolation. Ownership is `@State`; passing is `@Bindable` or `@Environment`.
+  `ObservableObject`, `@Published`, `@StateObject`, `@ObservedObject` and
+  `@EnvironmentObject` are legacy here, and appear only where they already are
+  and changing them would be the larger change.
+- Concurrency is Swift's, not GCD's. No `DispatchQueue.main.async()`. Where an
+  async API and a closure-based one both exist, take the async one.
+- Prefer the Swift-native spelling of a Foundation API where one exists:
+  `replacing("hello", with: "world")` over `replacingOccurrences(of:with:)`.
+- Prefer the modern Foundation API: `URL.documentsDirectory` for the documents
+  directory, `appending(path:)` to add a component to a `URL`.
+- Never a `Formatter` subclass — `DateFormatter`, `NumberFormatter`,
+  `MeasurementFormatter`. `FormatStyle` replaces all three:
+  `myDate.formatted(date: .abbreviated, time: .shortened)` to render,
+  `Date(inputString, strategy: .iso8601)` to parse,
+  `myNumber.formatted(.number)` for numbers.
+- Never C-style number formatting. `Text(String(format: "%.2f", abs(change)))` is
+  `Text(abs(change), format: .number.precision(.fractionLength(2)))`.
+- Prefer static member lookup to a struct instance: `.circle` over `Circle()`,
+  `.borderedProminent` over `BorderedProminentButtonStyle()`.
+- Filtering text the user typed uses `localizedStandardContains()`, never
+  `contains()`.
+- No force unwraps and no force `try` unless the failure is genuinely
+  unrecoverable. *Naming* says where this codebase allows them, and why.
+- No third-party framework without asking first. The dependency list is short on
+  purpose: `NepalKitCore` and the app-test harness depend on nothing but each
+  other.
+
+### SwiftUI
+
+- `foregroundStyle()`, never `foregroundColor()`.
+- `clipShape(.rect(cornerRadius:))`, never `cornerRadius()`.
+- The `Tab` API, never `tabItem()`.
+- Never the one-parameter `onChange(of:)`. Use the variant that takes two
+  parameters, or the one that takes none.
+- `Button` rather than `onTapGesture()`, unless the tap's location or the number
+  of taps is the thing you need.
+- An image used as a button label always carries text alongside it:
+  `Button("Tap me", systemImage: "plus", action: myButtonAction)`.
+- `Task.sleep(for:)`, never `Task.sleep(nanoseconds:)`.
+- Never `UIScreen.main.bounds` to ask how much space there is.
+- `NavigationStack` with `navigationDestination(for:)`, never `NavigationView`.
+- Bold text is `bold()`, never `fontWeight(.bold)`, and `fontWeight()` is not
+  applied at all without a reason for it.
+- No `GeometryReader` where a newer API answers the question —
+  `containerRelativeFrame()`, `visualEffect()`.
+- Render a view with `ImageRenderer`, never `UIGraphicsImageRenderer`.
+- Hiding scroll indicators is `.scrollIndicators(.hidden)`, not
+  `showsIndicators: false` in the `ScrollView` initializer.
+- Scrolling and positioning use the current `ScrollView` APIs —
+  `ScrollPosition`, `defaultScrollAnchor` — never `ScrollViewReader`.
+- Split a large view into new `View` structs, not computed properties.
+- `ForEach(x.enumerated(), id: \.element.id)`, never
+  `ForEach(Array(x.enumerated()), id: \.element.id)`.
+- Do not force font sizes; use Dynamic Type.
+- No `AnyView` unless it is genuinely required.
+- Hard-coded padding and stack spacing only when specifically asked for.
+- No UIKit colors in SwiftUI code, and UIKit itself only when requested.
+- View logic goes in a view model or the equivalent, so that it can be tested.
+
 ## Comments
 
 Comment the *why*, especially the traps. A comment earns its place when it
@@ -230,3 +307,11 @@ read the skip as coverage.
   reviewed by hand and the tree re-grepped for the old bound.
 - Every new `systemImage` name was checked to resolve, and its pairing with its
   label actually reads. See *Apple platform conventions*.
+- SwiftLint was **not** run. This project does not use it: there is no
+  `.swiftlint.yml`, no lint step in any workflow, and no agreed rule set. A
+  run on the current tree under SwiftLint's defaults reports 231 violations the
+  project has never accepted — half of them `identifier_name` and `line_length`,
+  which are house-style arguments rather than defects. "Make SwiftLint clean"
+  is therefore not a bar this codebase has set, and a gate nobody can pass is
+  worse than no gate. This document is the standard; review is where it is
+  applied.
