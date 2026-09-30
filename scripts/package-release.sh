@@ -306,9 +306,11 @@ cp "$DIST_ZIP" "$APPCAST_DIR/"
 python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 
 # The workspace dies with the run, but the release outputs do not: they are
-# copied to a directory beside it that the operator keeps.
-OUT_DIR="${TMPDIR:-/tmp}/NepalKit-release-output-$$"
-mkdir -p "$OUT_DIR"
+# copied to a private directory beside it that the operator keeps. mktemp -d
+# rather than a `$$`-derived path, for the reason at the top of this file: a
+# predictable path under a world-writable /tmp can be pre-planted with a
+# symlink, and the bytes copied into it include the signed appcast.
+OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
 
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
