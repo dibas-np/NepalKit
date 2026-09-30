@@ -66,6 +66,24 @@ struct ConverterView: View {
     }
 }
 
+/// One column of the converter's date pickers: the values to choose from,
+/// the selection binding, and the two channels — what is shown and what is
+/// spoken. Grouping them is what keeps a picker concern from being a
+/// parameter on a fifteen-argument call.
+///
+/// The shown and spoken closures are deliberately separate members even
+/// where they currently agree: they are different channels by contract
+/// (SpokenDate's header), and welding them removes the seam the first
+/// speech-specific divergence will need.
+private struct PickerColumn {
+    let label: String
+    let minWidth: CGFloat
+    let values: [Int]
+    let selection: Binding<Int>
+    let text: (Int) -> String
+    let spoken: (Int) -> String
+}
+
 /// Layout shared by both directions' pickers.
 ///
 /// Year, month and day are given explicit minimum widths rather than being left
@@ -76,46 +94,20 @@ struct ConverterView: View {
 ///
 /// Month gets the extra room because "September" is nine characters where a year
 /// is four, and Devanagari month names are longer again.
-private struct DatePickers<Y: Hashable, M: Hashable, D: Hashable>: View {
-    let yearLabel: String
-    let monthLabel: String
-    let dayLabel: String
-    @Binding var year: Y
-    @Binding var month: M
-    @Binding var day: D
-    let years: [Y]
-    let yearText: (Y) -> String
-    let months: [M]
-    let monthText: (M) -> String
-    let days: [D]
-    let dayText: (D) -> String
-    let spokenYear: (Y) -> String
-    let spokenMonth: (M) -> String
-    let spokenDay: (D) -> String
+private struct DatePickers: View {
+    let year: PickerColumn
+    let month: PickerColumn
+    let day: PickerColumn
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            column(label: yearLabel, minWidth: 68) {
-                Picker("", selection: $year) {
-                    ForEach(years, id: \.self) { Text(yearText($0)).tag($0) }
-                }
-            } value: { spokenYear(year) }
-
+            column(year)
             // Widest of the three: "September" is nine characters, and a
             // Devanagari month name is longer again. Truncating the month to an
             // ellipsis defeats the point of a picker, since the month is the one
             // field a user is actually scanning to identify.
-            column(label: monthLabel, minWidth: 112) {
-                Picker("", selection: $month) {
-                    ForEach(months, id: \.self) { Text(monthText($0)).tag($0) }
-                }
-            } value: { spokenMonth(month) }
-
-            column(label: dayLabel, minWidth: 68) {
-                Picker("", selection: $day) {
-                    ForEach(days, id: \.self) { Text(dayText($0)).tag($0) }
-                }
-            } value: { spokenDay(day) }
+            column(month)
+            column(day)
         }
     }
 
@@ -130,21 +122,18 @@ private struct DatePickers<Y: Hashable, M: Hashable, D: Hashable>: View {
     ///
     /// The caption is the visible label but the picker stays untitled, so the
     /// caption is what VoiceOver announces; the two must not both speak.
-    private func column<Content: View>(
-        label: String,
-        minWidth: CGFloat,
-        @ViewBuilder content: () -> Content,
-        value: () -> String
-    ) -> some View {
+    private func column(_ column: PickerColumn) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
+            Text(column.label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            content()
-                .labelsHidden()
-                .frame(minWidth: minWidth)
-                .accessibilityLabel(label)
-                .accessibilityValue(value())
+            Picker("", selection: column.selection) {
+                ForEach(column.values, id: \.self) { Text(column.text($0)).tag($0) }
+            }
+            .labelsHidden()
+            .frame(minWidth: column.minWidth)
+            .accessibilityLabel(column.label)
+            .accessibilityValue(column.spoken(column.selection.wrappedValue))
         }
     }
 }
@@ -155,21 +144,22 @@ private struct BSPickers: View {
 
     var body: some View {
         DatePickers(
-            yearLabel: Strings.yearLabel,
-            monthLabel: Strings.monthLabel,
-            dayLabel: Strings.dayLabel,
-            year: $model.bsYear,
-            month: $model.bsMonth,
-            day: $model.bsDay,
-            years: model.bsYears,
-            yearText: { formatNumber($0, digits: settings.digits) },
-            months: Array(1 ... 12),
-            monthText: { monthName(month: $0, style: settings.monthNames) },
-            days: Array(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth)),
-            dayText: { formatNumber($0, digits: settings.digits) },
-            spokenYear: { SpokenDate.number($0) },
-            spokenMonth: { monthName(month: $0, style: settings.monthNames) },
-            spokenDay: { SpokenDate.number($0) }
+            year: PickerColumn(
+                label: Strings.yearLabel, minWidth: 68, values: model.bsYears,
+                selection: $model.bsYear,
+                text: { formatNumber($0, digits: settings.digits) },
+                spoken: { SpokenDate.number($0) }),
+            month: PickerColumn(
+                label: Strings.monthLabel, minWidth: 112, values: Array(1 ... 12),
+                selection: $model.bsMonth,
+                text: { monthName(month: $0, style: settings.monthNames) },
+                spoken: { monthName(month: $0, style: settings.monthNames) }),
+            day: PickerColumn(
+                label: Strings.dayLabel, minWidth: 68,
+                values: Array(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth)),
+                selection: $model.bsDay,
+                text: { formatNumber($0, digits: settings.digits) },
+                spoken: { SpokenDate.number($0) })
         )
     }
 }
@@ -180,21 +170,23 @@ private struct ADPickers: View {
 
     var body: some View {
         DatePickers(
-            yearLabel: Strings.yearLabel,
-            monthLabel: Strings.monthLabel,
-            dayLabel: Strings.dayLabel,
-            year: $model.adYear,
-            month: $model.adMonth,
-            day: $model.adDay,
-            years: model.adYears,
-            yearText: { formatNumber($0, digits: settings.digits) },
-            months: model.adMonths(year: model.adYear),
-            monthText: { gregorianMonthName($0) },
-            days: model.adDays(year: model.adYear, month: model.adMonth),
-            dayText: { formatNumber($0, digits: settings.digits) },
-            spokenYear: { SpokenDate.number($0) },
-            spokenMonth: { gregorianMonthName($0) },
-            spokenDay: { SpokenDate.number($0) }
+            year: PickerColumn(
+                label: Strings.yearLabel, minWidth: 68, values: model.adYears,
+                selection: $model.adYear,
+                text: { formatNumber($0, digits: settings.digits) },
+                spoken: { SpokenDate.number($0) }),
+            month: PickerColumn(
+                label: Strings.monthLabel, minWidth: 112,
+                values: model.adMonths(year: model.adYear),
+                selection: $model.adMonth,
+                text: { gregorianMonthName($0) },
+                spoken: { gregorianMonthName($0) }),
+            day: PickerColumn(
+                label: Strings.dayLabel, minWidth: 68,
+                values: model.adDays(year: model.adYear, month: model.adMonth),
+                selection: $model.adDay,
+                text: { formatNumber($0, digits: settings.digits) },
+                spoken: { SpokenDate.number($0) })
         )
     }
 }
