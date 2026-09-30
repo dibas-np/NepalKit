@@ -34,6 +34,27 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.4.0/NepalKit-1.4.0.zip" length="3084358" type="application/octet-stream" sparkle:edSignature="wcAM31N53ls8WY/jh7fdgsQ46t1W90sZbA9vGSCVPakUzj04YaLRuAGb0J9rcZIJn8PtGBavrm+adMXtuwfkCg=="/>
         </item>
         <item>
+            <title>1.3.0</title>
+            <pubDate>Wed, 30 Sep 2026 00:03:20 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.3.0</link>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>Nothing in the app itself has changed.</b>
+<p>This release exists because how NepalKit is numbered and installed changed, not because anything you can see or use did. If you are already on 1.2, there is no reason to take this one.</p>
+<b>Install:</b>
+<ul>
+<li>NepalKit can now be installed with Homebrew, from the project’s own tap: brew install --cask dibas-np/tap/nepalkit. Pick that or the DMG, not both — Homebrew installs to the same place NepalKit does, and while Homebrew is told the app updates itself (so it will not reinstall over one that has moved forward), a Sparkle update after a Homebrew install leaves the two disagreeing about which version is installed.</li>
+</ul>
+<b>Numbering:</b>
+<ul>
+<li>Versions now read three components — 1.3.0, not 1.3. The About window, the Git tag, and the Homebrew cask all show the same number because they are all derived from one value. Releases 1.0 to 1.2 keep the numbers they shipped with; their tags and downloads are not rewritten.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="></enclosure>
+        </item>
+        <item>
             <title>1.2</title>
             <pubDate>Tue, 29 Sep 2026 18:35:47 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit/releases/tag/1.2</link>
@@ -80,6 +101,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: tfKyToncqZrp1mIAFPuqYn5KYPP71aB/ttEtsWRgp3WzVg4wBXRqwEc3Z99EmtBFOBHclQL15FBOnTkciwV4AQ==
-length: 6914
+edSignature: FdFPzOd4V2/5Eb0KtmcmKSmXqs8+5DKY1780yB14hFiU6AyQkc9o7XuVNCpd0KGR7STabqRUL8ReDMvive3ODg==
+length: 8668
 -->
