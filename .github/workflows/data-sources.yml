@@ -37,6 +37,10 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/test_dataset_parsers.py
+      - name: The changelog generator still fails loudly and rewrites nothing
+        run: |
+          set -euo pipefail
+          python3 scripts/test_update_changelog.py
       - name: Compare the shipped table against the committed baseline
         run: |
           set -euo pipefail
