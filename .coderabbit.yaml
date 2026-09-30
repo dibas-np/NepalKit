@@ -116,15 +116,22 @@ reviews:
         change that weakens a check as a change to a control. Every gate added
         here has a negative control that reproduces the bug it was written for.
 
-# Tone: state the disagreement and the evidence. Every one of these findings came
-# from a real regression rather than from style preference, and a review that
-# cannot tell the difference will spend its comments on the wrong things.
+# Tone: what a useful finding looks like here. Kept under the schema's 250-char
+# limit on tone_instructions - an earlier draft was 575 and CodeRabbit rejected
+# the whole file, silently falling back to defaults, so this section had never
+# been in effect. The reasoning it carried now lives in
+# knowledge_base.code_guidelines, which has no such limit.
 tone_instructions: >
-  Be direct and specific. When you flag something, say what breaks and under what
-  condition, not that it "might be an issue". This repository's history is a
-  series of gates that passed while something was wrong, so a finding without a
-  concrete failure case is the least useful thing you can contribute. Equally, do
-  not manufacture a concern to seem thorough: several findings in this pull
-  request were false premises, and saying so plainly was more useful than a
-  hedged suggestion. If you are unsure whether something is a problem, say you are
-  unsure and what would settle it.
+  Be direct and specific. Say what breaks and under what condition, not that
+  something "might be an issue". If you are unsure, say so and say what would
+  settle it. Do not manufacture a concern to seem thorough.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    # CODING_STANDARDS.md is the committed, authoritative copy of the house
+    # style. AGENTS.md is gitignored and exists only on a maintainer's machine,
+    # so it is not a review input even though its defaults name this file.
+    filePatterns:
+      - files: "**/CODING_STANDARDS.md"
+        applyTo: "**/*"
