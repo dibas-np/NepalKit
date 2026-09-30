@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/img/popover.png" alt="NepalKit popover showing today's Bikram Sambat date, Nepal Time, and the converter" width="420" />
+  <img src="docs/img/popover.png" alt="NepalKit popover showing today's Bikram Sambat date, Nepal Time, and the converter" width="340" />
 </p>
 
 ## Features

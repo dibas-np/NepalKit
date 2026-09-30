@@ -4,7 +4,9 @@
 
 The floor was 26.0 when this ADR was first written and is now 26.6, which is a narrowing and therefore a product decision like any other: it drops support for 26.0 through 26.5. It was raised to match what the app target had actually been building against — see the amendment below, which records a drift this repository had no gate for.
 
-`MACOSX_DEPLOYMENT_TARGET = 26.6` is stated in all four `XCBuildConfiguration` blocks. The two project-level ones matter as much as the app target's, because the test target inherits them and was still building against 26.0 while the app it tests required 26.6.
+All four `XCBuildConfiguration` blocks — the two project-level ones and the two app-target ones — state `MACOSX_DEPLOYMENT_TARGET = 26.6`. The project-level pair matters as much as the app's, because the test target inherits from it, and it was the pair left behind: the app target had been given 26.6 while the project-level configurations still said 26.0, so the test target was building against 26.0 while the app it tests required 26.6.
+
+All four is a larger surface than the project has to keep correct, and the reason it is four rather than one is worth recording: Xcode materialises an inherited value into the target's own configuration when the value is changed in the UI, so "set it once at the project level" is not something the file preserves. `verify-deployment-floor.py` reads every occurrence, so the extra copies are checked rather than assumed consistent.
 
 macOS 26 and 27 may render Liquid Glass materials somewhat differently; those differences are OS behavior, not something NepalKit compensates for. Test on both and treat Apple's rendering differences as expected.
 

@@ -30,6 +30,23 @@ so the floor SDK can build it without a single availability check.)
 Object version 100 is a valid common denominator readable by both toolchains, so
 Xcode 27 continues to open the project.
 
+**This has now happened twice, and the second time nobody noticed until CI
+did.** The first was a deliberate adoption of an Xcode 27 feature. The second
+was an accident: opening the project in Xcode 27 to build it is enough for
+Xcode to rewrite the file into format 110, and that rewrite lands in whatever
+commit comes next. The floor job's failure is the least useful kind available —
+
+    xcodebuild: error: Unable to read project 'NepalKit.xcodeproj'.
+    Reason: The project cannot be opened because it is in a future Xcode
+    project file format (110).
+
+— which names neither the setting that changed nor the file to put back, and
+arrives as a red build on a pull request whose code is fine. Two CI jobs failed
+that way before it was traced. It is now checked by `verify-deployment-floor.py`,
+which fails with a message naming the setting, the limit, and this ADR. That gate
+is the only thing stopping a third occurrence: the rewrite is a side effect of
+using the tool, so no amount of care at commit time prevents it.
+
 The accepted cost is that adopting a future Xcode 27-only *project-file* feature
 requires raising the object version again, which breaks this gate and forces it
 to be re-evaluated. That is a deliberate trade: a continuously re-verified

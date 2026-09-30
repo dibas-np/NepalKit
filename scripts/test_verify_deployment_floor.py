@@ -190,6 +190,24 @@ class DriftDetectionTests(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("DEPLOYMENT_TARGET", output)
 
+    def test_a_project_xcode_27_rewrote_is_a_failure_not_a_pass(self) -> None:
+        # The exact state this branch shipped: objectVersion 110, which the
+        # deployment-floor job cannot open. It must fail with a message that says
+        # what to change, not merely that something is wrong.
+        rewritten = PBXPROJ.replace("objectVersion", "objectVersion")
+        rewritten = "// !$*UTF8*$!\n{\n\tobjectVersion = 110;\n" + PBXPROJ.split("\n", 1)[1]
+        problem = vdf._project_format_problem(rewritten)
+        self.assertIsNotNone(problem, "a 110 project must not pass")
+        self.assertIn("100", problem, "the message has to say what to set it back to")
+
+    def test_a_project_within_the_limit_reports_nothing(self) -> None:
+        self.assertIsNone(vdf._project_format_problem("// objectVersion = 100;\n"))
+
+    def test_a_project_with_no_object_version_is_not_a_failure(self) -> None:
+        # Absent means an older format this gate has no opinion about, and
+        # failing on it would make the gate refuse a project it cannot judge.
+        self.assertIsNone(vdf._project_format_problem("{ objects = 1; }\n"))
+
     def test_the_gate_passes_with_no_built_product(self) -> None:
         # A clean checkout that has never been built must not be blocked by a
         # gate about a build it does not have.
@@ -206,6 +224,16 @@ class RealRepositoryTests(unittest.TestCase):
         with contextlib.redirect_stdout(captured):
             code = vdf.main()
         self.assertEqual(code, 0, captured.getvalue())
+
+    def test_the_repository_project_format_is_one_the_floor_job_can_read(self) -> None:
+        # ADR-0007: object version 110 is Xcode 27's format, the floor job pins
+        # Xcode 26.6, and Xcode 26 cannot open a 110 project at all. It has
+        # regressed twice - once deliberately in a406c7e, once by accident when
+        # Xcode 27 rewrote the file merely by opening it.
+        with contextlib.redirect_stdout(io.StringIO()):
+            problem = vdf._project_format_problem(
+                vdf.PROJECT.read_text(encoding="utf-8"))
+        self.assertIsNone(problem, problem or "")
 
     def test_the_release_script_floor_is_what_the_verifier_reads(self) -> None:
         # Ties this gate to the other one. If verify-appcast.py's notion of the

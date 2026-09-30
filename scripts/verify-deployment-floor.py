@@ -140,7 +140,45 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
         built = product_floor(plist_path)
         if built is not None:
             declared.append((f"built product {plist_path.parent.name}", built))
-    return declared, None
+    problem = _project_format_problem(PROJECT.read_text(encoding="utf-8"))
+    return declared, problem
+
+
+# The highest object version the deployment-floor toolchain can read. ADR-0007:
+# 110 is Xcode 27's format, the floor job pins Xcode 26.6, and Xcode 26 cannot
+# open a 110 project at all - it fails with "Unable to read project" before
+# compiling a line, which is the least useful possible failure because it names
+# neither the setting that changed nor the file that has to change back.
+#
+# This is here because it has now bitten twice: once in a406c7e, and again when
+# opening the project in Xcode 27 to build it silently rewrote the format. The
+# rewrite is a side effect of using the tool, so no amount of care at the commit
+# prevents it - only a gate does.
+MAX_OBJECT_VERSION = 100
+
+
+def _project_format_problem(text: str) -> str | None:
+    """A project file newer than the floor toolchain can read, if so.
+
+    The floor job runs the pinned Xcode, and a project it cannot open fails
+    before it reaches the app's code - so this is checked here, where the message
+    can say what happened and what to do, rather than there, where the message is
+    about a project file.
+    """
+    match = re.search(r"^\s*objectVersion = (\d+);", text, re.M)
+    if match is None:
+        return None
+    version = int(match.group(1))
+    if version <= MAX_OBJECT_VERSION:
+        return None
+    return (
+        f"{PROJECT.name} is object version {version}, and the deployment-floor "
+        f"job pins a toolchain that can only read up to {MAX_OBJECT_VERSION}. "
+        "Xcode 27 rewrites the format when it opens a project, so this regresses "
+        "on its own. Set objectVersion back to "
+        f"{MAX_OBJECT_VERSION}; ADR-0007 records why, and says the rewrite is "
+        "otherwise harmless because no build setting differs between the two."
+    )
 
 
 def _locate_built_product() -> Path | None:
@@ -176,6 +214,10 @@ def main() -> int:
 
     if not declared:
         print("FAIL  no deployment target is declared anywhere.")
+        return 1
+
+    if problem is not None:
+        print(f"FAIL  {problem}")
         return 1
 
     values = {value for _, value in declared}
