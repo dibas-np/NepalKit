@@ -283,11 +283,16 @@ private struct TodaySection: View {
                 // rather than a value sitting beside its own label; everything
                 // below steps down from it.
                 //
+                // `largeTitle`, and semantic like every other font here. This was
+                // a literal `system(size: 28)` — 2pt larger, and not scaling: a
+                // literal point size ignores the system accessibility text size,
+                // so a user enlarging text saw every line grow except the hero.
+                //
                 // Shown exactly as configured; announced in a form a voice can
                 // pronounce. The two come from the same date, so they cannot
                 // drift into describing different days.
                 Text(formatBS(todayBS, settings: settings))
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.largeTitle.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     // Label only: `children: .ignore` leaves a `Text` with no
                     // accessibility role at all. Replacing the label keeps its

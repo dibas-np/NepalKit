@@ -76,7 +76,7 @@ struct SettingsView: View {
                 // The shown title keeps its ellipsis, which marks a control that
                 // opens a sheet elsewhere. Spoken it is a pause and no meaning,
                 // so the announcement drops it. No `.combine` is needed for the
-                // label to win, exactly as for the launch-at-login control below.
+                // label to win, exactly as for the launch-at-login control above.
                 Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
                     .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
 
