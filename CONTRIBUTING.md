@@ -66,7 +66,7 @@ Run both suites. They are separate on purpose: one is the calendar, the other is
 the application.
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 52 tests
+cd NepalKitCore && swift test          # the calendar: 53 tests
 ./scripts/run-app-tests.sh             # the app: 131 tests
 ```
 

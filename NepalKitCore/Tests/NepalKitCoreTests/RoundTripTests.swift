@@ -19,7 +19,15 @@ struct RoundTripTests {
     static func everyBSDay() -> [BSDay] {
         var days: [BSDay] = []
         for year in CalendarDataset.v2.supportedRange {
-            guard let months = CalendarDataset.v2.monthLengths(for: year) else { continue }
+            // A missing row is the defect these tests exist to catch, so it is
+            // recorded rather than skipped past. A bare `continue` here made the
+            // suite green over a smaller sweep, which is the rule
+            // CODING_STANDARDS.md §Changing a supported-range boundary states and
+            // GregorianWeekdayTests already follows.
+            guard let months = CalendarDataset.v2.monthLengths(for: year) else {
+                Issue.record("No twelve-month table row for \(year); the round-trip sweep is not exhaustive")
+                continue
+            }
             for (offset, length) in months.enumerated() {
                 for day in 1 ... length {
                     days.append(BSDay(year: year, month: offset + 1, day: day))
@@ -69,6 +77,39 @@ struct RoundTripTests {
             }
             previous = date
         }
+    }
+
+    /// That the enumeration above is the whole table, and not a quiet subset of
+    /// it.
+    ///
+    /// Every other test in this file passes just as happily over a shorter
+    /// `days` array: a year the enumeration skipped, or a month it dropped, would
+    /// shrink the 40,178-day sweep and leave three green tests behind it. So the
+    /// claim the round trips cannot make about themselves is asserted here.
+    ///
+    /// The count is compared against the table's own month lengths, summed
+    /// separately, rather than against a literal — a literal would need editing
+    /// every time the range is extended, and a test that has to be updated when
+    /// the data moves is one more thing that can be forgotten. `!days.isEmpty`
+    /// would not do either: a sweep missing every day after the first year is
+    /// still non-empty, and still green.
+    ///
+    /// A month length that is present but wrong is not caught here, and does not
+    /// need to be: the phantom day it invents has no conversion, so
+    /// `exhaustiveRoundTripBStoADtoBS` records it, and a short one loses a day
+    /// that `consecutiveBSDaysAdvanceOneADDay` reports as a gap.
+    @Test func everyBSDayEnumeratesTheWholeTable() {
+        let days = Self.everyBSDay()
+        let dataset = CalendarDataset.v2
+        let tableTotal = dataset.supportedRange.reduce(0) { total, year in
+            total + (dataset.monthLengths(for: year)?.reduce(0, +) ?? 0)
+        }
+
+        #expect(
+            Set(days.map(\.year)) == Set(dataset.supportedRange),
+            "a supported year contributed no days to the sweep"
+        )
+        #expect(days.count == tableTotal, "the sweep covers \(days.count) days, not the table's \(tableTotal)")
     }
 
     @Test func leapDays() {
