@@ -202,12 +202,30 @@ def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
 
 
 def capture_verify(feed: Path, plist: Path,
-                   minimum_system_version: str | None = None) -> str:
+                   minimum_system_version: str | None = None,
+                   enclosure: Path | None = None) -> str:
+    """Run `verify` in-process and return what it printed.
+
+    With an `enclosure` the byte and signature layers really run. Without one it
+    passes `skip_crypto`, which since plan 022 is a *reported skip* rather than
+    a pass — so a caller using this form is asserting a run that did not fully
+    verify, and the output says so.
+    """
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        va.verify(feed, plist, None, True, minimum_system_version)
+        va.verify(feed, plist, enclosure, enclosure is None, minimum_system_version)
     return buf.getvalue()
 
+
+def run_cli(*args: str) -> subprocess.CompletedProcess:
+    """Run the verifier the way CI and the release script do, as a subprocess.
+
+    The return code is the part under test, so it has to come from the process
+    boundary rather than from an in-process call.
+    """
+    return subprocess.run(
+        [sys.executable, str(_MODULE), *args], capture_output=True, text=True
+    )
 
 class VerifyAppcastTest(unittest.TestCase):
     def test_no_items_fails(self) -> None:
@@ -482,6 +500,88 @@ class VerifyAppcastTest(unittest.TestCase):
             self.assertFalse(va.verify_signature(public_key, data + b"x", signature))
 
 
+    def test_a_skipped_item_fails_the_run(self) -> None:
+        # An item whose bytes were never looked at is not an item that passed.
+        # This run checks structure and nothing else, and it has to say so in
+        # the exit code: the old code printed a skip line and then "Appcast is
+        # sound." and returned 0, which is how CI stayed green having verified
+        # no item in the feed at all.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key_b64, priv = ed25519_keypair(tmp_path, "skipped")
+            feed = sign_feed(tmp_path, make_item(), priv)
+            result = run_cli(str(feed), "--info-plist", str(write_plist_with_key(tmp_path, key_b64)),
+                             "--skip-crypto")
+        self.assertNotEqual(result.returncode, 0, f"a skipped item passed:\n{result.stdout}")
+        self.assertIn("Appcast NOT verified", result.stdout)
+        # The version is named, not just counted: a reader has to know which.
+        self.assertIn("1.0", result.stdout.split("Appcast NOT verified", 1)[1])
+
+    def test_a_fully_verified_item_still_passes(self) -> None:
+        # The other half of the pair above: an item whose real bytes are on
+        # disk and correctly signed clears every layer and is reported sound.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = b"the real bytes of the archive"
+            archive = tmp_path / "NepalKit-1.0.zip"
+            archive.write_bytes(payload)
+            key_b64, priv = ed25519_keypair(tmp_path, "release")
+            signature = base64.b64encode(ed25519_sign(priv, tmp_path, payload)).decode()
+            feed = sign_feed(tmp_path, make_item(length=str(len(payload)), signature=signature), priv)
+            result = run_cli(str(feed), "--info-plist", str(write_plist_with_key(tmp_path, key_b64)),
+                             "--enclosure", str(archive))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("enclosure length matches", result.stdout)
+        self.assertIn("signature verifies against the committed public key", result.stdout)
+        self.assertIn("Appcast is sound.", result.stdout)
+
+    def test_a_skipped_item_never_reports_the_appcast_as_sound(self) -> None:
+        # The precise regression: the old code printed the skip line *and* the
+        # success line in the same run, so a log reader saw a clean pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key_b64, priv = ed25519_keypair(tmp_path, "skipped")
+            feed = sign_feed(tmp_path, make_item(), priv)
+            result = run_cli(str(feed), "--info-plist", str(write_plist_with_key(tmp_path, key_b64)),
+                             "--skip-crypto")
+        self.assertNotIn("Appcast is sound.", result.stdout)
+        # The skip line itself stays. The information was useful; it was the
+        # conclusion drawn from it that was wrong.
+        self.assertIn("skip  version 1.0: no enclosure bytes available to verify", result.stdout)
+
+    def test_a_partial_release_run_is_named_but_does_not_fail(self) -> None:
+        # The release-time shape: the feed keeps every release ever published
+        # while the staging directory holds one archive, so every other item has
+        # no bytes to check. That gap is documented and expected, and blocking
+        # a release on it would be wrong - but it has to be named, and the
+        # default (no --allow-partial) still refuses to call it a pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = b"the real bytes of the archive"
+            archive = tmp_path / "NepalKit-1.1.zip"
+            archive.write_bytes(payload)
+            key_b64, priv = ed25519_keypair(tmp_path, "partial")
+            signature = base64.b64encode(ed25519_sign(priv, tmp_path, payload)).decode()
+            plist = write_plist_with_key(tmp_path, key_b64)
+            feed = sign_feed(
+                tmp_path,
+                make_item(url="https://example.com/NepalKit-1.1.zip", version="1.1",
+                          length=str(len(payload)), signature=signature)
+                + make_item(version="1.0", length="1234", signature=signature),
+                priv,
+            )
+            partial = run_cli(str(feed), "--info-plist", str(plist),
+                              "--enclosure", str(archive), "--allow-partial")
+            default = run_cli(str(feed), "--info-plist", str(plist),
+                              "--enclosure", str(archive))
+        # The staged item is checked for real, in both runs.
+        for result in (partial, default):
+            self.assertIn("signature verifies against the committed public key", result.stdout)
+            self.assertIn("1.0", result.stdout.split("Appcast NOT verified", 1)[1])
+        # Same feed, same skip; only the policy differs.
+        self.assertEqual(partial.returncode, 0, partial.stdout)
+        self.assertNotEqual(default.returncode, 0, default.stdout)
+
 class FeedSignatureTest(unittest.TestCase):
     """The feed's own signature, as distinct from the archives'.
 
@@ -494,11 +594,22 @@ class FeedSignatureTest(unittest.TestCase):
     def test_signed_feed_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
+            payload = b"the bytes the enclosure check will read"
+            archive = tmp_path / "NepalKit-1.0.zip"
+            archive.write_bytes(payload)
             key, priv = ed25519_keypair(tmp_path)
-            feed = sign_feed(tmp_path, make_item(), priv)
-            output = capture_verify(feed, write_plist_with_key(tmp_path, key))
+            signature = base64.b64encode(ed25519_sign(priv, tmp_path, payload)).decode()
+            feed = sign_feed(
+                tmp_path, make_item(length=str(len(payload)), signature=signature), priv)
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key),
+                                    enclosure=archive)
+        self.assertIn("enclosure length matches", output)
         self.assertIn("feed signature verifies against the committed public key",
                       output)
+        # Every layer ran and every one of them passed, so the run is a pass.
+        # With no enclosure the item would be a reported skip, and 022 made that
+        # a non-zero exit - which would make this test assert a run that cannot
+        # reach "Appcast is sound." at all.
         self.assertIn("Appcast is sound.", output)
 
     def test_unsigned_feed_fails(self) -> None:
