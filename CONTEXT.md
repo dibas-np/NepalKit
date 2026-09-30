@@ -40,6 +40,10 @@ _Avoid_: BS weekday, AD weekday
 
 ## Calendar data
 
+**Today**:
+The current calendar date in Nepal Time — an event on Nepal's clock, and the only query anchored to an instant. A date a user *names* for conversion is a different thing: a calendar day as spoken, independent of Nepal Time; only its year, month, and day matter.
+_Avoid_: current date, named-date conversion
+
 **Supported range**:
 The span of Bikram Sambat years the bundled dataset converts in both directions. Declared by the dataset, never extrapolated past it. The bundled dataset is 1975–2084 BS, 1918-04-13 through 2028-04-12 Gregorian.
 _Avoid_: Product boundary, date range, supported years
