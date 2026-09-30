@@ -175,11 +175,44 @@ PYEOF
 
 # Verify each enclosure locally. Uses only the committed public key, so this is
 # safe to run anywhere - including CI, where the private key must never exist.
+#
+# A partial pass is the expected state here, not a failure. The feed keeps one
+# item per release ever published while package-release.sh stages exactly one
+# archive, so only the item naming that archive has bytes to check - see the
+# comment on the fetch branch in verify-appcast.py. --allow-partial keeps that
+# documented gap from blocking a release, and the tally below puts the number in
+# the log where it can be read. Anything actually checked and found wrong still
+# fails, because that is a FAIL line, not a skip.
 STATUS=0
+VERIFIED_VERSIONS=""
+UNVERIFIED_VERSIONS=""
+# Occurrences, not lines: `grep -c '<item>'` counts the lines that mention an
+# item, which is only the same number while the generator happens to write one
+# per line, and a wrong denominator here would report "1 of 1" over a feed with
+# three releases in it.
+ITEMS=$(grep -o '<item>' "$APPCAST" | wc -l | tr -d ' ' || true)
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     echo
     echo "verifying against $archive:t"
-    python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" || STATUS=1
+    output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
+    printf '%s\n' "$output"
+    # Read back out of the verifier's own lines rather than re-derived here, so
+    # the tally below cannot disagree with the report printed above it. The
+    # versions are collected rather than counted, because the loop can stage
+    # more than one archive and every invocation skips the same un-staged items.
+    VERIFIED_VERSIONS="$VERIFIED_VERSIONS
+$(printf '%s\n' "$output" | sed -n 's/^  ok    version \([^:]*\): enclosure length matches.*/\1/p')"
+    UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS
+$(printf '%s\n' "$output" | sed -n 's/^  skip  version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
 done
+VERIFIED=$(printf '%s\n' "$VERIFIED_VERSIONS" | sort -u | grep -c . || true)
+UNVERIFIED=$(printf '%s\n' "$UNVERIFIED_VERSIONS" | sort -u | grep -c . || true)
+
+echo
+if [[ "$VERIFIED" -eq "$ITEMS" ]]; then
+    echo "byte-verified all $ITEMS feed item(s)"
+else
+    echo "byte-verified $VERIFIED of $ITEMS feed item(s); $UNVERIFIED had no archive in $ARCHIVES_DIR to check"
+fi
 
 exit $STATUS
