@@ -69,7 +69,28 @@ struct SettingsView: View {
         // produced a one-destination-wide window with no way back that was not the
         // button itself. Removed rather than hidden so it does not come back with
         // a future toolbar default.
-        .toolbar(removing: .sidebarToggle)
+        // The sidebar toggle is removed by hiding the window toolbar outright.
+        //
+        // `.toolbar(removing: .sidebarToggle)` is the documented lever and it is
+        // the only one — `ToolbarDefaultItemKind` has exactly three members
+        // (sidebarToggle, title, search) — and it does nothing here. It compiled,
+        // the signature was right, and the button stayed.
+        //
+        // It is also not cosmetic. macOS 26 draws that toggle at the top of the
+        // sidebar column when there is no title bar to hold it, where it sits over
+        // the destinations: it took a row of space the first three rows did not
+        // have, and the row underneath it stopped taking clicks, so the whole
+        // window was unusable. `List(selection:)` was also unwired, which is fixed
+        // separately; this is the other half.
+        //
+        // The cost is the window's title. "NepalKit Settings" comes from the
+        // `Settings` scene and the toolbar is where it lives, so hiding the toolbar
+        // hides it. That is the trade, and it is a deliberate one: a settings
+        // window with three destinations in a fixed-size column has nothing to
+        // collapse, and a button whose only effect is to make the window unusable
+        // is worse than a missing title. If the title turns out to matter more,
+        // the way back is one line and the alternative is accepting the toggle.
+        .toolbar(.hidden, for: .windowToolbar)
         // No window-level `.glassEffect`, deliberately. It was here for two commits
         // and it did nothing visible: the sidebar is a `List(.sidebar)` and the
         // detail is a `Form(.grouped)`, and both paint their own material over
