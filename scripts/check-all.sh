@@ -3,9 +3,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Runs every automated gate a contributor can run locally, in the order that
-# fails fastest. See docs/adr/0005-app-layer-test-execution.md for why the
-# app-layer suite goes through the SwiftPM harness rather than `xcodebuild test`.
+# Runs every automated gate a contributor can run locally. See
+# docs/adr/0005-app-layer-test-execution.md for why the app-layer suite goes
+# through the SwiftPM harness rather than `xcodebuild test`.
+#
+# The build runs FIRST, which breaks the fastest-fails-first order the rest of
+# this script follows, and the exception is load-bearing. scripts/apptests
+# excludes NepalKitApp.swift and SparkleUpdateService.swift - correctly, since a
+# library target cannot own @main and the harness links only NepalKitCore - and
+# run-app-tests.sh discovers a built product rather than making one. So without a
+# build ahead of it, InfoPlistKeysTests has nothing to read and skips, and a
+# skipped test still reports as passing. Five gates that guard the release keys
+# would be dark on every run that had not just built.
+#
+# That exclusion is also how SWIFT_VERSION = 6.0 shipped a file the app target
+# could not compile: every gate here passed, for twenty-two plans, because the
+# only file that broke lives in the one file none of them builds. The first gate
+# is the one that would have caught it.
 #
 # Why this exists: the repository had five suites and the contributor docs named
 # two. `test_dataset_parsers.py` pins the month-length constants that a
@@ -22,6 +36,11 @@
 #   - The other `scripts/verify-*` and `scripts/package-release.sh`, which are
 #     release-time gates over packaged artifacts and a live feed.
 #
+# It does compile the app, which no other local gate does. macos26-floor.yml
+# builds it in CI on every push to main and every pull request; this is the local
+# half of that, so a contributor finds a broken app target here rather than in a
+# pull-request log.
+#
 # Both are run by CI (`data-sources.yml`, `pages.yml`) on every change that
 # touches them; this command is the local half, not a replacement.
 #
@@ -31,7 +50,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=5
+total=6
 ran=0
 summary=""
 current=""
@@ -65,6 +84,30 @@ gate() {
     summary="$summary$(printf '  pass  %s' "$name")"$'\n'
     current=""
 }
+
+# First, and out of order on purpose - see the header. `build`, not `test`:
+# ADR-0005 records that xcodebuild test builds the app cleanly and then hangs
+# before connecting. Signing off, so a local run needs no credentials and cannot
+# reach any. The product is exported so the plist tests below read the built
+# Info.plist rather than skipping.
+derived="$repo_root/DerivedData"
+gate "app target builds" bash -c '
+    set -euo pipefail
+    xcodebuild -project "$1/NepalKit.xcodeproj" -scheme NepalKit \
+        -configuration Debug -derivedDataPath "$2" \
+        -destination "generic/platform=macOS" CODE_SIGNING_ALLOWED=NO build
+    plist="$2/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
+    if [ ! -f "$plist" ]; then
+        echo "the build reported success but produced no Info.plist at $plist" >&2
+        exit 1
+    fi
+    echo "NEPAKIT_BUILT_PLIST=$plist"
+' _ "$repo_root" "$derived"
+# The gate above ran in a subshell, so its export did not reach this one.
+if [ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]; then
+    NEPAKIT_BUILT_PLIST="$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
+    export NEPAKIT_BUILT_PLIST
+fi
 
 gate "core tests (NepalKitCore)" bash -c 'cd "$1" && swift test' _ "$repo_root/NepalKitCore"
 gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
