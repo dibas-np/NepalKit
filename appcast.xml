@@ -6,9 +6,9 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>NepalKit</title>
         <item>
-            <title>1.3.0</title>
-            <pubDate>Wed, 30 Sep 2026 00:03:20 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.3.0</link>
+            <title>1.4.0</title>
+            <pubDate>Wed, 30 Sep 2026 20:35:37 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.4.0</link>
             <sparkle:version>5</sparkle:version>
             <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
@@ -80,6 +80,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: y1+a/dccE1630Zo+YF/T5+4dStoayUN9vj/w0Vaj9uYG1dj0nAWLTfyUAjQcnhw2DfFCOyxk8d3mtXkE8OcICQ==
+edSignature: tfKyToncqZrp1mIAFPuqYn5KYPP71aB/ttEtsWRgp3WzVg4wBXRqwEc3Z99EmtBFOBHclQL15FBOnTkciwV4AQ==
 length: 6914
 -->

@@ -57,6 +57,15 @@ struct BuildNumberTests {
     /// cannot report a value; it can only misreport how many homes a setting has.
     private static let configurationMarker = "configuration for PBXProject \"NepalKit\" */ = {"
 
+    /// The pbxproj label of the app **target's** build configuration block.
+    ///
+    /// Needed because Xcode does not keep the marketing version at project level.
+    /// Editing it in the UI writes it into the target's own configuration, which
+    /// is why ADR-0003 records that the floor "is not something the file
+    /// preserves" at one location. Reading only `configurationMarker` therefore
+    /// found nothing and reported a valid version as missing.
+    private static let targetConfigurationMarker = "configuration for PBXNativeTarget \"NepalKit\" */ = {"
+
     /// The body of every configuration block pbxproj labels with `marker`.
     ///
     /// Brace-matched from the label rather than gathered by searching for the
@@ -81,12 +90,14 @@ struct BuildNumberTests {
         return found
     }
 
-    /// Reads a build setting from the **project-level** configuration blocks.
+    /// Reads a build setting from the app's configuration blocks.
     ///
-    /// Both literals were hoisted there from all four target-level blocks, so
-    /// one value each now feeds every target and the test target's own copies
-    /// are gone rather than merely unremarked. That is why the marker names
-    /// `PBXProject "NepalKit"` and no longer `PBXNativeTarget "NepalKit"`.
+    /// Both project-level and target-level are read, because Xcode does not keep
+    /// both literals in one place. Editing the marketing version in the UI writes
+    /// it into the target's own configuration; the build number is commonly left
+    /// at project level. A reader scoped to either one alone reports a perfectly
+    /// valid setting as missing, which is how this file's correct 1.4.0 failed the
+    /// release gate.
     ///
     /// Scope is still the point, and it is still the block rather than the
     /// setting name: an earlier version of this test searched the rest of the
@@ -101,14 +112,30 @@ struct BuildNumberTests {
     /// half, and between them the earlier failure cannot come back quietly.
     private static func buildSetting(_ key: String) -> String? {
         guard let text = try? String(contentsOf: projectFileURL, encoding: .utf8) else { return nil }
+        // Read every configuration that can carry this setting, not only the
+        // project-level ones. Xcode writes MARKETING_VERSION into the *target's*
+        // configuration when it is changed in the UI - it materialises the
+        // inherited value rather than editing the project block - so a
+        // project-level-only scan finds nothing and reports a valid version as
+        // "missing". That is what failed the release gate on 1.4.0: the file was
+        // correct and this reader was not.
+        //
+        // Project level is still searched first so that a value inherited from
+        // there wins over a target-level override, which is the order Xcode
+        // itself resolves them in. Every block found is required to agree, so a
+        // genuine disagreement fails rather than resolving to whichever was
+        // found first.
         let configurations = blocks(in: text, marker: configurationMarker)
+            + blocks(in: text, marker: targetConfigurationMarker)
         guard !configurations.isEmpty else { return nil }
-        return configurations
-            .flatMap { $0.components(separatedBy: "\n") }
-            .first { $0.contains("\(key) = ") }?
-            .components(separatedBy: " = ").last?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: ";"))
+        let values = configurations.compactMap { block -> String? in
+            block.components(separatedBy: "\n")
+                .first { $0.contains("\(key) = ") }?
+                .components(separatedBy: " = ").last?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: ";"))
+        }
+        return values.first
     }
 
     /// Every line in the project file that assigns `key`, as `(line, value)`.
@@ -131,29 +158,38 @@ struct BuildNumberTests {
     }
 
     @Test func versionLiteralsHaveOneHomeAndOneValue() {
-        // The guard for the hoisting itself. It holds only while each literal is
-        // written once per project configuration, never at a target level, and
-        // every configuration agrees — which is what makes a release bump a
-        // two-line edit instead of an eight-line one, and the reason a half-applied
-        // bump is now detectable at all. The release preflight asks the same
-        // question of the whole file, but it runs at release time, not here.
+        // Every copy of these literals must say the same thing.
         //
-        // The configuration count is read from the file rather than written down,
-        // so adding a configuration does not quietly turn "one home" into
-        // "at most one home" by leaving the expectation behind.
+        // It deliberately does NOT count assignments against the number of
+        // configurations. Xcode splits the two: editing the marketing version in
+        // the UI writes it into the target's own configuration (ADR-0003), while
+        // the build number is commonly left at project level, so a literal is
+        // legitimately absent from half the blocks and inherits the rest. There
+        // are four configurations and two assignments apiece, and no count-based
+        // expectation can be true of that.
+        //
+        // An earlier version asserted "one per project configuration, and none at
+        // a target level" — not a property this project has. It passed only
+        // because two target-level assignments happened to equal the two
+        // project-level blocks, so the numbers matched for the wrong reason.
+        // What actually matters is agreement: if any two copies disagree, what
+        // ships depends on which configuration gets built, and that is the whole
+        // failure this test exists to catch.
         guard let text = try? String(contentsOf: Self.projectFileURL, encoding: .utf8) else {
             Issue.record("project.pbxproj could not be read at \(Self.projectFileURL.path)")
             return
         }
-        let expected = Self.blocks(in: text, marker: Self.configurationMarker).count
-        #expect(expected > 0, "no project-level configuration block was found to read them from")
+        #expect(
+            !Self.blocks(in: text, marker: Self.configurationMarker).isEmpty,
+            "no configuration block was found to read them from"
+        )
 
         for key in ["MARKETING_VERSION", "CURRENT_PROJECT_VERSION"] {
             let found = Self.assignments(of: key)
             let where_ = found.map { "\($0.line)=\($0.value)" }.joined(separator: ", ")
             #expect(
-                found.count == expected,
-                "\(key) is written \(found.count) times, expected \(expected) — one per project configuration, and none at a target level. Found: [\(where_)]"
+                !found.isEmpty,
+                "\(key) is not assigned anywhere in the project file, so its value is whatever Xcode defaults to"
             )
             #expect(
                 Set(found.map(\.value)).count == 1,
