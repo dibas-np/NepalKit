@@ -12,7 +12,9 @@ import Testing
 /// like a Sparkle bug rather than a packaging mistake — and it is discovered by
 /// users, not by CI. ADR-0009 records that a test guards this; this is that
 /// test, and it reads the real project file rather than a value supplied to it,
-/// because a test of a hand-copied constant proves nothing.
+/// because a test of a hand-copied constant proves nothing. Both literals are
+/// read from the project-level configurations, which is where they were hoisted
+/// to so that one value each feeds every target.
 @MainActor
 struct BuildNumberTests {
     /// A file relative to the checkout root, found by walking up from this file
@@ -41,18 +43,28 @@ struct BuildNumberTests {
 
     private static var projectFileURL: URL { checkoutFile("NepalKit.xcodeproj/project.pbxproj") }
 
-    /// Reads a build setting from the **app target's** configuration blocks.
+    /// The pbxproj label of a project-level **build configuration** block.
     ///
-    /// Scoped by brace-matching from the block pbxproj labels
-    /// `configuration for PBXNativeTarget "NepalKit"`, rather than by searching
-    /// the rest of the file after the app's bundle identifier. That earlier
-    /// approach swept in the test target's own configuration, so the test could
-    /// not tell the two targets apart and only passed because they happened to
-    /// hold the same value — a test that reads the wrong value is worse than no
-    /// test, because it reports success.
-    private static func buildSetting(_ key: String) -> String? {
-        guard let text = try? String(contentsOf: projectFileURL, encoding: .utf8) else { return nil }
-        let marker = "for PBXNativeTarget \"NepalKit\" */ = {"
+    /// Spelled `configuration for PBXProject "NepalKit"` rather than the
+    /// shorter `for PBXProject "NepalKit"` on purpose. The shorter form is a
+    /// substring of `Build configuration list for PBXProject "NepalKit"`, the
+    /// `XCConfigurationList` that only *references* the configurations, so it
+    /// matches three blocks instead of two. Harmless while the marker was only
+    /// ever used to take the first setting found — the list holds references,
+    /// not assignments — which is exactly why it went unnoticed until something
+    /// counted the blocks rather than reading from them. The configuration list
+    /// has no build settings of its own, so a marker loose enough to include it
+    /// cannot report a value; it can only misreport how many homes a setting has.
+    private static let configurationMarker = "configuration for PBXProject \"NepalKit\" */ = {"
+
+    /// The body of every configuration block pbxproj labels with `marker`.
+    ///
+    /// Brace-matched from the label rather than gathered by searching for the
+    /// setting being read, because a search by name cannot report *which*
+    /// configuration it read. That distinction is the whole reason this file
+    /// parses structure instead of grepping, and it has already been got wrong
+    /// here once.
+    private static func blocks(in text: String, marker: String) -> [String] {
         var found: [String] = []
         var searchStart = text.startIndex
         while let range = text.range(of: marker, range: searchStart..<text.endIndex) {
@@ -66,13 +78,88 @@ struct BuildNumberTests {
             found.append(String(text[range.upperBound..<index]))
             searchStart = index
         }
-        guard !found.isEmpty else { return nil }
         return found
+    }
+
+    /// Reads a build setting from the **project-level** configuration blocks.
+    ///
+    /// Both literals were hoisted there from all four target-level blocks, so
+    /// one value each now feeds every target and the test target's own copies
+    /// are gone rather than merely unremarked. That is why the marker names
+    /// `PBXProject "NepalKit"` and no longer `PBXNativeTarget "NepalKit"`.
+    ///
+    /// Scope is still the point, and it is still the block rather than the
+    /// setting name: an earlier version of this test searched the rest of the
+    /// file after the app's bundle identifier, which swept in the test target's
+    /// own configuration, so it could not tell the two targets apart and only
+    /// passed because they happened to hold the same value — a test that reads
+    /// the wrong value is worse than no test, because it reports success.
+    /// Reading the blocks does not by itself prevent a repeat: the day a
+    /// target-level copy is added back holding something else, this would read
+    /// the project-level value, see a well-formed version, and pass. So scope
+    /// is half the guard; `versionLiteralsHaveOneHomeAndOneValue` is the other
+    /// half, and between them the earlier failure cannot come back quietly.
+    private static func buildSetting(_ key: String) -> String? {
+        guard let text = try? String(contentsOf: projectFileURL, encoding: .utf8) else { return nil }
+        let configurations = blocks(in: text, marker: configurationMarker)
+        guard !configurations.isEmpty else { return nil }
+        return configurations
             .flatMap { $0.components(separatedBy: "\n") }
             .first { $0.contains("\(key) = ") }?
             .components(separatedBy: " = ").last?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: ";"))
+    }
+
+    /// Every line in the project file that assigns `key`, as `(line, value)`.
+    ///
+    /// Scans the whole file rather than the project blocks, because the question
+    /// this answers is whether an assignment exists *anywhere else* — the
+    /// re-added target-level copy that block-scoped reading cannot see. Trimmed
+    /// of the trailing `;` so the values compare equal to the ones read above.
+    private static func assignments(of key: String) -> [(line: Int, value: String)] {
+        guard let text = try? String(contentsOf: projectFileURL, encoding: .utf8) else { return [] }
+        let prefix = "\(key) = "
+        return text.split(separator: "\n", omittingEmptySubsequences: false).enumerated().compactMap { index, raw in
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            guard line.hasPrefix(prefix) else { return nil }
+            let value = line.dropFirst(prefix.count)
+                .trimmingCharacters(in: CharacterSet(charactersIn: ";"))
+                .trimmingCharacters(in: .whitespaces)
+            return (line: index + 1, value: value)
+        }
+    }
+
+    @Test func versionLiteralsHaveOneHomeAndOneValue() {
+        // The guard for the hoisting itself. It holds only while each literal is
+        // written once per project configuration, never at a target level, and
+        // every configuration agrees — which is what makes a release bump a
+        // two-line edit instead of an eight-line one, and the reason a half-applied
+        // bump is now detectable at all. The release preflight asks the same
+        // question of the whole file, but it runs at release time, not here.
+        //
+        // The configuration count is read from the file rather than written down,
+        // so adding a configuration does not quietly turn "one home" into
+        // "at most one home" by leaving the expectation behind.
+        guard let text = try? String(contentsOf: Self.projectFileURL, encoding: .utf8) else {
+            Issue.record("project.pbxproj could not be read at \(Self.projectFileURL.path)")
+            return
+        }
+        let expected = Self.blocks(in: text, marker: Self.configurationMarker).count
+        #expect(expected > 0, "no project-level configuration block was found to read them from")
+
+        for key in ["MARKETING_VERSION", "CURRENT_PROJECT_VERSION"] {
+            let found = Self.assignments(of: key)
+            let where_ = found.map { "\($0.line)=\($0.value)" }.joined(separator: ", ")
+            #expect(
+                found.count == expected,
+                "\(key) is written \(found.count) times, expected \(expected) — one per project configuration, and none at a target level. Found: [\(where_)]"
+            )
+            #expect(
+                Set(found.map(\.value)).count == 1,
+                "\(key) resolves differently per configuration, so what ships depends on which one is built: [\(where_)]"
+            )
+        }
     }
 
     @Test func buildNumberIsAnInteger() {

@@ -172,6 +172,30 @@ jobs:
             exit 1
           fi
 
+          # The build number is the other half of the scheme ADR-0009 records,
+          # and it is the half Sparkle reads to decide which build is newer, so
+          # a bump that reaches one configuration and not another ships an app
+          # nobody already on the earlier one will be offered. Nothing below
+          # bumps either value, so this is the only thing that notices a missed
+          # one; the tag check above covers the version and never covered this.
+          #
+          # Asked of the whole file for the same reason the version check is:
+          # every CURRENT_PROJECT_VERSION in the project must agree, however
+          # many there are. Narrowing it to the app target would mean matching
+          # the block that holds the setting, which is what an earlier version
+          # of BuildNumberTests did — it read the test target's own
+          # configuration, could not tell the two targets apart, and passed
+          # because they happened to hold the same value. The extra echo names
+          # the offending lines, because "found: 5 6" alone sends you hunting.
+          BUILD_NUMBER="$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION = ([^;]+);/\1/p' \
+            NepalKit.xcodeproj/project.pbxproj | sort -u)"
+          if [[ -z "$BUILD_NUMBER" || "$BUILD_NUMBER" == *$'\n'* ]]; then
+            echo "Expected exactly one CURRENT_PROJECT_VERSION in project.pbxproj, found: ${BUILD_NUMBER:-none}" >&2
+            grep -nE '^[[:space:]]*CURRENT_PROJECT_VERSION = ' \
+              NepalKit.xcodeproj/project.pbxproj >&2 || true
+            exit 1
+          fi
+
           echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
