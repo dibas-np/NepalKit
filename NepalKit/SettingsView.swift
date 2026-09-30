@@ -58,9 +58,24 @@ struct SettingsView: View {
         } detail: {
             detail
         }
+        // No sidebar toggle. Three destinations in a column the window already
+        // sizes — there is nothing to collapse *to*, and the button only ever
+        // produced a one-destination-wide window with no way back that was not the
+        // button itself. Removed rather than hidden so it does not come back with
+        // a future toolbar default.
+        .toolbar(removing: .sidebarToggle)
+        // Liquid Glass behind the whole window, so the sidebar and the detail are
+        // one surface rather than two materials meeting at a seam. `.rect` rather
+        // than a rounded shape: the window already clips its own corners, so a
+        // radius here would only risk a sliver of unglassed background at the
+        // corners when the user resizes.
+        //
+        // Applied after the frame, because glass wraps whatever layout it is given
+        // and sampling bounds taken before layout are the ones that render wrong.
+        .glassEffect(.regular, in: .rect)
         // Wide enough for the longest detail (About's Devanagari range line and a
         // full URL) beside the sidebar without clipping, and tall enough that the
-        // General form's three sections do not need to scroll to reach Startup.
+        // General form's two sections do not need to scroll.
         // A minimum, not a fixed size: the window still opens at whatever the
         // user last set, it just refuses to go below the point where the content
         // stops fitting.
@@ -121,15 +136,15 @@ struct SettingsView: View {
 /// running, and where do I go to tell someone?" — the two questions a person opens
 /// Settings with most often, answered without hunting for the About tab.
 ///
-/// It duplicates what the About tab says on purpose. That tab is the full record
-/// (licence text, dataset provenance, the range boundary in words); this is the
-/// always-visible strip. A version number that is only findable on one tab is not
-/// findable when you are trying to read it off a screenshot.
+/// It repeats the version the About tab shows on purpose. That tab is where you go
+/// to read it deliberately; this is the always-visible strip. A version number
+/// that is only findable on one tab is not findable when you are trying to read it
+/// off a screenshot.
 private struct SettingsSidebarFooter: View {
     let metadata: AppMetadata
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 if let icon = metadata.applicationIcon {
                     Image(nsImage: icon)
@@ -156,11 +171,7 @@ private struct SettingsSidebarFooter: View {
             // comes from the build's metadata, so it cannot drift from the remote
             // the app was published from.
             if let repository = metadata.repositoryURL {
-                RepositoryGhostLink(repository: repository)
-                    // Trailing, so it sits against the sidebar's right edge the way
-                    // a window's toolbar accessory does rather than starting a row
-                    // of its own under the version.
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                SourceLink(repository: repository)
             }
         }
         .padding(.horizontal, 12)
@@ -173,41 +184,30 @@ private struct SettingsSidebarFooter: View {
     }
 }
 
-/// The repository link, as a glyph that only becomes a button when you point at it.
+/// The repository link, labelled "Source".
 ///
-/// Ghost treatment: invisible at rest, `.clear` glass on hover, `.regular`
-/// interactive glass while hovered. The three states matter separately — `.clear`
-/// keeps the shape sampling but shows no material, so the resting strip has no
-/// visual weight at all, and `.interactive()` on the hovered state is what makes
-/// it respond to the pointer rather than only to the cursor's position.
+/// Text, not a bare glyph. The earlier ghost treatment — a glyph that only
+/// appeared on hover — was the wrong call twice over: it hid the only control
+/// that takes you out of the app behind a pointer gesture, and a glyph that
+/// appears on hover gives a keyboard user nothing to see. Naming it means it is
+/// discoverable without a mouse, and it matches the popover footer, which shows
+/// its "Quit" text for the same reason.
 ///
-/// A square hit target around a small glyph: 22pt is under the 28pt minimum
-/// comfortable target, so the frame is what makes it reliably clickable rather
-/// than an icon you have to aim at.
-///
-/// The title is kept on the label and hidden with `.iconOnly`, so the accessible
-/// name survives — the same reason the popover's gear does it that way. A bare
-/// `Image` here would be announced as nothing at all, and this is the one control
-/// in the window whose entire job is to be identified.
-private struct RepositoryGhostLink: View {
+/// `.glass` like the popover footer's buttons, so the two surfaces' controls are
+/// the same kind of object. The word is the short one because the row is narrow and
+/// "Source repository" wraps; the announcement keeps the full phrase, because
+/// "Source" alone does not say what it points at.
+private struct SourceLink: View {
     let repository: URL
-    @State private var hovering = false
 
     var body: some View {
         Link(destination: repository) {
-            Label(Strings.repositoryLabel, systemImage: Symbols.repository)
-                .labelStyle(.iconOnly)
+            Label(Strings.sourceLinkTitle, systemImage: Symbols.repository)
                 .font(.caption)
                 .symbolRenderingMode(.monochrome)
-                .frame(width: 22, height: 22)
         }
-        .buttonStyle(.plain)
-        // Ghost: `.clear` at rest so nothing shows until the pointer arrives, then
-        // real glass. Applied after the frame and the label style, because glass
-        // wraps whatever layout it is given and sampling the wrong bounds is what
-        // makes it look detached from its content.
-        .glassEffect(hovering ? .regular.interactive() : .clear, in: .rect(cornerRadius: 6))
-        .onHover { hovering = $0 }
+        .buttonStyle(.glass)
+        .lineLimit(1)
         .accessibilityLabel(Strings.repositoryLabel)
         // The label says what the link is; the destination is the part a sighted
         // user reads off the screen and a blind user otherwise never learns, so it

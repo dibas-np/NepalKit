@@ -281,6 +281,39 @@ cosmetic: this key is safe only because the feed is signed, so any future
 release that republishes the feed must sign it again or users on the current
 release cannot update.
 
+### `SURequireSignedFeed` also requires `SUVerifyUpdateBeforeExtraction`
+
+This was found in the field, not on paper. Sparkle documents
+`SURequireSignedFeed` as *"also requires enabling `SUVerifyUpdateBeforeExtraction`
+as a prerequisite"*, and it enforces that: with the second key off, the updater
+refuses to check at all and reports
+
+> For security reasons, SUVerifyUpdateBeforeExtraction needs to also be enabled
+> if SURequireSignedFeed is enabled for NepalKit.
+
+Plan 038 set the first key without the second, so the app shipped unable to
+update — the strongest possible failure of the control, and invisible to every
+gate here, because both keys are booleans in a hand-authored plist and no test
+asserted the pair. `SUVerifyUpdateBeforeExtraction` is now `true` in the shipped
+app, asserted the same way by
+`InfoPlistKeysTests.updatesAreVerifiedBeforeExtractionInTheBuiltProduct`.
+
+**The lesson is about how the two relate, not about the second key.** They are
+one decision: strictness is not dialable per-stage. Sparkle refuses to operate
+unless the app verifies the archive *before* unpacking it, so there is no
+configuration in which the feed signature is demanded and the archive is not.
+Any future change to either key must change both, and the test pair is what makes
+that visible.
+
+**The tradeoff both keys carry is the key-custody one, and it is still open.**
+Sparkle's documentation for both says to use them only if you are "not likely to
+lose access to your private EdDSA key". Verification this strict means a lost key
+costs updates outright. That is what the two unticked custody boxes above are
+about, and they remain unticked: enabling these keys does not settle custody, it
+raises the cost of not settling it. Recovery is possible — releases are also
+Apple Developer ID signed, so a rebuilt key can be pushed — but it is a manual
+recovery, not a non-event.
+
 ## Freshness of this pin
 
 A pin nobody re-visits is a pin that rots: this ADR's premise is that Sparkle

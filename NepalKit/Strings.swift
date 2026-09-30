@@ -236,4 +236,8 @@ nonisolated enum Strings {
     }
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
+    /// Shown on the Settings sidebar link. Short because the sidebar row is
+    /// narrow and the full phrase wraps; `repositoryLabel` is what gets
+    /// announced, because "Source" alone does not say what it points at.
+    static let sourceLinkTitle = "Source"
 }

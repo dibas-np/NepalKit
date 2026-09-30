@@ -150,6 +150,25 @@ struct InfoPlistKeysTests {
                 "the built app reads an unsigned feed unauthenticated: SURequireSignedFeed is \(value)")
     }
 
+    @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
+    func updatesAreVerifiedBeforeExtractionInTheBuiltProduct() throws {
+        // Sparkle's documented prerequisite for SURequireSignedFeed, and a hard
+        // one: with this off, Sparkle refuses to check for updates *at all* and
+        // reports "For security reasons, SUVerifyUpdateBeforeExtraction needs to
+        // also be enabled if SURequireSignedFeed is enabled" instead. That is a
+        // total loss of updating rather than a weakened setting, and it is the
+        // state plan 038 shipped — the pair was set independently and the
+        // dependency was not found until a user hit it in the field.
+        //
+        // `true`, not merely present: absent and `false` fail identically here,
+        // and `false` is the value that looks deliberately configured.
+        let info = try #require(Self.builtInfo)
+        let value = info["SUVerifyUpdateBeforeExtraction"].map { "\($0)" } ?? "absent"
+
+        #expect(info["SUVerifyUpdateBeforeExtraction"] as? Bool == true,
+                "the updater cannot check for updates at all: SUVerifyUpdateBeforeExtraction is \(value)")
+    }
+
     /// The feed's declared home. Changing it is a release decision: every
     /// installed copy reads this URL, so a change breaks updates for all of them
     /// at once.

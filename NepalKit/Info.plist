@@ -97,6 +97,33 @@
 	<true/>
 
 	<!--
+	  SUVerifyUpdateBeforeExtraction makes Sparkle verify a downloaded update's
+	  EdDSA signature *before* it unpacks it, not only after. Without it a
+	  malicious archive is extracted to disk and only then judged.
+
+	  It is also a hard prerequisite. Sparkle refuses to check for updates at
+	  all unless this is enabled whenever SURequireSignedFeed is on, and says so:
+
+	    "For security reasons, SUVerifyUpdateBeforeExtraction needs to also be
+	     enabled if SURequireSignedFeed is enabled"
+
+	  That is a total loss of updating, not a weakened setting - the updater
+	  reports the error instead of checking. The two keys are one decision, not
+	  two. Found in the field: the key above shipped without it, and every user
+	  who tried to check for updates got that error instead of an update.
+
+	  The tradeoff Sparkle documents for both keys is real and belongs to the
+	  maintainer, not to this file: verification this strict means losing access
+	  to the EdDSA private key costs you updates, because every feed would then
+	  fail validation. That is what ADR-0012's two unticked key-custody boxes are
+	  about. Losing the key is survivable - releases are also Apple Developer ID
+	  signed, so a rebuilt key can be pushed - but it is a manual recovery, not a
+	  non-event.
+	-->
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+
+	<!--
 	  The update feed, served from this repository via GitHub Pages so the URL
 	  never changes between releases — a feed URL that moved would strand every
 	  existing installation. HTTPS, as Sparkle requires.
