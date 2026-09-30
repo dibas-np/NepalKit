@@ -12,9 +12,9 @@ rather than left to be discovered by a release.
 The generator resolves every path from its own location, so a test that runs it
 runs a *copy*, against a replica of that tree, in a temporary directory. These
 tests used to run the repository's own script against the real CHANGELOG.md and
-then assert it was unchanged — which held only because the outputs happened to
-agree, and which would otherwise have left the contributor with a modified
-tracked file and a failing test.
+then assert the file was unchanged, which held only while the regenerated output
+happened to equal the committed file; the day they disagreed the test would have
+modified a tracked file in the contributor's working tree and then failed.
 """
 
 from __future__ import annotations
@@ -36,6 +36,9 @@ _spec.loader.exec_module(uc)
 REPO = _SCRIPT.parent.parent
 
 NOTE = "<b>Notes:</b><ul><li>a fix</li></ul>"
+# The offset form appcast.xml carries, for 2026-09-29 and 2026-09-30.
+PUBLISHED_0929 = "Tue, 29 Sep 2026 01:04:35 +0545"
+PUBLISHED_0930 = "Wed, 30 Sep 2026 10:00:00 +0545"
 
 
 def feed(*releases: tuple[str, str]) -> str:
@@ -201,6 +204,82 @@ class RenderingStaysDeterministic(unittest.TestCase):
             result = box.run()
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(box.changelog.read_text(encoding="utf-8"), shipped)
+
+
+class DatePrecedence(unittest.TestCase):
+    """Which source wins when one version's date is written in several places."""
+
+    def _resolve(
+        self,
+        root: Path,
+        committed: str,
+        staged: str,
+        written: tuple[tuple[str, str], ...],
+    ) -> dict[str, str]:
+        box = make_sandbox(root, changelog=changelog(*written), appcast=committed)
+        staged_path = root / "staged.xml"
+        staged_path.write_text(staged, encoding="utf-8")
+        return uc.resolve_dates(box.appcast, staged_path, box.changelog)
+
+    def test_a_written_date_outranks_a_staged_feed_that_disagrees(self) -> None:
+        # The staged feed is read after the committed one, so before this was
+        # pinned a `pubDate` that disagreed with the changelog overwrote a date
+        # that had already shipped — and the generator rewrites the file, so
+        # the wrong value would be committed silently.
+        with tempfile.TemporaryDirectory() as tmp:
+            dates = self._resolve(
+                Path(tmp),
+                committed=feed(("1.1", PUBLISHED_0929)),
+                staged=feed(("1.1", PUBLISHED_0930)),
+                written=(("1.1", "2026-09-29"),),
+            )
+        self.assertEqual(
+            dates,
+            {"1.1": "2026-09-29"},
+            "a date already written to the changelog must outrank a staged "
+            "feed that disagrees with it",
+        )
+
+    def test_a_version_the_changelog_has_never_dated_takes_the_feed(self) -> None:
+        # The complement of the rule above, and the reason the rule is not
+        # "always prefer the changelog": 1.3.0 has a fragment but no heading
+        # yet, so the feed is the only place its date can come from.
+        with tempfile.TemporaryDirectory() as tmp:
+            dates = self._resolve(
+                Path(tmp),
+                committed=feed(("1.2", PUBLISHED_0929)),
+                staged=feed(("1.3.0", PUBLISHED_0930)),
+                written=(("1.2", "2026-09-29"),),
+            )
+        self.assertEqual(dates, {"1.2": "2026-09-29", "1.3.0": "2026-09-30"})
+
+    def test_a_release_the_pruned_feed_forgot_keeps_its_written_date(self) -> None:
+        # Why the changelog's own headings are read at all: `generate_appcast`
+        # prunes a feed to its newest item, so 1.2, 1.1 and 1.0 are in neither
+        # the committed feed nor the staged one. Their dates survive only
+        # because the changelog is a source, and this is the case that proves
+        # a change to the precedence order did not break that.
+        with tempfile.TemporaryDirectory() as tmp:
+            dates = self._resolve(
+                Path(tmp),
+                committed=feed(("1.3.0", PUBLISHED_0930)),
+                staged=feed(("1.3.0", PUBLISHED_0930)),
+                written=(
+                    ("1.3.0", "2026-09-30"),
+                    ("1.2", "2026-09-29"),
+                    ("1.1", "2026-09-29"),
+                    ("1.0", "2026-09-28"),
+                ),
+            )
+        self.assertEqual(
+            dates,
+            {
+                "1.3.0": "2026-09-30",
+                "1.2": "2026-09-29",
+                "1.1": "2026-09-29",
+                "1.0": "2026-09-28",
+            },
+        )
 
 
 if __name__ == "__main__":
