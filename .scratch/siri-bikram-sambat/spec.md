@@ -245,6 +245,15 @@ under a stable path or unregister its temp builds** (`lsregister -u` while
 they still exist); the swamp made bundle-id resolution ambiguous for system
 services.
 
+## Discoverability
+
+Two surfaces (ticket 06); the popover footer stays untouched — icon-only, no appropriate space, and the popover remains focused on the calendar/date experience:
+
+- **Settings → General → "Siri & Shortcuts"** (General is the landing tab): leads with the expectation-setting sentence — *"Ask Siri for today's Nepali date; run the conversions from Shortcuts."* — then lists the three capabilities with their phrases as plain text. `SiriTipView` does not exist on macOS (verified against the installed SDK's swiftinterface), so phrases are taught as text. The sentence is load-bearing: the prototype established that Siri's current voice parameter-filling and what the same App Intents expose to Shortcuts are different capabilities, and the UI must not imply conversational conversions work by voice today.
+- **Launch release notes**: a paragraph announcing the feature, through the existing release-notes pipeline.
+
+No popover hint, no transient onboarding.
+
 ## Testing expectations
 
 - Unit tests (app layer): intent logic against the dataset — today anchoring
