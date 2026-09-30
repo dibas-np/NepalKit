@@ -4,6 +4,25 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.4.0 — unreleased
+
+### The update channel is signed end to end.
+
+- The update feed itself now carries a signature, and NepalKit refuses a feed without one. Until now the app verified every download but trusted the feed that named it; both are checked now, so a tampered feed cannot point an installation at anything other than a signed archive.
+
+### Settings
+
+- The Settings window is rebuilt around the system tab sidebar — Menu Bar, General, and About. About is no longer a separate window: what it showed sits on the About tab, beside the update controls that used to be their own Settings section. The popover's footer carries the gear and Quit, and its buttons take the new Liquid Glass treatment.
+
+### Fixes
+
+- The hero date, the large Bikram Sambat line at the top of the popover, now scales with the user's text size, as every other line in the app already did.
+
+### Requirements
+
+- NepalKit now requires macOS 26.6, up from 26.0. Installs on 26.0 to 26.5 keep working on 1.3.0 and are not offered this update.
+- The bundled updater is Sparkle 2.10.0.
+
 ## 1.3.0 — 2026-09-30
 
 ### Nothing in the app itself has changed.
