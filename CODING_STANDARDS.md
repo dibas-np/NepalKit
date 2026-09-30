@@ -135,6 +135,17 @@ Rendering mode is chosen per surface for contrast against translucent Liquid
 Glass, not imposed globally: hierarchical for section headers, monochrome for
 small inline icons beside text (ADR-0004).
 
+Liquid Glass is requested where a control needs the affordance and inherited
+from the OS everywhere else. Today that is one place: the popover footer's two
+buttons, which use `.buttonStyle(.glass)` inside one `GlassEffectContainer`.
+Glass cannot sample other glass, so adjacent glass controls must share a
+container or they render inconsistently against each other. Do not spread glass
+to every control to make a surface look uniform — a `Form` of glass buttons is
+neither conventional on macOS nor what the platform's own Settings does.
+`.glass` and `.glassProminent` are macOS 26 APIs, so they need no `#available`
+gate at this project's floor (ADR-0003, ADR-0007). `Glass` has no `.prominent`;
+emphasis is `.regular.tint(_:)` with an opacity.
+
 **Respect the menu-bar-only shape.** Do not call `setActivationPolicy`, and do
 not add a Dock or Cmd-Tab presence. Any command that opens a normal window from
 this context must go through `WindowPresentation` so activation and focus are

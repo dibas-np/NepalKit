@@ -97,92 +97,17 @@ struct PopoverView: View {
         // two different x positions and the block looks accidentally staggered.
         .frame(maxWidth: .infinity, alignment: .leading)
 
-        // Settings, About and Quit live below the content rather than inside
-        // either destination. They open other windows or end the process, so
-        // they are not a step in navigating Today and Convert, and burying them
-        // in one tab would hide them from the other.
-        footer
+        // Settings and Quit live below the content rather than inside either
+        // destination. They open another window or end the process, so they are
+        // not a step in navigating Today and Convert, and burying them in one tab
+        // would hide them from the other.
+        //
+        // `destination` and `openSettings` are all this hands over, so a per-second
+        // clock tick never re-evaluates the footer - the same reasoning that made
+        // the header, Today and Clocks their own view types.
+        PopoverFooter(destination: destination) { openSettings() }
     }
 
-    // MARK: - Footer
-
-    /// A bar along the bottom: the selected destination on the left, the two
-    /// actions on the right.
-    ///
-    /// This follows the reference layout, where the footer names where you are
-    /// on the left and puts the actions on the right. Naming the destination here
-    /// is what the segmented control's selection does not say on its own when the
-    /// popover is read as a whole: the control is a control, and this is the
-    /// surface's own statement of position.
-    ///
-    /// The two actions are deliberately drawn differently — Settings as a bare
-    /// glyph, Quit as text. Why each is what it is is recorded at its call site.
-    private var footer: some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack(spacing: 8) {
-                Text(destination.title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 8)
-
-                // Icon only, and the gear is the conventional mark for this action
-                // on macOS, so the words buy nothing beside it in a 340pt bar.
-                //
-                // `.labelStyle(.iconOnly)` rather than a bare `Image`. Apple's
-                // guidance is to keep the title on the label and drop it visually,
-                // so the name survives in the accessibility tree instead of being
-                // re-attached by hand: a label that is only an image has no name of
-                // its own, and the documented alternative to a hand-written
-                // `.accessibilityLabel` is to not discard the title in the first
-                // place. It is also what lets this button render correctly if it is
-                // ever moved into a toolbar or a menu, where SwiftUI decides
-                // whether to show the title.
-                Button(Strings.settingsLabel, systemImage: Symbols.settings) {
-                    WindowPresentation.present(open: { openSettings() })
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .font(.caption)
-                .symbolRenderingMode(.monochrome)
-                // The title keeps its ellipsis, which marks an action that
-                // continues past this surface. That is a visual affordance and
-                // reads as nothing aloud, so the announcement drops it — the same
-                // two-channel split the title-and-glyph buttons below use.
-                .accessibilityLabel(Strings.settingsLabelSpoken)
-                .accessibilityHint(Strings.settingsHelp)
-
-                // Quit keeps its text. It is the only action in a menu-bar-only
-                // app that ends the process, and the one a first-time user most
-                // likely to hunt for; there is no conventional glyph for it, and a
-                // glyph here would be decoration standing in for the one label in
-                // this footer that has to be unmistakable.
-                //
-                // Shown short. `Strings.quitLabel` names the app because the app
-                // menu needs to ("Quit NepalKit"); inside the app's own popover the
-                // name is already on screen in the header two lines up, so the
-                // footer says only "Quit" and gives the width back to the
-                // destination label. The announcement keeps the full name.
-                //
-                // The ⌘Q shortcut lives on the app's termination command group
-                // (NepalKitApp.swift) so it works when the app is frontmost
-                // without the popover open. This is the discoverable control for
-                // the same action.
-                Button(Strings.quitFooterLabel, action: AppTermination.quit)
-                    .buttonStyle(.plain)
-                    .font(.caption)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Strings.quitLabel)
-                    .accessibilityHint(Strings.quitHelp)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-        }
-    }
-
-    /// A compact symbol-and-title action for the footer.
-    ///
 }
 
 #if DEBUG
