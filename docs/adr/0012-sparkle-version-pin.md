@@ -320,7 +320,23 @@ A pin nobody re-visits is a pin that rots: this ADR's premise is that Sparkle
 releases carry security fixes, so the pin's safety argument has an expiry
 date. The check is mechanised rather than remembered:
 `data-sources.yml` runs `sparkle-pin-freshness` on a monthly schedule, reads
-the pin from `Package.resolved` (what the app actually builds against), and
+the pin from the project's `exactVersion` requirement in `project.pbxproj`
+(what the app actually builds against), and
 fails against the live latest release when they differ. A red run is the
 trigger to re-read this ADR — not an automatic bump. Bumping remains the
 release-contract decision this document describes.
+
+The check reads `project.pbxproj` rather than `Package.resolved` because Xcode
+deletes the lockfile: `-resolvePackageDependencies` resolves correctly and then
+relocates it out of `project.xcworkspace/xcshareddata/swiftpm/` entirely, leaving
+a tracked-file deletion in the working tree. Resolution is unaffected — resolving
+with the lockfile absent still yields 2.9.6, because this requirement is what
+governs it — but a check that reads a file the toolchain deletes would eventually
+fail for a reason unrelated to Sparkle.
+
+`Package.resolved` is therefore no longer the pin's source of truth, but it stays
+tracked as a record of what a release was built against. **Expect it to show as
+deleted after any local Xcode 27 build.** That is Xcode's behaviour, not a change
+to the pin: restore it with `git checkout` and do not commit the deletion. If it
+is ever genuinely stale, re-resolve and commit the result rather than deleting it
+by hand, so the diff shows a version change instead of a removal.

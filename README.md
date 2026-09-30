@@ -8,7 +8,7 @@
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6+">
-  <img src="https://img.shields.io/badge/Xcode-26.6%2B-0B84F3?style=flat-square&logo=xcode" alt="Xcode 26.6+">
+  <img src="https://img.shields.io/badge/Xcode-27%2B-0B84F3?style=flat-square&logo=xcode" alt="Xcode 27+">
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=Build&style=flat-square" alt="Build"></a>
 </p>
 
@@ -55,7 +55,7 @@ Bikram Sambat month lengths follow no formula, so conversion is table-driven. Th
 
 ## Development
 
-Requires Xcode 26.6+ on macOS 26+.
+Requires Xcode 27+ on macOS 27+.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git

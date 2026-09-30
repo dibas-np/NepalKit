@@ -190,18 +190,51 @@ class DriftDetectionTests(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("DEPLOYMENT_TARGET", output)
 
-    def test_a_project_xcode_27_rewrote_is_a_failure_not_a_pass(self) -> None:
-        # The exact state this branch shipped: objectVersion 110, which the
-        # deployment-floor job cannot open. It must fail with a message that says
-        # what to change, not merely that something is wrong.
-        rewritten = PBXPROJ.replace("objectVersion", "objectVersion")
-        rewritten = "// !$*UTF8*$!\n{\n\tobjectVersion = 110;\n" + PBXPROJ.split("\n", 1)[1]
-        problem = vdf._project_format_problem(rewritten)
-        self.assertIsNotNone(problem, "a 110 project must not pass")
-        self.assertIn("100", problem, "the message has to say what to set it back to")
+    def test_the_format_xcode_27_writes_is_the_one_ci_can_read(self) -> None:
+        # CI runs on the xcode-27 image, so 110 is correct here rather than
+        # something to fix. A ceiling below it would fail on every commit where a
+        # maintainer edited build settings, because Xcode rewrites the format
+        # merely by opening the project - the gate would be fighting the tool.
+        # This is the positive control for the ceiling: the version Xcode 27
+        # actually writes must be the version the gate accepts.
+        self.assertEqual(vdf.MAX_OBJECT_VERSION, 110)
+        self.assertIsNone(vdf._project_format_problem("\tobjectVersion = 110;\n"))
+
+    def test_a_format_newer_than_ci_can_read_is_a_failure_not_a_pass(self) -> None:
+        # The failure this gate exists for, in the shape it will next take: a
+        # future Xcode adopts format 111 and rewrites the project on open. CI's
+        # toolchain cannot read it, so the job fails with "Unable to read
+        # project" - which names neither the setting nor the file to change.
+        # Here it must fail with a message that names both.
+        problem = vdf._project_format_problem("\tobjectVersion = 111;\n")
+        self.assertIsNotNone(problem, "a format CI cannot read must not pass")
+        self.assertIn("110", problem, "the message has to say what the ceiling is")
+        self.assertIn("xcode-27", problem, "the message has to say which runner")
+
+    def test_a_110_project_is_not_rejected_by_the_message_a_check_would_give(self) -> None:
+        # The negative control for the negative control: the exact state this
+        # branch originally shipped - objectVersion 110 - used to be the failure.
+        # If the ceiling ever drops back below 110 this fails, which is the point:
+        # it makes the mistake loud here rather than as a red CI job.
+        self.assertIsNone(
+            vdf._project_format_problem(PBXPROJ.split("\n", 0)[0] + "\n" + PBXPROJ),
+            "110 is what Xcode 27 writes and CI reads it; it must not fail",
+        )
 
     def test_a_project_within_the_limit_reports_nothing(self) -> None:
-        self.assertIsNone(vdf._project_format_problem("// objectVersion = 100;\n"))
+        self.assertIsNone(vdf._project_format_problem("\tobjectVersion = 100;\n"))
+
+    def test_the_probe_the_other_tests_use_is_one_this_gate_can_actually_parse(self) -> None:
+        # Written after two of these tests passed for the wrong reason: the probe
+        # strings were prefixed "// ", which the object's regex does not match, so
+        # assertIsNone was returning None because nothing had been parsed rather
+        # than because the version was accepted. A test that cannot fail is worse
+        # than no test, because it is evidence. This asserts the probe is read.
+        self.assertEqual(
+            vdf._project_format_problem("\tobjectVersion = 111;\n") is not None,
+            True,
+            "if this fails, every version test above is passing vacuously",
+        )
 
     def test_a_project_with_no_object_version_is_not_a_failure(self) -> None:
         # Absent means an older format this gate has no opinion about, and

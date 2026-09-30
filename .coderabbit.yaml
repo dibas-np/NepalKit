@@ -6,80 +6,125 @@ language: "en-US"
 early_access: true
 
 reviews:
-  # Worth the walkthrough on a change of this size: this repository's convention
-  # is that a change explains the reasoning it rejected, and the reasoning is
-  # usually in the comments the walkthrough collapses.
-  collapse_walkthrough: false
-  poem: false
-  high_level_summary: true
-  review_status: true
+  # `chill` rather than `assertive`: this repository's comments are long and
+  # deliberate, so a profile that flags everything produces a review nobody reads.
+  profile: "chill"
   # A human merges. GOVERNANCE.md:17 makes merge decisions the maintainer's, so
   # CodeRabbit should never be the thing that blocks.
   request_changes_workflow: false
-  auto_review:
-    enabled: true
-    drafts: false
+  allow_author_approval: true
+  high_level_summary: true
+  # Not collapsed: the house convention is that a change records the reasoning it
+  # rejected, and that reasoning is usually in the comments a collapsed
+  # walkthrough hides.
+  collapse_walkthrough: false
+  review_status: true
+  poem: false
+  # SwiftLint is installed on the runner and this is a Swift project, so let
+  # CodeRabbit run it. CONTRIBUTING.md records the pre-existing violations, so the
+  # value here is the project's configuration rather than the default.
+  tools:
+    swiftlint:
+      enabled: true
+  # `!`-prefixed entries are exclusions, and they are deliberately few. Markdown
+  # is NOT excluded: the ADRs and CONTRIBUTING carry the reasoning behind the
+  # release gate, and an earlier draft of this file excluded all of them, which
+  # would have hidden 15 of the 74 files in the pull request that introduced it.
+  # Only genuine working notes are excluded — the audit's plan drafts (plans/ is
+  # gitignored, so this is belt-and-braces) and the exploratory spikes under
+  # docs/notes/, which are records of what was tried rather than decisions.
+  path_filters:
+    - "!plans/**"
+    - "!docs/notes/**"
+    - "!DerivedData/**"
+    - "!.build/**"
 
-chat:
-  auto_reply: true
+  # Path-scoped guidance, for the things a reviewer cannot infer from the diff.
+  # Each entry is a false positive this exists to prevent.
+  path_instructions:
+    - path: "**/Info.plist"
+      instructions: >
+        NepalKit/Info.plist is hand-authored and is NOT generated. The app target
+        has GENERATE_INFOPLIST_FILE unset and INFOPLIST_FILE pointing at this
+        file; only the test target has the generator on. Two consequences: do not
+        suggest generating it, and do not suggest INFOPLIST_KEY_* build settings,
+        because Xcode honours only an allowlist of those names and drops unknown
+        ones in silence. Also: never edit this file with PlistBuddy. A PlistBuddy
+        write rewrites it and strips every XML comment, including the header that
+        documents the whole hand-authored arrangement. A source plist also carries
+        the unexpanded $(MACOSX_DEPLOYMENT_TARGET) token, which is why no script
+        in this repository can read the deployment floor out of it.
 
-# The gates, so a review comment does not ask for something a gate already
-# enforces, or miss something only a gate can see.
-path_filters:
-  - "!**/*.md"
-  - "!plans/**"
-  - "!docs/notes/**"
-  - "!DerivedData/**"
-  - "!.build/**"
+    - path: "**/project.pbxproj"
+      instructions: >
+        The deployment floor is MACOSX_DEPLOYMENT_TARGET = 26.6, stated in all
+        four XCBuildConfiguration blocks — the two project-level ones and the two
+        app-target ones. Four rather than one is not a choice: Xcode materialises
+        an inherited value into the target's own configuration when it is changed
+        in the UI, so "set it once at the project level" is not something the file
+        preserves. scripts/verify-deployment-floor.py reads every occurrence and
+        compares them against scripts/package-release.sh (which is what
+        verify-appcast.py treats as "the app's floor") and against the built
+        product. These have drifted before, and the appcast verifier reported
+        success while it had, because it compares the feed against the release
+        script rather than against the build. A change to any one of them should
+        be checked against the others.
+        The file is object version 110 and that is correct: CI runs on the
+        xcode-27 image, so Xcode 27's format is what CI reads. Do not suggest
+        downgrading it to 100 — Xcode 26 cannot open 110, and downgrading would
+        only reintroduce a conflict with the toolchain this project is built
+        with.
 
-# Guidance that is specific to this repository and is not inferable from the
-# code. Each entry is a false positive this configuration exists to prevent.
-instructions_for_reviewers:
-  - "The macOS deployment floor is 26.6 and is written in three places that do
-     not know about each other: every XCBuildConfiguration in project.pbxproj,
-     DEPLOYMENT_TARGET in scripts/package-release.sh, and LSMinimumSystemVersion
-     in the built product. They drifted once already - the app target built at
-     26.6 while the project-level configs and the release script said 26.0, and
-     the appcast verifier reported success because it compares the feed against
-     the release script's declared value rather than against the build. If you
-     see a change to any one of them, check all three agree."
-  - "NepalKit/Info.plist is hand-authored and is NOT generated. The app target
-     has GENERATE_INFOPLIST_FILE unset and INFOPLIST_FILE pointing at
-     NepalKit/Info.plist; only the test target has the generator on. A source
-     Info.plist therefore carries the unexpanded $(MACOSX_DEPLOYMENT_TARGET)
-     token, which is why no script can read the floor out of it. Do not suggest
-     generating it, and do not add INFOPLIST_KEY_* settings - Xcode honours only
-     an allowlist of those names and drops unknown ones in silence."
-  - "Sparkle is pinned to 2.9.6 (ADR-0012) and must not be upgraded as part of
-     another change. SURequireSignedFeed and SUVerifyUpdateBeforeExtraction are
-     one decision: Sparkle refuses to check for updates unless both are enabled,
-     and setting the first alone ships an app that cannot update. A change to
-     either key has to change both, and InfoPlistKeysTests asserts the pair."
-  - "appcast.xml is signed with the project's EdDSA key. Editing it invalidates
-     the signature, so any change to the feed must be followed by a re-sign, and
-     the signature is written as a trailing <!-- sparkle-signatures: --> comment
-     rather than as an attribute. verify-appcast.py exits non-zero on an
-     unsigned feed and that is the intended state until a maintainer re-signs."
-  - "scripts/check-all.sh is the single local entry point and now runs seven
-     gates. The app-target build is deliberately first: neither test suite
-     compiles the app, because scripts/apptests excludes NepalKitApp.swift and
-     SparkleUpdateService.swift so the harness can link NepalKitCore only. Plan
-     021 shipped a file the app could not compile and twenty-two plans passed
-     every other gate, because none of them built anything."
-  - "Comments in this codebase are load-bearing and unusually long, and they
-     explain why an approach was rejected. That is deliberate house style, not
-     noise: a comment that says only what the code does will be flagged as
-     redundant here. Judge a comment on whether the reasoning is correct, not on
-     whether the code beside it already says it."
-  - "AGENTS.md is gitignored and exists only on the maintainer's machine;
-     CODING_STANDARDS.md is the committed, authoritative copy of the house
-     style. Do not suggest editing AGENTS.md and do not treat its absence from
-     the repository as a missing file."
-  - "SwiftLint reports pre-existing violations and is not a blocking gate;
-     CONTRIBUTING.md records that. A new violation introduced by a change is
-     worth flagging, the existing 9 are not."
+    - path: "**/appcast.xml"
+      instructions: >
+        This file is signed with the project's EdDSA key. Any edit invalidates
+        the signature, so a change to the feed must be followed by a re-sign with
+        Sparkle's sign_update, and the signature is written as a trailing
+        <!-- sparkle-signatures: --> comment rather than as an XML attribute.
+        verify-appcast.py exits non-zero on an unsigned feed, which is the
+        intended state until a maintainer re-signs. Do not reformat or reindent
+        this file: sign_update signs exact bytes, so whitespace changes the
+        signature.
 
-# The two commands a reviewer reaches for most often, kept here so they do not
-# have to be rediscovered.
-#   ./scripts/check-all.sh        - every local gate, seven of them
-#   verify-deployment-floor.py    - is the floor one number everywhere
+    - path: "scripts/verify-appcast.py"
+      instructions: >
+        Read the deployment floor from scripts/package-release.sh rather than from
+        a source Info.plist, because a source plist carries the unexpanded
+        $(MACOSX_DEPLOYMENT_TARGET) token. That indirection is a single point of
+        failure and it is gated by scripts/verify-deployment-floor.py, which
+        compares the sources against each other. A change to the floor here should
+        keep the two in agreement.
+
+    - path: "**/*.swift"
+      instructions: >
+        Comments in this codebase are load-bearing and unusually long, and they
+        explain why an approach was rejected. That is deliberate house style, not
+        noise: a comment that only restates the code beside it is the one worth
+        flagging. Judge a comment on whether its reasoning is correct, not on
+        whether the code already says what it says.
+        Two things to check rather than assume. AGENTS.md is gitignored and exists
+        only on the maintainer's machine; CODING_STANDARDS.md is the committed,
+        authoritative copy of the house style. And the macOS deployment floor is
+        26.6 with no compatibility shim below it, so a #available check for
+        something older than the floor is dead code rather than defensive.
+
+    - path: "**/*.py"
+      instructions: >
+        The script suites are gates, not helpers, and their exit codes are the
+        contract. A gate that reports success while something is wrong is the
+        failure mode this repository has actually hit, several times, so treat a
+        change that weakens a check as a change to a control. Every gate added
+        here has a negative control that reproduces the bug it was written for.
+
+# Tone: state the disagreement and the evidence. Every one of these findings came
+# from a real regression rather than from style preference, and a review that
+# cannot tell the difference will spend its comments on the wrong things.
+tone_instructions: >
+  Be direct and specific. When you flag something, say what breaks and under what
+  condition, not that it "might be an issue". This repository's history is a
+  series of gates that passed while something was wrong, so a finding without a
+  concrete failure case is the least useful thing you can contribute. Equally, do
+  not manufacture a concern to seem thorough: several findings in this pull
+  request were false premises, and saying so plainly was more useful than a
+  hedged suggestion. If you are unsure whether something is a problem, say you are
+  unsure and what would settle it.

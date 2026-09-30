@@ -56,20 +56,31 @@ jobs:
       - name: Compare the pinned Sparkle version against the latest release
         run: |
           set -euo pipefail
-          # The pin lives in the Xcode project (ADR-0012, exactVersion). Read
-          # it from the resolved file so the check cannot drift from what the
-          # app actually builds against.
+          # Read the pin from the project's own `requirement`, not from
+          # Package.resolved. That file used to be the source here, and an
+          # Xcode 27 build deletes it: `-resolvePackageDependencies` resolves
+          # correctly and then relocates the lockfile out of
+          # project.xcworkspace/xcshareddata/swiftpm/ entirely, leaving a
+          # tracked-file deletion in the working tree. The build is unaffected,
+          # because the pin that actually governs resolution is the exactVersion
+          # requirement below - verified by resolving with the lockfile absent
+          # and still getting 2.9.6 - but a check that reads a file the
+          # toolchain deletes is a check waiting to fail for a reason that has
+          # nothing to do with Sparkle.
           PINNED=$(python3 - <<'PY'
-          import json, pathlib
-          resolved = json.loads(pathlib.Path(
-              "NepalKit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved").read_text())
-          pins = resolved.get("pins", [resolved]) if isinstance(resolved, dict) else resolved
-          for pin in pins:
-              if pin.get("identity") == "sparkle":
-                  print(pin["state"]["version"])
-                  break
-          else:
-              raise SystemExit("no sparkle pin found in Package.resolved")
+          import pathlib, re
+          text = pathlib.Path("NepalKit.xcodeproj/project.pbxproj").read_text()
+          block = re.search(
+              r'XCRemoteSwiftPackageReference "Sparkle".*?'
+              r'kind = (?P<kind>\w+);\s*version = (?P<version>[\d.]+);',
+              text, re.S)
+          if block is None:
+              raise SystemExit("no Sparkle package requirement found in project.pbxproj")
+          if block.group("kind") != "exactVersion":
+              raise SystemExit(
+                  f"Sparkle is pinned as {block.group('kind')}, not exactVersion; "
+                  "ADR-0012 requires an exact pin and this check assumes one")
+          print(block.group("version"))
           PY
           )
           LATEST=$(curl -sf https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \

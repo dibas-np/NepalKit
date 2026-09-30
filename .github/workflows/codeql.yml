@@ -21,16 +21,21 @@
 #    problem rather than a problem with this code. Committing the template
 #    unchanged would reproduce it exactly.
 #
-# 2. `runs-on: macos-26` for Swift, not `macos-latest`.
-#    The deployment floor is macOS 26 (ADR-0007). Analysing on a later release
-#    would say nothing about whether the floor claim holds, and `macos-latest`
-#    moves under the workflow without anyone editing it. Python and Actions
-#    still run on ubuntu, which is cheaper and faster for interpreted code.
+# 2. `runs-on: xcode-27` for Swift, not `macos-latest`.
+#    This was `macos-26`, chosen so the analysis would say something about the
+#    deployment floor. It could not stay there: a maintainer on macOS 27 editing
+#    build settings in Xcode 27 rewrites the project into object version 110, and
+#    Xcode 26 cannot open that at all, so the Swift leg would fail with "Unable
+#    to read project" before analysing a line. macos26-floor.yml moved for the
+#    same reason and in the same commit; the two must not drift. Python and
+#    Actions still run on ubuntu, which is cheaper and faster for interpreted code.
 #
-# 3. An explicit Xcode is selected, not the runner image default.
-#    Same reasoning as `.github/workflows/macos26-floor.yml`: the image's default
-#    has already moved 26.4.1 -> 26.5 -> 26.6 and will keep moving, so a security
-#    analysis that silently changes toolchain is not the same analysis.
+# 3. The image's default Xcode is resolved and its version asserted against a
+#    floor, rather than an exact version being named. Same reasoning as
+#    `.github/workflows/macos26-floor.yml`: the image's default moves under the
+#    workflow, and on the preview image the directory is named for a beta that
+#    gets replaced. A security analysis that silently changes toolchain is not
+#    the same analysis, so the resolved version is printed and asserted.
 #
 # 4. NepalKitCore is built with its tests, separately.
 #    The app scheme does not compile the test target, so a single `xcodebuild`
@@ -41,15 +46,15 @@
 # "Default setup" in Settings -> Code security. While "Default setup" is
 # selected, GitHub runs its own workflow and this one is ignored.
 #
-# ## When this fails because the toolchain was retired
+# ## When this fails because the toolchain moved
 #
-# The pinned Xcode is the point of the workflow, and it is also its expiry date.
-# GitHub removes old Xcode versions from the runner image, and when it does the
+# The Xcode floor is the point of the workflow, and it is also its expiry date.
+# The `xcode-27` image is a preview, so it moves under you. When it does the
 # failure looks exactly like a regression:
 #
-#     ::error::Xcode 26.6 is not installed on this runner.
+#     ::error::Resolved Xcode <version> is below the 27.0 floor.
 #
-# It is not one. Nothing about NepalKit changed. The step below says so in its own
+# It is not one. Nothing about NepalKit changed. The step says so in its own
 # error message, because a contributor hitting this at midnight should not have
 # to find this comment first.
 #
@@ -94,18 +99,25 @@ permissions:
   actions: read
 
 env:
-  # 26.6 is proven: the floor gate (macos26-floor.yml) ran green on a macos-26
-  # runner with this exact pin — core suite, app-layer suite, build, launch.
-  # See ADR-0007 and macos26-floor.yml's header. The two pins must not drift;
-  # that header carries the raising-the-pin policy.
-  XCODE_VERSION: "26.6"
+  # A floor rather than an exact pin, matching macos26-floor.yml, and for the
+  # same mechanical reason: on the `xcode-27` image the app directory is
+  # `Xcode_27_beta_3.app`, so naming a beta exactly would break on the next one.
+  # The resolved version is asserted against this floor and printed, so the
+  # toolchain a given analysis ran on is always in the log.
+  #
+  # The two workflows must not drift; macos26-floor.yml's header carries the
+  # policy and the reasoning for moving off `macos-26` at all. They moved
+  # together because a maintainer's Xcode 27 rewrites the project into object
+  # version 110, and Xcode 26 cannot open that — so a Swift analysis pinned to
+  # 26.6 could not build the code it was meant to analyse.
+  XCODE_FLOOR: "27.0"
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     # Swift on the deployment floor; the interpreted languages on ubuntu, which
     # is quicker and cheaper and does not need a Mac.
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-26') || 'ubuntu-latest' }}
+    runs-on: ${{ (matrix.language == 'swift' && 'xcode-27') || 'ubuntu-latest' }}
     # The swift leg runs two traced builds on a macOS runner; bound the hang
     # case well under the 360-minute default.
     timeout-minutes: 45
@@ -130,20 +142,27 @@ jobs:
 
       # Any setup has to happen before `init`, because CodeQL traces the build
       # commands that follow it.
-      - name: Select an explicit Xcode, not the image default
+      - name: Resolve the image's default Xcode and assert its floor
         if: matrix.language == 'swift'
         shell: bash
         run: |
           set -euo pipefail
-          candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          candidate="/Applications/Xcode.app/Contents/Developer"
           if [ ! -d "$candidate" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Move this pin in step with macos26-floor.yml; that workflow's header has the policy, and the two must not drift."
-            echo "Installed:"; ls -d /Applications/Xcode*.app || true
+            echo "::error::No default Xcode on this runner. The xcode-27 image is expected to provide one; listing what is installed."
+            ls -d /Applications/Xcode*.app || true
             exit 1
           fi
+
+          resolved=$(DEVELOPER_DIR="$candidate" xcodebuild -version | head -1 | awk '{print $2}')
           echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
-          echo "Using DEVELOPER_DIR=$candidate"
-          xcodebuild -version
+          echo "Resolved Xcode: $resolved (floor ${XCODE_FLOOR})"
+
+          if [ "$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | head -1)" != "$XCODE_FLOOR" ]; then
+            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor. Move this floor in step with macos26-floor.yml; that workflow's header has the policy, and the two must not drift."
+            exit 1
+          fi
+          DEVELOPER_DIR="$candidate" xcodebuild -version
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2

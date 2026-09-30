@@ -32,18 +32,30 @@ true.
 The app's deployment floor is macOS 26, and `NepalKitCore` will not build
 against anything older.
 
-**Xcode 26.6 is enough, and that is now evidence rather than hope.** The floor
-gate ([macos26-floor.yml](.github/workflows/macos26-floor.yml)) pins Xcode 26.6
-on the `macos-26` runner and has completed successfully: core suite, app-layer
-suite, build, and a launch that survives and exits without a relaunch loop. The
-release pipeline uses Xcode 27, so 26.6 is the floor that matters and it holds.
-The release pipeline uses Xcode 27, and the Xcode project format stays at the
-level the floor toolchain reads — **decline Xcode 27's project-upgrade
-prompt**. Accepting it silently breaks the floor gate for every later pull
-request, with no local symptom.
+**The floor is macOS 26.6, and CI runs Xcode 27.** The floor gate
+([macos26-floor.yml](.github/workflows/macos26-floor.yml)) runs on the `xcode-27`
+image and has completed successfully: core suite, app-layer suite, build, and a
+launch that survives and exits without a relaunch loop.
+
+This needs stating plainly, because the gate's name and the ruleset's required
+check still say "macOS 26" while the runner is macOS 27. So be clear about what
+that does and does not mean:
+
+- **The compile-time floor is enforced.** A macOS 27-only API is still an error
+  against a 26.6 deployment target, whatever Xcode enforces it. That is the
+  failure mode the gate exists for, and it still holds.
+- **The app is no longer *run* on macOS 26.** That claim rests on the
+  compile-time guarantee plus release evidence, not on CI.
+
+The move off `macos-26` was forced, not preferred. Xcode 26.6's SDK tops out at
+deployment target 26.5.99, so it could not even express a 26.6 floor, and Xcode
+26 cannot open the object-version-110 project file that Xcode 27 writes — every
+build-settings edit prompted an upgrade that silently broke the gate. The header
+of `macos26-floor.yml` records the trade and the way out; ADR-0007 records the
+decision.
 
 If you hit something 26.6 cannot compile, that is a regression against a claim
-the gate now enforces — report it rather than working around it locally.
+the gate still enforces — report it rather than working around it locally.
 
 **The app target compiles in Swift 6 language mode** — `SWIFT_VERSION = 6.0`
 with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, in `project.pbxproj` — and the
@@ -170,15 +182,23 @@ first.
   (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
   act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the
-  deployment-floor gate: it proves the app builds, tests, and launches on the
-  oldest macOS it claims to support, which is a different question from "does it
-  work on my machine".
+  deployment-floor gate: it proves the app builds, tests, and launches on a macOS
+  toolchain, which is a different question from "does it work on my machine". It
+  no longer runs *on* the oldest supported macOS — the gate's header records what
+  that costs and why.
 - That gate is also a **required status check** on `main` (branch ruleset
   `main`, enforcement active — checkable under
   Settings → Rules → Rulesets). Its single required check is named
   `build, test, and launch on macOS 26`. The repository owner is a bypass
   actor, so a broken gate can never lock a solo maintainer out of their own
   repository; for everyone else it cannot be skipped.
+- **That name and the ruleset must change together, or not at all.** The check
+  name above no longer describes what the job does — the job runs on macOS 27 —
+  but renaming the `name:` alone would leave the ruleset demanding a check that
+  can never be reported, which blocks every future pull request to `main` with
+  no failure to diagnose. To correct it, edit the ruleset's required check under
+  Settings → Rules → Rulesets *and* the job's `name:` in the same change. This
+  was nearly shipped the other way round.
 
 ## Licensing of contributions
 

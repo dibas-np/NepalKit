@@ -144,26 +144,34 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
     return declared, problem
 
 
-# The highest object version the deployment-floor toolchain can read. ADR-0007:
-# 110 is Xcode 27's format, the floor job pins Xcode 26.6, and Xcode 26 cannot
-# open a 110 project at all - it fails with "Unable to read project" before
-# compiling a line, which is the least useful possible failure because it names
-# neither the setting that changed nor the file that has to change back.
+# The highest object version the CI toolchain can read. CI runs on the
+# `xcode-27` image, whose Xcode writes and reads 110, so 110 is the correct
+# version for this repository and a gate that rejected it would only be fighting
+# the tool - Xcode rewrites the format every time it opens the project, so a
+# maintainer editing build settings would be fighting the gate on every commit.
 #
-# This is here because it has now bitten twice: once in a406c7e, and again when
-# opening the project in Xcode 27 to build it silently rewrote the format. The
-# rewrite is a side effect of using the tool, so no amount of care at the commit
-# prevents it - only a gate does.
-MAX_OBJECT_VERSION = 100
+# The check is still worth having, for the next time the format moves. It has
+# bitten twice, and both times the failure arrived as a red build on a pull
+# request whose code was fine:
+#
+#     xcodebuild: error: Unable to read project 'NepalKit.xcodeproj'.
+#     Reason: The project cannot be opened because it is in a future Xcode
+#     project file format (110).
+#
+# That message names neither the setting nor the file to change, which is why the
+# check lives here where it can say both. A future Xcode adopting a new format
+# raises this ceiling, and raising it is the ADR-0007 re-evaluation: CI's
+# toolchain has to move at the same time, or this gate fails on the pull request
+# that made the move instead of on the change that should have prompted it.
+MAX_OBJECT_VERSION = 110
 
 
 def _project_format_problem(text: str) -> str | None:
-    """A project file newer than the floor toolchain can read, if so.
+    """A project file newer than CI's toolchain can read, if so.
 
-    The floor job runs the pinned Xcode, and a project it cannot open fails
-    before it reaches the app's code - so this is checked here, where the message
-    can say what happened and what to do, rather than there, where the message is
-    about a project file.
+    A project CI cannot open fails before it reaches the app's code, so this is
+    checked where the message can name the setting, the ceiling, and the policy -
+    rather than in a CI log, where the message is only about a project file.
     """
     match = re.search(r"^\s*objectVersion = (\d+);", text, re.M)
     if match is None:
@@ -172,12 +180,14 @@ def _project_format_problem(text: str) -> str | None:
     if version <= MAX_OBJECT_VERSION:
         return None
     return (
-        f"{PROJECT.name} is object version {version}, and the deployment-floor "
-        f"job pins a toolchain that can only read up to {MAX_OBJECT_VERSION}. "
-        "Xcode 27 rewrites the format when it opens a project, so this regresses "
-        "on its own. Set objectVersion back to "
-        f"{MAX_OBJECT_VERSION}; ADR-0007 records why, and says the rewrite is "
-        "otherwise harmless because no build setting differs between the two."
+        f"{PROJECT.name} is object version {version}, and CI runs on the "
+        f"xcode-27 image, whose toolchain reads up to {MAX_OBJECT_VERSION}. "
+        "A newer Xcode rewrites this format simply by opening the project, so it "
+        "changes without an edit to it. Either set objectVersion back to "
+        f"{MAX_OBJECT_VERSION}, or - if the project now needs a feature only the "
+        "newer format has - move CI's Xcode floor up in the same change. "
+        "ADR-0007 records that raising the floor is a re-evaluation of the "
+        "deployment-floor claim, not a routine bump."
     )
 
 
