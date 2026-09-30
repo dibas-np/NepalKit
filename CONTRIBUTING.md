@@ -71,8 +71,8 @@ One command runs every automated gate, and names each one as it goes:
 It runs these five, in this order:
 
 ```sh
-cd NepalKitCore && swift test               # the calendar: 55 tests
-./scripts/run-app-tests.sh                  # the app: 141 tests
+cd NepalKitCore && swift test               # the calendar: 62 tests
+./scripts/run-app-tests.sh                  # the app: 134 tests
 python3 scripts/test_dataset_parsers.py     # the month table against the parsers
 python3 scripts/test_update_changelog.py    # the changelog generator
 python3 scripts/test_verify_appcast.py      # the appcast verifier
