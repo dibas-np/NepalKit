@@ -33,6 +33,27 @@ struct LiveLoginItemService: LoginItemServicing {
     }
 }
 
+/// The two ways changing the login item can fail, carrying the system's own
+/// wording as the payload.
+///
+/// Typed rather than a bare `String` so a test can pin *which* operation failed
+/// without matching its message — the same argument as `UpdateOutcome`, the
+/// other Settings-bound service. Two services reporting failure two different
+/// ways leaves the next one no pattern to copy; this is the convergence.
+///
+/// The cases name the operation, not the cause. The errors are opaque
+/// `SMAppService` Cocoa errors with nothing in them to classify, so the
+/// operation is the only distinction the system actually offers, and the
+/// wording is better shown than paraphrased. If a cause ever does need naming —
+/// a registration held for approval in System Settings, say — it earns its own
+/// case and the view's wording follows from it.
+enum LoginItemFailure: Equatable {
+    /// `register()` was refused, so the login item could not be turned on.
+    case registration(String)
+    /// `unregister()` was refused, so the login item could not be turned off.
+    case deregistration(String)
+}
+
 /// Owns the launch-at-login toggle. The system is the source of truth for
 /// the on/off state; only the "already configured the default" flag is
 /// persisted, so first launch registers once and never overrides the user.
@@ -46,7 +67,7 @@ final class LoginItemModel {
     /// The last failure reported by the login-item service, if any. `isOn`
     /// follows the system either way, so without this a refused registration
     /// only makes the toggle spring back, never saying why.
-    private(set) var setupError: String?
+    private(set) var setupError: LoginItemFailure?
 
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
@@ -70,9 +91,16 @@ final class LoginItemModel {
     /// Runs until it succeeds: afterwards the user's toggle choice is never
     /// overridden. The flag is set only on confirmed registration, so a
     /// failed first launch retries on the next launch instead of giving up.
+    /// A refused registration is reported rather than swallowed, so the retry
+    /// is visible instead of silent.
     func ensureDefaultOn() {
         guard !defaults.bool(forKey: Self.configuredKey) else { return }
-        try? service.register()
+        do {
+            try service.register()
+            setupError = nil
+        } catch {
+            setupError = Self.failure(from: error, turningOn: true)
+        }
         isOn = service.isRegistered
         if isOn {
             defaults.set(true, forKey: Self.configuredKey)
@@ -90,9 +118,19 @@ final class LoginItemModel {
             }
             setupError = nil
         } catch {
-            setupError = error.localizedDescription
+            // Which operation failed is the one thing the system does tell us,
+            // and it is what the wording and the test both turn on.
+            setupError = Self.failure(from: error, turningOn: on)
         }
         isOn = service.isRegistered
+    }
+
+    /// The one mapping from a thrown error to a reported failure. Both call
+    /// paths share it so a refusal at first launch and the same refusal from
+    /// the toggle cannot be worded two different ways.
+    private static func failure(from error: any Error, turningOn: Bool) -> LoginItemFailure {
+        turningOn ? .registration(error.localizedDescription)
+                  : .deregistration(error.localizedDescription)
     }
 
     /// Binding target for the Settings toggle: writing runs the same

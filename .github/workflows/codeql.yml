@@ -28,9 +28,35 @@
 #    still run on ubuntu, which is cheaper and faster for interpreted code.
 #
 # 3. An explicit Xcode is selected, not the runner image default.
-#    Same reasoning as `.github/workflows/macos26-floor.yml`: the image's default
-#    has already moved 26.4.1 -> 26.5 -> 26.6 and will keep moving, so a security
-#    analysis that silently changes toolchain is not the same analysis.
+#    The image's default has already moved 26.4.1 -> 26.5 -> 26.6 and will keep
+#    moving, so a security analysis that silently changes toolchain is not the
+#    same analysis.
+#
+# ## Why this did not move to xcode-27 with macos26-floor.yml
+#
+# The floor gate moved to `xcode-27` because it had to: its Xcode could not
+# express a 26.6 deployment target (SDK ceiling 26.5.99) and could not open the
+# project. Those are properties of *building the app*, so they forced the move.
+#
+# This workflow was moved too, on the reasoning that the two must not drift. That
+# reasoning was wrong, and the evidence is unambiguous:
+#
+#     posix_spawn error: Bad CPU type in executable (86),
+#     ["/usr/bin/sandbox-exec", ..., "nepalkitcore-manifest", ...]
+#     xcodebuild: error: Could not resolve package dependencies
+#
+# SwiftPM fails evaluating NepalKitCore's manifest on that image. It is not the
+# code: the Swift source is byte-identical to the last run of this workflow that
+# passed, and that run was on `macos-26`. `swift test` in the same package, on
+# the same image, untraced, succeeds - the failure needs CodeQL's build tracer.
+# Nothing about it is reported as a known issue on the image.
+#
+# Losing this leg is not an option - it is the only security analysis of the 73
+# Swift files - so this job stays on `macos-26` and downgrades the project format
+# in its own checkout to get past the one incompatibility that motivated the
+# move. macos26-floor.yml therefore runs on macOS 27 and this runs on macOS 26.
+# That divergence is intended and is why the "must not drift" claim above is
+# limited to the Xcode pin rather than the runner.
 #
 # 4. NepalKitCore is built with its tests, separately.
 #    The app scheme does not compile the test target, so a single `xcodebuild`
@@ -49,7 +75,7 @@
 #
 #     ::error::Xcode 26.6 is not installed on this runner.
 #
-# It is not one. Nothing about NepalKit changed. The step below says so in its own
+# It is not one. Nothing about NepalKit changed. The step says so in its own
 # error message, because a contributor hitting this at midnight should not have
 # to find this comment first.
 #
@@ -94,11 +120,19 @@ permissions:
   actions: read
 
 env:
-  # 26.6 is proven: the floor gate (macos26-floor.yml) ran green on a macos-26
-  # runner with this exact pin — core suite, app-layer suite, build, launch.
-  # See ticket 04. The two pins must not drift; that workflow's header carries
-  # the raising-the-pin policy.
+  # Swift is analysed with the floor toolchain on `macos-26`, pinning that Xcode
+  # exactly. macos26-floor.yml moved to `xcode-27` and this deliberately did not
+  # follow; the header records why, and it is not a reason to re-litigate here.
+  #
+  # An exact pin is correct here and was wrong there. On the macos-26 image the
+  # Xcode directory is named for its version (`Xcode_26.6.app`), so naming it
+  # exactly is stable, and its retirement produces a clear message rather than a
+  # silent toolchain change.
   XCODE_VERSION: "26.6"
+  # The highest object version that Xcode 26 can open. The repository is 110,
+  # because a maintainer's Xcode 27 rewrites the project whenever it is opened,
+  # and Xcode 26 cannot read a 110 project at all - see the header.
+  XCODE_READABLE_OBJECT_VERSION: "100"
 
 jobs:
   analyze:
@@ -130,20 +164,51 @@ jobs:
 
       # Any setup has to happen before `init`, because CodeQL traces the build
       # commands that follow it.
-      - name: Select an explicit Xcode, not the image default
+      # Any setup has to happen before `init`, because CodeQL traces the build
+      # commands that follow it.
+      - name: Select the pinned Xcode explicitly
         if: matrix.language == 'swift'
         shell: bash
         run: |
           set -euo pipefail
           candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
           if [ ! -d "$candidate" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Move this pin in step with macos26-floor.yml; that workflow's header has the policy, and the two must not drift."
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Raising the pin is a re-evaluation of the analysis's own claim, not a routine bump; macos26-floor.yml's header carries the policy, and this pin is chosen so the two do not drift."
             echo "Installed:"; ls -d /Applications/Xcode*.app || true
             exit 1
           fi
           echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
           echo "Using DEVELOPER_DIR=$candidate"
           xcodebuild -version
+
+      # Xcode 26 cannot open an object-version-110 project, and this repository
+      # is 110 because a maintainer's Xcode 27 rewrites it whenever the project is
+      # opened. So this job downgrades the format before building, in the runner's
+      # own checkout, and never pushes it. a406c7e established that no build
+      # setting differs between the two formats for this project - the rewrite is
+      # sectional - so the downgrade costs nothing but the version line.
+      #
+      # The assertion is the point. Silently accepting whatever the file happens
+      # to say would make this job's coverage depend on whoever last opened the
+      # project in Xcode, which is the dependency that made the floor gate
+      # unrunnable in the first place.
+      - name: Make the project readable by the pinned Xcode
+        if: matrix.language == 'swift'
+        shell: bash
+        run: |
+          set -euo pipefail
+          project=NepalKit.xcodeproj/project.pbxproj
+          current=$(sed -n 's/^\tobjectVersion = \([0-9]*\);/\1/p' "$project")
+          if [ -z "$current" ]; then
+            echo "::error::no objectVersion in $project; refusing to guess at the format"
+            exit 1
+          fi
+          echo "object version in the checkout: $current (Xcode ${XCODE_VERSION} reads up to ${XCODE_READABLE_OBJECT_VERSION})"
+          if [ "$current" -gt "$XCODE_READABLE_OBJECT_VERSION" ]; then
+            sed -i '' "s/objectVersion = $current;/objectVersion = ${XCODE_READABLE_OBJECT_VERSION};/" "$project"
+            echo "downgraded to ${XCODE_READABLE_OBJECT_VERSION} for this job only; runner-local, never pushed"
+            echo "  now: $(grep -m1 objectVersion "$project")"
+          fi
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2

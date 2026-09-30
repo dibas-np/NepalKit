@@ -9,7 +9,7 @@ import AppKit
 /// screen but leaves `NSApp.keyWindow` nil, `NSApp.isActive` false, and another
 /// application still frontmost. The window is focusable, just not focused — so
 /// it opens and cannot be used. Every command that opens a window goes through
-/// here rather than each growing its own activation call, so About (ticket 06)
+/// here rather than each growing its own activation call, so About
 /// inherits the behaviour instead of reimplementing it.
 ///
 /// **Which API, measured rather than assumed.** Measured against the real app

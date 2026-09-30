@@ -40,9 +40,6 @@ struct PopoverView: View {
     /// Settings open through SwiftUI's own action rather than a hand-built
     /// window; the activation half is `WindowPresentation`'s (ADR-0011).
     @Environment(\.openSettings) private var openSettings
-    /// About is a named window scene, opened the same way — same activation
-    /// behaviour, not a second mechanism (ADR-0011).
-    @Environment(\.openWindow) private var openWindow
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
     let dataset: CalendarDataset
@@ -100,101 +97,17 @@ struct PopoverView: View {
         // two different x positions and the block looks accidentally staggered.
         .frame(maxWidth: .infinity, alignment: .leading)
 
-        // Settings, About and Quit live below the content rather than inside
-        // either destination. They open other windows or end the process, so
-        // they are not a step in navigating Today and Convert, and burying them
-        // in one tab would hide them from the other.
-        footer
+        // Settings and Quit live below the content rather than inside either
+        // destination. They open another window or end the process, so they are
+        // not a step in navigating Today and Convert, and burying them in one tab
+        // would hide them from the other.
+        //
+        // `destination` and `openSettings` are all this hands over, so a per-second
+        // clock tick never re-evaluates the footer - the same reasoning that made
+        // the header, Today and Clocks their own view types.
+        PopoverFooter(destination: destination) { openSettings() }
     }
 
-    // MARK: - Footer
-
-    /// A bar along the bottom: the selected destination on the left, the three
-    /// actions on the right.
-    ///
-    /// This follows the reference layout, where the footer names where you are
-    /// on the left and puts the actions on the right. Naming the destination here
-    /// is what the segmented control's selection does not say on its own when the
-    /// popover is read as a whole: the control is a control, and this is the
-    /// surface's own statement of position.
-    ///
-    /// Each action pairs a symbol with its visible title and carries a spoken
-    /// hint. Why the titles are not dropped in favour of the reference's bare
-    /// glyphs is recorded at the call site below.
-    private var footer: some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack(spacing: 8) {
-                Text(destination.title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 8)
-
-                // Visible text, not icon-only: a bare glyph on this surface
-                // exposes no accessible name (System Events reports `AXName` as
-                // missing for these buttons), and with the text removed a
-                // screen-reader user hears "button" twice with no way to tell
-                // the actions apart. An action whose name cannot be proven
-                // announced shows its name.
-                action(
-                    Symbols.settings,
-                    title: Strings.settingsLabel,
-                    help: Strings.settingsHelp
-                ) {
-                    WindowPresentation.present(open: { openSettings() })
-                }
-
-                action(
-                    Symbols.about,
-                    title: Strings.aboutLabel,
-                    help: Strings.aboutHelp
-                ) {
-                    WindowPresentation.present(open: { openWindow(id: AboutWindow.id) })
-                }
-
-                // Quit keeps its text. It is the only action in a menu-bar-only
-                // app that ends the process, and the one a first-time user most
-                // likely to hunt for; the others have conventional glyphs, this
-                // does not.
-                //
-                // The ⌘Q shortcut lives on the app's termination command group
-                // (NepalKitApp.swift) so it works when the app is frontmost
-                // without the popover open. This is the discoverable control for
-                // the same action.
-                Button(Strings.quitLabel, action: AppTermination.quit)
-                    .buttonStyle(.plain)
-                    .font(.caption)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Strings.quitLabel)
-                    .accessibilityHint(Strings.quitHelp)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-        }
-    }
-
-    /// A compact symbol-and-title action for the footer.
-    ///
-    /// Tighter than a full-width row so three of them fit beside the position
-    /// label, but still text: see the note at the call site for why these are not
-    /// icon-only. The hint carries the purpose, which a glyph cannot.
-    private func action(
-        _ symbol: String,
-        title: String,
-        help: String,
-        perform: @escaping () -> Void
-    ) -> some View {
-        Button(action: perform) {
-            Label(title, systemImage: symbol)
-                .font(.caption)
-                .symbolRenderingMode(.monochrome)
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
-        .accessibilityHint(help)
-    }
 }
 
 #if DEBUG
@@ -275,11 +188,16 @@ private struct TodaySection: View {
                 // rather than a value sitting beside its own label; everything
                 // below steps down from it.
                 //
+                // `largeTitle`, and semantic like every other font here. This was
+                // a literal `system(size: 28)` — 2pt larger, and not scaling: a
+                // literal point size ignores the system accessibility text size,
+                // so a user enlarging text saw every line grow except the hero.
+                //
                 // Shown exactly as configured; announced in a form a voice can
                 // pronounce. The two come from the same date, so they cannot
                 // drift into describing different days.
                 Text(formatBS(todayBS, settings: settings))
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.largeTitle.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     // Label only: `children: .ignore` leaves a `Text` with no
                     // accessibility role at all. Replacing the label keeps its

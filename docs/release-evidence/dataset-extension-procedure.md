@@ -226,7 +226,7 @@ Then, in the data block:
    construction rather than corrupting conversions.
 3. **Verify `gregorianEnd`; never hand-edit what derives.** It is computed from
    `supportedRange.upperBound`'s Chaitra month length, is documented as "derived,
-   never stored", and is what both the About surface and the spoken boundary
+   never stored", and is what both the About tab's supported-range row and the spoken boundary
    sentence read — so the table change moves the Gregorian end on its own and
    there is no Gregorian literal to hunt down. Confirm the new value rather than
    typing one in.
@@ -303,8 +303,13 @@ And on the app side:
 - `NepalKitTests/AppMetadataTests.swift:172` — `.supportedRange == 1975 ... 2084`
 - `NepalKitTests/DatasetBoundaryTests.swift:34,84-85` — the boundary day and the
   spoken "Supported through 2084 BS" string
-- `NepalKitTests/SpokenDateTests.swift:146-149,236-238` — the shown range
-  "1975–2084 BS" and its spoken form
+- `NepalKitTests/SpokenDateTests.swift`, test
+  `supportedRangeIsSpokenWithoutTheEnDash` — the shown range "1975–2084 BS" and
+  its spoken form. Named rather than cited by line, because this is the one
+  assertion here a refactor has already moved once: 8c0b155 moved the spoken forms
+  into the core, and the line numbers this entry carried before that now point
+  into an unrelated punctuation sweep. A test name survives that move; a line
+  number does not.
 - `NepalKitTests/ConverterModelTests.swift:43-44,86` — `bsYears`, an Ashar 2084
   month-length assertion, and the `2084-12-30 ↔ 2028-04-12` anchor comment
 

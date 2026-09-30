@@ -62,19 +62,47 @@ jobs:
           set -euo pipefail
           python3 scripts/test_verify_appcast.py
 
+      # Runs unconditionally, before the feed check, because the feed check
+      # trusts a floor this one establishes. The drift that motivated it: the app
+      # target built at 26.6 while package-release.sh said 26.0, so the feed
+      # verified as "26.0 matches the app's floor" and shipped an update to
+      # systems that could not launch the build. Every other gate agreed, because
+      # they all compared the feed against a declared number rather than
+      # comparing the sources to each other.
+      #
+      # No NEPAKIT_BUILT_PLIST here, so the built product is skipped and the
+      # sources are compared to each other - which is the drift that actually
+      # happened, and it needs no build. The full three-way check including the
+      # product is check-all.sh's first gate, which builds first.
+      - name: Deployment floor is one number everywhere
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-deployment-floor.py
+
+      - name: Deployment floor self-test
+        run: |
+          set -euo pipefail
+          python3 scripts/test_verify_deployment_floor.py
+
       - name: Verify the appcast
         if: steps.check.outputs.publish == 'true'
         run: |
           set -euo pipefail
           # No --enclosure: the archives are release assets, not repository
-          # files, so they are not available here. This still enforces the
-          # checks that make a malformed, unsigned, or non-https feed
-          # impossible to publish. The length and signature checks over the
-          # real bytes run on the release machine, before the commit that
-          # triggers this workflow.
+          # files, so there is nothing local to hand the verifier. It fetches
+          # each enclosure url instead, which is the check itself - the declared
+          # length against the real byte count, and the Ed25519 signature
+          # against the public key committed to Info.plist. Verification needs
+          # only that public half, so this job can run the real thing without a
+          # secret, and it is the same check the release machine ran.
+          #
+          # --skip-crypto used to be passed here. It suppresses the signature
+          # check and, with no --enclosure to read, the byte check too, so this
+          # step was verifying structure while reporting the appcast sound. Do
+          # not add it back: a skipped item now exits non-zero, and this job
+          # depends on the verifier reaching a verdict about the real bytes.
           python3 scripts/verify-appcast.py appcast.xml \
-            --info-plist NepalKit/Info.plist \
-            --skip-crypto
+            --info-plist NepalKit/Info.plist
 
       - name: Confirm the committed key is well-formed
         if: steps.check.outputs.publish == 'true'

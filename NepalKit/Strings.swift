@@ -5,7 +5,7 @@ import NepalKitCore
 /// User-facing strings in one place. Not a localization system: the app ships
 /// one UI language (the month-name language setting is a date-presentation
 /// setting, not a second UI language).
-enum Strings {
+nonisolated enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
     /// Separator between a date and its weekday on a shown date line.
     ///
@@ -40,13 +40,24 @@ enum Strings {
     static let updateAvailableSpoken = "update available"
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"
+    /// Spoken form of the Latin digit option. The shown label keeps its en dash
+    /// for the same reason `digitsDevanagariSpoken` keeps its Devanagari digits:
+    /// on screen the label is describing the range it selects, and only the
+    /// announcement is made pronounceable.
+    static let digitsLatinSpoken = "Latin 0-9"
     static let digitsDevanagari = "Devanagari ०–९"
     /// Spoken form of the Devanagari digit option. The shown label deliberately
     /// shows the digits it selects, but those are exactly the characters a voice
     /// may not read, which would leave the option unidentifiable when the two
     /// Settings pickers are read aloud. Same rule as the dates: the screen keeps
     /// the characters, only the announcement is made pronounceable.
-    static let digitsDevanagariSpoken = "Devanagari 0–9"
+    ///
+    /// The separator is a plain hyphen for the reason `supportedRangeSpoken`
+    /// spells its dash out: an en dash is unpredictable aloud — some voices say
+    /// "0 dash 9", some pause, some drop it. This string exists only to be
+    /// spoken, so unlike `digitsLatin` there is no shown counterpart whose
+    /// punctuation it has to keep.
+    static let digitsDevanagariSpoken = "Devanagari 0-9"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "Transliterated"
@@ -87,15 +98,30 @@ enum Strings {
     static let monthLabel = "Month"
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
+    /// The menu command's title, in the app menu. Apple's convention there is the
+    /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"
-    /// Spoken purposes for the footer's icon-only buttons. A symbol with no
-    /// accessible name is the worst case in the whole app: a screen-reader user
-    /// hears "button" three times and cannot tell the actions apart, while a
-    /// sighted user sees three distinct glyphs and reads them instantly.
+    /// The popover footer's Quit, where the app name is neither needed nor
+    /// wanted — the button sits beside the app's own popover, so naming the app
+    /// again is the visual equivalent of "NepalKit" appearing twice in the menu
+    /// bar. Still announced as `quitLabel` by the caller.
+    static let quitFooterLabel = "Quit"
+    /// Spoken purposes for the footer's buttons. A symbol with no accessible name
+    /// is the worst case in the whole app: a screen-reader user hears "button"
+    /// twice and cannot tell the actions apart, while a sighted user sees two
+    /// distinct glyphs and reads them instantly. So the Settings button is drawn
+    /// as a bare glyph and still *named* here — that is the whole reason the
+    /// string survives the text being removed.
     static let settingsHelp = "Opens the Settings window"
-    static let aboutHelp = "Opens the About window"
     static let quitHelp = "Quits NepalKit"
+    /// Unused as drawn: the footer's Settings button shows the glyph alone. Kept
+    /// because it is the announced name, and a button whose label is only ever
+    /// spoken still needs the string.
     static let settingsLabel = "Settings…"
+    /// Spoken form: the ellipsis is a visual affordance marking an action that
+    /// continues past the footer, and there is nothing to add by saying it —
+    /// "Settings" is the whole action.
+    static let settingsLabelSpoken = "Settings"
     // Spoken-channel strings. These are *said*, never shown: the visual date
     // always renders as configured, and only the accessibility representation
     // differs (SpokenDate).
@@ -110,12 +136,31 @@ enum Strings {
     static func spokenDateBeyondRange(_ gregorianEnd: String) -> String {
         "date unavailable, calendar data ends \(gregorianEnd)"
     }
-    static let aboutLabel = "About NepalKit"
+    // MARK: - Settings window
+    //
+    // Three tabs, in sidebar order. The titles are deliberately short: a sidebar
+    // row is one line, and "Software Update" as a tab name would truncate while
+    // its own Section header below still spells it out in full.
+    static let menuBarTabTitle = "Menu Bar"
+    static let generalTabTitle = "General"
+    static let aboutTabTitle = "About"
+    /// Stands in for the build's provenance on the About tab's version row. The
+    /// row names the version; this says that is the version you are running, as
+    /// opposed to a version some other build reports.
+    static let aboutCurrentBuild = "This build"
+    /// What the Menu Bar tab shows: the literal menu-bar text. The caption names
+    /// where the value is actually rendered, because a date in a preferences
+    /// window is otherwise indistinguishable from a setting.
+    static let menuBarPreviewCaption = "The menu bar shows"
     static let displaySection = "Display"
     static let startupSection = "Startup"
     static let updatesSection = "Software Update"
     static let updateAutomaticallyLabel = "Check automatically"
     static let checkForUpdatesLabel = "Check for Updates…"
+    /// Spoken form: the ellipsis is a visual affordance, not a spoken one. Shown,
+    /// it marks a control that opens a sheet elsewhere; aloud it buys a pause and
+    /// no meaning.
+    static let checkForUpdatesLabelSpoken = "Check for Updates"
     static let updateStatusNotChecked = "Not checked yet"
     static let updateStatusUpToDate = "NepalKit is up to date"
     static let updateStatusUpdateAvailable = "An update is available"
@@ -138,10 +183,47 @@ enum Strings {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
     }
 
+    /// Refused rather than failed: the check was declined before it ran, because
+    /// this build could not have acted on any answer. Said rather than silent,
+    /// because a user who asked to check and got nothing back cannot tell that
+    /// apart from a network problem.
+    ///
+    /// Ours rather than the framework's — the reason beside it is the one the
+    /// updater phrases for itself and this file only passes along, and this is
+    /// the single sentence the app raises itself. So it lives here with the rest
+    /// instead of as a literal at the throw site.
+    ///
+    /// One line with its literal on purpose: `SpokenDateTests` parses this file
+    /// to sweep the spoken channel, and a declaration it cannot read a value out
+    /// of fails that test rather than going unchecked.
+    static let updateCheckSkippedTransientLaunch = "Skipped: this build cannot update itself in place"
+
+    /// A refused register/unregister is invisible on the toggle: `isOn` follows
+    /// the system, so the toggle springs back without ever saying why. This
+    /// sentence is where the reason lands.
+    ///
+    /// Parenthetical rather than a second clause, so the direction of the change
+    /// is readable while the toggle is still mid-rebound — "turning it on" beside
+    /// a control that just sprang back to off is the whole ambiguity.
+    static let loginItemFailed = "Could not change launch at login"
+
+    /// The system reports an opaque Cocoa error, so the sentence around it is
+    /// the app's and the payload is quoted rather than spliced in, for the same
+    /// reason as `updateStatusFailedReason`: the system's phrasing is written
+    /// for the login-item machinery, not for this sentence, and quoting keeps
+    /// the two claims separable if it turns out to contradict ours.
+    static func loginItemFailureReason(_ failure: LoginItemFailure) -> String {
+        switch failure {
+        case .registration(let reason):
+            "\(loginItemFailed) (turning it on). The system reported: “\(reason)”"
+        case .deregistration(let reason):
+            "\(loginItemFailed) (turning it off). The system reported: “\(reason)”"
+        }
+    }
+
     /// About surface. The calendar range is formatted from the dataset's own
     /// bounds, so narrowing or extending the table moves this line with it.
     static func versionLabel(_ version: String) -> String { "Version \(version)" }
-    static func datasetVersionLabel(_ version: String) -> String { "Dataset \(version)" }
     static func supportedRange(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound)–\(range.upperBound) BS"
     }
@@ -152,23 +234,10 @@ enum Strings {
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
     }
-    static let calendarDataLabel = "Calendar data"
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
-    static let licenseLabel = "Licence"
-    /// The GPL covers the app code only. The bundled calendar table carries no
-    /// licence from this project at all — a note implying it is "licensed
-    /// separately" would claim a licence exists, which is the overclaim
-    /// SOURCES.md exists to prevent (ADR-0010).
-    static let licenseScopeNote =
-        "Applies to the app code. The bundled calendar data carries no licence from this project; see SOURCES.md in the repository."
-    /// Says what the cross-check established and no more. The table is
-    /// corroborated against a second community source, but every shipped year is
-    /// still derived from one base table, so this must not read as independent
-    /// licensing (ADR-0010).
-    static let calendarDataAttribution = """
-        Month lengths follow the officially published Nepali Patro and are \
-        cross-checked month-by-month against community tables. The table is \
-        derived from those sources across its whole range.
-        """
+    /// Shown on the Settings sidebar link. Short because the sidebar row is
+    /// narrow and the full phrase wraps; `repositoryLabel` is what gets
+    /// announced, because "Source" alone does not say what it points at.
+    static let sourceLinkTitle = "Source"
 }

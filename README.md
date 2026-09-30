@@ -7,13 +7,13 @@
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/tag/dibas-np/NepalKit?label=version&style=flat-square" alt="Version"></a>
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/macOS-26%2B-black?style=flat-square&logo=apple" alt="macOS 26+">
-  <img src="https://img.shields.io/badge/Swift-6.4%2B-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4+">
+  <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6+">
+  <img src="https://img.shields.io/badge/Xcode-27%2B-0B84F3?style=flat-square&logo=xcode" alt="Xcode 27+">
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=Build&style=flat-square" alt="Build"></a>
 </p>
 
 <p align="center">
-  <img src="docs/img/popover.png" alt="NepalKit popover showing today's Bikram Sambat date, Nepal Time, and the converter" width="420" />
+  <img src="docs/img/popover.png" alt="NepalKit popover showing today's Bikram Sambat date, Nepal Time, and the converter" width="340" />
 </p>
 
 ## Features
@@ -27,7 +27,7 @@
 
 ## Install
 
-Requires **macOS 26 or later**. Runs natively on Apple Silicon.
+Requires **macOS 26.6 or later**. Runs natively on Apple Silicon.
 
 ```sh
 brew install --cask dibas-np/tap/nepalkit
@@ -55,7 +55,7 @@ Bikram Sambat month lengths follow no formula, so conversion is table-driven. Th
 
 ## Development
 
-Requires Xcode 26.6+ on macOS 26+.
+Requires Xcode 27+ on macOS 27+.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -64,15 +64,26 @@ open NepalKit.xcodeproj
 ```
 
 ```sh
-# Core library (conversion, dataset, formatting)
-cd NepalKitCore && swift test
+# Every gate the project runs locally, in one command
+./scripts/check-all.sh
 
-# App layer
-./scripts/run-app-tests.sh
+# Or one at a time
+cd NepalKitCore && swift test        # core library: conversion, dataset, formatting
+./scripts/run-app-tests.sh           # app layer
+python3 scripts/test_dataset_parsers.py    # the month-length table against the parsers
+python3 scripts/test_update_changelog.py   # the changelog generator against CHANGELOG.md
+python3 scripts/test_verify_appcast.py     # the appcast verifier
+python3 scripts/verify-deployment-floor.py # the macOS floor is one number everywhere
 ```
 
+`check-all.sh` also compiles the app first, which none of the commands above do.
+
+`check-all.sh` runs everything above and reports each one. It does **not** run the
+`verify-*` provenance and release scripts, which need network access — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
+
 ```
-NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting (Foundation only)
+NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting, spoken forms (Foundation only)
 NepalKit/       Menu-bar app: UI, settings, models
 NepalKitTests/  App-layer tests
 scripts/        Test runner, release packaging, appcast verification

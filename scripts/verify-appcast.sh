@@ -142,44 +142,94 @@ APPCAST="$ARCHIVES_DIR/appcast.xml"
 # sparkle:shortVersionString. An item whose version has no notes file fails
 # the release: an unnoted update alert is the drift this step exists to
 # prevent. Re-running over an already-described item is a no-op.
-python3 - "$APPCAST" "${0:A:h}/release-notes" <<'PYEOF'
-import re
-import sys
-from pathlib import Path
+#
+# The splice lives in verify-appcast.py (--embed-notes) rather than in a heredoc
+# here, so it is fixture-testable next to the rest of the feed tooling instead
+# of being reachable only by running a release. The contract is unchanged, and
+# it is deliberately still two steps: embed, then verify each enclosure below.
+python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"
 
-appcast, notes_dir = Path(sys.argv[1]), Path(sys.argv[2])
-raw = appcast.read_text(encoding="utf-8")
-
-def describe(match: "re.Match[str]") -> str:
-    block = match.group(0)
-    if "<description" in block:
-        return block
-    version = re.search(r"<sparkle:shortVersionString>([^<]+)</", block).group(1)
-    notes = notes_dir / f"{version}.html"
-    if not notes.exists():
-        sys.exit(f"no release notes for version {version}: expected {notes}")
-    body = notes.read_text(encoding="utf-8").strip()
-    if "]]>" in body:
-        sys.exit(f"{notes.name}: contains ]]>, which would terminate the CDATA "
-                 f"block early and corrupt the feed")
-    return re.sub(
-        r"(\s*)<enclosure ",
-        lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
-        block,
-        count=1,
-    )
-
-described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
-appcast.write_text(described, encoding="utf-8")
-PYEOF
+# Sign the feed, and do it HERE - after the notes are embedded, never before.
+#
+# Everything above rewrites bytes that Sparkle's signature covers: generate_appcast
+# adds the new item, and --embed-notes rewrites every <description>. The committed
+# appcast.xml arrives here already carrying a signature block, and carrying it
+# forward unchanged is worse than having none: it looks signed while being stale,
+# and the failure surfaces as a confusing byte-count mismatch rather than as an
+# unsigned feed.
+#
+# This was a real release failure, not a hypothetical. A release run reported
+#
+#   FAIL  feed signature block declares 5731 bytes of signed content but 6791
+#   bytes precede it.
+#
+# because nothing in this path ever re-signed. Verified rather than assumed: a
+# one-byte edit inside the signed region of the real feed produces the same class
+# of error, and re-signing it with the project's key makes it verify again.
+#
+# Last, because sign_update signs the exact bytes it is given - anything written
+# after this point invalidates it again.
+#
+# Skipped when the private key is absent, which is the CI case: pages.yml runs
+# this script to check the committed feed, and must never hold signing material.
+# The staleness check below still runs there and still fails on a stale block, so
+# skipping the signing cannot hide the bug this step fixes.
+# Derived from GENERATE_APPCAST rather than from $SPARKLE_BIN: that variable is
+# only set when the caller supplies it, and is unset on the discovery path above,
+# so "$SPARKLE_BIN/sign_update" would silently expand to "/sign_update".
+SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"
+if [[ -x "$SIGN_UPDATE" ]]; then
+  echo "signing the feed: ${SIGN_UPDATE##*/}"
+  "$SIGN_UPDATE" "$APPCAST" || {
+      echo "sign_update failed; refusing to report a publishable release" >&2
+      exit 1
+  }
+else
+  echo "no sign_update at $SIGN_UPDATE; verifying the feed as committed (CI path)"
+fi
 
 # Verify each enclosure locally. Uses only the committed public key, so this is
 # safe to run anywhere - including CI, where the private key must never exist.
+#
+# A partial pass is the expected state here, not a failure. The feed keeps one
+# item per release ever published while package-release.sh stages exactly one
+# archive, so only the item naming that archive has bytes to check - see the
+# comment on the fetch branch in verify-appcast.py. --allow-partial keeps that
+# documented gap from blocking a release, and the tally below puts the number in
+# the log where it can be read. Anything actually checked and found wrong still
+# fails, because that is a FAIL line, not a skip.
 STATUS=0
+VERIFIED_VERSIONS=""
+UNVERIFIED_VERSIONS=""
+# Occurrences, not lines: `grep -c '<item>'` counts the lines that mention an
+# item, which is only the same number while the generator happens to write one
+# per line, and a wrong denominator here would report "1 of 1" over a feed with
+# three releases in it.
+ITEMS=$(grep -o '<item>' "$APPCAST" | wc -l | tr -d ' ' || true)
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     echo
     echo "verifying against $archive:t"
-    python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" || STATUS=1
+    output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
+    printf '%s\n' "$output"
+    # Read back out of the verifier's own lines rather than re-derived here, so
+    # the tally below cannot disagree with the report printed above it. Matched
+    # on the message text, not on the `ok`/`skip` column layout, so reformatting
+    # a prefix does not quietly turn this into a count of zero. The versions are
+    # collected rather than counted, because the loop can stage more than one
+    # archive and every invocation skips the same un-staged items.
+    VERIFIED_VERSIONS="$VERIFIED_VERSIONS
+$(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"
+    UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS
+$(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
 done
+VERIFIED=$(printf '%s\n' "$VERIFIED_VERSIONS" | sort -u | grep -c . || true)
+UNVERIFIED=$(printf '%s\n' "$UNVERIFIED_VERSIONS" | sort -u | grep -c . || true)
+
+echo
+if [[ "$VERIFIED" -eq "$ITEMS" ]]; then
+    echo "byte-verified all $ITEMS feed item(s)"
+else
+    echo "byte-verified $VERIFIED of $ITEMS feed item(s); $UNVERIFIED had no archive in $ARCHIVES_DIR to check"
+fi
 
 exit $STATUS

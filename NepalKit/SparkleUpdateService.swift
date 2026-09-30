@@ -8,7 +8,7 @@
 // the harness compiles and tests; only framework wiring remains here.
 import Sparkle
 
-/// The production `UpdateServicing`, backed by Sparkle 2.9.6 (ADR-0012).
+/// The production `UpdateServicing`, backed by Sparkle 2.10.0 (ADR-0012).
 ///
 /// Uses `SPUStandardUpdaterController` rather than a bare `SPUUpdater` so the
 /// framework supplies its own user interface: update alerts, release notes, and
@@ -112,7 +112,7 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
             throw NSError(
                 domain: "NepalKit.Update",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Skipped: this build cannot update itself in place"]
+                userInfo: [NSLocalizedDescriptionKey: Strings.updateCheckSkippedTransientLaunch]
             )
         }
     }

@@ -34,11 +34,15 @@ struct AppMetadata: Equatable {
     let buildNumber: String
     /// The source repository, for the one interactive element on the surface.
     let repositoryURL: URL?
-    /// `NSHumanReadableCopyright`. Empty until the rights-holder question is
-    /// answered in writing, which the release contract says must happen before
-    /// any public metadata is finalised. The surface omits the line entirely
-    /// rather than rendering a blank, so the field appears by itself the moment
-    /// the build setting is filled in.
+    /// `NSHumanReadableCopyright`. The rights-holder question is settled: the
+    /// app ships `Copyright (C) 2026 Dibas Sigdel` in `NepalKit/Info.plist`, and
+    /// `InfoPlistKeysTests` pins that value *and* requires it to match the
+    /// notice in the source headers — so the app and the repository cannot come
+    /// to name different holders, which is the claim that would matter. Read the
+    /// key rather than asserting it here, like every other value on this type.
+    ///
+    /// A key that is absent, empty or only whitespace becomes nil, so the
+    /// surface omits the line entirely rather than rendering a blank.
     let copyright: String?
     let applicationIcon: NSImage?
     /// The licence the shipped bundle actually contains, read from the bundled

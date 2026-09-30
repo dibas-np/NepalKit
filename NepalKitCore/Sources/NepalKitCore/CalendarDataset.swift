@@ -11,7 +11,7 @@
 /// not: it is not independently licensed. Read it before describing this data
 /// as verified or permissively sourced.
 ///
-/// Provenance (v1 spec ticket 02): month rows reproduce the officially approved
+/// Provenance: month rows reproduce the officially approved
 /// annual Nepali Patro. Three community tables were cross-checked
 /// month-by-month (107/116 identical); all 9 disputes were arbitrated against
 /// published Patro reproductions (KMC government grids, Hamro Patro, Nepali

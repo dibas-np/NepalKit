@@ -1,4 +1,4 @@
-# Sparkle 2.9.6, pinned clear of CVE-2026-47122
+# Sparkle 2.10.0, pinned clear of CVE-2026-47122
 
 **Part of ticket 07. The pinned version is a release-contract item: it is what
 ships, and it is what the security position rests on.**
@@ -9,6 +9,17 @@ carried security fixes and "whatever is newest at integration time" is not a
 position anyone can defend later.
 
 **Chosen: Sparkle 2.9.6** (released 17 August 2026), the current release.
+
+**Bumped to 2.10.0 on 2026-09-30** (released 13 September 2026), the current
+release — the freshness check below closing its first loop, deliberately by
+decision rather than automatically. 2.10.0's changes sit on paths this app now
+exercises: release-notes and signed-feed diagnostics, an appcast length
+fallback when a server reports no content size, binary-delta and
+temporary-file hardening, and a fix for first updates to bundles with
+irregular extensions. Its macOS 12 deployment floor sits far below this app's,
+and the CocoaPods support it drops was never part of this SPM-only
+integration. The pin stays `exactVersion`; the resolved revision is checked
+against the upstream tag (`eef1a539…`).
 
 ## The advisory this decision is about
 
@@ -135,7 +146,11 @@ to assert:
   both version numbers), because if that merge ever stopped happening NepalKit
   would silently become a Dock app — the most visible regression available to
   this change, and equally invisible to a green build;
-- `SUFeedURL` is still absent, deliberately, until a feed is published.
+- `SUFeedURL` is present, and its shape is pinned as well as its value: HTTPS,
+  absolute, and served from this repository's own Pages host. It was deliberately
+  absent until the first feed was published and was added when the feed appeared;
+  pinning it is deliberate, because a feed URL that moves strands every
+  installed copy at once.
 
 Both of the first two were verified to fail when injected, with messages that
 name the consequence rather than the assertion.
@@ -200,21 +215,115 @@ installed copy reads — so it belongs under review with everything else.
 The URL is pinned by a test, because it is the one value here that cannot move
 without breaking updates for every installation at once.
 
-**Preconditions, none of which hold yet.** The repository is public and
-reachable, but it is **empty**: no branches, no commits, no releases, and Pages
-is not enabled. Every local commit exists only on this machine. So the feed URL
-is presently a declaration of intent and the appcast does not exist. A check
-against it returns "could not check" rather than a version, which the update
-model reports honestly rather than as up to date — but that must be fixed before
-any release ships, or every user is told the updater is broken.
+**Preconditions when this was written, none of which held yet.** At the time of
+this decision the repository was public and reachable but **empty** — no
+branches, no commits, no releases, and Pages not enabled, so every local commit
+existed only on the author's machine, and the feed URL was a declaration of
+intent rather than an address. A check against it returned "could not check"
+rather than a version, which the update model reported honestly rather than as
+up to date.
 
-**Sign the appcast, not only the archive.** `generate_appcast` can sign the
-appcast itself with the same EdDSA key. A signed archive proves the download was
-not tampered with in transit; a signed appcast additionally proves the *feed* did
-not lie about what the update is. Given this framework's recent history — 2.6.4
+**All of them now hold.** Corrected on 2026-09-30, when the feed had been
+published for three releases: `appcast.xml` is committed at the repository root
+and carries 1.1, 1.2 and 1.3.0, and Pages serves the URL above. The history is
+kept because the precondition is why the URL was pinned by a test rather than
+merely written down — a value nothing checks is a value that moves.
+
+**Sign the appcast, not only the archive.** A signed archive proves the download
+was not tampered with in transit; a signed appcast additionally proves the *feed*
+did not lie about what the update is. Given this framework's recent history — 2.6.4
 allowed a signed update to be replaced with another payload, bypassing its
 (Ed)DSA checks — signing the feed as well is the difference between trusting the
 transport and not having to trust the publisher's account.
+
+**The tool is `sign_update`, not `generate_appcast`.** An earlier version of this
+paragraph named `generate_appcast`, which was wrong: it writes items and signs
+*archives*, and has no option to sign the feed. `sign_update` takes the feed
+itself and appends a block to it:
+
+    <!-- sparkle-signatures:
+    edSignature: <base64 Ed25519 signature>
+    length: <byte count of the signed content>
+    -->
+
+The signature covers every byte of the file *before* that block — the channel
+element, every item, every description — not the channel element on its own.
+There is no `sparkle:dsaSignature` attribute in Sparkle 2.9.6: its DSA fields are
+legacy support for signing archives, and `SUAppcastDriver` passes nil for the
+feed. This was read out of `SPUExtractSignedFeed.m` and then reproduced against
+real `sign_update` output, rather than reasoned about, because a verifier that
+guesses the canonical form rejects valid feeds and one that only tests its own
+signatures looks green while being wrong.
+
+It signs exact bytes, so it has to be the last step of a release: the notes
+injection in `verify-appcast.sh` rewrites the feed, and anything signed before it
+is invalidated.
+
+`scripts/verify-appcast.py` now **requires** the block and verifies it against
+the same `SUPublicEDKey` the archives use — no private key, so it runs in CI
+like every other check here. When that gate landed the committed feed still
+failed it: it carried three `sparkle:edSignature` values and no feed signature,
+and no gate in this repository could see that before. Re-signing it means
+producing a signature with the private key, which is a keychain operation for a
+maintainer and deliberately not something a commit can do.
+
+**The committed feed is now signed** (`f7de4d0`), and the check passes.
+
+### The client requires the signature, and that depends on the feed being signed
+
+Two controls, not one. `scripts/verify-appcast.py` is the **producer** half: it
+fails the build when the published feed carries no signature. `SURequireSignedFeed`
+in `NepalKit/Info.plist` is the **consumer** half: it makes Sparkle *refuse* a
+feed with no signature rather than read it unauthenticated, and it is now `true`
+in the shipped app, asserted against the built product by
+`InfoPlistKeysTests.theSignedFeedIsRequiredInTheBuiltProduct`.
+
+`SUPublicEDKey` alone did not give this. It made the app *able* to verify a
+signature without making it *require* one, so an attacker who can rewrite the
+feed in transit need not forge anything — deleting the `sparkle-signatures`
+block was enough, and the app accepted the result. A signature nobody requires
+is a comment.
+
+**The dependency runs one way, and it is a real operational hazard.** Setting
+`SURequireSignedFeed` while the published feed is unsigned does not weaken
+anything; it stops updates entirely, because Sparkle rejects every fetch. That
+is why the feed was signed *before* the key was set. The ordering is not
+cosmetic: this key is safe only because the feed is signed, so any future
+release that republishes the feed must sign it again or users on the current
+release cannot update.
+
+### `SURequireSignedFeed` also requires `SUVerifyUpdateBeforeExtraction`
+
+This was found in the field, not on paper. Sparkle documents
+`SURequireSignedFeed` as *"also requires enabling `SUVerifyUpdateBeforeExtraction`
+as a prerequisite"*, and it enforces that: with the second key off, the updater
+refuses to check at all and reports
+
+> For security reasons, SUVerifyUpdateBeforeExtraction needs to also be enabled
+> if SURequireSignedFeed is enabled for NepalKit.
+
+Plan 038 set the first key without the second, so the app shipped unable to
+update — the strongest possible failure of the control, and invisible to every
+gate here, because both keys are booleans in a hand-authored plist and no test
+asserted the pair. `SUVerifyUpdateBeforeExtraction` is now `true` in the shipped
+app, asserted the same way by
+`InfoPlistKeysTests.updatesAreVerifiedBeforeExtractionInTheBuiltProduct`.
+
+**The lesson is about how the two relate, not about the second key.** They are
+one decision: strictness is not dialable per-stage. Sparkle refuses to operate
+unless the app verifies the archive *before* unpacking it, so there is no
+configuration in which the feed signature is demanded and the archive is not.
+Any future change to either key must change both, and the test pair is what makes
+that visible.
+
+**The tradeoff both keys carry is the key-custody one, and it is still open.**
+Sparkle's documentation for both says to use them only if you are "not likely to
+lose access to your private EdDSA key". Verification this strict means a lost key
+costs updates outright. That is what the two unticked custody boxes above are
+about, and they remain unticked: enabling these keys does not settle custody, it
+raises the cost of not settling it. Recovery is possible — releases are also
+Apple Developer ID signed, so a rebuilt key can be pushed — but it is a manual
+recovery, not a non-event.
 
 ## Freshness of this pin
 
@@ -222,7 +331,23 @@ A pin nobody re-visits is a pin that rots: this ADR's premise is that Sparkle
 releases carry security fixes, so the pin's safety argument has an expiry
 date. The check is mechanised rather than remembered:
 `data-sources.yml` runs `sparkle-pin-freshness` on a monthly schedule, reads
-the pin from `Package.resolved` (what the app actually builds against), and
+the pin from the project's `exactVersion` requirement in `project.pbxproj`
+(what the app actually builds against), and
 fails against the live latest release when they differ. A red run is the
 trigger to re-read this ADR — not an automatic bump. Bumping remains the
 release-contract decision this document describes.
+
+The check reads `project.pbxproj` rather than `Package.resolved` because Xcode
+deletes the lockfile: `-resolvePackageDependencies` resolves correctly and then
+relocates it out of `project.xcworkspace/xcshareddata/swiftpm/` entirely, leaving
+a tracked-file deletion in the working tree. Resolution is unaffected — resolving
+with the lockfile absent still yields 2.9.6, because this requirement is what
+governs it — but a check that reads a file the toolchain deletes would eventually
+fail for a reason unrelated to Sparkle.
+
+`Package.resolved` is therefore no longer the pin's source of truth, but it stays
+tracked as a record of what a release was built against. **Expect it to show as
+deleted after any local Xcode 27 build.** That is Xcode's behaviour, not a change
+to the pin: restore it with `git checkout` and do not commit the deletion. If it
+is ever genuinely stale, re-resolve and commit the result rather than deleting it
+by hand, so the diff shows a version change instead of a removal.

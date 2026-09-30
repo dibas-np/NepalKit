@@ -68,9 +68,9 @@ struct ConverterModelTests {
             direction: .bsToAD, bsYear: 2084, bsMonth: 3, bsDay: 32,
             adYear: 2026, adMonth: 9, adDay: 27
         )
-        // Ashar 2084 has 32 days; Shrawan has 31 — day must clamp.
+        // Ashar 2084 has 32 days; Shrawan has 31 — the `bsMonth` setter
+        // re-clamps, so writing the month alone must pull the day down.
         model.bsMonth = 4
-        model.clampBSDay()
         #expect(model.bsDay == 31)
     }
 
@@ -96,13 +96,57 @@ struct ConverterModelTests {
     @Test func adDateClampsIntoConvertibleSpan() {
         // Asked for 1 January 1913, five years before the range now starts.
         // The clamp must pull it forward to the first convertible day, not
-        // leave it outside the span.
+        // leave it outside the span. `init` runs it, so an out-of-range
+        // argument cannot leave the model holding a day it cannot convert.
         let model = ConverterModel(
             direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11,
             adYear: 1913, adMonth: 1, adDay: 1
         )
-        model.clampADDate()
         #expect((model.adYear, model.adMonth, model.adDay) == (1918, 4, 13))
+    }
+
+    // The bundled picker state is `private(set)`, so these four are the only
+    // way a caller can change it. Each one therefore has to land the *stored*
+    // date in range on its own: `bsDate`/`adDate` are read back directly, not
+    // through the clamping accessors, so an unclamped value cannot hide behind
+    // an accessor that re-clamps on the way out.
+
+    @Test func bsYearAboveTheSupportedRangeClampsToItsUpperBound() {
+        let model = bsModel()
+        // The bundled dataset supports 1975...2084, so 3000 has no month row
+        // to clamp against. The setter has to pull it back to 2084 rather than
+        // leave a year the pickers' month-length lookup traps on.
+        model.bsYear = 3000
+        #expect(model.bsDate.year == 2084)
+    }
+
+    @Test func bsDayBeyondTheRealMonthLengthClampsToThatMonth() {
+        let model = bsModel()
+        // Ashar 2084 runs 32 days, so the 40th has to come back as the 32nd.
+        // A 30-day month would let an unclamped day pass unnoticed, which is
+        // why this picks a month whose length is not 30.
+        model.bsYear = 2084
+        model.bsMonth = 3
+        model.bsDay = 40
+        #expect(model.bsDate == BSDay(year: 2084, month: 3, day: 32))
+    }
+
+    @Test func adYearAboveTheConvertibleSpanClampsToItsLastDay() {
+        let model = bsModel()
+        // The dataset's convertible span ends on 12 April 2028, so 3000 has no
+        // counterpart in the table at all. The setter has to land on that last
+        // convertible day, not merely on the year 2028.
+        model.adYear = 3000
+        #expect(model.adDate == GADay(year: 2028, month: 4, day: 12))
+    }
+
+    @Test func adDayBeyondTheRealMonthLengthClampsToThatMonth() {
+        let model = bsModel()
+        // January 2026 runs 31 days, so the 40th has to come back as the 31st.
+        model.adYear = 2026
+        model.adMonth = 1
+        model.adDay = 40
+        #expect(model.adDate == GADay(year: 2026, month: 1, day: 31))
     }
 
     @Test func adDaysBoundedAtSpanEdges() {

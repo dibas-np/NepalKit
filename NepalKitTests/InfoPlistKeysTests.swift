@@ -132,6 +132,43 @@ struct InfoPlistKeysTests {
         #expect(URL(string: feed)?.host == "dibas-np.github.io", "feed is not served from this repository")
     }
 
+    @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
+    func theSignedFeedIsRequiredInTheBuiltProduct() throws {
+        // The producer half of update security is CI's: verify-appcast.py fails
+        // the build when the published feed carries no signature. This is the
+        // consumer half, and without it CI's gate can be defeated without
+        // forging anything — an attacker who rewrites the feed in transit
+        // deletes the signature block, and a client that merely *can* verify a
+        // signature (SUPublicEDKey) but does not *require* one reads the
+        // stripped feed happily. So the key must be true, not merely present:
+        // `false` is the silent-wrong value, and it is the value that leaves the
+        // app exactly as unprotected as before while looking configured.
+        let info = try #require(Self.builtInfo)
+        let value = info["SURequireSignedFeed"].map { "\($0)" } ?? "absent"
+
+        #expect(info["SURequireSignedFeed"] as? Bool == true,
+                "the built app reads an unsigned feed unauthenticated: SURequireSignedFeed is \(value)")
+    }
+
+    @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
+    func updatesAreVerifiedBeforeExtractionInTheBuiltProduct() throws {
+        // Sparkle's documented prerequisite for SURequireSignedFeed, and a hard
+        // one: with this off, Sparkle refuses to check for updates *at all* and
+        // reports "For security reasons, SUVerifyUpdateBeforeExtraction needs to
+        // also be enabled if SURequireSignedFeed is enabled" instead. That is a
+        // total loss of updating rather than a weakened setting, and it is the
+        // state plan 038 shipped — the pair was set independently and the
+        // dependency was not found until a user hit it in the field.
+        //
+        // `true`, not merely present: absent and `false` fail identically here,
+        // and `false` is the value that looks deliberately configured.
+        let info = try #require(Self.builtInfo)
+        let value = info["SUVerifyUpdateBeforeExtraction"].map { "\($0)" } ?? "absent"
+
+        #expect(info["SUVerifyUpdateBeforeExtraction"] as? Bool == true,
+                "the updater cannot check for updates at all: SUVerifyUpdateBeforeExtraction is \(value)")
+    }
+
     /// The feed's declared home. Changing it is a release decision: every
     /// installed copy reads this URL, so a change breaks updates for all of them
     /// at once.

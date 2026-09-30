@@ -20,6 +20,10 @@ struct NepalKitApp: App {
     /// the public key are pinned in Info.plist (ADR-0012); the wiring lives here
     /// because this is the only place that outlives every surface.
     @State private var updateCheckModel: UpdateCheckModel
+    /// Owned here rather than in `SettingsView` so the cache outlives every
+    /// presentation of the window: without it, each reopen would re-read the
+    /// bundled LICENSE.
+    @State private var metadataCache = DeferredAppMetadata()
 
     init() {
         // Default on: the date is in the menu bar from the moment of sign-in.
@@ -73,57 +77,23 @@ struct NepalKitApp: App {
         // The native Settings scene (ADR-0011). Declaring it is the easy half;
         // reaching it from a menu-bar-only app is the half that needed deciding,
         // and `WindowPresentation` is what makes it usable once open.
+        //
+        // About used to be a second scene, a `Window` with its own id. It is a tab
+        // in here now, which is why this is the app's only window scene: the facts
+        // a bug report needs are identity facts, and they sit in the sidebar footer
+        // of the one window a user can reach, rather than behind a second window
+        // they have to know exists. `AppMetadata` is threaded through
+        // `DeferredAppMetadata` so the bundled LICENSE is still not read at launch
+        // — see that type for why that is worth keeping.
         Settings {
-            SettingsView(settings: settingsModel, loginItem: loginItemModel, updates: updateCheckModel)
+            SettingsView(
+                settings: settingsModel,
+                loginItem: loginItemModel,
+                updates: updateCheckModel,
+                menuBar: menuBarModel,
+                metadata: metadataCache.value,
+                dataset: AppData.dataset
+            )
         }
-        // A single-instance named window rather than a `WindowGroup`, so repeated
-        // About invocations focus the existing window instead of stacking
-        // copies. The dataset is the same one the app converts with, so the
-        // range line cannot drift from the conversion contract (ADR-0010).
-        Window(Strings.aboutLabel, id: AboutWindow.id) {
-            AboutScene(dataset: AppData.dataset)
-        }
-        .windowResizability(.contentSize)
     }
 }
-
-/// The About surface, and the reason its metadata is not read until now.
-///
-/// `Window`'s content closure is evaluated at launch even for a window that is
-/// never opened, so `AppMetadata.current()` placed there reads the bundled
-/// 35 KB LICENSE and asks AppKit for the app icon on every launch — paid for a
-/// window most sessions never show. Moving the call into this view's `body`
-/// defers it to the first time the window is actually presented, which is the
-/// only point at which any of it is needed.
-private struct AboutScene: View {
-    let dataset: CalendarDataset
-    @State private var deferred = DeferredAppMetadata()
-
-    var body: some View {
-        AboutView(metadata: deferred.value, dataset: dataset)
-    }
-}
-
-/// `AppMetadata.current()` on first use, then cached.
-///
-/// A view is re-evaluated far more often than a window is opened, so the result
-/// is held rather than re-read: without this the LICENSE would be parsed on
-/// every redraw of the About window.
-@MainActor
-private final class DeferredAppMetadata {
-    private var cached: AppMetadata?
-
-    var value: AppMetadata {
-        if let cached { return cached }
-        let fresh = AppMetadata.current()
-        cached = fresh
-        return fresh
-    }
-}
-
-#if DEBUG
-#Preview("About scene") {
-    AboutScene(dataset: AppData.dataset)
-        .frame(width: 380)
-}
-#endif

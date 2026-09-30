@@ -1,6 +1,8 @@
 # Settings is presented by the native scene; opening it must establish focus
 
-**Answers the ticket 01 spike. Governs ticket 05, and ticket 06 by inheritance.**
+**Governs how Settings and About are opened: both go through
+`WindowPresentation.present`, which is where the mechanism this record leaves
+unnamed ended up.**
 
 NepalKit is a menu-bar-only app: `LSUIElement`, activation policy `.accessory`,
 no Dock icon, no Cmd-Tab presence, and no application menu in the menu bar. The
@@ -17,8 +19,8 @@ itself, establish application activation or focus.** The window appears on
 screen and is not key.
 
 This record deliberately stops short of naming the activation call or its
-sequencing. That is ticket 05's to implement and measure; this decision fixes the
-architecture and the requirement, not the mechanism.
+sequencing. That is `WindowPresentation.swift`'s to implement and measure; this
+decision fixes the architecture and the requirement, not the mechanism.
 
 ## The rule this generalises to
 
@@ -26,9 +28,9 @@ architecture and the requirement, not the mechanism.
 > menu-bar-only context must explicitly establish application activation and
 > focus.**
 
-About (ticket 06) is not a second architecture. It obeys the same rule, and the
-two should share one small behaviour rather than each growing its own ad-hoc
-activation call.
+About is not a second architecture. It obeys the same rule, and the two should
+share one small behaviour rather than each growing its own ad-hoc activation
+call.
 
 ## What was measured
 
@@ -83,7 +85,8 @@ negative. Verify any probe's trigger against a known-good control first.
 
 ## Do not activate with `NSApp.activate()`
 
-**Corrected by ticket 05, against the real app.** The spike used
+**Corrected against the real app — the table below is the measurement that
+corrected it.** The spike used
 `activateIgnoringOtherApps: true` and the obvious modern replacement was assumed
 to be `NSApp.activate()`. Measured against the real bundle, that is wrong.
 
@@ -117,8 +120,8 @@ of its own — Apple's message says it "will have no effect" — yet at macOS 27
 is the only thing that fronts this app. It is used deliberately and the risk is
 recorded rather than hidden. If it ever does stop working, Settings opens
 without focus, which is a loud, immediate, visible failure rather than a silent
-one: `WindowPresentationTests` covers the ordering, and the real-app check in
-ticket 05 shows the state directly.
+one: `WindowPresentationTests` covers the ordering, and the real-app measurement
+in the table above shows the state directly.
 
 The activation is scoped to the moment the user asked for a window, never applied
 opportunistically, because Apple cautions generally against stealing focus and
@@ -148,9 +151,11 @@ It would work and can be made to activate predictably, but the native scene
 already provides the chrome, the lifecycle, and correct reopen behaviour.
 
 **Declare the `Settings` scene and open it without establishing focus.**
-Rejected: this is the failure the ticket names — a window that opens but cannot
-take focus. Keyboard navigation would be broken for every user, and ticket 08
-makes VoiceOver correctness a release gate.
+Rejected: this is the failure described above — a window that opens but cannot
+take focus. Keyboard navigation would be broken for every user, and VoiceOver
+correctness is a release gate, checked on a Mac that has never trusted the
+developer: the VoiceOver section of
+`docs/release-evidence/fresh-mac-install-procedure.md`.
 
 **Give the app a real menu bar, abandoning `LSUIElement`.** Rejected. The
 menu-bar-only shape is the product. Note that the app menu already exists in the

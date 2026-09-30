@@ -6,13 +6,22 @@ conflicts with the code, fix one or the other — don't leave them disagreeing.
 
 ## Module boundary
 
-`NepalKitCore` is pure logic: the calendar dataset, BS ↔ Gregorian conversion,
-and formatting. It imports `Foundation` only, never AppKit or SwiftUI, and does
-not know the app exists. The app target holds menu-bar UI, settings persistence,
-and app-specific behavior, and depends on the core package.
+`NepalKitCore` is pure logic. It imports `Foundation` only, never AppKit or
+SwiftUI, and does not know the app exists. The app target holds menu-bar UI,
+settings persistence, and app-specific behavior, and depends on the core
+package.
 
 Core is where testable behavior goes. If logic can be expressed without a view,
 it belongs in the core, not in a model.
+
+Which types those are is not listed here on purpose. An inventory of a package
+written into a standards document goes stale the moment a type crosses the
+boundary, which is exactly when a reader most needs it to be accurate. This one
+was wrong: it said the core held "the calendar dataset, BS ↔ Gregorian
+conversion, and formatting" and stayed that way after `8c0b155` moved the spoken
+forms in beside the formatters they mirror, so a reader deciding where
+`SpokenDate` belonged would have been told it was not in the core at all. Read
+`NepalKitCore/Sources/`.
 
 ## Naming
 
@@ -126,6 +135,17 @@ Rendering mode is chosen per surface for contrast against translucent Liquid
 Glass, not imposed globally: hierarchical for section headers, monochrome for
 small inline icons beside text (ADR-0004).
 
+Liquid Glass is requested where a control needs the affordance and inherited
+from the OS everywhere else. Today that is one place: the popover footer's two
+buttons, which use `.buttonStyle(.glass)` inside one `GlassEffectContainer`.
+Glass cannot sample other glass, so adjacent glass controls must share a
+container or they render inconsistently against each other. Do not spread glass
+to every control to make a surface look uniform — a `Form` of glass buttons is
+neither conventional on macOS nor what the platform's own Settings does.
+`.glass` and `.glassProminent` are macOS 26 APIs, so they need no `#available`
+gate at this project's floor (ADR-0003, ADR-0007). `Glass` has no `.prominent`;
+emphasis is `.regular.tint(_:)` with an opacity.
+
 **Respect the menu-bar-only shape.** Do not call `setActivationPolicy`, and do
 not add a Dock or Cmd-Tab presence. Any command that opens a normal window from
 this context must go through `WindowPresentation` so activation and focus are
@@ -145,6 +165,83 @@ them through the setting.
 
 `AppTermination.quit()` is the app's single exit path. Both the popover's Quit
 button and the ⌘Q command call it, so termination logic has one home.
+
+## SwiftUI and language conventions
+
+These are the language- and framework-level rules. They are written down here,
+and not left to review, because the failure they prevent is quiet: a superseded
+spelling of a correct API still compiles, still passes every suite, and ships.
+A pull request that uses one is wrong in a way only a reader will catch, and
+most of them look like perfectly good Swift.
+
+This list also lives in `AGENTS.md`, which is agent tooling and is gitignored —
+so it reaches no contributor and no fresh clone. This is the copy that does, and
+it is the authoritative one; the other is kept in step by hand.
+
+### Swift
+
+- Strict concurrency is assumed throughout. An isolation you did not write is
+  not something to work around.
+- Shared state is `@Observable`, never `ObservableObject`/`@Published`. Every
+  `@Observable` class is `@MainActor` unless the project has default actor
+  isolation. Ownership is `@State`; passing is `@Bindable` or `@Environment`.
+  `ObservableObject`, `@Published`, `@StateObject`, `@ObservedObject` and
+  `@EnvironmentObject` are legacy here, and appear only where they already are
+  and changing them would be the larger change.
+- Concurrency is Swift's, not GCD's. No `DispatchQueue.main.async()`. Where an
+  async API and a closure-based one both exist, take the async one.
+- Prefer the Swift-native spelling of a Foundation API where one exists:
+  `replacing("hello", with: "world")` over `replacingOccurrences(of:with:)`.
+- Prefer the modern Foundation API: `URL.documentsDirectory` for the documents
+  directory, `appending(path:)` to add a component to a `URL`.
+- Never a `Formatter` subclass — `DateFormatter`, `NumberFormatter`,
+  `MeasurementFormatter`. `FormatStyle` replaces all three:
+  `myDate.formatted(date: .abbreviated, time: .shortened)` to render,
+  `Date(inputString, strategy: .iso8601)` to parse,
+  `myNumber.formatted(.number)` for numbers.
+- Never C-style number formatting. `Text(String(format: "%.2f", abs(change)))` is
+  `Text(abs(change), format: .number.precision(.fractionLength(2)))`.
+- Prefer static member lookup to a struct instance: `.circle` over `Circle()`,
+  `.borderedProminent` over `BorderedProminentButtonStyle()`.
+- Filtering text the user typed uses `localizedStandardContains()`, never
+  `contains()`.
+- No force unwraps and no force `try` unless the failure is genuinely
+  unrecoverable. *Naming* says where this codebase allows them, and why.
+- No third-party framework without asking first. The dependency list is short on
+  purpose: `NepalKitCore` and the app-test harness depend on nothing but each
+  other.
+
+### SwiftUI
+
+- `foregroundStyle()`, never `foregroundColor()`.
+- `clipShape(.rect(cornerRadius:))`, never `cornerRadius()`.
+- The `Tab` API, never `tabItem()`.
+- Never the one-parameter `onChange(of:)`. Use the variant that takes two
+  parameters, or the one that takes none.
+- `Button` rather than `onTapGesture()`, unless the tap's location or the number
+  of taps is the thing you need.
+- An image used as a button label always carries text alongside it:
+  `Button("Tap me", systemImage: "plus", action: myButtonAction)`.
+- `Task.sleep(for:)`, never `Task.sleep(nanoseconds:)`.
+- Never `UIScreen.main.bounds` to ask how much space there is.
+- `NavigationStack` with `navigationDestination(for:)`, never `NavigationView`.
+- Bold text is `bold()`, never `fontWeight(.bold)`, and `fontWeight()` is not
+  applied at all without a reason for it.
+- No `GeometryReader` where a newer API answers the question —
+  `containerRelativeFrame()`, `visualEffect()`.
+- Render a view with `ImageRenderer`, never `UIGraphicsImageRenderer`.
+- Hiding scroll indicators is `.scrollIndicators(.hidden)`, not
+  `showsIndicators: false` in the `ScrollView` initializer.
+- Scrolling and positioning use the current `ScrollView` APIs —
+  `ScrollPosition`, `defaultScrollAnchor` — never `ScrollViewReader`.
+- Split a large view into new `View` structs, not computed properties.
+- `ForEach(x.enumerated(), id: \.element.id)`, never
+  `ForEach(Array(x.enumerated()), id: \.element.id)`.
+- Do not force font sizes; use Dynamic Type.
+- No `AnyView` unless it is genuinely required.
+- Hard-coded padding and stack spacing only when specifically asked for.
+- No UIKit colors in SwiftUI code, and UIKit itself only when requested.
+- View logic goes in a view model or the equivalent, so that it can be tested.
 
 ## Comments
 
@@ -210,11 +307,33 @@ read the skip as coverage.
 
 ## Commands
 
+- Everything: `scripts/check-all.sh`, the five local suites.
 - Core tests: `swift test` in `NepalKitCore/`.
-- App-layer tests: run the committed harness (see `README.md` and ADR-0005).
-  `xcodebuild test` currently hangs before connecting and is not the runner.
+- App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
+  before connecting and is not the runner (see `README.md` and ADR-0005).
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
+
+Four environment variables are read by those scripts, and none of them is
+secret. `.env.example` is the place they are described, with each one's actual
+default:
+
+- `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
+  `generate_appcast`. Unset, it searches DerivedData. `sign_update` lives in the
+  same directory, and is what signs the feed itself; `generate_appcast` only
+  writes items and signs archives.
+- `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched
+  provenance tables. Unset, it uses `~/.cache/nepalkit-data-sources`; it caches
+  in both cases, so this is not a switch for caching off.
+- `NEPAKIT_TAP_DIR` — a local clone of the Homebrew tap for `update-cask.sh`.
+  Unset, it uses `../homebrew-tap`.
+- `NEPAKIT_BUILT_PLIST` — a built app's `Info.plist`, so `run-app-tests.sh`
+  checks the shipped product rather than skipping five tests. Unset, the script
+  discovers one and accepts it only if it is newer than the sources.
+
+A new script that reads an environment variable adds it to `.env.example` in the
+same commit, with the same "unset means" line. A variable that appears in a
+script but not in that file is a claim no reader can check.
 
 ## Before you commit
 
@@ -227,5 +346,18 @@ read the skip as coverage.
   found, and filed as a known issue if it is still outstanding.
 - If a supported-range boundary moved, every guarded historical fixture was
   reviewed by hand and the tree re-grepped for the old bound.
+- If you touched `appcast.xml` or the release pipeline, the feed is signed as
+  well as the archives, and the signature is the **last** thing written:
+  `sign_update appcast.xml`, after the notes injection, because it signs the
+  exact bytes it is given. `scripts/verify-appcast.py` requires that block and
+  fails without it, so an unsigned feed cannot be published by accident.
 - Every new `systemImage` name was checked to resolve, and its pairing with its
   label actually reads. See *Apple platform conventions*.
+- SwiftLint was **not** run. This project does not use it: there is no
+  `.swiftlint.yml`, no lint step in any workflow, and no agreed rule set. A
+  run on the current tree under SwiftLint's defaults reports 231 violations the
+  project has never accepted — half of them `identifier_name` and `line_length`,
+  which are house-style arguments rather than defects. "Make SwiftLint clean"
+  is therefore not a bar this codebase has set, and a gate nobody can pass is
+  worse than no gate. This document is the standard; review is where it is
+  applied.

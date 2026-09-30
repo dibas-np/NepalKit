@@ -1,37 +1,77 @@
-# macOS 26 deployment-floor gate (ADR-0007).
+# Deployment-floor gate (ADR-0007).
 #
 # The floor claim is behavioural: "this app builds, tests, and runs here." It is
 # not a pixel comparison — design review belongs on the current macOS release,
 # where a human is looking. The two are deliberately not confused.
 #
-# This workflow is the *implementation* of that gate. It has now run: see
-# ticket 04. That is why it is kept rather than retired once. The claim it
-# enforces is published in the README, and it rots silently - a commit reaching
-# for a macOS 27-only API compiles fine on a maintainer's Xcode 27 and breaks the
-# floor for everyone on macOS 26.
+# ## What this gate can no longer attest, and why
 #
-# ## When this fails because the toolchain was retired
+# This used to run on `macos-26` with Xcode 26.6, which meant a green run was
+# evidence about macOS 26 — the floor itself. It now runs on `xcode-27`, and
+# that image is **macOS 27**. So a green run is no longer evidence that the app
+# works on macOS 26; it is evidence that it builds, tests, and launches on macOS
+# 27.
 #
-# The pinned Xcode is the point of the workflow, and it is also its expiry date.
-# GitHub removes old Xcode versions from the runner image, and when it does the
-# failure looks exactly like a regression:
+# That trade was made deliberately, for a reason worth recording rather than
+# rediscovering. The floor is macOS 26.6, and the Xcode 26.6 toolchain could not
+# express it:
 #
-#     ::error::Xcode 26.6 is not installed on this runner.
+#     warning: The macOS deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to
+#     26.6, but the range of supported deployment target versions is 10.13 to
+#     26.5.99.
 #
-# It is not one. Nothing about NepalKit changed. The step below says so in its own
+# The toolchain whose job is to verify the floor could not represent the floor.
+# The same Xcode also could not open the project file, because a maintainer on
+# macOS 27 editing build settings in Xcode 27 rewrites it into object version 110
+# and Xcode 26 reads only 100 — so every config edit cost a manual revert, twice
+# caught only because CI turned red. The floor toolchain was simultaneously too
+# old for the floor and too old for the file.
+#
+# What survives the change:
+#
+# - **The deployment floor is still declared, still gated, and still consistent.**
+#   `scripts/verify-deployment-floor.py` compares the project, the release
+#   script, the built product, and this repo's project-file format. That gate is
+#   unaffected by which runner executes it.
+# - **The compile-time floor still holds.** A macOS 27-only API is still an
+#   error against a 26.6 deployment target; `@available` and the SDK enforce it
+#   regardless of the Xcode version doing the enforcing. So the failure mode the
+#   header below describes — "compiles fine on a maintainer's Xcode, breaks the
+#   floor for everyone" — is still caught at compile time.
+# - **The run now records the macOS version it is evidence about**, which the
+#   old one did not.
+#
+# What is genuinely lost: no job now executes the app on macOS 26, so the claim
+# "this runs on the floor" rests on the compile-time guarantee plus release
+# evidence rather than on CI. If that matters enough to pay for, the way back is
+# a second job on `macos-26` that cannot build the project at all — it would
+# have to downgrade the object version first — which is why it was not done
+# here. ADR-0007 records the decision and the way out.
+#
+# ## When this fails because the toolchain moved
+#
+# The Xcode floor is the point of the workflow, and it is also its expiry date.
+# The `xcode-27` image is a **preview**, so it moves under you: betas get
+# replaced, and the image eventually becomes the default macOS 27 image. When it
+# does, the failure looks exactly like a regression:
+#
+#     ::error::Resolved Xcode <version> is below the 27.0 floor this gate asserts.
+#
+# It is not one. Nothing about NepalKit changed. The step says so in its own
 # error message, because a contributor hitting this at midnight should not have
 # to find this comment first.
 #
-# **Raising the pin is not a routine bump.** It is a re-evaluation of the
+# **Raising the floor is not a routine bump.** It is a re-evaluation of the
 # deployment-floor claim, and it should be treated like one:
 #
 # 1. Check whether a *newer* floor is now the honest claim. The project deploys
 #    to the lowest macOS it can support, and that is a product decision about
 #    people on old hardware, not a build setting.
-# 2. If the floor is unchanged, pick the oldest Xcode on the image that still
-#    opens the project at object version 100, and record why that one.
-# 3. Re-run the gate. A new pin has proved nothing until it has gone green on a
-#    `macos-26` runner.
+# 2. If the floor is unchanged, raise `XCODE_FLOOR` to whatever the image now
+#    provides and record why.
+# 3. Re-run the gate. A new floor has proved nothing until it has gone green, and
+#    the `sw_vers` output at the top of the log is what says what it went green
+#    on.
 # 4. Update ADR-0007 if the floor itself moves. It records the claim this
 #    workflow exists to enforce, and a stale claim is worse than no claim.
 #
@@ -74,33 +114,66 @@ permissions:
 
 jobs:
   floor:
+    # The name below is load-bearing and is no longer accurate: this job runs on the
+# xcode-27 image, which is macOS 27, so it is no longer a macOS 26 gate. It keeps
+# the old name because the `main` ruleset requires a status check with exactly
+# this name, and a renamed check that protection still demands is a check that
+# can never be satisfied - every future pull request to main blocked forever.
+# Renaming it is a one-line change *together with* editing the ruleset; doing one
+# without the other breaks main.
     name: build, test, and launch on macOS 26
-    runs-on: macos-26
+    runs-on: xcode-27
     # macOS runners are the expensive kind; a hung build should die long
     # before the 360-minute default.
     timeout-minutes: 45
 
     env:
-      # Pinned explicitly. The runner image's default Xcode has already moved
-      # 26.4.1 -> 26.5 -> 26.6 and will keep moving, so relying on it means this
-      # gate silently starts testing a different toolchain than it claims to.
-      XCODE_VERSION: "26.6"
+      # A floor, not an exact pin, and the reason is mechanical rather than a
+      # loosening of discipline. On the xcode-27 image the app directory is
+      # `/Applications/Xcode_27_beta_3.app`, so an exact pin would name a beta
+      # that GitHub renames on the next one; pinning it would break this gate on
+      # a toolchain change that is not a regression, which is the exact failure
+      # the header calls out as the worst one available.
+      #
+      # What is preserved is the property that matters: a green run states which
+      # toolchain it used, in the log, every time. The resolved version is
+      # printed below and asserted against this floor, so the image moving
+      # forward changes a number in the log rather than silently changing what
+      # the gate tests.
+      XCODE_FLOOR: "27.0"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
-      - name: Select an explicit Xcode, not the image default
+      # The gate attests a macOS version, so it has to know which one. Without
+      # this step a green run says only that *some* macOS was green, which is the
+      # one claim a floor gate exists to make and the one thing its own log
+      # previously omitted.
+      - name: Record the operating system this run is evidence about
         run: |
           set -euo pipefail
-          candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          sw_vers
+          echo "Product version: $(sw_vers -productVersion)"
+
+      - name: Resolve the image's default Xcode and assert its floor
+        run: |
+          set -euo pipefail
+          candidate="/Applications/Xcode.app/Contents/Developer"
           if [ ! -d "$candidate" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Raising the pin is a re-evaluation of the deployment-floor claim, not a routine bump; see 'When this fails because the toolchain was retired' in this header."
-            echo "Installed:"; ls -d /Applications/Xcode*.app || true
+            echo "::error::No default Xcode on this runner. The xcode-27 image is expected to provide one; listing what is installed."
+            ls -d /Applications/Xcode*.app || true
             exit 1
           fi
+
+          resolved=$(DEVELOPER_DIR="$candidate" xcodebuild -version | head -1 | awk '{print $2}')
           echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
-          echo "Using DEVELOPER_DIR=$candidate"
-          xcodebuild -version
+          echo "Resolved Xcode: $resolved (floor ${XCODE_FLOOR})"
+
+          if [ "$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | head -1)" != "$XCODE_FLOOR" ]; then
+            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump. See ADR-0007."
+            exit 1
+          fi
+          DEVELOPER_DIR="$candidate" xcodebuild -version
 
       - name: Core suite
         working-directory: NepalKitCore
@@ -135,7 +208,7 @@ jobs:
       - name: App-layer suite
         run: ./scripts/run-app-tests.sh
 
-      # The check that matters most, per the ticket: an LSUIElement app that
+      # The check that matters most: an LSUIElement app that
       # dies or respawns in a loop on its own floor is a real shipping defect,
       # and cosmetic differences are not.
       #

@@ -12,7 +12,7 @@ APP=NepalKit
 # concurrent releases would collide. mktemp -d creates a 0700 directory whose
 # name cannot be guessed.
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
-DEPLOYMENT_TARGET=26.0
+DEPLOYMENT_TARGET=26.6
 ARCHIVE="$WORK/$APP.xcarchive"
 EXPORT_DIR="$WORK/${APP}-export"
 APP_PATH="$EXPORT_DIR/$APP.app"
@@ -42,9 +42,12 @@ MNT=/Volumes/${APP}-release-check
 DIST_ZIP=
 
 # Everything this script mounts is unmounted on the way out, including when it
-# fails partway. A read-write image left attached is not merely untidy: it is
-# EBUSY, and the next run's conversion then fails with a message that never
-# mentions attachments.
+# fails partway and including when it is signalled. EXIT on its own is not that
+# guarantee: it does not fire for SIGHUP or SIGTERM, and both of those arrive
+# exactly while an image is attached — a cancelled CI run, or a terminal closed
+# during the Finder layout scripting. A read-write image left attached is not
+# merely untidy: it is EBUSY, and the next run's conversion then fails with a
+# message that never mentions attachments.
 cleanup() {
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
@@ -53,6 +56,13 @@ cleanup() {
     return 0
 }
 trap cleanup EXIT
+# 128 + signal number, the shell's convention (HUP 1, INT 2, TERM 15), so a
+# signalled run reports why it stopped. cleanup runs again on the EXIT these
+# exit calls trigger; that is deliberate rather than guarded against, because
+# every command in it is already fault-tolerant and it ends in `return 0`.
+trap 'cleanup; exit 129' HUP
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 # Resolve how to authenticate to the notary service.
 #
@@ -306,9 +316,11 @@ cp "$DIST_ZIP" "$APPCAST_DIR/"
 python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 
 # The workspace dies with the run, but the release outputs do not: they are
-# copied to a directory beside it that the operator keeps.
-OUT_DIR="${TMPDIR:-/tmp}/NepalKit-release-output-$$"
-mkdir -p "$OUT_DIR"
+# copied to a private directory beside it that the operator keeps. mktemp -d
+# rather than a `$$`-derived path, for the reason at the top of this file: a
+# predictable path under a world-writable /tmp can be pre-planted with a
+# symlink, and the bytes copied into it include the signed appcast.
+OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
 
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"

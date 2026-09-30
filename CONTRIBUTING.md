@@ -32,18 +32,39 @@ true.
 The app's deployment floor is macOS 26, and `NepalKitCore` will not build
 against anything older.
 
-**Xcode 26.6 is enough, and that is now evidence rather than hope.** The floor
-gate ([macos26-floor.yml](.github/workflows/macos26-floor.yml)) pins Xcode 26.6
-on the `macos-26` runner and has completed successfully: core suite, app-layer
-suite, build, and a launch that survives and exits without a relaunch loop. The
-release pipeline uses Xcode 27, so 26.6 is the floor that matters and it holds.
-The release pipeline uses Xcode 27, and the Xcode project format stays at the
-level the floor toolchain reads — **decline Xcode 27's project-upgrade
-prompt**. Accepting it silently breaks the floor gate for every later pull
-request, with no local symptom.
+**The floor is macOS 26.6, and CI runs Xcode 27.** The floor gate
+([macos26-floor.yml](.github/workflows/macos26-floor.yml)) runs on the `xcode-27`
+image and has completed successfully: core suite, app-layer suite, build, and a
+launch that survives and exits without a relaunch loop.
+
+This needs stating plainly, because the gate's name and the ruleset's required
+check still say "macOS 26" while the runner is macOS 27. So be clear about what
+that does and does not mean:
+
+- **The compile-time floor is enforced.** A macOS 27-only API is still an error
+  against a 26.6 deployment target, whatever Xcode enforces it. That is the
+  failure mode the gate exists for, and it still holds.
+- **The app is no longer *run* on macOS 26.** That claim rests on the
+  compile-time guarantee plus release evidence, not on CI.
+
+The move off `macos-26` was forced, not preferred. Xcode 26.6's SDK tops out at
+deployment target 26.5.99, so it could not even express a 26.6 floor, and Xcode
+26 cannot open the object-version-110 project file that Xcode 27 writes — every
+build-settings edit prompted an upgrade that silently broke the gate. The header
+of `macos26-floor.yml` records the trade and the way out; ADR-0007 records the
+decision.
 
 If you hit something 26.6 cannot compile, that is a regression against a claim
-the gate now enforces — report it rather than working around it locally.
+the gate still enforces — report it rather than working around it locally.
+
+**The app target compiles in Swift 6 language mode** — `SWIFT_VERSION = 6.0`
+with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, in `project.pbxproj` — and the
+SwiftPM harness must stay in that same language mode. The two are separate
+compilers over the same sources: `xcodebuild build` compiles what ships and
+`./scripts/run-app-tests.sh` compiles the sources it symlinks, and the harness
+excludes the two files most in need of strict checking, so if the modes drift
+apart the shipping configuration is left unchecked by any gate. Change one and
+change the other in the same commit.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -53,16 +74,57 @@ open NepalKit.xcodeproj
 
 ## Before you open a pull request
 
-Run both suites. They are separate on purpose: one is the calendar, the other is
-the application.
+One command runs every automated gate, and names each one as it goes:
 
 ```sh
-cd NepalKitCore && swift test          # the calendar: 52 tests
-./scripts/run-app-tests.sh             # the app: 131 tests
+./scripts/check-all.sh
+```
+
+It runs these seven, in this order:
+
+```sh
+# 1. compile the app, because no other gate here does
+xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
+    CODE_SIGNING_ALLOWED=NO build
+
+cd NepalKitCore && swift test               # 2. the calendar: 62 tests
+./scripts/run-app-tests.sh                  # 3. the app: 136 tests
+python3 scripts/test_dataset_parsers.py     # 4. the month table against the parsers
+python3 scripts/test_update_changelog.py    # 5. the changelog generator
+python3 scripts/test_verify_appcast.py      # 6. the appcast verifier
+python3 scripts/verify-deployment-floor.py  # 7. the floor is one number everywhere
 ```
 
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
+
+Two of those seven are the direct consequence of gates that once reported green
+while something was wrong, so they are worth explaining rather than just
+listing.
+
+**The build is first** because nothing else compiles the app: both test suites run
+through a SwiftPM harness that excludes `NepalKitApp.swift` and
+`SparkleUpdateService.swift`, correctly, and the script suites do not build Swift
+at all. Plan 021 set `SWIFT_VERSION = 6.0` and shipped a file the app could not
+compile, and twenty-two plans passed every gate in this list.
+
+**The floor check is last** because it compares the sources against each other
+rather than trusting any one of them. The app target built at 26.6 while
+`package-release.sh` said 26.0, so the appcast gate — which reads the floor from
+that file — reported `26.0 matches the app's floor` and passed, while the feed
+offered updates to systems that could not launch the build. Nothing in the list
+above it could have caught that, because they all agreed with each other.
+
+`check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
+that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:
+it needs network access, and it is the first thing to reach for whenever the
+calendar table, the supported range or [SOURCES.md](SOURCES.md) changes — see
+"The one thing that matters most" above. The others are release-time gates over
+packaged artifacts and the published feed. CI runs all of them on any change
+that touches them, so this command is the local half and not a replacement.
+
+The two Swift suites stay separate on purpose: one is the calendar, the other is
+the application.
 
 `xcodebuild test` builds cleanly but the runner hangs in this environment, so
 the app-layer suite goes through a SwiftPM harness instead — see
@@ -77,8 +139,13 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
   ./scripts/run-app-tests.sh
 ```
 
-Without it, five tests **skip with a reason** rather than pass silently. That
-is deliberate: a test that cannot check something must not report that it did.
+Prefer that recipe to leaving it to discovery. A discovered product is used only
+when it is **newer than the source that builds it**; an older one is refused,
+because those five tests exist to catch keys that reach the product — and a
+product from last week is not what this source produces. Either way the run
+prints what it found and what it compared against. Without a usable product,
+five tests **skip with a reason** rather than pass silently. That is deliberate:
+a test that cannot check something must not report that it did.
 
 ## Style
 
@@ -115,15 +182,23 @@ first.
   (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
   act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the
-  deployment-floor gate: it proves the app builds, tests, and launches on the
-  oldest macOS it claims to support, which is a different question from "does it
-  work on my machine".
+  deployment-floor gate: it proves the app builds, tests, and launches on a macOS
+  toolchain, which is a different question from "does it work on my machine". It
+  no longer runs *on* the oldest supported macOS — the gate's header records what
+  that costs and why.
 - That gate is also a **required status check** on `main` (branch ruleset
   `main`, enforcement active — checkable under
   Settings → Rules → Rulesets). Its single required check is named
   `build, test, and launch on macOS 26`. The repository owner is a bypass
   actor, so a broken gate can never lock a solo maintainer out of their own
   repository; for everyone else it cannot be skipped.
+- **That name and the ruleset must change together, or not at all.** The check
+  name above no longer describes what the job does — the job runs on macOS 27 —
+  but renaming the `name:` alone would leave the ruleset demanding a check that
+  can never be reported, which blocks every future pull request to `main` with
+  no failure to diagnose. To correct it, edit the ruleset's required check under
+  Settings → Rules → Rulesets *and* the job's `name:` in the same change. This
+  was nearly shipped the other way round.
 
 ## Licensing of contributions
 

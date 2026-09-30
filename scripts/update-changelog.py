@@ -8,8 +8,8 @@ of CHANGELOG.md. One set of facts, two formats, no third place to drift.
 
 Section headings come from the fragments' `<b>…</b>` blocks, bullets from
 `<li>`, and `<p>` paragraphs pass through as text. Version dates come from
-the appcast's `pubDate` per item; a version without an appcast item yet is
-listed as unreleased.
+the appcast's `pubDate` per item, except that a date already written to this
+file stands over either feed; a version neither knows is listed as unreleased.
 
 Usage: update-changelog.py [appcast.xml]
 
@@ -113,6 +113,39 @@ def release_dates(appcast: Path) -> dict[str, str]:
     return dates
 
 
+def resolve_dates(committed: Path, staged: Path, changelog: Path) -> dict[str, str]:
+    """Version → YYYY-MM-DD, deciding which source wins a disagreement.
+
+    The changelog is authoritative: a date already written to it is applied last
+    and overwrites both feeds. The feeds are still read, and are still the
+    source for any version the changelog has never dated — which is how a new
+    release gets a date at all.
+    """
+    dates: dict[str, str] = {}
+    if committed.exists():
+        dates.update(release_dates(committed))
+    if staged.exists():
+        dates.update(release_dates(staged))
+
+    # A date already written to the changelog is the durable record, so a
+    # regeneration must neither drop one nor move one — which is why this loop
+    # overwrites rather than filling gaps. Both feeds are seeded above it, so a
+    # `pubDate` that disagreed with an already-shipped date used to win.
+    #
+    # The headings are read at all because no feed can be trusted to hold every
+    # release on its own: `generate_appcast` prunes, so 1.0 fell out of
+    # appcast.xml when 1.3.0 shipped, and reading only the feed turned 1.0 back
+    # into "unreleased" on the next run. Applying them last keeps that fixed and
+    # makes a no-argument run non-destructive rather than merely idempotent.
+    for heading in re.finditer(
+        r"^## (\S+) — (\d{4}-\d{2}-\d{2})$",
+        changelog.read_text(encoding="utf-8"),
+        re.MULTILINE,
+    ):
+        dates[heading.group(1)] = heading.group(2)
+    return dates
+
+
 def main() -> int:
     name = Path(sys.argv[0]).name
     if len(sys.argv) > 2:
@@ -129,25 +162,8 @@ def main() -> int:
         # not-yet-staged path has to fail here, where the operator can see it.
         print(f"error: no appcast at {appcast}", file=sys.stderr)
         return 1
-    # History comes from the committed feed and only the new release's date from
-    # staging. `generate_appcast` prunes a feed to its newest few items, so the
-    # staged one legitimately stops carrying older releases — and a release that
-    # fell out of the feed must not become "unreleased" in the changelog.
-    dates = release_dates(DEFAULT_APPCAST) if DEFAULT_APPCAST.exists() else {}
-    if appcast.exists():
-        dates.update(release_dates(appcast))
-
-    # A date already written to the changelog is the durable record, so a
-    # regeneration must not drop one. Neither feed can be trusted to hold every
-    # release on its own: `generate_appcast` prunes, so 1.0 fell out of
-    # appcast.xml when 1.3.0 shipped, and reading only the feed turned 1.0 back
-    # into "unreleased" on the next run. Reading the changelog's own headings
-    # closes that, and makes a no-argument run non-destructive rather than merely
-    # idempotent.
-    for heading in re.finditer(
-        r"^## (\S+) — (\d{4}-\d{2}-\d{2})$", CHANGELOG.read_text(encoding="utf-8"), re.MULTILINE
-    ):
-        dates.setdefault(heading.group(1), heading.group(2))
+    # The changelog is the authority on its own dates; the feeds fill the gaps.
+    dates = resolve_dates(DEFAULT_APPCAST, appcast, CHANGELOG)
 
     sections = []
     for path in sorted(NOTES_DIR.glob("*.html"), key=lambda p: version_key(p.stem), reverse=True):

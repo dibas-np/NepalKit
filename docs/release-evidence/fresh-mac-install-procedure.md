@@ -57,6 +57,18 @@ spctl -a -t execute -vvv /Applications/NepalKit.app
 open /Applications/NepalKit.app
 ```
 
+Steps 3 and 5 above are also enforced mechanically before the Homebrew cask is
+rewritten. `scripts/update-cask.sh` mounts the published `.dmg` at a private
+mount point and runs `spctl -a -t execute`, `xcrun stapler validate` and a
+signing-identity check against the `.app` inside it, and computes the `sha256`
+only if all of them pass. That matters because Homebrew is the path with no
+signature check of its own — it verifies the recorded digest and nothing else —
+so the digest is the trust anchor, and a digest over bytes no gate has vouched
+for would be the whole problem. It is defence in depth, not a replacement for
+this procedure: `package-release.sh` already checks the asset it built, and this
+only re-asserts it on the bytes a fresh download actually returned. The first
+real exercise of that gate is the next tagged release.
+
 Before dragging, look at the window itself. It is a designed surface
 (ADR-0013), and the release gate checks its *geometry* — that the icons sit
 where the layout says, and that a background picture is recorded — which is not

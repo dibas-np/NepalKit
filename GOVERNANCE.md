@@ -19,8 +19,13 @@ no governance model beyond this file.
 - **Breaking changes** are the maintainer's call. The supported calendar range
   has been narrowed before, and will be again if the data cannot be
   corroborated — that is a decision about honesty, not about features.
-- **Releases** are cut by the maintainer, following the process in
-  [README.md](README.md).
+- **Releases** are cut by the maintainer, following the process in the
+  [fresh-Mac install procedure](docs/release-evidence/fresh-mac-install-procedure.md)
+  and driven by `scripts/package-release.sh`. Neither is in the README: a
+  release is a maintainer action over a signed artifact on a machine that has
+  never trusted the developer, and that is not something a contributor or an
+  install guide needs. The README's [Install](README.md#install) section is what
+  a user reads.
 - **Licensing** cannot be changed by a majority vote of contributors. GPL-3.0 is
   a deliberate choice made for reasons recorded in
   [SOURCES.md](SOURCES.md), and relicensing is a decision only the copyright
