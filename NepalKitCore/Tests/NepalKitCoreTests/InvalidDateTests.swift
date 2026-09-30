@@ -17,6 +17,12 @@ struct InvalidDateTests {
     static let invalidADDays: [(day: GADay, label: String)] = [
         (GADay(year: 2024, month: 2, day: 30), "Feb 30 never exists"),
         (GADay(year: 2026, month: 13, day: 1), "no month 13"),
+        // Month 0 is a different rejection than Feb 30: Feb 30 fails the
+        // round-trip check in `utcDate`, month 0 fails its month guard, because
+        // `Calendar` would silently normalize it into December of the year
+        // before. Both must land on nil, and month 0 is the one that would
+        // otherwise look like a real date.
+        (GADay(year: 2026, month: 0, day: 1), "no month 0"),
         (GADay(year: 2026, month: 9, day: 0), "no day 0"),
         (GADay(year: 1918, month: 4, day: 12), "day before the range starts"),
         (GADay(year: 1913, month: 4, day: 12), "below supported range"),

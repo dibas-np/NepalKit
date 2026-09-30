@@ -108,9 +108,9 @@ public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay? {
     // is no separate validation step here.
     guard let anchorDate = utcDate(from: dataset.anchorAD),
           let targetDate = utcDate(from: ad),
-          let anchorIndex = absoluteDayIndex(dataset.anchorBS, in: dataset)
+          let anchorIndex = absoluteDayIndex(dataset.anchorBS, in: dataset),
+          let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day
     else { return nil }
-    let offset = utcGregorian.dateComponents([.day], from: anchorDate, to: targetDate).day ?? 0
     return bsDay(at: anchorIndex + offset, in: dataset)
 }
 
