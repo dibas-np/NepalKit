@@ -75,6 +75,28 @@
 	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
 
 	<!--
+	  SURequireSignedFeed makes Sparkle *refuse* a feed that carries no
+	  signature, rather than read it unauthenticated. SUPublicEDKey above only
+	  means the app is *able* to verify a signature; on its own it does not
+	  insist on one, so an attacker who can rewrite the feed in transit does
+	  not have to forge anything — deleting the sparkle-signatures block is
+	  enough, and the app accepts the result. A signature nobody requires is a
+	  comment. The two halves are separate controls: CI
+	  (scripts/verify-appcast.py) keeps the producer honest by failing the
+	  build when the feed is unsigned; this key makes the consumer strict.
+
+	  The dependency runs one way. This key is safe *only because* the
+	  published feed is signed — with an unsigned feed it would not weaken
+	  anything, it would break updating outright, since Sparkle would reject
+	  every fetch and users could not update at all. That is why the feed was
+	  signed (commit f7de4d0) before this key was set: if you ever see this
+	  flipped before a feed is re-signed by a maintainer, users on the
+	  current release cannot update.
+	-->
+	<key>SURequireSignedFeed</key>
+	<true/>
+
+	<!--
 	  The update feed, served from this repository via GitHub Pages so the URL
 	  never changes between releases — a feed URL that moved would strand every
 	  existing installation. HTTPS, as Sparkle requires.

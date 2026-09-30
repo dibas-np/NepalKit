@@ -250,11 +250,36 @@ is invalidated.
 
 `scripts/verify-appcast.py` now **requires** the block and verifies it against
 the same `SUPublicEDKey` the archives use — no private key, so it runs in CI
-like every other check here. That is why the committed feed currently fails it:
-it carries three `sparkle:edSignature` values and no feed signature, and no gate
-in this repository could see that before. Re-signing it means producing a
-signature with the private key, which is a keychain operation for a maintainer
-and deliberately not something a commit can do.
+like every other check here. When that gate landed the committed feed still
+failed it: it carried three `sparkle:edSignature` values and no feed signature,
+and no gate in this repository could see that before. Re-signing it means
+producing a signature with the private key, which is a keychain operation for a
+maintainer and deliberately not something a commit can do.
+
+**The committed feed is now signed** (`f7de4d0`), and the check passes.
+
+### The client requires the signature, and that depends on the feed being signed
+
+Two controls, not one. `scripts/verify-appcast.py` is the **producer** half: it
+fails the build when the published feed carries no signature. `SURequireSignedFeed`
+in `NepalKit/Info.plist` is the **consumer** half: it makes Sparkle *refuse* a
+feed with no signature rather than read it unauthenticated, and it is now `true`
+in the shipped app, asserted against the built product by
+`InfoPlistKeysTests.theSignedFeedIsRequiredInTheBuiltProduct`.
+
+`SUPublicEDKey` alone did not give this. It made the app *able* to verify a
+signature without making it *require* one, so an attacker who can rewrite the
+feed in transit need not forge anything — deleting the `sparkle-signatures`
+block was enough, and the app accepted the result. A signature nobody requires
+is a comment.
+
+**The dependency runs one way, and it is a real operational hazard.** Setting
+`SURequireSignedFeed` while the published feed is unsigned does not weaken
+anything; it stops updates entirely, because Sparkle rejects every fetch. That
+is why the feed was signed *before* the key was set. The ordering is not
+cosmetic: this key is safe only because the feed is signed, so any future
+release that republishes the feed must sign it again or users on the current
+release cannot update.
 
 ## Freshness of this pin
 
