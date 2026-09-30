@@ -11,13 +11,18 @@ import NepalKitCore
 @MainActor
 @Observable
 final class ConverterModel {
-    var direction: ConverterDirection
+    // The bundled state below is `private(set)`: the clamping accessors are the
+    // only way to change it, so the invariant this type documents is one the
+    // compiler enforces rather than one callers are trusted to uphold. Writing
+    // the stored properties directly would skip `clampBSDay()`/`clampADDate()`
+    // and leave a date the pickers' month-length lookups trap on.
+    private(set) var direction: ConverterDirection
 
     /// Picker state bundled as dates: one value travels together instead of
     /// six ints. The `*Year/*Month/*Day` accessors below exist for the
     /// pickers, tests, and bindings.
-    var bsDate: BSDay
-    var adDate: GADay
+    private(set) var bsDate: BSDay
+    private(set) var adDate: GADay
 
     var bsYear: Int {
         get { bsDate.year }
@@ -164,8 +169,8 @@ final class ConverterModel {
     /// Clamps the BS pickers into the dataset's supported range and the real
     /// month length. Writes `bsDate` directly (never through the setters) so
     /// the setters can call this safely without recursing. Idempotent, so
-    /// existing call sites that call it explicitly keep working.
-    func clampBSDay() {
+    /// every in-type caller can run it after its own write.
+    private func clampBSDay() {
         let clampedYear = min(max(bsDate.year, dataset.supportedRange.lowerBound), dataset.supportedRange.upperBound)
         let clampedMonth = min(max(bsDate.month, 1), 12)
         let maxDay = daysInBSMonth(year: clampedYear, month: clampedMonth)
@@ -179,7 +184,7 @@ final class ConverterModel {
     /// Keeps the AD pickers inside the convertible [minAD, maxAD] span.
     /// Writes `adDate` once at the end (never through the setters) so the
     /// setters can call this safely without recursing. Idempotent.
-    func clampADDate() {
+    private func clampADDate() {
         guard let minAD, let maxAD else { return }
         var date = adDate
         // Real calendar bounds first.

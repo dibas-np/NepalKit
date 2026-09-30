@@ -105,7 +105,7 @@ struct SpokenSurfaceTests {
 
     @Test func converterSpokenResultMatchesTheShownDate() throws {
         let model = ConverterModel()
-        model.direction = .bsToAD
+        model.setDirection(.bsToAD)
         model.bsYear = 2083
         model.bsMonth = 6
         model.bsDay = 11
@@ -124,7 +124,8 @@ struct SpokenSurfaceTests {
 
     @Test func converterSpokenResultKeepsTheUsersMonthLanguage() throws {
         let model = ConverterModel()
-        model.direction = .adToBS
+        // Via `setDirection`; the AD pickers below overwrite what it carries.
+        model.setDirection(.adToBS)
         model.adYear = 2026
         model.adMonth = 9
         model.adDay = 27
