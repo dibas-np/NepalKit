@@ -62,11 +62,11 @@ struct SettingsView: View {
                 // which is noise in front of the real name.
                 .accessibilityLabel(Strings.launchAtLoginLabel)
 
-                if let error = loginItem.setupError {
+                if let failure = loginItem.setupError {
                     // A failed register/unregister is invisible on the toggle:
                     // `isOn` follows the system, so it springs back without
                     // ever saying why. This line is where the reason lands.
-                    Text(error)
+                    Text(Strings.loginItemFailureReason(failure))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

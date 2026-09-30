@@ -33,6 +33,27 @@ struct LiveLoginItemService: LoginItemServicing {
     }
 }
 
+/// The two ways changing the login item can fail, carrying the system's own
+/// wording as the payload.
+///
+/// Typed rather than a bare `String` so a test can pin *which* operation failed
+/// without matching its message — the same argument as `UpdateOutcome`, the
+/// other Settings-bound service. Two services reporting failure two different
+/// ways leaves the next one no pattern to copy; this is the convergence.
+///
+/// The cases name the operation, not the cause. The errors are opaque
+/// `SMAppService` Cocoa errors with nothing in them to classify, so the
+/// operation is the only distinction the system actually offers, and the
+/// wording is better shown than paraphrased. If a cause ever does need naming —
+/// a registration held for approval in System Settings, say — it earns its own
+/// case and the view's wording follows from it.
+enum LoginItemFailure: Equatable {
+    /// `register()` was refused, so the login item could not be turned on.
+    case registration(String)
+    /// `unregister()` was refused, so the login item could not be turned off.
+    case deregistration(String)
+}
+
 /// Owns the launch-at-login toggle. The system is the source of truth for
 /// the on/off state; only the "already configured the default" flag is
 /// persisted, so first launch registers once and never overrides the user.
@@ -46,7 +67,7 @@ final class LoginItemModel {
     /// The last failure reported by the login-item service, if any. `isOn`
     /// follows the system either way, so without this a refused registration
     /// only makes the toggle spring back, never saying why.
-    private(set) var setupError: String?
+    private(set) var setupError: LoginItemFailure?
 
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
@@ -90,7 +111,10 @@ final class LoginItemModel {
             }
             setupError = nil
         } catch {
-            setupError = error.localizedDescription
+            // Which operation failed is the one thing the system does tell us,
+            // and it is what the wording and the test both turn on.
+            setupError = on ? .registration(error.localizedDescription)
+                            : .deregistration(error.localizedDescription)
         }
         isOn = service.isRegistered
     }

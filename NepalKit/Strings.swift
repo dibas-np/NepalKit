@@ -157,6 +157,29 @@ enum Strings {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
     }
 
+    /// A refused register/unregister is invisible on the toggle: `isOn` follows
+    /// the system, so the toggle springs back without ever saying why. This
+    /// sentence is where the reason lands.
+    ///
+    /// Parenthetical rather than a second clause, so the direction of the change
+    /// is readable while the toggle is still mid-rebound — "turning it on" beside
+    /// a control that just sprang back to off is the whole ambiguity.
+    static let loginItemFailed = "Could not change launch at login"
+
+    /// The system reports an opaque Cocoa error, so the sentence around it is
+    /// the app's and the payload is quoted rather than spliced in, for the same
+    /// reason as `updateStatusFailedReason`: the system's phrasing is written
+    /// for the login-item machinery, not for this sentence, and quoting keeps
+    /// the two claims separable if it turns out to contradict ours.
+    static func loginItemFailureReason(_ failure: LoginItemFailure) -> String {
+        switch failure {
+        case .registration(let reason):
+            "\(loginItemFailed) (turning it on). The system reported: “\(reason)”"
+        case .deregistration(let reason):
+            "\(loginItemFailed) (turning it off). The system reported: “\(reason)”"
+        }
+    }
+
     /// About surface. The calendar range is formatted from the dataset's own
     /// bounds, so narrowing or extending the table moves this line with it.
     static func versionLabel(_ version: String) -> String { "Version \(version)" }

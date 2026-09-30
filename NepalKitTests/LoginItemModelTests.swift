@@ -128,7 +128,28 @@ struct LoginItemModelTests {
         #expect(!model.isOn)
         // The toggle springs back because `isOn` follows the system; the
         // surfaced error is what tells the user why.
-        #expect(model.setupError != nil)
+        //
+        // Compared against the very error the fake throws, not against a
+        // literal: what is pinned is that the model forwarded the system's
+        // description unchanged, not what Foundation chose to word it as.
+        #expect(model.setupError == .registration(Boom().localizedDescription))
+    }
+
+    @Test func failedDeregistrationIsReportedAsADeregistration() {
+        let service = MockService(registered: true)
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+
+        model.setOn(false)
+
+        // Same spring-back as the registration failure — the service throws
+        // before it unregisters, so the system still reports itself registered.
+        #expect(model.isOn)
+        // The counterpart the other failure tests cannot reach: every other
+        // failure test turns the item *on*, so without this one the two cases
+        // could be swapped and the suite would still be green. Asserting the
+        // operation is the whole point of typing the failure.
+        #expect(model.setupError == .deregistration(Boom().localizedDescription))
     }
 
     @Test func successfulToggleClearsTheError() {
@@ -136,7 +157,7 @@ struct LoginItemModelTests {
         service.error = Boom()
         let model = LoginItemModel(service: service, defaults: freshDefaults())
         model.setOn(true)
-        #expect(model.setupError != nil)
+        #expect(model.setupError == .registration(Boom().localizedDescription))
 
         service.error = nil
         model.setOn(true)
