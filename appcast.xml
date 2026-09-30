@@ -1,5 +1,6 @@
-<?xml version="1.0" standalone="yes"?>
-<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>NepalKit</title>
         <item>
@@ -21,7 +22,7 @@
 <li>Versions now read three components — 1.3.0, not 1.3. The About window, the Git tag, and the Homebrew cask all show the same number because they are all derived from one value. Releases 1.0 to 1.2 keep the numbers they shipped with; their tags and downloads are not rewritten.</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="/>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="></enclosure>
         </item>
         <item>
             <title>1.2</title>
@@ -39,7 +40,7 @@
 <li>The popover no longer draws a doubled rule above its footer. The date area and the footer bar each carried their own separator, and they ended up directly against each other, so every popover you opened showed two lines where there should have been one. Only the redundant one is gone; the line that separates the date from the actions below it is still there.</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.2/NepalKit-1.2.zip" length="3100702" type="application/octet-stream" sparkle:edSignature="pHbsR0hLUsgPiKDBMW8nEY6Bhg5ZN7/ioWVd4Ayiv1IF+Kq9NIBgE86N3Es7/5YmI1Zl+3D/kNWG9grXKc4kBQ=="/>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.2/NepalKit-1.2.zip" length="3100702" type="application/octet-stream" sparkle:edSignature="pHbsR0hLUsgPiKDBMW8nEY6Bhg5ZN7/ioWVd4Ayiv1IF+Kq9NIBgE86N3Es7/5YmI1Zl+3D/kNWG9grXKc4kBQ=="></enclosure>
         </item>
         <item>
             <title>1.1</title>
@@ -65,7 +66,10 @@
 </ul>
 <p>Note for 1.0: this version fixes the updater itself, so a 1.0 install cannot update in place — install 1.1 from the DMG this once. Automatic updates work from 1.1 onward.</p>
 ]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.1/NepalKit-1.1.zip" length="3092158" type="application/octet-stream" sparkle:edSignature="/0QcgG2ZncQHX1SmX/DxphL1vpKani0LqJoOOQvQ6Xq2cNAfAnd7EMe2JinwGre3u1J+wmYtAQixuXFtCaaqDg=="/>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.1/NepalKit-1.1.zip" length="3092158" type="application/octet-stream" sparkle:edSignature="/0QcgG2ZncQHX1SmX/DxphL1vpKani0LqJoOOQvQ6Xq2cNAfAnd7EMe2JinwGre3u1J+wmYtAQixuXFtCaaqDg=="></enclosure>
         </item>
     </channel>
-</rss>
+</rss><!-- sparkle-signatures:
+edSignature: tywOAvy9hfKO86Y1iOIXVWIk0wO38K9TCb5Oqu2/qe2Qr9x7SrhL5BRq5fcwR6pDmB1zzV9Zt7NA65GvLdziBg==
+length: 6821
+-->
