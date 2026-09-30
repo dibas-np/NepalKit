@@ -23,7 +23,18 @@ design. openssl needs only the public half, which is already committed to the
 repository in Info.plist, so the same key that is baked into the shipped app is
 the key CI checks against.
 
-Exit 0 = the appcast is sound. Non-zero = it must not be published.
+An item whose bytes were unavailable is a *counted skipped outcome*, not a
+pass: the run says so, names the versions, and exits non-zero. A layer that
+did not run is not a layer that passed.
+
+Exit 0 = every item was byte-verified and signature-verified. Non-zero = do
+not publish, and do not report the run as a check that happened.
+
+`--skip-crypto` is a "check nothing" flag, not a "skip the hard part" flag: it
+suppresses the signature check *and*, through the fetch branch, the byte check
+too, so a run using it verifies structure and nothing else. `--allow-partial`
+is the release-time escape hatch: it reports unverified items and still exits
+0, for the invocation that only has the newly staged archive on disk.
 """
 
 from __future__ import annotations
@@ -153,7 +164,7 @@ def deployment_floor(override: str | None = None) -> str | None:
 
 
 def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto: bool,
-           minimum_system_version: str | None = None) -> None:
+           minimum_system_version: str | None = None, allow_partial: bool = False) -> int:
     print(f"Verifying {appcast}")
     floor = deployment_floor(minimum_system_version)
     if floor:
@@ -171,6 +182,13 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     if not items:
         fail("feed contains no <item>: an app checking this would see no updates at all")
     ok(f"well-formed, {len(items)} item(s)")
+
+    # The two outcomes that are neither pass nor fail, counted so the run can
+    # report them instead of printing a line and moving on. `verified` counts
+    # items that cleared every layer; `skipped` names the ones where a layer
+    # could not run, which is what used to be a printed line and a green exit.
+    verified = 0
+    skipped: list[str] = []
 
     for item in items:
         version = item.findtext("sparkle:shortVersionString", default="?", namespaces=NS)
@@ -259,20 +277,34 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
 
             # --- 3. Cryptographic verification ---------------------------
             if skip_crypto:
+                # The bytes were here but the signature was not checked, so
+                # this item cleared only one of its two layers. Counted for the
+                # same reason the missing-bytes case is.
+                skipped.append(version)
                 print(f"  skip  version {version}: signature not checked (--skip-crypto)")
             else:
                 public_key = load_public_key(info_plist)
                 if verify_signature(public_key, payload, signature_bytes):
                     ok(f"version {version}: signature verifies against the committed public key")
+                    verified += 1
                 else:
                     fail(
                         f"version {version}: signature does NOT verify against the key in "
                         f"{info_plist.name}. Do not publish this feed."
                     )
         else:
+            skipped.append(version)
             print(f"  skip  version {version}: no enclosure bytes available to verify")
 
+    if skipped:
+        print(
+            f"Appcast NOT verified: {verified} of {len(items)} item(s) cleared every "
+            f"layer; these did not: {', '.join(skipped)}. A layer that did not run is "
+            f"not a pass."
+        )
+        return 0 if allow_partial else 1
     print("Appcast is sound.")
+    return 0
 
 
 def main() -> int:
@@ -288,7 +320,15 @@ def main() -> int:
     )
     parser.add_argument(
         "--skip-crypto", action="store_true",
-        help="check structure only, without verifying the signature",
+        help="check structure only: skips the signature check and the byte check, so "
+             "the run verifies nothing and exits non-zero",
+    )
+    parser.add_argument(
+        "--allow-partial", action="store_true",
+        help="report items that could not be verified without failing the run. For the "
+             "release-time shape, where the feed keeps every release but only the newly "
+             "staged archive is on disk. Anything that was checked and found wrong still "
+             "fails (default: an unverified item exits non-zero)",
     )
     parser.add_argument(
         "--minimum-system-version", default=None,
@@ -305,13 +345,13 @@ def main() -> int:
         return 1
 
     try:
-        verify(args.appcast, args.info_plist, args.enclosure, args.skip_crypto,
-               args.minimum_system_version)
+        return verify(args.appcast, args.info_plist, args.enclosure, args.skip_crypto,
+                      args.minimum_system_version, args.allow_partial)
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001
         fail(f"unexpected error: {exc}")
-    return 0
+    return 1  # unreachable: fail() exits; here so the return type stays honest
 
 
 if __name__ == "__main__":
