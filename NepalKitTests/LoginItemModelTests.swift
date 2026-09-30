@@ -76,6 +76,90 @@ struct LoginItemModelTests {
         #expect(relaunched.isOn)
     }
 
+    @Test func failedFirstLaunchRecordsTheRegistrationError() {
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+
+        model.ensureDefaultOn()
+
+        // Same anchor as `failedRegistrationLeavesToggleOffAndSurfacesAnError`:
+        // the very error the fake throws, not a literal, so this pins that the
+        // model forwarded the system's description unchanged rather than what
+        // Foundation chose to word it as.
+        #expect(model.setupError == .registration(Boom().localizedDescription))
+    }
+
+    @Test func failedFirstLaunchLeavesTheConfiguredFlagUnsetAndRetries() {
+        let defaults = freshDefaults()
+        let service = MockService()
+        service.error = Boom()
+        LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
+
+        // The retry is the documented policy, so the flag is asserted directly:
+        // a new defaults suite starts unset, and a refused registration must
+        // leave it that way for the next launch to try again.
+        #expect(!defaults.bool(forKey: LoginItemModel.configuredKey))
+        #expect(service.registerCalls == 1)
+
+        let retry = MockService()
+        LoginItemModel(service: retry, defaults: defaults).ensureDefaultOn()
+
+        #expect(retry.registerCalls == 1)
+    }
+
+    @Test func isOnFollowsTheSystemWhenFirstLaunchFails() {
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: freshDefaults())
+
+        model.ensureDefaultOn()
+
+        // The pairing `setupError`'s own doc comment describes: the throw
+        // happens before the service registers, so the system still reports
+        // itself unregistered and the toggle must stay off — while the error
+        // alongside it is what says why.
+        #expect(!model.isOn)
+        #expect(model.setupError != nil)
+    }
+
+    @Test func theSameFailureIsReportedIdenticallyFromFirstLaunchAndTheToggle() {
+        let firstLaunch = MockService()
+        firstLaunch.error = Boom()
+        let launched = LoginItemModel(service: firstLaunch, defaults: freshDefaults())
+        launched.ensureDefaultOn()
+
+        let toggle = MockService()
+        toggle.error = Boom()
+        let toggled = LoginItemModel(service: toggle, defaults: freshDefaults())
+        toggled.setOn(true)
+
+        // One refusal, two call paths. Comparing the two models to each other
+        // rather than to a literal means the mapping is asserted once and
+        // cannot drift: a user must not see two messages for one failure
+        // depending on whether it happened at first launch or from the toggle.
+        #expect(launched.setupError != nil)
+        #expect(launched.setupError == toggled.setupError)
+    }
+
+    @Test func successfulFirstLaunchClearsAnEarlierFailure() {
+        let defaults = freshDefaults()
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: defaults)
+        model.ensureDefaultOn()
+        #expect(model.setupError != nil)
+
+        service.error = nil
+        model.ensureDefaultOn()
+
+        // The second call is only reached because the refusal left the flag
+        // unset — the retry working and the error clearing are the same fact.
+        #expect(model.isOn)
+        #expect(model.setupError == nil)
+        #expect(defaults.bool(forKey: LoginItemModel.configuredKey))
+    }
+
     @Test func toggleOffUnregisters() {
         let service = MockService(registered: true)
         let model = LoginItemModel(service: service, defaults: freshDefaults())

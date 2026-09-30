@@ -91,9 +91,16 @@ final class LoginItemModel {
     /// Runs until it succeeds: afterwards the user's toggle choice is never
     /// overridden. The flag is set only on confirmed registration, so a
     /// failed first launch retries on the next launch instead of giving up.
+    /// A refused registration is reported rather than swallowed, so the retry
+    /// is visible instead of silent.
     func ensureDefaultOn() {
         guard !defaults.bool(forKey: Self.configuredKey) else { return }
-        try? service.register()
+        do {
+            try service.register()
+            setupError = nil
+        } catch {
+            setupError = Self.failure(from: error, turningOn: true)
+        }
         isOn = service.isRegistered
         if isOn {
             defaults.set(true, forKey: Self.configuredKey)
@@ -113,10 +120,17 @@ final class LoginItemModel {
         } catch {
             // Which operation failed is the one thing the system does tell us,
             // and it is what the wording and the test both turn on.
-            setupError = on ? .registration(error.localizedDescription)
-                            : .deregistration(error.localizedDescription)
+            setupError = Self.failure(from: error, turningOn: on)
         }
         isOn = service.isRegistered
+    }
+
+    /// The one mapping from a thrown error to a reported failure. Both call
+    /// paths share it so a refusal at first launch and the same refusal from
+    /// the toggle cannot be worded two different ways.
+    private static func failure(from error: any Error, turningOn: Bool) -> LoginItemFailure {
+        turningOn ? .registration(error.localizedDescription)
+                  : .deregistration(error.localizedDescription)
     }
 
     /// Binding target for the Settings toggle: writing runs the same
