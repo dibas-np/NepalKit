@@ -43,9 +43,13 @@ private func utcDate(from ad: GADay) -> Date? {
     return date
 }
 
-/// The Gregorian civil day as an instant at noon UTC, so downstream date
-/// math lands on the named day in every time zone the value travels through.
-/// Built on `utcDate`, so civil-day validity is enforced here too.
+/// The Gregorian civil day as an instant at noon UTC. Downstream date math
+/// lands on the named day from UTC−12 inclusive through UTC+12 exclusive;
+/// at UTC+12 and beyond the instant falls on the following local day, because
+/// no instant can carry one civil day into all 26 hours of zones. Noon is
+/// the reference that keeps both the Americas and Asia on the named day;
+/// `NoonUTCTests` pins the window. Built on `utcDate`, so civil-day
+/// validity is enforced here too.
 public func noonUTC(for ad: GADay) -> Date? {
     utcDate(from: ad)?.addingTimeInterval(12 * 60 * 60)
 }

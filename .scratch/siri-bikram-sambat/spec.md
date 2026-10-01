@@ -77,9 +77,10 @@ Returns a `BikramSambatDate` entity plus the dialog `<weekday>, <BS date>.`
 a civil day, not a Gregorian instant, so no `Date` parameter can express it.
 
 Returns a native `Date` (the Gregorian civil day at **noon UTC**, chosen so
-downstream date math lands on the named day in every time zone) plus the
-dialog `<weekday>, <Gregorian date>.` Gregorian month names are always
-English, per the glossary.
+downstream date math lands on the named day from UTC−12 inclusive through
+UTC+12 exclusive; at UTC+12 and beyond it falls on the following local day,
+as `NoonUTCTests` pins) plus the dialog `<weekday>, <Gregorian date>.`
+Gregorian month names are always English, per the glossary.
 
 ## The Bikram Sambat month enum
 

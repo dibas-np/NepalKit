@@ -88,7 +88,7 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     CODE_SIGNING_ALLOWED=NO build
 ./scripts/swiftlint.sh lint --strict       # 2. all maintained Swift files
 
-cd NepalKitCore && swift test               # 3. the calendar: 64 tests
+cd NepalKitCore && swift test               # 3. the calendar: 65 tests
 ./scripts/run-app-tests.sh                  # 4. the app: 162 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_changelog.py    # 6. the changelog generator
