@@ -6,6 +6,27 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>NepalKit</title>
         <item>
+            <title>1.5.0</title>
+            <pubDate>Thu, 01 Oct 2026 14:58:45 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.5.0</link>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>Siri and Shortcuts support</b>
+<p>Ask Siri, "What is today's Nepali date with NepalKit" to hear today's Bikram Sambat date and weekday. Today's date follows Nepal Time.</p>
+<ul>
+<li>Convert dates between Gregorian and Bikram Sambat using new Shortcuts actions.</li>
+<li>Gregorian-to-Bikram Sambat conversion returns year, month, day, and weekday fields for use in your shortcuts. Conversion to Gregorian returns a standard date.</li>
+<li>Spoken answers use Latin digits and your chosen month-name language. Bikram Sambat date labels in Shortcuts follow your display settings, including Devanagari digits.</li>
+<li>Unsupported dates report the supported range. Invalid Bikram Sambat dates report the month's actual length.</li>
+<li>Find the available phrases in Settings, General, Siri &amp; Shortcuts.</li>
+</ul>
+<p>Siri supports today's date query. Use Shortcuts for date conversions, as Siri cannot yet reliably collect conversion parameters by voice.</p>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.5.0/NepalKit-1.5.0.zip" length="3165375" type="application/octet-stream" sparkle:edSignature="nPQla+R3RvLMLg2tmEpZmydQz+X0l+d4DwYLbrX7O2S9evqJkLkn17wOSHjO/129U+T2qTLgu8UNPNaWkEj3Dw=="/>
+        </item>
+        <item>
             <title>1.4.1</title>
             <pubDate>Wed, 30 Sep 2026 21:18:42 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.4.1</link>
@@ -103,6 +124,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: s4jncx3xhoNP6Ssoa/ok9RjSSnD1VOtq0Varq0eD1hQMVfxr6bjW5Szivix1UUdt0Z/DzsWYTwFSmKyPzZxQBw==
-length: 8295
+edSignature: y4It9dLshD0b5WMi51u3kK2+s2TBfBEKZ0L4gA9XuRpjhiV6fCutlxB7B7ZuOYdIVZg5OhGcrOi1giIzrWzRDA==
+length: 9992
 -->
