@@ -99,7 +99,8 @@ struct SettingsView: View {
         case .general:
             GeneralSettingsView(
                 settings: settings,
-                loginItem: loginItem
+                loginItem: loginItem,
+                dataset: dataset
             )
         case .about:
             AboutSettingsView(
@@ -238,6 +239,7 @@ private struct SourceLink: View {
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
     var onReminder: (@MainActor (Bool) -> Void)?
     var automaticallyChecksForUpdates = true
+    var lastCheckDate: Date?
     func start() {}
     func checkForUpdates() {}
 }

@@ -61,6 +61,10 @@ nonisolated enum Strings {
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "Transliterated"
+    /// The Display section's live example: today's date rendered with whatever
+    /// the two pickers currently select. "Example" would undersell it — the row
+    /// shows the real rendering, not a made-up sample.
+    static let displayPreviewLabel = "Preview"
     static let nepalTimeLabel = "Nepal Time"
     static let localTimeLabel = "Local"
     static let todayLabel = "Today"
@@ -245,6 +249,15 @@ nonisolated enum Strings {
     /// contradiction came from the framework rather than from this app.
     static func updateStatusFailedReason(_ reason: String) -> String {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
+    }
+
+    /// "Up to date" is a claim; the check date is its evidence. A current
+    /// answer from a check two minutes ago is a different fact from one whose
+    /// age nobody can name, and the difference is what makes the status
+    /// trustworthy rather than merely reassuring. The date string is formatted
+    /// by the caller in the user's own locale and calendar.
+    static func updateLastChecked(_ date: String) -> String {
+        "Last checked: \(date)"
     }
 
     /// Refused rather than failed: the check was declined before it ran, because

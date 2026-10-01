@@ -39,8 +39,9 @@ enum Symbols {
     /// settings". Sliders say "adjustable preferences" and stay distinct.
     static let general = "slider.horizontal.3"
 
-    /// "Source repository" — the conventional source-control glyph, in the
-    /// Settings sidebar footer where there is no room for the words.
+    /// "Source repository" — the conventional source-control glyph, beside the
+    /// word "Source" in the identity strip along the bottom of the Settings
+    /// window. The word carries the meaning; the glyph marks it as a link.
     static let repository = "chevron.left.forwardslash.chevron.right"
 
     static let all: [String] = [

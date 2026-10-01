@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import Foundation
 import Testing
 @testable import NepalKit
 
@@ -13,6 +14,7 @@ final class FakeUpdateService: UpdateServicing {
     var automaticallyChecksForUpdates = true
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
     var onReminder: (@MainActor (Bool) -> Void)?
+    var lastCheckDate: Date?
 
     func start() { startCount += 1 }
     func checkForUpdates() { checkCount += 1 }
@@ -52,6 +54,20 @@ struct UpdateCheckModelTests {
         #expect(model.outcome == nil)
         #expect(model.statusText == Strings.updateStatusNotChecked)
         #expect(model.statusText != Strings.updateStatusUpToDate)
+    }
+
+    @Test func lastCheckDateIsReadThroughFromTheService() {
+        // Read-through, not a mirror: the framework owns the fact, and the
+        // model's job is only to put it where Settings can show it. A copy
+        // here could silently disagree with the framework's own answer.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+
+        #expect(model.lastCheckDate == nil)
+
+        let when = TestDates.utc(2026, 10, 1, 9, 0)
+        service.lastCheckDate = when
+        #expect(model.lastCheckDate == when)
     }
 
     @Test func aFailedCheckIsNotReportedAsUpToDate() {

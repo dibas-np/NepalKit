@@ -49,6 +49,12 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
         set { controller.updater.automaticallyChecksForUpdates = newValue }
     }
 
+    /// The framework tracks this itself, across scheduled and manual checks
+    /// alike; reading it through is the whole implementation.
+    var lastCheckDate: Date? {
+        controller.updater.lastUpdateCheckDate
+    }
+
     init(startingUpdater: Bool = true) {
         // Set before `super.init()`: this is an NSObject subclass, so every
         // stored property is initialized first. The closure that needs `self`

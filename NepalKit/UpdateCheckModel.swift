@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import Foundation
 import Observation
 
 /// Testable boundary over the update framework.
@@ -8,10 +9,10 @@ import Observation
 /// the model that owns the user-facing state is testable without the framework,
 /// a network, a published feed, or a signing key.
 ///
-/// Deliberately narrow. Only the two operations the Settings surface offers:
-/// "check now" and "automatically check". Whether an update is *available* is
-/// Sparkle's business, and its own user interface presents the result; this does
-/// not reimplement any of it.
+/// Deliberately narrow. Only what the Settings surface offers: "check now",
+/// "automatically check", and reading when the last check ran. Whether an
+/// update is *available* is Sparkle's business, and its own user interface
+/// presents the result; this does not reimplement any of it.
 ///
 /// `Outcome` is recorded by the service rather than inferred here, because
 /// Sparkle's own result reporting is the only trustworthy source for it. The
@@ -33,6 +34,14 @@ protocol UpdateServicing: AnyObject {
     /// this off; an updater that can only be triggered manually is opt-in and a
     /// user who never opens Settings never learns about updates.
     var automaticallyChecksForUpdates: Bool { get set }
+
+    /// When the framework last completed a check, or nil if it never has. Read
+    /// through rather than mirrored: the framework updates it for scheduled
+    /// checks too, and mirroring would mean a second value that can drift from
+    /// the only authoritative one. The Settings surface shows it so "up to
+    /// date" carries its evidence — a current answer whose age nobody can name
+    /// is reassurance, not information.
+    var lastCheckDate: Date? { get }
 
     /// Called as the framework reports the outcome of a check.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? { get set }
@@ -108,6 +117,12 @@ final class UpdateCheckModel {
         get { service.automaticallyChecksForUpdates }
         set { service.automaticallyChecksForUpdates = newValue }
     }
+
+    /// When the framework last completed a check, or nil before the first one.
+    /// A read-through, for the same reason the protocol property is: the
+    /// framework updates it on scheduled checks that produce no new outcome
+    /// here, and one authoritative value beats two that can disagree.
+    var lastCheckDate: Date? { service.lastCheckDate }
 
     /// What to show under the control. Deliberately says nothing before a check
     /// has happened, rather than implying the app is current — "not yet checked"

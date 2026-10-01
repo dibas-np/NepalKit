@@ -59,6 +59,16 @@ struct AboutSettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+
+                if let lastCheck = updates.lastCheckDate {
+                    // Sits under the status because the two facts read as one
+                    // sentence: current, as of when. Nil before the first
+                    // check, matching the status line's own silence — an
+                    // uncheckable claim is not stated here either.
+                    Text(Strings.updateLastChecked(lastCheck.formatted(date: .abbreviated, time: .shortened)))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
@@ -73,6 +83,7 @@ struct AboutSettingsView: View {
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
     var onReminder: (@MainActor (Bool) -> Void)?
     var automaticallyChecksForUpdates = true
+    var lastCheckDate: Date?
     func start() {}
     func checkForUpdates() {}
 }

@@ -5,16 +5,19 @@ import SwiftUI
 
 /// The "General" tab: what the app shows, and whether it starts at login.
 ///
-/// Split out of `SettingsView` because that type is now the window — a split view
-/// with a sidebar and a tab switcher — and these two sections are one destination
-/// among three. Keeping them in the window's own type would mean a file holding a
-/// layout and two unrelated forms.
+/// Split out of `SettingsView` because that type is now the window — a system
+/// `TabView` sidebar over three destinations — and these sections are one
+/// destination among them. Keeping them in the window's own type would mean a
+/// file holding a layout and unrelated forms.
 ///
 /// Software update is not here. It moved to the About tab, beside the version it
 /// updates, so the updater is no longer split across two destinations.
 struct GeneralSettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
+    /// The same dataset the rest of the app converts with (ADR-0010), so the
+    /// Display section's live preview renders the calendar the app actually uses.
+    let dataset: CalendarDataset
 
     var body: some View {
         Form {
@@ -40,6 +43,19 @@ struct GeneralSettingsView: View {
                     Text(Strings.monthsTransliterated).tag(MonthNameStyle.transliterated)
                 }
                 .pickerStyle(.segmented)
+
+                if let preview = DisplayPreview.todayText(now: .now, in: dataset, settings: settings.settings) {
+                    // The example is the section's payoff: both pickers above
+                    // change every date the app renders, and this row is one of
+                    // those dates, re-rendered as the pickers flip so the choice
+                    // lands where it is made rather than only in the menu bar.
+                    // Re-reads `settings.settings` in `body`, so the preview is
+                    // live without any explicit wiring.
+                    LabeledContent(Strings.displayPreviewLabel) {
+                        Text(preview)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
             }
 
             Section(Strings.startupSection) {
@@ -112,7 +128,8 @@ private final class PreviewLoginService: LoginItemServicing {
 #Preview("General tab") {
     GeneralSettingsView(
         settings: .preview,
-        loginItem: LoginItemModel(service: PreviewLoginService())
+        loginItem: LoginItemModel(service: PreviewLoginService()),
+        dataset: AppData.dataset
     )
     .frame(width: 460)
 }
