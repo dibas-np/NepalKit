@@ -59,7 +59,8 @@ unregister_launchservices() {
     for bundle in "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app" "$MNT/$APP.app" \
                   "$WORK/${APP}-dist-verify/$APP.app"; do
         [[ -e "$bundle" ]] || continue
-        "${0:A:h}/unregister-launchservices.sh" "$bundle" || unregister_result=1
+        # In zsh functions, $0 is the function name; ROOT preserves the script location.
+        "$ROOT/scripts/unregister-launchservices.sh" "$bundle" || unregister_result=1
     done
     return "$unregister_result"
 }

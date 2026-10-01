@@ -223,6 +223,56 @@ class PackageReleaseWiring(unittest.TestCase):
         )
         self.assertRegex(body, r'return "\$\{?unregister_result')
 
+    def test_the_helper_is_resolved_from_root_in_an_unrelated_directory(self) -> None:
+        harness = (
+            "set -euo pipefail\n"
+            "unregister_launchservices() {\n"
+            + self.function_body()
+            + "}\nunregister_launchservices\n"
+        )
+        with tempfile.TemporaryDirectory(prefix="nk release wiring ") as directory:
+            workspace = Path(directory)
+            root = workspace / "fake repository"
+            scripts = root / "scripts"
+            scripts.mkdir(parents=True)
+            stub = scripts / "unregister-launchservices.sh"
+            stub.write_text(
+                '#!/bin/zsh\n'
+                'printf "%s\\n" "$1" >> "$NK_TEST_LOG"\n'
+                'exit "$NK_TEST_EXIT"\n'
+            )
+            stub.chmod(0o755)
+            bundle = workspace / "Built app.app"
+            bundle.mkdir()
+            unrelated = workspace / "unrelated directory"
+            unrelated.mkdir()
+            for exit_code in (0, 1):
+                with self.subTest(exit_code=exit_code):
+                    log = workspace / f"invocation {exit_code}.log"
+                    result = subprocess.run(
+                        ["/bin/zsh", "-c", harness],
+                        cwd=unrelated,
+                        env={
+                            "ROOT": str(root),
+                            "APP": "NepalKit",
+                            "APP_PATH": str(bundle),
+                            "DMG_LAYOUT_MOUNT": str(workspace / "missing layout"),
+                            "MNT": str(workspace / "missing mount"),
+                            "WORK": str(workspace / "missing work"),
+                            "NK_TEST_LOG": str(log),
+                            "NK_TEST_EXIT": str(exit_code),
+                        },
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertEqual(
+                        result.returncode, exit_code, result.stdout + result.stderr
+                    )
+                    self.assertTrue(
+                        log.exists(), "the helper must run even when it reports failure"
+                    )
+                    self.assertEqual(log.read_text().splitlines(), [str(bundle)])
+
     def test_the_trap_guards_while_the_final_gate_does_not(self) -> None:
         source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
         self.assertIn(
