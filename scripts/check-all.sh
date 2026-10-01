@@ -50,7 +50,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=8
+total=9
 ran=0
 summary=""
 current=""
@@ -114,6 +114,10 @@ gate "core tests (NepalKitCore)" bash -c 'cd "$1" && swift test' _ "$repo_root/N
 gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
 gate "dataset parser suite" python3 "$repo_root/scripts/test_dataset_parsers.py"
 gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
+# Runs before the appcast suite only because it is the one gate that touches
+# the machine rather than the repository: it registers and unregisters real
+# throwaway bundles in this session's LaunchServices database.
+gate "LaunchServices unregistration suite" python3 "$repo_root/scripts/test_unregister_launchservices.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
 # After the build gate, so the built product exists and the check can compare
 # the floor the app actually shipped against the ones only declared. This is

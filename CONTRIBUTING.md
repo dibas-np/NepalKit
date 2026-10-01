@@ -80,7 +80,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these eight, in this order:
+It runs these nine, in this order:
 
 ```sh
 # 1. compile the app, because no other gate here does
@@ -88,13 +88,23 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     CODE_SIGNING_ALLOWED=NO build
 ./scripts/swiftlint.sh lint --strict       # 2. all maintained Swift files
 
-cd NepalKitCore && swift test               # 3. the calendar: 62 tests
-./scripts/run-app-tests.sh                  # 4. the app: 136 tests
+cd NepalKitCore && swift test               # 3. the calendar: 64 tests
+./scripts/run-app-tests.sh                  # 4. the app: 162 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_changelog.py    # 6. the changelog generator
-python3 scripts/test_verify_appcast.py      # 7. the appcast verifier
-python3 scripts/verify-deployment-floor.py  # 8. the floor is one number everywhere
+python3 scripts/test_unregister_launchservices.py  # 7. the release pipeline's LaunchServices hygiene
+python3 scripts/test_verify_appcast.py      # 8. the appcast verifier
+python3 scripts/verify-deployment-floor.py  # 9. the floor is one number everywhere
 ```
+
+Gate 7 is the only one that touches the machine rather than the repository: it
+registers and then unregisters real throwaway app bundles in this session's
+LaunchServices database. It is there because `scripts/unregister-launchservices.sh`
+guards a failure that is invisible from the outside — a bundle registered under a
+temp path that is later deleted cannot be unregistered, so a release pipeline
+that cleans up without unregistering first leaves one stale entry per run
+forever. Ninety-plus of them for this bundle id is what it looked like in
+practice.
 
 The first lint run downloads SwiftLint 0.65.1 into the ignored `.build/tools`
 cache after checking its published checksum. For compiler-backed unused-import
@@ -104,7 +114,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those seven are the direct consequence of gates that once reported green
+Two of those nine are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 

@@ -41,6 +41,29 @@ MNT=/Volumes/${APP}-release-check
 # script, so reading its Info.plist now would silently yield "0" in the name.
 DIST_ZIP=
 
+# Every app bundle this run creates registers itself with LaunchServices, keyed
+# by the temp path it was built at. `lsregister -u` on a path that no longer
+# exists fails with -10814 and leaves the registration behind, so deleting the
+# workspace without unregistering first seeds one permanent stale entry per run.
+# The dev machine accumulated 90+ for this bundle id, which made bundle-id
+# resolution ambiguous for system services — including the App Shortcuts
+# registration the Siri intents depend on.
+#
+# Order in cleanup() is load-bearing: unregister while the bundles still exist,
+# then unmount, then delete. Moving this line below `rm -rf "$WORK"` would make
+# it a no-op that still reported success, which is the failure mode this is here
+# to prevent. The export directory is a subdirectory of $WORK, and the staged
+# copy on the layout volume is still mounted, so both are live here.
+unregister_launchservices() {
+    local bundle
+    for bundle in "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app" "$MNT/$APP.app" \
+                  "$WORK/${APP}-dist-verify/$APP.app"; do
+        [[ -e "$bundle" ]] || continue
+        "${0:A:h}/unregister-launchservices.sh" "$bundle" || true
+    done
+    return 0
+}
+
 # Everything this script mounts is unmounted on the way out, including when it
 # fails partway and including when it is signalled. EXIT on its own is not that
 # guarantee: it does not fire for SIGHUP or SIGTERM, and both of those arrive
@@ -48,7 +71,12 @@ DIST_ZIP=
 # during the Finder layout scripting. A read-write image left attached is not
 # merely untidy: it is EBUSY, and the next run's conversion then fails with a
 # message that never mentions attachments.
+#
+# cleanup returns 0 unconditionally, so `|| true` on the unregistration is not a
+# licence for that: a release that seeded a stale registration has still failed
+# its own contract, and the function's output is the only report it makes.
 cleanup() {
+    unregister_launchservices
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
     [[ -n "$DMG_LAYOUT_DEVICE" ]] && diskutil eject "$DMG_LAYOUT_DEVICE" >/dev/null 2>&1
@@ -296,6 +324,14 @@ ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ZIP"
 # the artifact that actually has to be Gatekeeper-accepting.
 unzip -qo "$DIST_ZIP" -d "$WORK/${APP}-dist-verify"
 spctl -a -t execute -vv "$WORK/${APP}-dist-verify/$APP.app"
+# Unregistered here rather than left to the cleanup trap: the extraction is
+# deleted on the next line, and an unregistered-then-deleted bundle is exactly
+# the stale entry this whole mechanism exists to avoid. The trap still covers
+# it as a fallback for the runs that fail between here and the end. This call
+# is fatal (unlike the trap's): it runs mid-build with set -e, nothing has been
+# deleted yet, and no later step re-checks this bundle — a swallowed failure
+# here would strand the entry with no report after the run.
+"${0:A:h}/unregister-launchservices.sh" "$WORK/${APP}-dist-verify/$APP.app"
 rm -rf "$WORK/${APP}-dist-verify"
 
 # Build and verify the appcast for this version. Signing needs the keychain, so
@@ -323,7 +359,24 @@ python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
 
+# The last thing this run does to the machine, and the only one the operator
+# would not otherwise notice: nothing from $WORK should be left registered.
+# Checked after the export is copied out because that is the point at which
+# every bundle this run built has existed at least once — the alternative,
+# checking inside the trap, races the `rm -rf` on the very next line.
+#
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
 echo "Sparkle enclosure (stapled, zipped): $OUT_DIR/$(basename "$DIST_ZIP")"
 echo "Signed appcast: $OUT_DIR/appcast.xml"
 echo "Changelog updated: $ROOT/CHANGELOG.md"
+
+# Last gate, after the paths are printed: a failure here must not hide the
+# artifacts (they are complete, verified and named above), but it must also
+# not report success — a release that seeded a stale registration failed its
+# own contract. The fix is a manual re-run of the script against the printed
+# paths, all of which still exist.
+unregister_launchservices || {
+    echo "release hygiene failed: a run bundle is still registered with LaunchServices" >&2
+    echo "re-run scripts/unregister-launchservices.sh on the bundles above, then publish" >&2
+    exit 1
+}
