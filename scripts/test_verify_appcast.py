@@ -1059,7 +1059,7 @@ class FeedHistory(unittest.TestCase):
             )
             generator.chmod(0o755)
             result = subprocess.run(
-                ["/bin/zsh", "-c", command.group()],
+                ["/bin/sh", "-c", command.group()],
                 env={**os.environ, "GENERATE_APPCAST": str(generator), "ARCHIVES_DIR": str(staging),
                      "URL_PREFIX": "https://example.com/v6/", "RELEASE_LINK": "https://example.com/v6"},
                 capture_output=True, text=True,
