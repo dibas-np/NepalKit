@@ -4,6 +4,19 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.5.0 — unreleased
+
+### Siri and Shortcuts can now ask NepalKit for dates.
+
+Siri answers "What is today's Nepali date with NepalKit" from NepalKit's own calendar data, so the answer is a named weekday and an exact Bikram Sambat date rather than a rough guess from a web search.
+
+- Two conversions are available as Shortcuts actions, in both directions: a Gregorian date to Bikram Sambat, and a Bikram Sambat date to Gregorian. Each takes the date, answers in a full sentence, and hands back the fields — year, month, day, weekday — so a shortcut can use them rather than re-parsing the reply.
+- Spoken answers follow the app's existing spoken-date convention: Latin digits and the month-name language you have chosen, while the values Shortcuts displays use your real display settings, Devanagari digits included.
+- Conversions outside the bundled calendar data say so plainly, and an impossible date such as 31 Kartik is corrected with the month's real length rather than refused.
+- The phrases are listed under Settings, General, Siri & Shortcuts.
+
+Conversions are driven from Shortcuts and automations rather than by voice today: Siri runs the date-of-today query reliably, but cannot yet fill the parameters of a conversion from speech. The Settings section says so, rather than implying both work the same way.
+
 ## 1.4.1 — 2026-09-30
 
 ### The update channel is signed end to end.

@@ -154,6 +154,70 @@ nonisolated enum Strings {
     static let menuBarPreviewCaption = "The menu bar shows"
     static let displaySection = "Display"
     static let startupSection = "Startup"
+
+    // MARK: - Siri & Shortcuts
+
+    // Kept on one line each: `SpokenDateTests` parses this file and treats a
+    // declaration whose value it cannot read off the line as unclassified,
+    // which fails the sweep rather than passing unchecked.
+    static let siriShortcutsSection = "Siri & Shortcuts"
+    /// The load-bearing sentence, verbatim from the spec: it states what
+    /// actually works rather than what the feature set suggests. Voice
+    /// parameter-filling for the conversions is an OS behaviour the app does
+    /// not control, and what the same App Intents expose to Shortcuts is a
+    /// different capability — so a section that implied conversational
+    /// conversions work by voice would be advertising something that answers
+    /// "late June or early July" from a web search.
+    static let siriShortcutsSummary = "Ask Siri for today's Nepali date; run the conversions from Shortcuts."
+    /// What each capability is, in the user's terms. Kept beside the phrases
+    /// they introduce rather than in the view, so a phrase and the sentence
+    /// naming it are read together and one cannot move without the other.
+    static let siriTodayCapability = "Today's date in Bikram Sambat"
+    static let siriConvertToBSCapability = "Convert a Gregorian date to Bikram Sambat"
+    static let siriConvertToGregorianCapability = "Convert a Bikram Sambat date to Gregorian"
+
+    /// One capability and the phrase that invokes it.
+    ///
+    /// A type rather than three rows written out inline, because each row is a
+    /// title, a phrase and an announcement: three strings that must agree, and
+    /// a list is the only place that agreement can be stated once.
+    struct Capability: Identifiable {
+        /// What the capability does, in the product's own vocabulary.
+        let title: String
+        /// The registered phrase, with `\(.applicationName)` written out as the
+        /// app's name — the form a person would say or type.
+        let phrase: String
+        /// One string, because the title and the phrase are announced together
+        /// and read in sequence; announcing the bare phrase alone would leave a
+        /// screen-reader user with no idea what it does.
+        var spokenDescription: String { "\(title). \(phrase)" }
+        var id: String { phrase }
+    }
+
+    /// The three capabilities this build registers, in the order they appear in
+    /// Settings.
+    ///
+    /// Computed rather than stored, and that is a deliberate answer to the
+    /// spoken-channel sweep in `SpokenDateTests`, which parses this file and
+    /// fails on any `static let` whose value it cannot read off one line. A
+    /// stored array of `Capability` would be exactly that: an unreadable
+    /// constant, needing an exemption that would then be a hole. Composed from
+    /// the six string constants above — every one of which the sweep reads and
+    /// checks on its own — it holds no literal of its own to escape the check.
+    static var siriShortcutCapabilities: [Capability] {
+        [
+            Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
+        Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
+            Capability(title: siriConvertToGregorianCapability, phrase: siriConvertToGregorianPhrase),
+        ]
+    }
+
+    /// The phrase templates as they are registered, with the application-name
+    /// token spelled out. The token is the framework's, not this app's: it
+    /// resolves to whatever the app is called, which here is `appName`.
+    static let siriTodayPhrase = "What is today's Nepali date with \(appName)"
+    static let siriConvertToBSPhrase = "Convert a date to Bikram Sambat with \(appName)"
+    static let siriConvertToGregorianPhrase = "Convert a Bikram Sambat date to Gregorian with \(appName)"
     static let updatesSection = "Software Update"
     static let updateAutomaticallyLabel = "Check automatically"
     static let checkForUpdatesLabel = "Check for Updates…"

@@ -63,6 +63,34 @@ struct GeneralSettingsView: View {
                 }
             }
 
+            Section(Strings.siriShortcutsSection) {
+                // The sentence comes first and states what works, not what the
+                // feature set suggests. Voice parameter-filling for the two
+                // conversions is an OS behaviour — macOS 26 routes the
+                // invocation and then cannot fill the parameters from speech —
+                // while the same App Intents are fully usable from Shortcuts. A
+                // section that implied the voice path worked would send people
+                // to an answer of "late June or early July" from a web search.
+                Text(Strings.siriShortcutsSummary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                ForEach(Strings.siriShortcutCapabilities) { capability in
+                    VStack(alignment: .leading) {
+                        Text(capability.title)
+                            .font(.callout)
+                        Text(capability.phrase)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            // Phrases are spoken, so they are taught as text
+                            // rather than run: `SiriTipView` does not exist on
+                            // macOS. Read as one string with the capability
+                            // named, because a bare phrase announced on its own
+                            // does not say what it does.
+                            .accessibilityLabel(capability.spokenDescription)
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
     }
