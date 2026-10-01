@@ -55,13 +55,13 @@ DIST_ZIP=
 # to prevent. The export directory is a subdirectory of $WORK, and the staged
 # copy on the layout volume is still mounted, so both are live here.
 unregister_launchservices() {
-    local bundle
+    local bundle unregister_result=0
     for bundle in "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app" "$MNT/$APP.app" \
                   "$WORK/${APP}-dist-verify/$APP.app"; do
         [[ -e "$bundle" ]] || continue
-        "${0:A:h}/unregister-launchservices.sh" "$bundle" || true
+        "${0:A:h}/unregister-launchservices.sh" "$bundle" || unregister_result=1
     done
-    return 0
+    return "$unregister_result"
 }
 
 # Everything this script mounts is unmounted on the way out, including when it
@@ -72,11 +72,14 @@ unregister_launchservices() {
 # merely untidy: it is EBUSY, and the next run's conversion then fails with a
 # message that never mentions attachments.
 #
-# cleanup returns 0 unconditionally, so `|| true` on the unregistration is not a
-# licence for that: a release that seeded a stale registration has still failed
-# its own contract, and the function's output is the only report it makes.
+# cleanup returns 0 unconditionally so the EXIT/HUP/INT/TERM traps always run
+# to completion: a gate that aborted the trap would skip an unmount, and the
+# next run would fail on the attached image with EBUSY. So the unregistration
+# is called with `|| true` here and its stderr is the only report on this
+# path. The same function is the final gate at the end of a successful run,
+# called bare, where its status is the report and a failure exits 1.
 cleanup() {
-    unregister_launchservices
+    unregister_launchservices || true
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
     [[ -n "$DMG_LAYOUT_DEVICE" ]] && diskutil eject "$DMG_LAYOUT_DEVICE" >/dev/null 2>&1

@@ -18,6 +18,7 @@ require that the script *report* it rather than pass.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 import time
@@ -189,6 +190,49 @@ class UnregisterLaunchServices(unittest.TestCase):
             [LSREGISTER, "-dump"], capture_output=True, text=True
         ).stdout
         return bundle_id in dump
+
+
+class PackageReleaseWiring(unittest.TestCase):
+    """The release script's unregistration gate must be able to fail.
+
+    package-release.sh wraps unregistration in a function so the EXIT trap
+    can never abort the unmounts beneath it. That same function is the last
+    gate of a successful run, and there a swallowed failure is a false green:
+    a stale registration — the exact thing unregister-launchservices.sh
+    exists to prevent — would ship with the release reporting success.
+    """
+
+    def function_body(self) -> str:
+        source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
+        match = re.search(
+            r"^unregister_launchservices\(\) \{\n(.*?)^\}", source, re.S | re.M
+        )
+        self.assertIsNotNone(
+            match, "unregister_launchservices() not found in package-release.sh"
+        )
+        return match.group(1)
+
+    def test_the_function_propagates_failure(self) -> None:
+        body = self.function_body()
+        self.assertNotIn(
+            "|| true", body,
+            "the release gate's unregistration swallows the failure it reports",
+        )
+        self.assertNotIn(
+            "return 0", body, "a constant success return is the dead gate"
+        )
+        self.assertRegex(body, r'return "\$\{?unregister_result')
+
+    def test_the_trap_guards_while_the_final_gate_does_not(self) -> None:
+        source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
+        self.assertIn(
+            "unregister_launchservices || true", source,
+            "cleanup must guard the call, or a failed gate skips the unmounts",
+        )
+        self.assertIn(
+            "unregister_launchservices || {", source,
+            "the final gate must call the function bare, or it cannot fail",
+        )
 
 
 if __name__ == "__main__":
