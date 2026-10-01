@@ -57,8 +57,11 @@ struct BikramSambatToGregorianIntent: AppIntent {
     /// The full boundary — both calendars — because neither side of an
     /// out-of-range Bikram Sambat date is convertible. Dataset numbers only.
     static func outOfRangeDialog(in dataset: CalendarDataset) -> LocalizedStringResource {
+        guard let start = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
+            preconditionFailure("Calendar dataset must convert its first supported day")
+        }
         let end = dataset.gregorianEnd ?? dataset.anchorAD
-        return "NepalKit's data covers Bikram Sambat \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — \(IntentAnswers.spoken(dataset.anchorAD)) to \(IntentAnswers.spoken(end)). That date is outside it."
+        return "NepalKit's data covers Bikram Sambat \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — \(IntentAnswers.spoken(start)) to \(IntentAnswers.spoken(end)). That date is outside it."
     }
 
     /// The spoken answer for a successful conversion — extracted beside the

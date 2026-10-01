@@ -111,7 +111,11 @@ if [ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]; then
     export NEPAKIT_BUILT_PLIST
 fi
 
-gate "SwiftLint" "$repo_root/scripts/swiftlint.sh" lint --strict
+gate "SwiftLint" bash -c '
+    set -euo pipefail
+    python3 "$1/scripts/test_swiftlint.py"
+    "$1/scripts/swiftlint.sh" lint --strict
+' _ "$repo_root"
 gate "core tests (NepalKitCore)" bash -c 'cd "$1" && swift test' _ "$repo_root/NepalKitCore"
 gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
 gate "dataset parser suite" python3 "$repo_root/scripts/test_dataset_parsers.py"

@@ -78,7 +78,7 @@ struct ConversionIntentTests {
 
         let beforeDialog = String(localized: GregorianToBikramSambatIntent.outOfRangeDialog(before, in: dataset))
         #expect(beforeDialog.contains("1975") && beforeDialog.contains("2084"))
-        #expect(beforeDialog.contains("back to"))
+        #expect(beforeDialog.contains("back to 13 April 1918"))
     }
 
     @Test("A Gregorian date naming no civil day gets the month-length statement")
@@ -172,6 +172,7 @@ struct ConversionIntentTests {
             #expect(text.contains("1975") && text.contains("2084"))
             #expect(!text.contains("2,084"))
             #expect(text.contains("That date is outside it."))
+            #expect(text.contains("13 April 1918 to 12 April 2028"))
         }
     }
 

@@ -24,9 +24,9 @@ if [ ! -x "$tool" ]; then
         exit 1
     fi
     unzip -q "$archive" -d "$temporary_dir"
-    bundled_tool="$(find "$temporary_dir" -type f -name swiftlint -print -quit)"
-    if [ -z "$bundled_tool" ]; then
-        echo "SwiftLint $version archive did not contain its executable" >&2
+    bundled_tool="$temporary_dir/SwiftLintBinary.artifactbundle/macos/swiftlint"
+    if [ ! -f "$bundled_tool" ]; then
+        echo "SwiftLint $version archive did not contain its macOS executable" >&2
         exit 1
     fi
     mkdir -p "$tool_dir"

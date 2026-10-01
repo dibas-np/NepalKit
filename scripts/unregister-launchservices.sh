@@ -45,10 +45,19 @@ fi
 # nested inside it (Sparkle's Updater.app lives in Contents/Frameworks), so a
 # surviving match anywhere beneath the bundle counts.
 registered_paths_under() {
-    "$LSREGISTER" -dump 2>/dev/null \
-        | grep -E '^[[:space:]]*path:[[:space:]]' \
-        | sed -E 's/^[[:space:]]*path:[[:space:]]+//; s/ \(0x[0-9a-fA-F]+\)$//' \
-        | grep -F -- "$1" || true
+    local dump
+    dump=$("$LSREGISTER" -dump) || {
+        echo "error: could not inspect the LaunchServices database" >&2
+        return 1
+    }
+    printf '%s\n' "$dump" | NK_LS_BUNDLE_PATH="$1" awk '
+        BEGIN { bundle = ENVIRON["NK_LS_BUNDLE_PATH"] }
+        /^[[:space:]]*path:[[:space:]]/ {
+            sub(/^[[:space:]]*path:[[:space:]]+/, "")
+            sub(/ \(0x[0-9a-fA-F]+\)$/, "")
+            if ($0 == bundle || index($0, bundle "/") == 1) print
+        }
+    '
 }
 
 declare -a still_registered=()
@@ -76,7 +85,11 @@ for bundle in "$@"; do
     # verification passing is the whole point of this script, so it has to
     # query the path the database actually holds.
     resolved=$(cd "$bundle" 2>/dev/null && pwd -P) || resolved="$bundle"
-    remaining=$(registered_paths_under "$resolved")
+    if ! remaining=$(registered_paths_under "$resolved"); then
+        still_registered+=("$bundle")
+        echo "error: could not verify unregistration of $bundle" >&2
+        continue
+    fi
     if [ -n "$remaining" ]; then
         still_registered+=("$bundle")
         echo "error: still registered after unregistering:" >&2

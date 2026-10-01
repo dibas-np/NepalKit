@@ -87,7 +87,8 @@ It runs these nine, in this order:
 # 1. compile and link the app and Xcode test bundle
 xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
-./scripts/swiftlint.sh lint --strict       # 2. all maintained Swift files
+python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swift files
+./scripts/swiftlint.sh lint --strict
 
 cd NepalKitCore && swift test               # 3. the calendar: 65 tests
 ./scripts/run-app-tests.sh                  # 4. the app: 167 tests

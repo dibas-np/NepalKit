@@ -84,7 +84,10 @@ struct GregorianToBikramSambatIntent: AppIntent {
         if let end = dataset.gregorianEnd, ad > end {
             return "NepalKit's Bikram Sambat data covers \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — up to \(IntentAnswers.spoken(end)). That date is outside it."
         }
-        return "NepalKit's Bikram Sambat data covers \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — back to \(IntentAnswers.spoken(dataset.anchorAD)). That date is outside it."
+        guard let start = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
+            preconditionFailure("Calendar dataset must convert its first supported day")
+        }
+        return "NepalKit's Bikram Sambat data covers \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — back to \(IntentAnswers.spoken(start)). That date is outside it."
     }
 
     /// The spoken answer for a successful conversion — extracted beside the

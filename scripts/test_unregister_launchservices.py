@@ -19,12 +19,14 @@ require that the script *report* it rather than pass.
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 import tempfile
 import time
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parent / "unregister-launchservices.sh"
 LSREGISTER = (
@@ -60,7 +62,7 @@ def registered(path: str) -> bool:
     """
     candidates = {path, str(Path(path).resolve())}
     dump = subprocess.run(
-        [LSREGISTER, "-dump"], capture_output=True, text=True
+        [LSREGISTER, "-dump"], capture_output=True, text=True, check=True
     ).stdout
     for line in dump.splitlines():
         stripped = line.strip()
@@ -92,7 +94,9 @@ class UnregisterLaunchServices(unittest.TestCase):
                     capture_output=True,
                     text=True,
                 )
-        subprocess.run(["rm", "-rf", str(self.workspace)], check=False)
+        for bundle_id in self._bundle_ids:
+            self.assertFalse(self._bundle_id_registered(bundle_id), "fixture registration survived cleanup")
+        shutil.rmtree(self.workspace)
 
     def make_bundle(self, name: str, *, register: bool = True) -> Path:
         bundle = self.workspace / name
@@ -141,7 +145,10 @@ class UnregisterLaunchServices(unittest.TestCase):
         # remove its entry, and the only honest answer is failure.
         bundle = self.make_bundle("Gone.app")
         bundle_id = self._bundle_ids[0]
-        subprocess.run(["rm", "-rf", str(bundle)], check=True)
+        backup = self.workspace / "deleted-bundle-backup"
+        shutil.copytree(bundle, backup)
+        self.addCleanup(shutil.copytree, backup, bundle, dirs_exist_ok=True)
+        shutil.rmtree(bundle)
 
         result = run(str(bundle))
 
@@ -187,7 +194,7 @@ class UnregisterLaunchServices(unittest.TestCase):
 
     def _bundle_id_registered(self, bundle_id: str) -> bool:
         dump = subprocess.run(
-            [LSREGISTER, "-dump"], capture_output=True, text=True
+            [LSREGISTER, "-dump"], capture_output=True, text=True, check=True
         ).stdout
         return bundle_id in dump
 
@@ -202,13 +209,13 @@ class PackageReleaseWiring(unittest.TestCase):
     exists to prevent — would ship with the release reporting success.
     """
 
-    def function_body(self) -> str:
+    def function_body(self, name: str = "unregister_launchservices") -> str:
         source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
         match = re.search(
-            r"^unregister_launchservices\(\) \{\n(.*?)^\}", source, re.S | re.M
+            rf"^{name}\(\) \{{\n(.*?)^\}}", source, re.S | re.M
         )
         self.assertIsNotNone(
-            match, "unregister_launchservices() not found in package-release.sh"
+            match, f"{name}() not found in package-release.sh"
         )
         return match.group(1)
 
@@ -273,16 +280,115 @@ class PackageReleaseWiring(unittest.TestCase):
                     )
                     self.assertEqual(log.read_text().splitlines(), [str(bundle)])
 
-    def test_the_trap_guards_while_the_final_gate_does_not(self) -> None:
-        source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
-        self.assertIn(
-            "unregister_launchservices || true", source,
-            "cleanup must guard the call, or a failed gate skips the unmounts",
+    def test_cleanup_retains_workspace_after_failure_and_repeated_traps(self) -> None:
+        body = self.function_body("cleanup")
+        for fail_first in (False, True):
+            with self.subTest(fail_first=fail_first), tempfile.TemporaryDirectory() as directory:
+                workspace = Path(directory) / "release workspace"
+                workspace.mkdir()
+                log = Path(directory) / "unmounts.log"
+                harness = (
+                    "set -euo pipefail\n"
+                    "LS_CLEANUP_FAILED=0\nAPP_PATH=/test/export/NepalKit.app\n"
+                    "calls=0\n"
+                    "unregister_launchservices() { (( calls += 1 )); "
+                    + ("[[ $calls -gt 1 ]];" if fail_first else "return 0;")
+                    + " }\n"
+                    'diskutil() { printf "%s\\n" "$*" >> "$NK_TEST_LOG"; }\n'
+                    "cleanup() {\n" + body + "}\ncleanup\ncleanup\n"
+                )
+                result = subprocess.run(
+                    ["/bin/zsh", "-c", harness],
+                    env={"WORK": str(workspace), "MNT": "/test/check", "DMG_LAYOUT_MOUNT": "/test/layout",
+                         "DMG_LAYOUT_DEVICE": "/dev/test", "NK_TEST_LOG": str(log)},
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(workspace.exists(), fail_first)
+                self.assertEqual(len(log.read_text().splitlines()), 6)
+                if fail_first:
+                    self.assertIn(str(workspace), result.stderr)
+
+    def test_final_gate_fails_and_retains_workspace_even_if_cleanup_retry_succeeds(self) -> None:
+        source = (SCRIPT.parent / "package-release.sh").read_text()
+        gate = source[source.rindex("unregister_launchservices || {"):]
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory) / "release workspace"
+            workspace.mkdir()
+            harness = (
+                "set -euo pipefail\nLS_CLEANUP_FAILED=0\ncalls=0\n"
+                "unregister_launchservices() { (( calls += 1 )); [[ $calls -gt 1 ]]; }\n"
+                "diskutil() { return 0; }\n"
+                "cleanup() {\n" + self.function_body("cleanup") + "}\n"
+                "trap cleanup EXIT\n" + gate
+            )
+            result = subprocess.run(
+                ["/bin/zsh", "-c", harness],
+                env={"WORK": str(workspace), "APP_PATH": str(workspace / "NepalKit.app"),
+                     "MNT": "/test/check", "DMG_LAYOUT_MOUNT": "/test/layout", "DMG_LAYOUT_DEVICE": ""},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertTrue(workspace.exists(), "the final gate's failed registration must remain recoverable")
+            self.assertIn("release hygiene failed", result.stderr)
+            self.assertIn(str(workspace / "NepalKit.app"), result.stderr)
+
+    def test_layout_unregisters_before_unmounting(self) -> None:
+        source = (SCRIPT.parent / "package-release.sh").read_text()
+        start = source.index("# Unmount, then eject.")
+        end = source.index('diskutil eject "$DMG_LAYOUT_DEVICE"', start)
+        commands = source[start:end]
+        result = subprocess.run(
+            ["/bin/zsh", "-c", "set -euo pipefail\n"
+             "unregister_launchservices() { echo unregister; }\n"
+             "diskutil() { echo unmount; }\n"
+             "DMG_LAYOUT_MOUNT=/test/layout\n" + commands],
+            capture_output=True, text=True,
         )
-        self.assertIn(
-            "unregister_launchservices || {", source,
-            "the final gate must call the function bare, or it cannot fail",
-        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ["unregister", "unmount"])
+
+
+class RegistryInspection(unittest.TestCase):
+    def test_python_inspections_reject_a_failed_dump(self) -> None:
+        def failed_dump(*args, **kwargs):
+            result = subprocess.CompletedProcess(args[0], 17, "", "dump failed")
+            if kwargs.get("check"):
+                result.check_returncode()
+            return result
+
+        with patch("subprocess.run", side_effect=failed_dump):
+            for inspect in (lambda: registered("/test/NepalKit.app"),
+                            lambda: UnregisterLaunchServices()._bundle_id_registered("probe")):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    inspect()
+
+    def test_shell_inspection_failure_and_path_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            bundle = workspace / "NepalKit.app"
+            bundle.mkdir()
+            stub = workspace / "lsregister"
+            helper = workspace / "unregister.sh"
+            helper.write_text(SCRIPT.read_text().replace(f"LSREGISTER={LSREGISTER}", f'LSREGISTER="{stub}"'))
+            resolved = str(bundle.resolve())
+            cases = [
+                (17, "", 1),
+                (0, f"path: {resolved}.backup (0x123)\n", 0),
+                (0, f"path: {resolved} (0x123)\n", 1),
+                (0, f"path: {resolved}/Contents/Updater.app (0x123)\n", 1),
+            ]
+            for dump_exit, dump, expected_exit in cases:
+                with self.subTest(dump_exit=dump_exit, dump=dump):
+                    stub.write_text('#!/bin/bash\nif [ "$1" = -dump ]; then\n'
+                                    + "cat <<'DUMP'\n" + dump + "DUMP\n"
+                                    + f"exit {dump_exit}\nfi\nexit 0\n")
+                    stub.chmod(0o755)
+                    result = subprocess.run(["/bin/bash", str(helper), str(bundle)], capture_output=True, text=True)
+                    self.assertEqual(result.returncode, expected_exit, result.stdout + result.stderr)
+                    if dump_exit:
+                        self.assertNotIn("unregistered:", result.stdout)
+                        self.assertIn("inspect", result.stderr)
 
 
 if __name__ == "__main__":

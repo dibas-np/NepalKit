@@ -40,6 +40,7 @@ MNT=/Volumes/${APP}-release-check
 # Computed at use, not here: the export has not run yet at this point in the
 # script, so reading its Info.plist now would silently yield "0" in the name.
 DIST_ZIP=
+LS_CLEANUP_FAILED=0
 
 # Every app bundle this run creates registers itself with LaunchServices, keyed
 # by the temp path it was built at. `lsregister -u` on a path that no longer
@@ -76,15 +77,22 @@ unregister_launchservices() {
 # cleanup returns 0 unconditionally so the EXIT/HUP/INT/TERM traps always run
 # to completion: a gate that aborted the trap would skip an unmount, and the
 # next run would fail on the attached image with EBUSY. So the unregistration
-# is called with `|| true` here and its stderr is the only report on this
-# path. The same function is the final gate at the end of a successful run,
-# called bare, where its status is the report and a failure exits 1.
+# failure is recorded while the unmounts continue. Once cleanup fails, its
+# workspace survives repeated signal/EXIT traps so the original bundle or disk
+# image remains available for recovery. The final gate still exits non-zero.
 cleanup() {
-    unregister_launchservices || true
+    if ! unregister_launchservices; then
+        LS_CLEANUP_FAILED=1
+    fi
     diskutil unmount "$MNT" >/dev/null 2>&1 || true
     diskutil unmount "$DMG_LAYOUT_MOUNT" >/dev/null 2>&1 || true
     [[ -n "$DMG_LAYOUT_DEVICE" ]] && diskutil eject "$DMG_LAYOUT_DEVICE" >/dev/null 2>&1
-    rm -rf "$WORK"
+    if (( LS_CLEANUP_FAILED )); then
+        echo "release workspace retained for LaunchServices cleanup: $WORK" >&2
+        echo "retry the exported app at $APP_PATH; remount retained disk images at their original mount points" >&2
+    else
+        rm -rf "$WORK"
+    fi
     return 0
 }
 trap cleanup EXIT
@@ -259,6 +267,7 @@ rm -rf "$DMG_LAYOUT_MOUNT/.fseventsd"
 # Unmount, then eject. Ejecting is what actually releases the image: an image
 # that is still attached is EBUSY, and the conversion below fails with a
 # message that does not mention attachments at all.
+unregister_launchservices
 diskutil unmount "$DMG_LAYOUT_MOUNT"
 diskutil eject "$DMG_LAYOUT_DEVICE"
 
@@ -377,10 +386,11 @@ echo "Changelog updated: $ROOT/CHANGELOG.md"
 # Last gate, after the paths are printed: a failure here must not hide the
 # artifacts (they are complete, verified and named above), but it must also
 # not report success — a release that seeded a stale registration failed its
-# own contract. The fix is a manual re-run of the script against the printed
-# paths, all of which still exist.
+# own contract. Preserve the workspace and name the bundle needed for retry;
+# the printed release outputs above are archives, not unregisterable bundles.
 unregister_launchservices || {
+    LS_CLEANUP_FAILED=1
     echo "release hygiene failed: a run bundle is still registered with LaunchServices" >&2
-    echo "re-run scripts/unregister-launchservices.sh on the bundles above, then publish" >&2
+    echo "re-run scripts/unregister-launchservices.sh on $APP_PATH and any retained mounted bundles before publishing" >&2
     exit 1
 }
