@@ -1,61 +1,90 @@
 <div align="center">
   <h1>NepalKit</h1>
-  <p><em>Today's Bikram Sambat date in your Mac's menu bar, with Nepal Time and a date converter.</em></p>
+  <p>Today's Bikram Sambat date in your Mac's menu bar.</p>
+  <p>Nepal Time, Gregorian date conversion, and Siri and Shortcuts support in a native macOS app.</p>
 </div>
 
 <p align="center">
-  <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/tag/dibas-np/NepalKit?label=version&style=flat-square" alt="Version"></a>
+  <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/release/dibas-np/NepalKit?label=version&style=flat-square" alt="Latest release"></a>
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6+">
-  <img src="https://img.shields.io/badge/Xcode-27%2B-0B84F3?style=flat-square&logo=xcode" alt="Xcode 27+">
-  <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=Build&style=flat-square" alt="Build"></a>
+  <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6 or later">
+  <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=build&style=flat-square" alt="Build status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="GPL version 3 or later"></a>
 </p>
 
 <p align="center">
-  <img src="docs/img/popover.png" alt="NepalKit popover showing today's Bikram Sambat date, Nepal Time, and the converter" width="340" />
+  <img src="docs/img/popover.png" alt="NepalKit showing today's Bikram Sambat date, Gregorian date, and Nepal Time" width="340" />
 </p>
 
 ## Features
 
-- **Menu-bar date**: today's Bikram Sambat (BS) date, always visible. No Dock icon, launches at login.
-- **Today at a glance**: full BS date with the Gregorian date and weekday beneath it.
-- **Nepal Time**: a live UTC+5:45 clock, plus your local time when your zone differs.
-- **Safe converter**: BS ↔ AD conversion with pickers bounded by real month lengths, so invalid dates can't be selected.
-- **Display options**: Latin or Devanagari digits, Nepali or transliterated month names.
-- **Private**: fully offline. No analytics, no telemetry, no account. The only network access is the update check.
+- Today's Bikram Sambat date in the menu bar, without a Dock icon.
+- Full Bikram Sambat and Gregorian dates with the weekday.
+- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs.
+- Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
+- Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
+- Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
+- Optional launch at login.
+
+Date conversion and clocks work offline. NepalKit has no account, analytics, or telemetry. The app uses network access for updates.
 
 ## Install
 
-Requires **macOS 26.6 or later**. Runs natively on Apple Silicon.
+Requires macOS 26.6 or later on Apple Silicon.
+
+[Download the latest release](https://github.com/dibas-np/NepalKit/releases/latest), open the DMG, and drag NepalKit into **Applications**.
+
+You can also install with Homebrew:
 
 ```sh
 brew install --cask dibas-np/tap/nepalkit
 ```
 
-Or download the DMG from the [latest release](https://github.com/dibas-np/NepalKit/releases/latest) and drag NepalKit into Applications.
+Release builds are signed and notarized. NepalKit updates itself through Sparkle, including when installed with Homebrew. The cask declares automatic updates, so a normal `brew upgrade` leaves the app's updates to NepalKit.
 
-NepalKit is signed, notarized, and updates itself in place via [Sparkle](https://sparkle-project.org). **Pick one updater.** Homebrew installs the same app to the same place, so installing it with `brew` and then letting Sparkle move it forward leaves the two disagreeing about which version is installed. Homebrew is told this app updates itself, so `brew upgrade` leaves it alone rather than reinstalling over it.
-
-> **Upgrading from 1.0?** Version 1.0 can't update itself. Install 1.1 or later once; every version after that updates automatically.
+If you still use version 1.0, install a newer release once to enable automatic updates.
 
 ## Usage
 
-Click the menu-bar date to open the popover, which has two tabs: **Today** (BS and Gregorian dates, clocks) and **Convert**. Digit style and month names are configured in **Settings** (Cmd-,) and apply everywhere.
+Click the menu-bar date to open the popover. **Today** shows the dates and clocks. **Convert** lets you convert a date in either direction.
 
-NepalKit supports **1975–2084 BS** (1918-04-13 to 2028-04-12). Dates outside this range are reported as unsupported rather than guessed.
+Open **Settings** with **⌘,** to change the menu-bar display, digit script, month and weekday names, or launch-at-login preference.
 
-## Calendar data
+Today's date follows Nepal Time, even when your Mac uses another time zone. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
 
-Bikram Sambat month lengths follow no formula, so conversion is table-driven. The bundled dataset (v2.0.0) is cross-checked against multiple independent community tables and the Kathmandu Metropolitan City calendar. Every supported New Year boundary is tested in both directions.
+## Siri and Shortcuts
 
-- **2084 BS is projected.** The official almanac is published through 2083; 2084 is expected around early 2027. Available sources agree on it, but it has not been officially confirmed.
-- **Nothing is extrapolated.** Years without reliable data are excluded.
-- **The GPL license covers the code, not the calendar table.** See [SOURCES.md](SOURCES.md) for the data's provenance. Anyone relying on the calendar for official purposes should consult the Panchanga Nirnayak Samiti.
+Ask Siri:
+
+> What is today's Nepali date with NepalKit
+
+NepalKit answers with today's Bikram Sambat date and weekday using its bundled calendar data.
+
+The Shortcuts app includes three NepalKit actions:
+
+- Get today's Bikram Sambat date.
+- Convert a Gregorian date to Bikram Sambat.
+- Convert a Bikram Sambat date to Gregorian.
+
+Conversion actions return year, month, day, and weekday fields that you can use in other shortcut steps.
+
+Spoken answers use Latin digits and your chosen month-name language. Dates displayed in Shortcuts follow your display settings, including Devanagari digits.
+
+Date conversions currently work through Shortcuts. Siri cannot yet collect the conversion parameters reliably. Available phrases appear in **Settings → General → Siri & Shortcuts**.
+
+## Supported dates and calendar data
+
+NepalKit supports **1975 through 2084 Bikram Sambat**, corresponding to **April 13, 1918 through April 12, 2028 Gregorian**. Dates outside the bundled dataset are reported as unsupported.
+
+Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.0 is cross-checked against independent community tables and the Kathmandu Metropolitan City calendar. Tests check every supported New Year boundary in both directions.
+
+**2084 Bikram Sambat is projected.** The source record documents official publication through 2083. The shipped 2084 values agree across several sources but have not been officially confirmed. Years beyond the supported range are excluded.
+
+Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data licensing. For official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
 ## Development
 
-Requires Xcode 27+ on macOS 27+.
+Use Xcode 27 or later on macOS 27 or later. The app's deployment target remains macOS 26.6.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -63,33 +92,32 @@ cd NepalKit
 open NepalKit.xcodeproj
 ```
 
+Select the **NepalKit** scheme in Xcode and run the app.
+
+To build the app and run the local checks from the repository root:
+
 ```sh
-# Every gate the project runs locally, in one command
 ./scripts/check-all.sh
-
-# Or one at a time
-cd NepalKitCore && swift test        # core library: conversion, dataset, formatting
-./scripts/run-app-tests.sh           # app layer
-python3 scripts/test_dataset_parsers.py    # the month-length table against the parsers
-python3 scripts/test_update_changelog.py   # the changelog generator against CHANGELOG.md
-python3 scripts/test_verify_appcast.py     # the appcast verifier
-python3 scripts/verify-deployment-floor.py # the macOS floor is one number everywhere
 ```
 
-`check-all.sh` also compiles the app first, which none of the commands above do.
+The script builds the app, runs SwiftLint, executes the core and app-layer tests, checks the supporting scripts, and verifies the deployment target. Calendar provenance and release verification have separate checks documented in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-`check-all.sh` runs everything above and reports each one. It does **not** run the
-`verify-*` provenance and release scripts, which need network access — see
-[CONTRIBUTING.md](CONTRIBUTING.md) for when those apply.
+To run either Swift test suite separately:
 
+```sh
+(cd NepalKitCore && swift test)
+./scripts/run-app-tests.sh
 ```
-NepalKitCore/   Calendar dataset, BS ↔ AD conversion, formatting, spoken forms (Foundation only)
-NepalKit/       Menu-bar app: UI, settings, models
+
+```text
+NepalKitCore/   Calendar dataset, conversion, formatting, and spoken dates
+NepalKit/       SwiftUI menu-bar app, settings, models, and App Intents
 NepalKitTests/  App-layer tests
-scripts/        Test runner, release packaging, appcast verification
-docs/adr/       Architecture decision records
+scripts/       Local checks, release packaging, and verification
+docs/adr/      Architecture decision records
 ```
 
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODING_STANDARDS.md](CODING_STANDARDS.md) before submitting changes.
 
 ## Changelog
 
@@ -97,9 +125,4 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-[GPL-3.0-or-later](LICENSE). The bundled calendar table is not covered by this license; see [Calendar data](#calendar-data).
-
-## Acknowledgements
-
-Calendar data cross-checked against several independent open converters and
-confirmed against officially published Nepali calendars.
+The code is licensed under [GPL-3.0-or-later](LICENSE). The bundled calendar table has separate provenance and licensing considerations documented in [SOURCES.md](SOURCES.md).
