@@ -61,24 +61,31 @@ struct SettingsView: View {
         // `sidebarAdaptable` is the only sidebar style on this SDK - there is no
         // `sidebarTabViewStyle` - and "adaptable" means sidebar in a window of this
         // size, switching to a tab bar only when the space is genuinely compact.
-        TabView(selection: $tab) {
-            ForEach(SettingsTab.allCases) { destination in
-                Tab(destination.title, systemImage: destination.symbol, value: destination) {
-                    content(for: destination)
+        //
+        // The sidebar's own collapse toggle is removed: three fixed destinations
+        // give a collapse nothing to buy, and hiding the row titles leaves the
+        // window as icon-only wayfinding for no benefit.
+        VStack(spacing: 0) {
+            TabView(selection: $tab) {
+                ForEach(SettingsTab.allCases) { destination in
+                    Tab(destination.title, systemImage: destination.symbol, value: destination) {
+                        content(for: destination)
+                    }
                 }
             }
-        }
-        .tabViewStyle(.sidebarAdaptable)
-        // The identity strip moves to the bottom of the *window* rather than the
-        // bottom of the sidebar. That is the trade for using the system sidebar: it
-        // owns its column, so nothing can be placed under the destinations. The
-        // strip is the window's identity rather than a destination, and spanning
-        // the full width is where a window's status material belongs anyway.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .tabViewStyle(.sidebarAdaptable)
+            .toolbar(removing: .sidebarToggle)
+
+            // The strip is a layout sibling of the TabView, not a safe-area
+            // inset. The inset version let each tab's form scroll beneath the
+            // strip, and the bottom rows landed underneath it — an inset on the
+            // TabView does not reach the scroll views the system hosts for the
+            // tab contents. As a sibling it reserves its height in the window's
+            // own layout, so no tab's content can pass under it.
             SettingsIdentityStrip(metadata: metadata)
         }
         // Wide enough for the longest detail (About's Devanagari range line) beside
-        // the sidebar without clipping, and tall enough that the General form's two
+        // the sidebar without clipping, and tall enough that the General form's
         // sections do not need to scroll. A minimum, not a fixed size: the window
         // opens at whatever the user last set, and refuses to go below the point
         // where the content stops fitting.
