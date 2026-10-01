@@ -53,11 +53,14 @@ struct ConversionIntentTests {
         #expect(converted == BSDay(year: 2081, month: 12, day: 2))
         #expect(weekday(of: named) == 7)
 
+        let monthNames = SettingsStore().settings.monthNames
         let intent = GregorianToBikramSambatIntent()
         intent.date = date
         let result = try await intent.perform()
-        #expect(result.value?.weekday == "Saturday")
-        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: weekday(of: named))) == "Saturday, 2 Chaitra 2081.")
+        let expectedWeekday = monthNames == .nepali ? "शनि" : "Saturday"
+        let expectedDialog = monthNames == .nepali ? "शनि, 2 चैत 2081." : "Saturday, 2 Chaitra 2081."
+        #expect(result.value?.weekday == expectedWeekday)
+        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: weekday(of: named))) == expectedDialog)
     }
 
     @Test("Out of range both directions names the range and the exceeded boundary")
@@ -109,7 +112,9 @@ struct ConversionIntentTests {
         intent.year = 2082
         let result = try await intent.perform()
         #expect(result.value == instant)
-        #expect(String(localized: BikramSambatToGregorianIntent.successDialog(converted)) == "Sunday, 29 June 2025.")
+        let expectedDialog = SettingsStore().settings.monthNames == .nepali
+            ? "आइत, 29 June 2025." : "Sunday, 29 June 2025."
+        #expect(String(localized: BikramSambatToGregorianIntent.successDialog(converted)) == expectedDialog)
     }
 
     @Test("Round trip through the entity returns the starting civil day")

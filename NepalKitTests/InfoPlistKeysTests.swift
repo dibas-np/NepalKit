@@ -22,7 +22,7 @@ import Testing
 struct InfoPlistKeysTests {
     /// The app's bundle identifier, which is what tells the app's own Info.plist
     /// apart from some other bundle's.
-    private static let appBundleIdentifier = "com.dibas.NepalKit.NepalKit"
+    nonisolated private static let appBundleIdentifier = "com.dibas.NepalKit.NepalKit"
 
     /// The built app's Info.plist, or nil when no product is available.
     ///
@@ -37,7 +37,7 @@ struct InfoPlistKeysTests {
     /// would compare the app's release-critical keys against an unrelated
     /// bundle — failing on every key, or worse, passing on none of them. Only
     /// a plist that names the app counts as the app's.
-    private static let builtPlist: URL? = {
+    nonisolated private static let builtPlist: URL? = {
         func usable(_ url: URL) -> URL? {
             guard let info = NSDictionary(contentsOf: url) as? [String: Any],
                   info["CFBundleIdentifier"] as? String == appBundleIdentifier
@@ -51,7 +51,7 @@ struct InfoPlistKeysTests {
         return usable(Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
     }()
 
-    private static var builtInfo: [String: Any]? {
+    nonisolated private static var builtInfo: [String: Any]? {
         guard let builtPlist else { return nil }
         return NSDictionary(contentsOf: builtPlist) as? [String: Any]
     }
@@ -86,7 +86,7 @@ struct InfoPlistKeysTests {
     /// useless the first time someone runs the harness without building.
     /// The trait's comment must be a compile-time literal, so the path cannot
     /// appear in it; the test name and the skip reason carry the meaning.
-    private static var hasBuiltProduct: Bool { builtInfo != nil }
+    nonisolated private static var hasBuiltProduct: Bool { builtInfo != nil }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func sparklePublicKeyReachesTheBuiltProduct() throws {

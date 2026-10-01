@@ -57,10 +57,11 @@ decision.
 If you hit something 26.6 cannot compile, that is a regression against a claim
 the gate still enforces — report it rather than working around it locally.
 
-**The app target compiles in Swift 6 language mode** — `SWIFT_VERSION = 6.0`
+**The app and Xcode test targets compile in Swift 6 language mode** — `SWIFT_VERSION = 6.0`
 with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, in `project.pbxproj` — and the
-SwiftPM harness must stay in that same language mode. The two are separate
-compilers over the same sources: `xcodebuild build` compiles what ships and
+SwiftPM app and test targets must keep that language mode and default isolation.
+The two are separate compilers over the same sources:
+`xcodebuild build-for-testing` compiles the app and hosted test bundle, and
 `./scripts/run-app-tests.sh` compiles the sources it symlinks, and the harness
 excludes the two files most in need of strict checking, so if the modes drift
 apart the shipping configuration is left unchecked by any gate. Change one and
@@ -83,9 +84,9 @@ One command runs every automated gate, and names each one as it goes:
 It runs these nine, in this order:
 
 ```sh
-# 1. compile the app, because no other gate here does
+# 1. compile and link the app and Xcode test bundle
 xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
-    CODE_SIGNING_ALLOWED=NO build
+    -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
 ./scripts/swiftlint.sh lint --strict       # 2. all maintained Swift files
 
 cd NepalKitCore && swift test               # 3. the calendar: 65 tests
@@ -142,10 +143,16 @@ that touches them, so this command is the local half and not a replacement.
 The two Swift suites stay separate on purpose: one is the calendar, the other is
 the application.
 
-`xcodebuild test` builds cleanly but the runner hangs in this environment, so
-the app-layer suite goes through a SwiftPM harness instead — see
-[ADR-0005](docs/adr/0005-app-layer-test-execution.md) for why. The harness
-symlinks the real sources; it does not copy them.
+The app-layer suite runs through a SwiftPM harness that symlinks the real
+sources. It was introduced after a hosted Xcode runner hang; the hosted suite
+also passes on the current toolchain. See
+[ADR-0005](docs/adr/0005-app-layer-test-execution.md) for the history.
+To run the hosted suite directly:
+
+```sh
+xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
+    -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO test
+```
 
 If you have a built product to hand, the plist tests will read it:
 

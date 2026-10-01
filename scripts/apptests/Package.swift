@@ -2,8 +2,8 @@
 //
 // App-layer test harness.
 //
-// `xcodebuild test` builds NepalKit clean but the test runner hangs before
-// connecting in this environment, so the app-layer suite runs here instead
+// Introduced after a hosted Xcode test-runner hang. The hosted suite now also
+// passes; this harness runs app logic without launching the application host
 // (see docs/adr/0005-app-layer-test-execution.md).
 //
 // Both target directories are symlinks to the real `NepalKit/` and
@@ -46,14 +46,16 @@ let package = Package(
                 // Imports Sparkle; the harness links only NepalKitCore. The
                 // seam it implements is Sparkle-free and fully covered here.
                 "SparkleUpdateService.swift",
-            ]
+            ],
+            swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
         .testTarget(
             name: "NepalKitTests",
             dependencies: [
                 "NepalKit",
                 .product(name: "NepalKitCore", package: "NepalKitCore"),
-            ]
+            ],
+            swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
     ]
 )

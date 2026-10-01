@@ -1,15 +1,16 @@
 # App-layer test execution: committed SwiftPM harness
 
 The app-layer tests in `NepalKitTests/` are the only automated guard on
-settings persistence and uniform display, but `xcodebuild test` hangs before
-connecting in the development environment — it reproduces with an empty test, so
-it is the LSUIElement host plus the Xcode beta rather than app code, and Apple
-labels it a possible bug. A SwiftPM harness runs the suite successfully, so that
+settings persistence and uniform display, but `xcodebuild test` originally hung before
+connecting in the development environment. It reproduced with an empty test, so
+the investigation attributed it to the LSUIElement host plus the Xcode beta, and Apple
+labeled it a possible bug. A SwiftPM harness runs the suite successfully, so that
 harness is committed along with a single command that executes the whole
 app-layer suite: a fresh checkout must always have a documented, reproducible way
-to run these tests. `xcodebuild test` stays documented as a known toolchain
-issue, and establishing CI on a known-good Xcode is the follow-up that supersedes
-this arrangement.
+to run these tests. On 2026-10-01, after aligning the target isolation settings,
+the hosted runner completed all 167 tests in 24 suites. The earlier hang no
+longer reproduces on this toolchain. The SwiftPM harness remains useful for
+running the app logic without launching an application host.
 
 Deleting the tests was rejected: unreachable tests are worse than no tests,
 because they read as coverage while guarding nothing.
@@ -64,3 +65,16 @@ three kinds, so the policy and its outcomes are tested even though the mapping
 into it is not. A test of the mapping would have to reach Sparkle's enum
 through a framework the harness does not link, so it is recorded here as known
 uncovered rather than left to look like an oversight.
+
+## Compile the hosted Xcode tests too
+
+`scripts/check-all.sh` uses `xcodebuild build-for-testing` before running the
+SwiftPM harness. This compiles and links the hosted test bundle without starting
+the runner. An app-only build missed test failures caused by the Xcode test
+target using Swift 5 while the app used Swift 6 with Main Actor isolation.
+
+Both Xcode targets now use Swift 6, Main Actor default isolation, and approachable
+concurrency. Both SwiftPM targets also declare Main Actor default isolation.
+The built-plist lookup is explicitly nonisolated because Swift Testing evaluates
+its enabled trait from a Sendable closure. It reads the product without keeping
+shared mutable state.

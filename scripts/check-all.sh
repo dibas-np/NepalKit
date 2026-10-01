@@ -36,8 +36,9 @@
 #   - The other `scripts/verify-*` and `scripts/package-release.sh`, which are
 #     release-time gates over packaged artifacts and a live feed.
 #
-# It does compile the app, which no other local gate does. macos26-floor.yml
-# builds it in CI on every push to main and every pull request; this is the local
+# It compiles the app and Xcode test bundle, including their actor-isolation
+# settings and hosted linkage, which the SwiftPM harness cannot check.
+# macos26-floor.yml builds the app in CI on every push to main and every pull request; this is the local
 # half of that, so a contributor finds a broken app target here rather than in a
 # pull-request log.
 #
@@ -85,17 +86,18 @@ gate() {
     current=""
 }
 
-# First, and out of order on purpose - see the header. `build`, not `test`:
-# ADR-0005 records that xcodebuild test builds the app cleanly and then hangs
-# before connecting. Signing off, so a local run needs no credentials and cannot
-# reach any. The product is exported so the plist tests below read the built
+# First, and out of order on purpose - see the header. `build-for-testing`
+# compiles and links both targets without launching the hosted test runner:
+# ADR-0005 records the runner hang that originally required the SwiftPM harness.
+# Signing is off so a local run needs no credentials. The product is exported
+# so the plist tests below read the built
 # Info.plist rather than skipping.
 derived="$repo_root/DerivedData"
-gate "app target builds" bash -c '
+gate "app and Xcode test targets build" bash -c '
     set -euo pipefail
     xcodebuild -project "$1/NepalKit.xcodeproj" -scheme NepalKit \
         -configuration Debug -derivedDataPath "$2" \
-        -destination "generic/platform=macOS" CODE_SIGNING_ALLOWED=NO build
+        -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
     plist="$2/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
     if [ ! -f "$plist" ]; then
         echo "the build reported success but produced no Info.plist at $plist" >&2
