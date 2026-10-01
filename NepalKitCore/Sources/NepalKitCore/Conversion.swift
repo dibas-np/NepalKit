@@ -43,6 +43,13 @@ private func utcDate(from ad: GADay) -> Date? {
     return date
 }
 
+/// The Gregorian civil day as an instant at noon UTC, so downstream date
+/// math lands on the named day in every time zone the value travels through.
+/// Built on `utcDate`, so civil-day validity is enforced here too.
+public func noonUTC(for ad: GADay) -> Date? {
+    utcDate(from: ad)?.addingTimeInterval(12 * 60 * 60)
+}
+
 /// Month lengths for a Bikram Sambat date after range and component
 /// validation, or nil if the date is invalid or outside the table.
 func validatedMonths(for bs: BSDay, in dataset: CalendarDataset) -> [Int]? {

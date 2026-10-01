@@ -31,4 +31,11 @@ nonisolated enum IntentAnswers {
     static func weekdayNameString(_ weekday: Int?, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) -> String? {
         weekday.flatMap { weekdayName(for: $0, style: monthNames) }
     }
+
+    /// Numbers inside dialogs speak through `SpokenDate` — never a bare Int,
+    /// which a `LocalizedStringResource` formats with locale grouping
+    /// ("2,084"), wrong in a spoken year or range boundary.
+    static func number(_ value: Int) -> String {
+        SpokenDate.number(value)
+    }
 }

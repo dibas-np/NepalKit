@@ -23,6 +23,28 @@
         }
       }
     },
+    "Convert to Bikram Sambat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert to Bikram Sambat"
+          }
+        }
+      }
+    },
+    "Convert to Gregorian": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert to Gregorian"
+          }
+        }
+      }
+    },
     "Today's Nepali date": {
       "extractionState": "manual",
       "localizations": {
