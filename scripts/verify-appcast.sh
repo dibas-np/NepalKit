@@ -95,14 +95,10 @@ URL_PREFIX="${URL_PREFIX%/}/"
 # is deliberately fresh (it is per-run and private, see package-release.sh), so
 # without this the feed would carry no history at all.
 #
-# Seeding is necessary but not sufficient: `generate_appcast` then keeps only the
-# newest few items and drops the rest on its own — seeding three prior releases
-# and adding a fourth yields three, with the oldest removed. That is the tool's
-# behaviour rather than a loss this script causes, and it strands nobody, since
-# an install on a pruned release is still offered the newest item. What it did
-# break was the changelog: `update-changelog.py` read its dates from the feed it
-# was handed, so a pruned release became "unreleased". It now takes history from
-# the committed feed and only the new date from staging.
+# Keep every historical item with --maximum-versions 0 below. Sparkle's default
+# prunes to three versions per compatibility branch, which otherwise deletes
+# older release records when a fresh staging directory adds another archive.
+# update-changelog.py still takes historical dates from the repository feed.
 #
 # Read from the repository rather than from a copy: the committed appcast is
 # what the previous release published, so it is the one that must be carried
@@ -128,6 +124,7 @@ echo "release url prefix: $URL_PREFIX"
 # update's "Learn More" destination, so the bare repo URL drops the release
 # notes a user is being offered.
 "$GENERATE_APPCAST" \
+    --maximum-versions 0 \
     --download-url-prefix "$URL_PREFIX" \
     --link "$RELEASE_LINK" \
     "$ARCHIVES_DIR"

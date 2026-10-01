@@ -1035,5 +1035,37 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertTrue(line.startswith("python3 "), f"embed call is not a bare command: {line!r}")
 
 
+class FeedHistory(unittest.TestCase):
+    def test_generation_preserves_every_prior_release(self) -> None:
+        source = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        command = re.search(r'^"\$GENERATE_APPCAST" \\.*?"\$ARCHIVES_DIR"', source, re.M | re.S)
+        self.assertIsNotNone(command)
+        with tempfile.TemporaryDirectory() as directory:
+            staging = Path(directory)
+            feed = staging / "appcast.xml"
+            original = RSS_OPEN + "".join(make_item(version=str(version)) for version in range(1, 6)) + RSS_CLOSE
+            feed.write_text(original)
+            generator = staging / "generate_appcast"
+            generator.write_text(
+                '#!/usr/bin/env python3\n'
+                'import sys\nfrom pathlib import Path\n'
+                'feed = Path(sys.argv[-1]) / "appcast.xml"\n'
+                'if "--maximum-versions" not in sys.argv or sys.argv[sys.argv.index("--maximum-versions") + 1] != "0":\n'
+                '    import re\n    raw = feed.read_text()\n'
+                '    items = re.findall(r"<item>.*?</item>", raw, re.S)\n'
+                '    for item in items[3:]: raw = raw.replace(item, "")\n'
+                '    feed.write_text(raw)\n'
+            )
+            generator.chmod(0o755)
+            result = subprocess.run(
+                ["/bin/zsh", "-c", command.group()],
+                env={**os.environ, "GENERATE_APPCAST": str(generator), "ARCHIVES_DIR": str(staging),
+                     "URL_PREFIX": "https://example.com/v6/", "RELEASE_LINK": "https://example.com/v6"},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(feed.read_text(), original, "generation pruned historical release records")
+
+
 if __name__ == "__main__":
     unittest.main()
