@@ -8,12 +8,12 @@ import NepalKitCore
 struct RoundTripTests {
     static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = .gmt
         return calendar
     }()
 
-    static func utcDate(from ad: GADay) -> Date {
-        utcCalendar.date(from: DateComponents(year: ad.year, month: ad.month, day: ad.day))!
+    static func utcDate(from ad: GADay) throws -> Date {
+        try #require(utcCalendar.date(from: DateComponents(year: ad.year, month: ad.month, day: ad.day)))
     }
 
     static func everyBSDay() -> [BSDay] {
@@ -47,29 +47,32 @@ struct RoundTripTests {
         }
     }
 
-    @Test func exhaustiveRoundTripADtoBStoAD() {
-        var date = Self.utcDate(from: GADay(year: 1918, month: 4, day: 13))
-        let end = Self.utcDate(from: GADay(year: 2028, month: 4, day: 12))
+    @Test func exhaustiveRoundTripADtoBStoAD() throws {
+        var date = try Self.utcDate(from: GADay(year: 1918, month: 4, day: 13))
+        let end = try Self.utcDate(from: GADay(year: 2028, month: 4, day: 12))
         while date <= end {
             let parts = Self.utcCalendar.dateComponents([.year, .month, .day], from: date)
-            let ad = GADay(year: parts.year!, month: parts.month!, day: parts.day!)
+            let year = try #require(parts.year)
+            let month = try #require(parts.month)
+            let day = try #require(parts.day)
+            let ad = GADay(year: year, month: month, day: day)
             guard let bs = adToBS(ad, in: .v2) else {
                 Issue.record("No conversion for \(ad)")
                 return
             }
             #expect(bsToAD(bs, in: .v2) == ad, "round trip failed for \(ad)")
-            date = Self.utcCalendar.date(byAdding: .day, value: 1, to: date)!
+            date = try #require(Self.utcCalendar.date(byAdding: .day, value: 1, to: date))
         }
     }
 
-    @Test func consecutiveBSDaysAdvanceOneADDay() {
+    @Test func consecutiveBSDaysAdvanceOneADDay() throws {
         var previous: Date?
         for bs in Self.everyBSDay() {
             guard let ad = bsToAD(bs, in: .v2) else {
                 Issue.record("No conversion for \(bs)")
                 return
             }
-            let date = Self.utcDate(from: ad)
+            let date = try Self.utcDate(from: ad)
             if let previous {
                 let gap = Self.utcCalendar.dateComponents([.day], from: previous, to: date).day
                 #expect(gap == 1, "non-consecutive mapping at \(bs)")

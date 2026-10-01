@@ -141,7 +141,10 @@ final class ConverterModel {
         // supported-range year that is missing or does not have a twelve-month
         // row, so both the nil and the short-row cases are closed at
         // construction.
-        return dataset.monthLengths(for: year)![month - 1]
+        guard let months = dataset.monthLengths(for: year) else {
+            preconditionFailure("Validated dataset is missing the month lengths for BS year \(year)")
+        }
+        return months[month - 1]
     }
 
     func daysInADMonth(year: Int, month: Int) -> Int {
@@ -151,7 +154,10 @@ final class ConverterModel {
         // invented day counts. `daysInGregorianMonth` yields nil only for a
         // month outside 1...12, which the precondition excludes.
         precondition((1 ... 12).contains(month), "AD month \(month) is outside 1...12")
-        return daysInGregorianMonth(year: year, month: month)!
+        guard let days = daysInGregorianMonth(year: year, month: month) else {
+            preconditionFailure("Gregorian month \(month) has no day count for year \(year)")
+        }
+        return days
     }
 
     /// Gregorian days available for the given month, bounded by the

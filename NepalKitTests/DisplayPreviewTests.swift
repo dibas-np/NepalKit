@@ -12,27 +12,29 @@ import NepalKitCore
 /// 29 June 2025 is 15 Ashar 2082 in Nepal Time (17:45 NPT, same civil day).
 struct DisplayPreviewTests {
     private var dataset: CalendarDataset { AppData.dataset }
-    private var now: Date { TestDates.utc(2025, 6, 29, 12, 0) }
+    private var now: Date {
+        get throws { try TestDates.utc(2025, 6, 29, 12, 0) }
+    }
 
     private static var devanagariDigits: Set<Character> {
         ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
     }
 
     @Test("Latin digits with transliterated month names read like the menu bar")
-    func latinTransliterated() {
+    func latinTransliterated() throws {
         let text = DisplayPreview.todayText(
-            now: now, in: dataset,
+            now: try now, in: dataset,
             settings: DisplaySettings(digits: .latin, monthNames: .transliterated)
         )
         #expect(text == "15 Ashar 2082")
     }
 
     @Test("The two pickers change independently")
-    func axesAreIndependent() {
+    func axesAreIndependent() throws {
         // Devanagari digits with the transliterated month name: the digit
         // setting governs numerals only.
         let devanagariTransliterated = DisplayPreview.todayText(
-            now: now, in: dataset,
+            now: try now, in: dataset,
             settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)
         )
         #expect(devanagariTransliterated?.contains(where: Self.devanagariDigits.contains) == true)
@@ -41,7 +43,7 @@ struct DisplayPreviewTests {
         // Latin digits with the Nepali month name: the month-name setting
         // governs Bikram Sambat month names only.
         let latinNepali = DisplayPreview.todayText(
-            now: now, in: dataset,
+            now: try now, in: dataset,
             settings: DisplaySettings(digits: .latin, monthNames: .nepali)
         )
         #expect(latinNepali?.contains("असार") == true)
@@ -49,9 +51,9 @@ struct DisplayPreviewTests {
     }
 
     @Test("Devanagari digits with Nepali month names render fully native")
-    func devanagariNepali() {
+    func devanagariNepali() throws {
         let text = DisplayPreview.todayText(
-            now: now, in: dataset,
+            now: try now, in: dataset,
             settings: DisplaySettings(digits: .devanagari, monthNames: .nepali)
         )
         #expect(text?.contains(where: Self.devanagariDigits.contains) == true)

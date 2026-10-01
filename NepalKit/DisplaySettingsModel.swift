@@ -65,7 +65,9 @@ final class DisplaySettingsModel {
     /// defaults would never show.
     static var preview: DisplaySettingsModel {
         let suite = "NepalKit.PreviewSettings"
-        let defaults = UserDefaults(suiteName: suite)!
+        guard let defaults = UserDefaults(suiteName: suite) else {
+            preconditionFailure("Cannot create the preview preferences domain \(suite)")
+        }
         defaults.removePersistentDomain(forName: suite)
         defaults.set(DigitScript.devanagari.rawValue, forKey: SettingsStore.digitScriptKey)
         defaults.set(MonthNameStyle.nepali.rawValue, forKey: SettingsStore.monthNameStyleKey)

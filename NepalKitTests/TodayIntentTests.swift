@@ -24,11 +24,11 @@ struct TodayIntentTests {
     }
 
     @Test("Today flips at Nepal Time midnight, not UTC midnight")
-    func todayIsAnchoredToNepalTime() {
+    func todayIsAnchoredToNepalTime() throws {
         // 14 April NPT begins at 18:15 UTC on 13 April. The minute before is
         // still Chaitra 2081; the minute after is 1 Baisakh 2082.
-        let before = TestDates.utc(2025, 4, 13, 18, 14)
-        let after = TestDates.utc(2025, 4, 13, 18, 16)
+        let before = try TestDates.utc(2025, 4, 13, 18, 14)
+        let after = try TestDates.utc(2025, 4, 13, 18, 16)
 
         let beforeBS = todayBS(now: before, in: dataset)
         let afterBS = todayBS(now: after, in: dataset)
@@ -48,11 +48,12 @@ struct TodayIntentTests {
     }
 
     @Test("Beyond-range today names the dataset's last year and keeps Gregorian today")
-    func beyondRangeDialogUsesDatasetNumbers() {
-        let end = dataset.gregorianEnd!
+    func beyondRangeDialogUsesDatasetNumbers() throws {
+        let end = try #require(dataset.gregorianEnd)
         var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = TimeZone(secondsFromGMT: 0)!
-        let past = utc.date(byAdding: .day, value: 30, to: utc.date(from: DateComponents(year: end.year, month: end.month, day: end.day))!)!
+        utc.timeZone = .gmt
+        let lastDay = try #require(utc.date(from: DateComponents(year: end.year, month: end.month, day: end.day)))
+        let past = try #require(utc.date(byAdding: .day, value: 30, to: lastDay))
 
         #expect(todayBS(now: past, in: dataset) == nil)
 
@@ -93,13 +94,13 @@ struct TodayIntentTests {
     }
 
     @Test("Entity id round-trips through its text identity")
-    func entityIdRoundTrip() {
+    func entityIdRoundTrip() throws {
         let bs = BSDay(year: 2082, month: 3, day: 15)
-        let entity = BikramSambatDateEntity(bsDay: bs, weekday: "Sunday")!
+        let entity = try #require(BikramSambatDateEntity(bsDay: bs, weekday: "Sunday"))
 
         #expect(entity.id == "2082-3-15")
 
-        let rebuilt = BikramSambatDateEntity(idString: entity.id)!
+        let rebuilt = try #require(BikramSambatDateEntity(idString: entity.id))
         #expect(rebuilt.year == 2082 && rebuilt.month == .ashar && rebuilt.day == 15)
         #expect(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 13, day: 1)) == nil)
         #expect(BikramSambatDateEntity(idString: "2082-13-15") == nil)
@@ -107,14 +108,14 @@ struct TodayIntentTests {
     }
 
     @Test("Entity query parses typed dates against titles and synonyms")
-    func entityQueryParsing() {
+    func entityQueryParsing() throws {
         #expect(BikramSambatDateEntity.parsing("15 Ashar 2082")?.month == .ashar)
         #expect(BikramSambatDateEntity.parsing("15 ashar 2082")?.day == 15)
         #expect(BikramSambatDateEntity.parsing("15 Saun 2082")?.month == .shrawan)
         #expect(BikramSambatDateEntity.parsing("15 असार 2082")?.month == .ashar)
         #expect(BikramSambatDateEntity.parsing("1 Baishakh 2082")?.month == .baisakh)
 
-        let parsed = BikramSambatDateEntity.parsing("15 Ashar 2082")!
+        let parsed = try #require(BikramSambatDateEntity.parsing("15 Ashar 2082"))
         #expect(parsed.year == 2082 && parsed.day == 15)
 
         #expect(BikramSambatDateEntity.parsing("hello") == nil)

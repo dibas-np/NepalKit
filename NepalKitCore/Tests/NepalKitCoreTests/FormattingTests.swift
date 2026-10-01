@@ -4,15 +4,15 @@ import NepalKitCore
 
 struct FormattingTests {
     static let date = BSDay(year: 2083, month: 6, day: 11)
-    static let allSettings: [(settings: DisplaySettings, expected: String, label: String)] = [
-        (DisplaySettings(digits: .latin, monthNames: .transliterated), "11 Ashoj 2083", "Latin + transliterated"),
-        (DisplaySettings(digits: .devanagari, monthNames: .nepali), "११ असोज २०८३", "Devanagari + Nepali"),
-        (DisplaySettings(digits: .latin, monthNames: .nepali), "11 असोज 2083", "Latin + Nepali"),
-        (DisplaySettings(digits: .devanagari, monthNames: .transliterated), "११ Ashoj २०८३", "Devanagari + transliterated"),
+    static let allSettings: [DisplayFormatFixture] = [
+        .init(settings: DisplaySettings(digits: .latin, monthNames: .transliterated), expected: "11 Ashoj 2083", label: "Latin + transliterated"),
+        .init(settings: DisplaySettings(digits: .devanagari, monthNames: .nepali), expected: "११ असोज २०८३", label: "Devanagari + Nepali"),
+        .init(settings: DisplaySettings(digits: .latin, monthNames: .nepali), expected: "11 असोज 2083", label: "Latin + Nepali"),
+        .init(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated), expected: "११ Ashoj २०८३", label: "Devanagari + transliterated"),
     ]
 
     @Test(arguments: allSettings)
-    func fullFormat(testCase: (settings: DisplaySettings, expected: String, label: String)) {
+    func fullFormat(testCase: DisplayFormatFixture) {
         #expect(
             formatBS(Self.date, settings: testCase.settings) == testCase.expected,
             "\(testCase.label) should render \(testCase.expected)"
@@ -31,10 +31,10 @@ struct FormattingTests {
     /// epoch reads 05:45:00 at Nepal's UTC+5:45 and 01:00:00 at UTC+1 — and the
     /// two scripts pin digit rendering. The zone pair also deliberately hits
     /// the calendar cache once as a miss and once as a reuse.
-    @Test func clockRendersInTheGivenZoneAndScript() {
+    @Test func clockRendersInTheGivenZoneAndScript() throws {
         let epoch = Date(timeIntervalSince1970: 0)
-        let nepal = TimeZone(secondsFromGMT: 20_700)!
-        let utcPlusOne = TimeZone(secondsFromGMT: 3_600)!
+        let nepal = try #require(TimeZone(secondsFromGMT: 20_700))
+        let utcPlusOne = try #require(TimeZone(secondsFromGMT: 3_600))
         #expect(formatClock(epoch, timeZone: nepal, digits: .latin) == "05:45:00")
         #expect(formatClock(epoch, timeZone: nepal, digits: .devanagari) == "०५:४५:००")
         #expect(formatClock(epoch, timeZone: utcPlusOne, digits: .latin) == "01:00:00")

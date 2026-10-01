@@ -56,7 +56,7 @@ struct UpdateCheckModelTests {
         #expect(model.statusText != Strings.updateStatusUpToDate)
     }
 
-    @Test func lastCheckDateIsReadThroughFromTheService() {
+    @Test func lastCheckDateIsReadThroughFromTheService() throws {
         // Read-through, not a mirror: the framework owns the fact, and the
         // model's job is only to put it where Settings can show it. A copy
         // here could silently disagree with the framework's own answer.
@@ -65,7 +65,7 @@ struct UpdateCheckModelTests {
 
         #expect(model.lastCheckDate == nil)
 
-        let when = TestDates.utc(2026, 10, 1, 9, 0)
+        let when = try TestDates.utc(2026, 10, 1, 9, 0)
         service.lastCheckDate = when
         #expect(model.lastCheckDate == when)
     }

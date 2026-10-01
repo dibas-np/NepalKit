@@ -3,12 +3,17 @@
 import Foundation
 
 /// Nepal Time: the product's anchor for "today" (UTC+5:45).
-public let nepalTimeZone = TimeZone(secondsFromGMT: 20700)!
+public let nepalTimeZone: TimeZone = {
+    guard let zone = TimeZone(secondsFromGMT: 20700) else {
+        preconditionFailure("Foundation must support Nepal Time's fixed UTC+05:45 offset")
+    }
+    return zone
+}()
 
 /// Gregorian calendar in UTC: conversion is civil-day math, not instant math.
 let utcGregorian: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    calendar.timeZone = .gmt
     return calendar
 }()
 

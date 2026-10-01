@@ -33,16 +33,16 @@ struct LoginItemModelTests {
 
     private struct Boom: Error {}
 
-    private func freshDefaults() -> UserDefaults {
+    private func freshDefaults() throws -> UserDefaults {
         let name = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: name)!
+        let defaults = try #require(UserDefaults(suiteName: name))
         defaults.removePersistentDomain(forName: name)
         return defaults
     }
 
-    @Test func firstLaunchRegistersOnce() {
+    @Test func firstLaunchRegistersOnce() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.ensureDefaultOn()
 
@@ -50,8 +50,8 @@ struct LoginItemModelTests {
         #expect(model.isOn)
     }
 
-    @Test func secondLaunchDoesNotRegisterAgain() {
-        let defaults = freshDefaults()
+    @Test func secondLaunchDoesNotRegisterAgain() throws {
+        let defaults = try freshDefaults()
         let first = LoginItemModel(service: MockService(), defaults: defaults)
         first.ensureDefaultOn()
 
@@ -62,8 +62,8 @@ struct LoginItemModelTests {
         #expect(service.registerCalls == 0)
     }
 
-    @Test func failedFirstLaunchRetriesOnNextLaunch() {
-        let defaults = freshDefaults()
+    @Test func failedFirstLaunchRetriesOnNextLaunch() throws {
+        let defaults = try freshDefaults()
         let failing = MockService()
         failing.error = Boom()
         LoginItemModel(service: failing, defaults: defaults).ensureDefaultOn()
@@ -76,10 +76,10 @@ struct LoginItemModelTests {
         #expect(relaunched.isOn)
     }
 
-    @Test func failedFirstLaunchRecordsTheRegistrationError() {
+    @Test func failedFirstLaunchRecordsTheRegistrationError() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.ensureDefaultOn()
 
@@ -90,8 +90,8 @@ struct LoginItemModelTests {
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
-    @Test func failedFirstLaunchLeavesTheConfiguredFlagUnsetAndRetries() {
-        let defaults = freshDefaults()
+    @Test func failedFirstLaunchLeavesTheConfiguredFlagUnsetAndRetries() throws {
+        let defaults = try freshDefaults()
         let service = MockService()
         service.error = Boom()
         LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
@@ -108,10 +108,10 @@ struct LoginItemModelTests {
         #expect(retry.registerCalls == 1)
     }
 
-    @Test func isOnFollowsTheSystemWhenFirstLaunchFails() {
+    @Test func isOnFollowsTheSystemWhenFirstLaunchFails() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.ensureDefaultOn()
 
@@ -123,15 +123,15 @@ struct LoginItemModelTests {
         #expect(model.setupError != nil)
     }
 
-    @Test func theSameFailureIsReportedIdenticallyFromFirstLaunchAndTheToggle() {
+    @Test func theSameFailureIsReportedIdenticallyFromFirstLaunchAndTheToggle() throws {
         let firstLaunch = MockService()
         firstLaunch.error = Boom()
-        let launched = LoginItemModel(service: firstLaunch, defaults: freshDefaults())
+        let launched = LoginItemModel(service: firstLaunch, defaults: try freshDefaults())
         launched.ensureDefaultOn()
 
         let toggle = MockService()
         toggle.error = Boom()
-        let toggled = LoginItemModel(service: toggle, defaults: freshDefaults())
+        let toggled = LoginItemModel(service: toggle, defaults: try freshDefaults())
         toggled.setOn(true)
 
         // One refusal, two call paths. Comparing the two models to each other
@@ -142,8 +142,8 @@ struct LoginItemModelTests {
         #expect(launched.setupError == toggled.setupError)
     }
 
-    @Test func successfulFirstLaunchClearsAnEarlierFailure() {
-        let defaults = freshDefaults()
+    @Test func successfulFirstLaunchClearsAnEarlierFailure() throws {
+        let defaults = try freshDefaults()
         let service = MockService()
         service.error = Boom()
         let model = LoginItemModel(service: service, defaults: defaults)
@@ -160,9 +160,9 @@ struct LoginItemModelTests {
         #expect(defaults.bool(forKey: LoginItemModel.configuredKey))
     }
 
-    @Test func toggleOffUnregisters() {
+    @Test func toggleOffUnregisters() throws {
         let service = MockService(registered: true)
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(false)
 
@@ -170,9 +170,9 @@ struct LoginItemModelTests {
         #expect(!model.isOn)
     }
 
-    @Test func toggleOnRegisters() {
+    @Test func toggleOnRegisters() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(true)
 
@@ -180,9 +180,9 @@ struct LoginItemModelTests {
         #expect(model.isOn)
     }
 
-    @Test func toggleOnWhenAlreadyRegisteredDoesNotRestateTheService() {
+    @Test func toggleOnWhenAlreadyRegisteredDoesNotRestateTheService() throws {
         let service = MockService(registered: true)
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(true)
 
@@ -191,9 +191,9 @@ struct LoginItemModelTests {
         #expect(model.setupError == nil)
     }
 
-    @Test func toggleOffWhenAlreadyUnregisteredDoesNotRestateTheService() {
+    @Test func toggleOffWhenAlreadyUnregisteredDoesNotRestateTheService() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(false)
 
@@ -202,10 +202,10 @@ struct LoginItemModelTests {
         #expect(model.setupError == nil)
     }
 
-    @Test func failedRegistrationLeavesToggleOffAndSurfacesAnError() {
+    @Test func failedRegistrationLeavesToggleOffAndSurfacesAnError() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(true)
 
@@ -219,10 +219,10 @@ struct LoginItemModelTests {
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
-    @Test func failedDeregistrationIsReportedAsADeregistration() {
+    @Test func failedDeregistrationIsReportedAsADeregistration() throws {
         let service = MockService(registered: true)
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
 
         model.setOn(false)
 
@@ -236,10 +236,10 @@ struct LoginItemModelTests {
         #expect(model.setupError == .deregistration(Boom().localizedDescription))
     }
 
-    @Test func successfulToggleClearsTheError() {
+    @Test func successfulToggleClearsTheError() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
         model.setOn(true)
         #expect(model.setupError == .registration(Boom().localizedDescription))
 
@@ -250,9 +250,9 @@ struct LoginItemModelTests {
         #expect(model.setupError == nil)
     }
 
-    @Test func initReflectsCurrentSystemState() {
-        let on = LoginItemModel(service: MockService(registered: true), defaults: freshDefaults())
-        let off = LoginItemModel(service: MockService(registered: false), defaults: freshDefaults())
+    @Test func initReflectsCurrentSystemState() throws {
+        let on = LoginItemModel(service: MockService(registered: true), defaults: try freshDefaults())
+        let off = LoginItemModel(service: MockService(registered: false), defaults: try freshDefaults())
 
         #expect(on.isOn)
         #expect(!off.isOn)

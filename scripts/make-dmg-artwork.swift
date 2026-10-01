@@ -225,4 +225,5 @@ let layout: [String: Any] = [
     "windowSize": [contentWidth + windowBorder, contentHeight + windowChrome],
 ]
 let json = try JSONSerialization.data(withJSONObject: layout, options: [.sortedKeys])
-print(String(decoding: json, as: UTF8.self))
+try FileHandle.standardOutput.write(contentsOf: json)
+try FileHandle.standardOutput.write(contentsOf: Data([0x0A]))

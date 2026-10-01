@@ -23,8 +23,7 @@ struct GregorianWeekdayTests {
         for ad in [GADay(year: 2026, month: 9, day: 27),
                    GADay(year: 2025, month: 4, day: 14),
                    GADay(year: 2028, month: 4, day: 12),
-                   GADay(year: 1918, month: 4, day: 13)]
-        {
+                   GADay(year: 1918, month: 4, day: 13)] {
             guard let bs = adToBS(ad, in: .v2) else {
                 Issue.record("Expected a Bikram Sambat answer for \(ad), which is inside the range")
                 return

@@ -8,20 +8,20 @@ import NepalKitCore
 /// Display settings must reach every surface uniformly, and persist.
 @MainActor
 struct DisplaySettingsModelTests {
-    private func freshModel() -> DisplaySettingsModel {
+    private func freshModel() throws -> DisplaySettingsModel {
         let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
         return DisplaySettingsModel(store: SettingsStore(defaults: defaults))
     }
 
-    private func menuBar() -> MenuBarModel {
-        MenuBarModel(now: RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
+    private func menuBar() throws -> MenuBarModel {
+        MenuBarModel(now: try RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     @Test("Menu-bar title honors both display axes")
-    func menuBarTitleHonorsSettings() {
-        let bar = menuBar()
+    func menuBarTitleHonorsSettings() throws {
+        let bar = try menuBar()
 
         #expect(bar.title(settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "11 Ashoj")
         #expect(bar.title(settings: DisplaySettings(digits: .devanagari, monthNames: .nepali)) == "११ असोज")
@@ -30,12 +30,12 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("An update awaiting attention marks the menu-bar date")
-    func updateMarkerPrefixesTheDateRatherThanReplacingIt() {
+    func updateMarkerPrefixesTheDateRatherThanReplacingIt() throws {
         // A scheduled check is run by a windowless app, so its alert can go
         // unseen. The menu bar is the surface this user actually looks at, so
         // the reminder goes there - and the date stays, because showing today's
         // date is the reason the item is in the menu bar at all.
-        let bar = menuBar()
+        let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         #expect(bar.title(settings: settings, updateAvailable: true) == "! 11 Ashoj")
@@ -43,11 +43,11 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("The update marker is announced as words, not as the glyph")
-    func updateMarkerIsSpokenAsWords() {
+    func updateMarkerIsSpokenAsWords() throws {
         // A voice cannot read "!", and this is the one thing on the menu bar
         // that changes what the user should do, so the spoken channel carries
         // the meaning the glyph carries visually.
-        let bar = menuBar()
+        let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         let spoken = bar.spokenTitle(settings: settings, updateAvailable: true)
@@ -59,13 +59,13 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("The reminder is still announced past the supported range")
-    func reminderSurvivesTheRangeBoundary() {
+    func reminderSurvivesTheRangeBoundary() throws {
         // The boundary replaces the date with an explanation, which is the
         // longest thing this label ever says. A reminder that silently
         // disappeared there would leave the user with no signal at all, in
         // exactly the state where the menu bar is least useful.
         let bar = MenuBarModel(
-            now: TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
+            now: try TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
         )
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -74,10 +74,10 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("The marker never appears in the spoken channel of an unmarked menu bar")
-    func noMarkerWithoutAnUpdate() {
+    func noMarkerWithoutAnUpdate() throws {
         // The existing sweep forbids typographic punctuation in every spoken
         // string, so the marker must not leak into one that has no update.
-        let bar = menuBar()
+        let bar = try menuBar()
 
         for style in [MonthNameStyle.nepali, .transliterated] {
             let spoken = bar.spokenTitle(
@@ -88,9 +88,9 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("Menu bar and popover render the same date for the same settings")
-    func menuBarMatchesPopoverForSameSettings() {
-        let now = RoundTripFixtures.date(2026, 9, 27, 12, 0)
-        let bar = menuBar()
+    func menuBarMatchesPopoverForSameSettings() throws {
+        let now = try RoundTripFixtures.date(2026, 9, 27, 12, 0)
+        let bar = try menuBar()
 
         for settings in [
             DisplaySettings(digits: .latin, monthNames: .transliterated),
@@ -106,8 +106,8 @@ struct DisplaySettingsModelTests {
         }
     }
 
-    @Test func savingDigitsPreservesMonthNames() {
-        let model = freshModel()
+    @Test func savingDigitsPreservesMonthNames() throws {
+        let model = try freshModel()
         model.save(monthNames: .nepali)
 
         model.save(digits: .devanagari)
@@ -115,8 +115,8 @@ struct DisplaySettingsModelTests {
         #expect(model.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
     }
 
-    @Test func savingMonthNamesPreservesDigits() {
-        let model = freshModel()
+    @Test func savingMonthNamesPreservesDigits() throws {
+        let model = try freshModel()
         model.save(digits: .devanagari)
 
         model.save(monthNames: .nepali)
@@ -125,9 +125,9 @@ struct DisplaySettingsModelTests {
     }
 
     @Test("Model writes through to the store")
-    func modelPersistsThroughStore() {
+    func modelPersistsThroughStore() throws {
         let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
         let store = SettingsStore(defaults: defaults)
         let model = DisplaySettingsModel(store: store)
@@ -140,13 +140,13 @@ struct DisplaySettingsModelTests {
         #expect(relaunched.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
     }
 
-    @Test func startsFromStoreDefaults() {
-        #expect(freshModel().settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
+    @Test func startsFromStoreDefaults() throws {
+        #expect(try freshModel().settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
     }
 }
 
 enum RoundTripFixtures {
-    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
-        TestDates.utc(year, month, day, hour, minute)
+    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) throws -> Date {
+        try TestDates.utc(year, month, day, hour, minute)
     }
 }

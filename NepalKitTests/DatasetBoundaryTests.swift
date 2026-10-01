@@ -14,28 +14,29 @@ struct DatasetBoundaryTests {
     private let lastSupportedAD = GADay(year: 2028, month: 4, day: 12)
     private let firstUnsupportedAD = GADay(year: 2028, month: 4, day: 13)
 
-    private func clock(_ date: GADay) -> ClockModel {
+    private func clock(_ date: GADay) throws -> ClockModel {
         // Midday NPT, comfortably inside the civil day.
-        ClockModel(
-            now: TestDates.utc(date.year, date.month, date.day, 6, 0),
-            localTimeZone: TimeZone(identifier: "America/New_York")!,
+        let zone = try #require(TimeZone(identifier: "America/New_York"))
+        return ClockModel(
+            now: try TestDates.utc(date.year, date.month, date.day, 6, 0),
+            localTimeZone: zone,
             refreshes: false
         )
     }
 
-    private func menuBar(_ date: GADay) -> MenuBarModel {
-        MenuBarModel(now: TestDates.utc(date.year, date.month, date.day, 6, 0), refreshes: false, schedulesMidnightFire: false)
+    private func menuBar(_ date: GADay) throws -> MenuBarModel {
+        MenuBarModel(now: try TestDates.utc(date.year, date.month, date.day, 6, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     // MARK: - The supported-range edge
 
-    @Test func lastSupportedDateStillConverts() {
-        let model = clock(lastSupportedAD)
+    @Test func lastSupportedDateStillConverts() throws {
+        let model = try clock(lastSupportedAD)
         #expect(model.todayBSDate() == BSDay(year: 2084, month: 12, day: 30))
     }
 
-    @Test func lastSupportedDateShowsABikramSambatDate() {
-        let model = menuBar(lastSupportedAD)
+    @Test func lastSupportedDateShowsABikramSambatDate() throws {
+        let model = try menuBar(lastSupportedAD)
         let title = model.title(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
         #expect(title != Strings.menuBarBeyondRange)
         // Menu-bar form is short: day + month, no year.
@@ -44,12 +45,12 @@ struct DatasetBoundaryTests {
 
     // MARK: - Past the boundary
 
-    @Test func firstUnsupportedDateHasNoBikramSambatAnswer() {
-        #expect(clock(firstUnsupportedAD).todayBSDate() == nil)
+    @Test func firstUnsupportedDateHasNoBikramSambatAnswer() throws {
+        #expect(try clock(firstUnsupportedAD).todayBSDate() == nil)
     }
 
-    @Test func menuBarShowsBoundaryMarkerNotABareDash() {
-        let title = menuBar(firstUnsupportedAD)
+    @Test func menuBarShowsBoundaryMarkerNotABareDash() throws {
+        let title = try menuBar(firstUnsupportedAD)
             .title(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
         #expect(title == Strings.menuBarBeyondRange)
         // A bare em dash reads as a bug or a loading failure rather than a data limit.
@@ -57,24 +58,24 @@ struct DatasetBoundaryTests {
     }
 
     @Test func gregorianAndClocksSurviveTheBoundary() throws {
-        let model = clock(firstUnsupportedAD)
+        let model = try clock(firstUnsupportedAD)
         let ad = try #require(model.todayADDate())
         #expect(formatAD(ad, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "13 April 2028")
         #expect(model.nptTimeString(digits: .latin) == "11:45:00")
     }
 
-    @Test func weekdaySurvivesTheBoundary() {
+    @Test func weekdaySurvivesTheBoundary() throws {
         // 13 April 2028 is a Thursday. The weekday belongs to the civil day, so
         // it must not depend on a Bikram Sambat conversion succeeding.
-        let model = clock(firstUnsupportedAD)
+        let model = try clock(firstUnsupportedAD)
         #expect(model.weekdayString(style: .transliterated) == "Thursday")
         #expect(model.weekdayString(style: .nepali) == "बिही")
     }
 
-    @Test func weekdayIsUnchangedAcrossTheBoundary() {
+    @Test func weekdayIsUnchangedAcrossTheBoundary() throws {
         // The two dates are consecutive, so consecutive weekdays.
-        #expect(clock(firstUnsupportedAD).weekdayString(style: .transliterated) == "Thursday")
-        #expect(clock(lastSupportedAD).weekdayString(style: .transliterated) == "Wednesday")
+        #expect(try clock(firstUnsupportedAD).weekdayString(style: .transliterated) == "Thursday")
+        #expect(try clock(lastSupportedAD).weekdayString(style: .transliterated) == "Wednesday")
     }
 
     // MARK: - The notice names the boundary

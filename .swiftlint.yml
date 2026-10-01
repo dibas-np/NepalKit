@@ -1,5 +1,3 @@
-baseline: .swiftlint.baseline
-
 excluded:
   # Build products include generated SwiftPM test and resource accessors:
   # NepalKitCore/.build/out/Intermediates.noindex/NepalKitCore.build/Debug/NepalKitCoreTests-p.build/DerivedSources/test_entry_point.swift
@@ -21,7 +19,7 @@ disabled_rules:
   - trailing_comma
 
 opt_in_rules:
-  - force_unwrapping # Surface implicit crashes; baseline records existing fixture and constant unwraps.
+  - force_unwrapping # Surface implicit crashes directly; no baseline suppresses existing findings.
 
 analyzer_rules:
   - unused_declaration # Compiler-backed analysis catches dead declarations in maintained targets.

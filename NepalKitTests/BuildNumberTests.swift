@@ -244,12 +244,12 @@ struct BuildNumberTests {
         )
     }
 
-    @Test func buildNumberHasNotRegressedBelowTheLastReleased() {
+    @Test func buildNumberHasNotRegressedBelowTheLastReleased() throws {
         // The monotonic half of the invariant. If someone lowers
         // CURRENT_PROJECT_VERSION below the highest build the feed has already
         // offered, every installed copy stops being offered updates, silently.
         let current = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? 0
-        let floor = Self.lastReleasedBuildNumber
+        let floor = try Self.lastReleasedBuildNumber
 
         #expect(
             floor > 0,
@@ -269,12 +269,17 @@ struct BuildNumberTests {
     /// shipped, so the floor is derived from it — a constant that silently lags
     /// a release is worse than no guard, because it reads as a guard.
     private static var lastReleasedBuildNumber: Int {
-        let appcast = checkoutFile("appcast.xml")
-        guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return 0 }
-        let pattern = try? NSRegularExpression(pattern: "<sparkle:version>(\\d+)</sparkle:version>")
-        let range = NSRange(text.startIndex..., in: text)
-        return pattern?.matches(in: text, range: range)
-            .compactMap { Int(text[Range($0.range(at: 1), in: text)!]) }
-            .max() ?? 0
+        get throws {
+            let appcast = checkoutFile("appcast.xml")
+            guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return 0 }
+            let pattern = try? NSRegularExpression(pattern: "<sparkle:version>(\\d+)</sparkle:version>")
+            let range = NSRange(text.startIndex..., in: text)
+            return try pattern?.matches(in: text, range: range)
+                .compactMap { match in
+                    let range = try #require(Range(match.range(at: 1), in: text))
+                    return Int(text[range])
+                }
+                .max() ?? 0
+        }
     }
 }

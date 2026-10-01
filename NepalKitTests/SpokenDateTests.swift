@@ -183,10 +183,8 @@ struct SpokenOptionLabelTests {
                 SpokenDate.bs(bs, monthNames: style),
                 SpokenDate.menuBar(today: bs, monthNames: style, dataset: .v2),
                 SpokenDate.menuBar(today: nil, monthNames: style, dataset: .v2),
-            ] {
-                if spoken.contains(where: { forbidden.contains($0) }) {
-                    offenders.append("bs spoken form \(spoken)")
-                }
+            ] where spoken.contains(where: { forbidden.contains($0) }) {
+                offenders.append("bs spoken form \(spoken)")
             }
         }
 

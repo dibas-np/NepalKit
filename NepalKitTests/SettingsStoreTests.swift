@@ -6,21 +6,21 @@ import NepalKitCore
 @testable import NepalKit
 
 struct SettingsStoreTests {
-    private func freshStore() -> (SettingsStore, UserDefaults) {
+    private func freshStore() throws -> (SettingsStore, UserDefaults) {
         let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
         return (SettingsStore(defaults: defaults), defaults)
     }
 
-    @Test func defaultsWhenNothingStored() {
-        let (store, _) = freshStore()
+    @Test func defaultsWhenNothingStored() throws {
+        let (store, _) = try freshStore()
 
         #expect(store.settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
     }
 
-    @Test func saveLoadRoundTrip() {
-        let (store, _) = freshStore()
+    @Test func saveLoadRoundTrip() throws {
+        let (store, _) = try freshStore()
         let settings = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
         store.save(settings)
@@ -28,8 +28,8 @@ struct SettingsStoreTests {
         #expect(store.settings == settings)
     }
 
-    @Test func settingsSurviveAcrossInstances() {
-        let (_, defaults) = freshStore()
+    @Test func settingsSurviveAcrossInstances() throws {
+        let (_, defaults) = try freshStore()
         SettingsStore(defaults: defaults).save(
             DisplaySettings(digits: .devanagari, monthNames: .transliterated)
         )
@@ -42,8 +42,8 @@ struct SettingsStoreTests {
         )
     }
 
-    @Test func corruptValuesFallBackToDefaults() {
-        let (store, defaults) = freshStore()
+    @Test func corruptValuesFallBackToDefaults() throws {
+        let (store, defaults) = try freshStore()
         defaults.set("klingon", forKey: SettingsStore.digitScriptKey)
         defaults.set("", forKey: SettingsStore.monthNameStyleKey)
 

@@ -112,11 +112,11 @@ struct InfoPlistKeysTests {
         #expect(info["CFBundleIdentifier"] as? String == "com.dibas.NepalKit.NepalKit")
         #expect(info["SUEnableInstallerLauncherService"] as? Bool == true,
                 "sandboxed installs abort at the installer launch without it")
-        #expect(info["CFBundleShortVersionString"] as? String != nil, "the human-facing version is substituted")
-        #expect(info["CFBundleVersion"] as? String != nil, "the build number the updater orders on is substituted")
+        #expect(info["CFBundleShortVersionString"] is String, "the human-facing version is substituted")
+        #expect(info["CFBundleVersion"] is String, "the build number the updater orders on is substituted")
         #expect(info["CFBundleIconName"] as? String == "AppIcon", "the icon would fall back to a generic one")
         #expect(info["LSApplicationCategoryType"] as? String == "public.app-category.utilities", "the category clears a build warning only if it arrives")
-        #expect(info["LSMinimumSystemVersion"] as? String != nil, "the deployment floor must be stated in the product")
+        #expect(info["LSMinimumSystemVersion"] is String, "the deployment floor must be stated in the product")
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))

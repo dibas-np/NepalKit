@@ -9,27 +9,27 @@ import NepalKitCore
 /// `ArbitratedDisputeTests` instead, with the reason each was settled. This
 /// suite holds the ones that were never in contention.
 struct MonthStartTests {
-    static let bsToADCases: [(bs: BSDay, ad: GADay, label: String)] = [
+    static let bsToADCases: [MonthStartFixture] = [
         // KMC government calendar grids, 2083.
-        (BSDay(year: 2083, month: 5, day: 1), GADay(year: 2026, month: 8, day: 17), "Bhadra 2083"),
-        (BSDay(year: 2083, month: 6, day: 1), GADay(year: 2026, month: 9, day: 17), "Ashoj 2083"),
+        .init(bs: BSDay(year: 2083, month: 5, day: 1), ad: GADay(year: 2026, month: 8, day: 17), label: "Bhadra 2083"),
+        .init(bs: BSDay(year: 2083, month: 6, day: 1), ad: GADay(year: 2026, month: 9, day: 17), label: "Ashoj 2083"),
         // Hamro Patro 2084 grids.
-        (BSDay(year: 2084, month: 4, day: 1), GADay(year: 2027, month: 7, day: 17), "Shrawan 2084"),
+        .init(bs: BSDay(year: 2084, month: 4, day: 1), ad: GADay(year: 2027, month: 7, day: 17), label: "Shrawan 2084"),
         // nepali-calendar.com 2084 grids.
-        (BSDay(year: 2084, month: 5, day: 1), GADay(year: 2027, month: 8, day: 17), "Bhadra 2084"),
-        (BSDay(year: 2084, month: 8, day: 1), GADay(year: 2027, month: 11, day: 16), "Mangsir 2084"),
+        .init(bs: BSDay(year: 2084, month: 5, day: 1), ad: GADay(year: 2027, month: 8, day: 17), label: "Bhadra 2084"),
+        .init(bs: BSDay(year: 2084, month: 8, day: 1), ad: GADay(year: 2027, month: 11, day: 16), label: "Mangsir 2084"),
         // rat32 2084 grids.
-        (BSDay(year: 2084, month: 12, day: 1), GADay(year: 2028, month: 3, day: 14), "Chaitra 2084"),
-        (BSDay(year: 2084, month: 12, day: 30), GADay(year: 2028, month: 4, day: 12), "Chaitra end 2084"),
+        .init(bs: BSDay(year: 2084, month: 12, day: 1), ad: GADay(year: 2028, month: 3, day: 14), label: "Chaitra 2084"),
+        .init(bs: BSDay(year: 2084, month: 12, day: 30), ad: GADay(year: 2028, month: 4, day: 12), label: "Chaitra end 2084"),
     ]
 
-    static let adToBSCases: [(ad: GADay, bs: BSDay, label: String)] = [
-        (GADay(year: 2026, month: 9, day: 17), BSDay(year: 2083, month: 6, day: 1), "Ashoj 2083"),
-        (GADay(year: 2028, month: 4, day: 12), BSDay(year: 2084, month: 12, day: 30), "Chaitra end 2084"),
+    static let adToBSCases: [MonthStartFixture] = [
+        .init(bs: BSDay(year: 2083, month: 6, day: 1), ad: GADay(year: 2026, month: 9, day: 17), label: "Ashoj 2083"),
+        .init(bs: BSDay(year: 2084, month: 12, day: 30), ad: GADay(year: 2028, month: 4, day: 12), label: "Chaitra end 2084"),
     ]
 
     @Test(arguments: bsToADCases)
-    func publishedMonthStartBStoAD(testCase: (bs: BSDay, ad: GADay, label: String)) {
+    func publishedMonthStartBStoAD(testCase: MonthStartFixture) {
         #expect(
             bsToAD(testCase.bs, in: .v2) == testCase.ad,
             "\(testCase.label)"
@@ -37,7 +37,7 @@ struct MonthStartTests {
     }
 
     @Test(arguments: adToBSCases)
-    func publishedMonthStartADtoBS(testCase: (ad: GADay, bs: BSDay, label: String)) {
+    func publishedMonthStartADtoBS(testCase: MonthStartFixture) {
         #expect(
             adToBS(testCase.ad, in: .v2) == testCase.bs,
             "\(testCase.label)"

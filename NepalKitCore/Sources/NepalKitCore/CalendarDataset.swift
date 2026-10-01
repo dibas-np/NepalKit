@@ -101,7 +101,7 @@ public struct CalendarDataset: Sendable {
         return bsToAD(BSDay(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
     }
 
-    /// Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
+    // Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
     // The table below is NOT covered by the SPDX identifier at the top of
     // this file. The code is GPL-3.0-or-later; the data is derived work whose
     // licence chain does not terminate in a clear grant, and no licence this
@@ -226,4 +226,3 @@ public struct CalendarDataset: Sendable {
         supportedRange: 1975 ... 2084
     )
 }
-

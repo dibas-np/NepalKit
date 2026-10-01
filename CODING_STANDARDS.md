@@ -31,9 +31,10 @@ tests, and comments. Never use a term listed under a `_Avoid_` line. "BS" and
 "AD" are acceptable in identifiers where `BikramSambat` would be unwieldy
 (`BSDay`, `GADay`, `bsToAD`); the Avoid list targets prose.
 
-Force unwraps are limited to values known to be non-nil at the call site:
-`TimeZone(secondsFromGMT: 20700)!`, a fresh `UserDefaults(suiteName:)!` in a
-test helper. Anywhere else, bind or return an optional.
+Use `.gmt` for UTC and `try #require(...)` for optional test fixtures, including
+time zones, dates, and preferences domains. Unrecoverable production invariants
+use a narrow `guard` with `preconditionFailure` and a concrete diagnostic;
+recoverable absence is bound or returned as an optional.
 
 An array subscript that can go out of range is the same class of hazard as a
 force unwrap — a latent trap rather than a compile error. If an index comes from
@@ -364,7 +365,7 @@ script but not in that file is a claim no reader can check.
   requests and pushes to `main`.
   `.swiftlint.yml` disables `identifier_name`, `line_length`, and
   `trailing_comma` because they conflict with established domain vocabulary,
-  readable line wrapping, and collection style. The committed baseline tracks
-  existing findings; remove entries as the affected code is improved. The
-  separate analyzer rules (`unused_declaration` and `unused_import`) require a
-  compiler log and are not part of the fast lint gate.
+  readable line wrapping, and collection style. No baseline suppresses existing
+  findings; maintained source must pass lint directly. The separate analyzer
+  rules (`unused_declaration` and `unused_import`) require a compiler log and
+  are not part of the fast lint gate.

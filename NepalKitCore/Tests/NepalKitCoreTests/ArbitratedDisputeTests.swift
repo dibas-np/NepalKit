@@ -52,56 +52,56 @@ struct ArbitratedDisputeTests {
     /// literal rather than a list of opaque decimal numbers.
     private static func packed(_ year: Int, _ month: Int) -> Int32 { Int32(year * 100 + month) }
 
-    static let bsToADCases: [(bs: BSDay, ad: GADay, label: String, source: String)] = [
+    static let bsToADCases: [ArbitratedMonthFixture] = [
         // -- Phase 1: majority vote, confirmed against published calendars --
         // 2082 Magh 20 <-> 3 Feb 2026, Nepali Patro converter.
-        (BSDay(year: 2082, month: 10, day: 20), GADay(year: 2026, month: 2, day: 3),
-         "Magh 20 2082", "Nepali Patro converter"),
+        .init(bs: BSDay(year: 2082, month: 10, day: 20), ad: GADay(year: 2026, month: 2, day: 3),
+              label: "Magh 20 2082", source: "Nepali Patro converter"),
         // 2083: KMC government grid settled that Ashoj has 31 days, not 30.
-        (BSDay(year: 2083, month: 6, day: 31), GADay(year: 2026, month: 10, day: 17),
-         "Ashar end 2083 (31 days)", "KMC government calendar grid"),
+        .init(bs: BSDay(year: 2083, month: 6, day: 31), ad: GADay(year: 2026, month: 10, day: 17),
+              label: "Ashar end 2083 (31 days)", source: "KMC government calendar grid"),
         // 2084: Hamro Patro + mypatro + ashesh grids settled Baisakh 31,
         // Jestha 31, Ashar 32. Baisakh was the one that had no assertion.
-        (BSDay(year: 2084, month: 1, day: 31), GADay(year: 2027, month: 5, day: 14),
-         "Baisakh end 2084 (31 days)", "Hamro Patro + mypatro + ashesh grids"),
-        (BSDay(year: 2084, month: 2, day: 1), GADay(year: 2027, month: 5, day: 15),
-         "Jestha 1 2084", "Hamro Patro + mypatro + ashesh grids"),
-        (BSDay(year: 2084, month: 3, day: 1), GADay(year: 2027, month: 6, day: 15),
-         "Ashar 1 2084", "Hamro Patro + mypatro + ashesh grids"),
+        .init(bs: BSDay(year: 2084, month: 1, day: 31), ad: GADay(year: 2027, month: 5, day: 14),
+              label: "Baisakh end 2084 (31 days)", source: "Hamro Patro + mypatro + ashesh grids"),
+        .init(bs: BSDay(year: 2084, month: 2, day: 1), ad: GADay(year: 2027, month: 5, day: 15),
+              label: "Jestha 1 2084", source: "Hamro Patro + mypatro + ashesh grids"),
+        .init(bs: BSDay(year: 2084, month: 3, day: 1), ad: GADay(year: 2027, month: 6, day: 15),
+              label: "Ashar 1 2084", source: "Hamro Patro + mypatro + ashesh grids"),
 
         // -- Phase 2: post-review arbitration against published Patro --
         // 1975 kept the second table's row: the ashesh Bhadra/Ashwin pair is
         // Navami-to-Dwadashi tithi-continuous, and the Bhadra grid is missing
         // its two trailing days.
-        (BSDay(year: 1975, month: 5, day: 1), GADay(year: 1918, month: 8, day: 17),
-         "Bhadra 1 1975", "ashesh grid"),
-        (BSDay(year: 1975, month: 6, day: 1), GADay(year: 1918, month: 9, day: 17),
-         "Ashwin 1 1975", "ashesh grid"),
+        .init(bs: BSDay(year: 1975, month: 5, day: 1), ad: GADay(year: 1918, month: 8, day: 17),
+              label: "Bhadra 1 1975", source: "ashesh grid"),
+        .init(bs: BSDay(year: 1975, month: 6, day: 1), ad: GADay(year: 1918, month: 9, day: 17),
+              label: "Ashwin 1 1975", source: "ashesh grid"),
         // 1989 kept the base table's row: ashesh's Kartik/Mangsir pair is
         // self-consistent (Kartik 30 = 15 Nov, Mangsir 1 = 16 Nov) and
         // tithi-continuous.
-        (BSDay(year: 1989, month: 7, day: 30), GADay(year: 1932, month: 11, day: 15),
-         "Kartik end 1989 (30 days)", "ashesh grid"),
-        (BSDay(year: 1989, month: 8, day: 1), GADay(year: 1932, month: 11, day: 16),
-         "Mangsir 1 1989", "ashesh grid"),
+        .init(bs: BSDay(year: 1989, month: 7, day: 30), ad: GADay(year: 1932, month: 11, day: 15),
+              label: "Kartik end 1989 (30 days)", source: "ashesh grid"),
+        .init(bs: BSDay(year: 1989, month: 8, day: 1), ad: GADay(year: 1932, month: 11, day: 16),
+              label: "Mangsir 1 1989", source: "ashesh grid"),
         // 1991 kept the second table's row: ashesh Mangsir 1991 has 30 days.
-        (BSDay(year: 1991, month: 8, day: 30), GADay(year: 1934, month: 12, day: 15),
-         "Mangsir end 1991 (30 days)", "ashesh grid"),
+        .init(bs: BSDay(year: 1991, month: 8, day: 30), ad: GADay(year: 1934, month: 12, day: 15),
+              label: "Mangsir end 1991 (30 days)", source: "ashesh grid"),
         // 1993 kept the base table's row: ashesh Ashar grid runs 31 days,
         // ending 14 July.
-        (BSDay(year: 1993, month: 3, day: 31), GADay(year: 1936, month: 7, day: 14),
-         "Ashar end 1993 (31 days)", "ashesh grid"),
+        .init(bs: BSDay(year: 1993, month: 3, day: 31), ad: GADay(year: 1936, month: 7, day: 14),
+              label: "Ashar end 1993 (31 days)", source: "ashesh grid"),
         // 2062 kept the second table's rows: ashesh Baisakh/Jestha 31/31,
         // tithi-continuous.
-        (BSDay(year: 2062, month: 1, day: 31), GADay(year: 2005, month: 5, day: 14),
-         "Baisakh end 2062 (31 days)", "ashesh grid"),
-        (BSDay(year: 2062, month: 2, day: 31), GADay(year: 2005, month: 6, day: 14),
-         "Jestha end 2062 (31 days)", "ashesh grid"),
+        .init(bs: BSDay(year: 2062, month: 1, day: 31), ad: GADay(year: 2005, month: 5, day: 14),
+              label: "Baisakh end 2062 (31 days)", source: "ashesh grid"),
+        .init(bs: BSDay(year: 2062, month: 2, day: 31), ad: GADay(year: 2005, month: 6, day: 14),
+              label: "Jestha end 2062 (31 days)", source: "ashesh grid"),
     ]
 
     @Test(arguments: bsToADCases)
     func arbitratedMonthLengthMatchesPublishedSource(
-        testCase: (bs: BSDay, ad: GADay, label: String, source: String)
+        testCase: ArbitratedMonthFixture
     ) {
         #expect(
             bsToAD(testCase.bs, in: .v2) == testCase.ad,
@@ -116,7 +116,7 @@ struct ArbitratedDisputeTests {
     /// shorten the month the dispute was about.
     @Test(arguments: bsToADCases)
     func arbitratedCaseIsInsideItsMonth(
-        testCase: (bs: BSDay, ad: GADay, label: String, source: String)
+        testCase: ArbitratedMonthFixture
     ) {
         let lengths = CalendarDataset.v2.monthLengths(for: testCase.bs.year)
         #expect(
