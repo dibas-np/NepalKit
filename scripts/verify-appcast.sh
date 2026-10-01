@@ -95,9 +95,9 @@ URL_PREFIX="${URL_PREFIX%/}/"
 # is deliberately fresh (it is per-run and private, see package-release.sh), so
 # without this the feed would carry no history at all.
 #
-# Keep every historical item with --maximum-versions 0 below. Sparkle's default
-# prunes to three versions per compatibility branch, which otherwise deletes
-# older release records when a fresh staging directory adds another archive.
+# Retain the newest five versions per compatibility branch. Sparkle defaults
+# to three; the explicit limit keeps a longer recent history while preserving
+# separate update paths for older supported systems.
 # update-changelog.py still takes historical dates from the repository feed.
 #
 # Read from the repository rather than from a copy: the committed appcast is
@@ -124,7 +124,7 @@ echo "release url prefix: $URL_PREFIX"
 # update's "Learn More" destination, so the bare repo URL drops the release
 # notes a user is being offered.
 "$GENERATE_APPCAST" \
-    --maximum-versions 0 \
+    --maximum-versions 5 \
     --download-url-prefix "$URL_PREFIX" \
     --link "$RELEASE_LINK" \
     "$ARCHIVES_DIR"
