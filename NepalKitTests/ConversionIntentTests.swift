@@ -53,7 +53,7 @@ struct ConversionIntentTests {
         #expect(converted == BSDay(year: 2081, month: 12, day: 2))
         #expect(weekday(of: named) == 7)
 
-        var intent = GregorianToBikramSambatIntent()
+        let intent = GregorianToBikramSambatIntent()
         intent.date = date
         let result = try await intent.perform()
         #expect(result.value?.weekday == "Saturday")
@@ -103,7 +103,7 @@ struct ConversionIntentTests {
         #expect(parts.year == 2025 && parts.month == 6 && parts.day == 29)
         #expect(parts.hour == 12 && parts.minute == 0)
 
-        var intent = BikramSambatToGregorianIntent()
+        let intent = BikramSambatToGregorianIntent()
         intent.day = 15
         intent.month = .ashar
         intent.year = 2082
@@ -130,13 +130,13 @@ struct ConversionIntentTests {
         #expect(dataset.monthLengths(for: 2082)?[2] == 32)
         #expect(dataset.monthLengths(for: 2082)?[6] == 30)
 
-        var valid = BikramSambatToGregorianIntent()
+        let valid = BikramSambatToGregorianIntent()
         valid.day = 32
         valid.month = .ashar
         valid.year = 2082
         _ = try await valid.perform()
 
-        var invalid = BikramSambatToGregorianIntent()
+        let invalid = BikramSambatToGregorianIntent()
         invalid.day = 31
         invalid.month = .kartik
         invalid.year = 2082
@@ -154,7 +154,7 @@ struct ConversionIntentTests {
 
     @Test("Out-of-range Bikram Sambat year names the full boundary")
     func bikramSambatOutOfRange() async {
-        var intent = BikramSambatToGregorianIntent()
+        let intent = BikramSambatToGregorianIntent()
         intent.day = 15
         intent.month = .ashar
         intent.year = 2090
