@@ -30,12 +30,14 @@ DMG_LAYOUT="$WORK/${APP}-layout.dmg"
 # last component of wherever it is mounted, so a name already in use on this
 # Mac would silently script the wrong volume. That failure is invisible: the
 # layout is written to a volume nobody ships, and the DMG comes out default.
-DMG_LAYOUT_MOUNT=/Volumes/${APP}-layout
+# LaunchServices also retains records for detached images at their mount paths.
+# Reusing a path can match an older image that unregistering this run cannot remove.
+DMG_LAYOUT_MOUNT="/Volumes/${APP}-layout-${WORK:t}"
 # Big enough for the stapled app and the artwork with room to spare. The
 # compressed image that comes out is a fraction of this.
 DMG_LAYOUT_SIZE=300m
 DMG_LAYOUT_DEVICE=
-MNT=/Volumes/${APP}-release-check
+MNT="/Volumes/${APP}-release-check-${WORK:t}"
 
 # Computed at use, not here: the export has not run yet at this point in the
 # script, so reading its Info.plist now would silently yield "0" in the name.
@@ -258,7 +260,7 @@ mkdir -p "$DMG_LAYOUT_MOUNT/.background"
 ditto "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app"
 ln -s /Applications "$DMG_LAYOUT_MOUNT/Applications"
 LAYOUT=$(swift "$ROOT/scripts/make-dmg-artwork.swift" "$DMG_LAYOUT_MOUNT/.background/$BACKGROUND" "$APP")
-finder_run "$ROOT/scripts/dmg-layout.applescript" "${APP}-layout" "$APP" \
+finder_run "$ROOT/scripts/dmg-layout.applescript" "${DMG_LAYOUT_MOUNT:t}" "$APP" \
     "$DMG_LAYOUT_MOUNT/.background/$BACKGROUND" "$LAYOUT"
 
 # Finder's change log is written while the volume is mounted and has no business
@@ -297,7 +299,7 @@ diskutil image attach "$DMG" --mountPoint "$MNT" >/dev/null
 # notarized, stapled and Gatekeeper-clean either way, and the layout lives in
 # an undocumented file that Apple is free to stop reading. A release that ships
 # a default window should fail here, loudly, rather than in a bug report.
-finder_run "$ROOT/scripts/verify-dmg-layout.applescript" "${APP}-release-check" "$APP" "$LAYOUT"
+finder_run "$ROOT/scripts/verify-dmg-layout.applescript" "${MNT:t}" "$APP" "$LAYOUT"
 
 # The background picture is the one part of the layout AppleScript cannot read
 # back: `background picture` is declared as a `file` and every way of asking

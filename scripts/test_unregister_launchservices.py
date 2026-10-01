@@ -333,6 +333,22 @@ class PackageReleaseWiring(unittest.TestCase):
             self.assertIn("release hygiene failed", result.stderr)
             self.assertIn(str(workspace / "NepalKit.app"), result.stderr)
 
+    def test_mount_paths_and_finder_disk_names_are_unique_per_release(self) -> None:
+        source = (SCRIPT.parent / "package-release.sh").read_text()
+        assignments = "\n".join(re.findall(r"^(?:DMG_LAYOUT_MOUNT|MNT)=.*$", source, re.M))
+        mounts = []
+        for work in ("/tmp/NepalKit-release.first", "/tmp/NepalKit-release.second"):
+            result = subprocess.run(
+                ["/bin/zsh", "-c", 'APP=NepalKit\nWORK="$1"\n' + assignments
+                 + '\nprintf "%s\\n" "$DMG_LAYOUT_MOUNT" "$MNT"', "_", work],
+                capture_output=True, text=True, check=True,
+            )
+            mounts.extend(result.stdout.splitlines())
+        self.assertEqual(len(set(mounts)), 4, "reused mount paths collide with prior disk-image registrations")
+        self.assertEqual(len({Path(mount).name for mount in mounts}), 4, "Finder identifies disks by mount name")
+        self.assertIn('"${DMG_LAYOUT_MOUNT:t}" "$APP"', source)
+        self.assertIn('"${MNT:t}" "$APP"', source)
+
     def test_layout_unregisters_before_unmounting(self) -> None:
         source = (SCRIPT.parent / "package-release.sh").read_text()
         start = source.index("# Unmount, then eject.")
