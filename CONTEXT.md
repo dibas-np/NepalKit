@@ -49,7 +49,7 @@ The span of Bikram Sambat years the bundled dataset converts in both directions.
 _Avoid_: Product boundary, date range, supported years
 
 **Range boundary state**:
-What the user sees once the current date passes the supported range: a plain statement that the Bikram Sambat date is unavailable, naming the last supported year, shown beside the Gregorian date and Nepal Time that remain answerable. Never a silent placeholder, and never a menu-bar warning badge.
+What the user sees once the current date passes the supported range: a plain statement that the Bikram Sambat date is unavailable, naming the last supported year, shown beside the Gregorian date and Nepal Time that remain answerable. Never a silent placeholder, and never a menu-bar warning badge. A range boundary state is an expected domain result and does not prevent Gregorian calendar-day progression. An unexpected calendar calculation or dataset failure is an error and must remain distinguishable from it.
 _Avoid_: Error state, unavailable date, out-of-range
 
 A supported range is a property of the bundled dataset, not a fixed product limit: the release process extends it by shipping a new dataset when newer official Patro data is published, and narrows it by shipping a new dataset when the shipped table can no longer be corroborated for some of its years.
