@@ -75,14 +75,16 @@ struct TodayRectangularComplication: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
             } else {
-                // Three lines only fit the rectangular slot when the weekday
-                // steps down to caption2 — measured clipping on a 44 mm
-                // Modular middle slot with a headline weekday.
+                // Two lines are all a real Modular middle slot fits — the
+                // three-line arrangement clipped on a 44 mm watch even with
+                // the weekday at caption2. The weekday joins the day/month
+                // line at its own smaller size; year and Gregorian detail
+                // stay on the secondary line.
                 VStack(alignment: .leading) {
                     Text(components.weekdayName)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
+                    + Text(" \(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
                     Text("\(components.bikramSambatYear) · \(components.gregorianDay) \(components.gregorianMonthName)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2)
