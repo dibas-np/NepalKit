@@ -85,6 +85,22 @@ The Today screen shows a `FIXTURE — …` banner while active. For the complica
 | 19 | Real NPT midnight (ordinary build, no debugger) | date flips per family; observed timing recorded | | | |
 | 20 | Profile validity covered the session | yes/no; re-sign performed | | | |
 
+## Session log
+
+### 2026-10-03 — first install and observation (SE 2, 44 mm, watchOS 26.6)
+
+Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** scheme after an initial wrong-scheme attempt (running the container scheme produced the `ITSWatchOnlyContainer` non-installable error and platform-mismatched destinations — the container scheme was then removed).
+
+| Rows | Result |
+| --- | --- |
+| 1–2 | Pass: 44 mm, watchOS 26.6; first launch renders weekday, prominent Devanagari day, month/year, Gregorian line as expected; no fixture banner; date correct across a midnight boundary. |
+| 5–6 | Pass: circular (Infograph inner) and corner (outer) slots added and rendering. |
+| 7 | Pass: tap opens Today (circular, corner verified; others pending re-check). |
+| 3 | **Defect**: rectangular slot clipped the weekday (top) and Gregorian line (bottom). Fixed in code — weekday stepped down to caption2; re-check pending. |
+| 5 | **Defect**: circular stack sat slightly low optically. Fixed — small optical lift applied; re-check pending. |
+| 4/9 | **Defect**: the large-text fallbacks never triggered — the watchOS Text Size slider's maximum stops below the accessibility size categories, so `isAccessibilitySize` never fired on-device. Fixed — fallbacks now switch from xxLarge; re-check pending. Today's scrolling fallback itself worked once reached. |
+| — | **Gap**: no app icon (empty appiconset). Fixed — the shared Icon Composer `AppIcon.icon` now ships with the Watch app; on-device appearance re-check pending. |
+
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.

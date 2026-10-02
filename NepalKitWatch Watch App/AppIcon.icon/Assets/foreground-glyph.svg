@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1024"
+   height="1024"
+   viewBox="0 0 1024 1024"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="foreground-glyph.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1" />
+  <!-- Devanagari "ने". Convert text to outlines before importing into Icon Composer. -->
+  <path
+     d="m 417.68004,516.88 c 0,15.12 37.44,57.24 51.84,57.24 13.68,0 19.08,-6.84 19.08,-20.16 v -31.68 h 66.24 V 647.2 h 41.04 V 452.8 h 29.16 v -40.68 h -226.08 v 40.68 h 155.88 v 36.36 h -111.6 c -16.56,0 -25.56,16.2 -25.56,27.72 z M 587.9598,411.76 499.3998,316 l -27.36,21.24 79.56,74.52 z"
+     id="text1"
+     style="font-weight:600;font-size:360px;font-family:'Kohinoor Devanagari', 'Devanagari MT', sans-serif;text-anchor:middle;fill:#c71236"
+     aria-label="ने" />
+</svg>

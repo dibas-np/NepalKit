@@ -85,7 +85,7 @@ struct TodaySupportedView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
+        if dynamicTypeSize.watchLargeTextFallback {
             ScrollView {
                 TodayDateLinesView(components: components)
                     .accessibilityElement(children: .combine)
@@ -113,6 +113,16 @@ struct TodaySupportedView: View {
     /// date with Latin digits, and the Gregorian date presented here.
     private var spokenLabel: String {
         "\(components.spokenWeekdayName), \(components.spokenBikramSambat), \(components.spokenGregorian)"
+    }
+}
+
+/// The threshold where Today switches to its scrollable full-date-lines
+/// fallback; matches the complication threshold (see the extension's
+/// DynamicTypeSize extension). Deliberately duplicated per module: core does
+/// not import SwiftUI.
+extension DynamicTypeSize {
+    var watchLargeTextFallback: Bool {
+        self >= .xxLarge
     }
 }
 
