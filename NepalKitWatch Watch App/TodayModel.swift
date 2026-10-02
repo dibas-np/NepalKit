@@ -75,7 +75,7 @@ final class TodayModel {
     private func refresh() {
         let instant = now()
         do {
-            guard let today = try todayAD(now: instant) else {
+            guard let today = todayAD(now: instant) else {
                 throw DayResolutionError.unreadableInstant(instant)
             }
             let day = try resolveDay(today, dataset)

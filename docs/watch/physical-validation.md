@@ -1,0 +1,89 @@
+# Watch physical-validation handoff
+
+Status: prepared, 2026-10-02
+Scope: development-signed build preparation and the physical-device session worksheet for the Apple Watch SE 2 (watchOS 26) paired with iPhone 17 (iOS 27)
+Related: [readiness evidence](readiness-evidence.md)
+
+## Prepared artifact and reproduction
+
+The readiness gate is satisfied for the automated/build checks. Reproduce the development-signed artifact from the repository root:
+
+```sh
+# Watch app + embedded complication extension, device architecture, signed
+xcodebuild build -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
+    -destination 'generic/platform=watchOS'
+```
+
+Install via Xcode: open `NepalKit.xcodeproj`, select the **NepalKitWatch Watch App** scheme and the physical Watch destination, Product ▸ Run. For a distribution-shaped container (not needed for development install), the **NepalKitWatch** scheme builds the watch-only container at `NepalKitWatch.app/Watch/NepalKitWatch Watch App.app/PlugIns/NepalKitComplications.appex`.
+
+| Signing item | Value / instruction |
+| --- | --- |
+| Team | `CA89X9954L`, automatic signing on the Watch app, extension and container |
+| Entitlements | None beyond defaults — no App Group, no distribution capabilities |
+| Identities | container `com.dibas.NepalKit.NepalKitWatch`; Watch app `…watchkitapp`; extension `…watchkitapp.NepalKitComplications` |
+| Profile validity | Development profiles expire (Personal Team: seven days; also ten App IDs / three devices per platform). Schedule installation **and** the real-midnight observation inside the validity window; re-sign and reinstall beforehand if validity would lapse. Recheck current Personal Team limits at session time — they are Apple-account facts, not repository facts. |
+
+Recorded during preparation: no credentials or device identifiers are stored in this document.
+
+## Compatibility prechecks (read-only, done in planning, recheck at session)
+
+- Xcode 27 supports watchOS deployment targets 9–27 and watchOS physical-device support from watchOS 10; the watchOS 26.0 floor and iOS 27 phone are inside the documented ranges.
+- Apple lists the SE 2 among watches eligible for watchOS 26, pairing with iPhone 8 or later on iOS 16+.
+- Unobserved at preparation — session confirmation fields: exact OS patch versions, SE 2 case size (40/44 mm), installed faces, actual provisioning status, operational pairing state. An identified incompatibility blocks the session; an unobservable detail is a gap to confirm, not a failure.
+
+## Development harness (fixture) usage
+
+Build and run with the Watch targets' Debug configurations (they carry `NEPALKIT_WATCH_FIXTURES`) and pass launch arguments in the scheme's Arguments Passed On Launch for one launch only — nothing persists:
+
+| Argument | Effect |
+| --- | --- |
+| `-NepalKitFixtureScenario boundaryBefore` | Today before the supported range (1918-04-12) |
+| `-NepalKitFixtureScenario boundaryAfter` | Today after the range (2028-04-13) |
+| `-NepalKitFixtureScenario projected2084` | Today inside the provisional 2084 year |
+| `-NepalKitFixtureScenario terminal` | Day +13 equals the dataset maximum → the fifteenth terminal entry |
+| `-NepalKitFixtureScenario midnightApproach` | Today 5 minutes before an NPT midnight |
+| `-NepalKitFixtureInstant <ISO-8601 Z>` | Any fixed instant |
+| `-NepalKitFixtureFailAt <offset>` | Timeline resolution fails at that horizon offset (prefix retained, `.after` +15 min) |
+| `-NepalKitFixtureError today` / `withoutContext` | Today resolution fails with / without Gregorian context |
+
+The Today screen shows a `FIXTURE — …` banner while active. For the complication extension in Simulator, the same arguments can be supplied on the extension's scheme run. To return to ordinary mode for the real-midnight observation: build without the condition (Release, or remove it from the Debug configuration) and launch without arguments. Never change the device system date.
+
+## Physical session checklist
+
+1. **Setup.** Record exact OS patches and the SE 2 case size; confirm pairing readiness in Device Hub (pair iPhone first, then Watch; accept trust prompts; enable Developer Mode on both, including the restart confirmation; if Developer Mode is absent, initiate pairing first). Inspect Device Hub's reported readiness issues rather than inferring incompatibility.
+2. **Install and launch.** Confirm account/team/identities and profile validity. Select the Watch app scheme and the physical Watch destination; require a clean build, install, and first launch of Today. Record the outcome and any actionable failure.
+3. **Families.** Add the complication in the actual picker on the planned slots: Modular middle rectangular, Utility bottom inline, Infograph inner circular, Infograph outer corner. Record actual face/slot availability; resolve any coverage gap rather than claiming an unobserved slot. Another case size is covered in Simulator (49 mm recorded in the readiness evidence).
+4. **Presentation.** Verify each tap opens current Today; canonical Nepali names, Devanagari digits, English Gregorian months, one weekday per date; native fit of the longest month names and combining marks (कात्तिक worst case) in every slot; large-text fallback and Today scrolling; full-color and accented legibility; VoiceOver announces Latin-digit full Bikram Sambat dates, one weekday, Gregorian context where presented, and support context on boundaries.
+5. **Independence and travel.** Exercise offline and phone-unavailable operation in both the app and the complications. Change the device timezone with a known instant and confirm Nepal Time semantics; restore the timezone afterwards. Deactivate/reactivate across a day boundary and confirm immediate recomputation.
+6. **Harness cases.** Through the clearly identified fixture banner: both dataset boundaries, the terminal-entry case, expected unavailable and genuine error states with/without Gregorian context, and an NPT transition. Confirm failure injection never renders as an ordinary boundary. Do not change the device system date.
+7. **Real midnight.** Verify the development profile covers the session; re-sign/reinstall first if validity is uncertain. Build ordinary (non-fixture) mode and observe at least one real NPT midnight **outside the debugger**. Record the expected boundary behavior and the *observed* family refresh timing without asserting a 00:00:00 deadline or retry SLA; unexpected observations trigger investigation and, if warranted, an explicit evidence-backed scheduling decision.
+8. **Record.** Fill the worksheet below per observation: build/dataset version, model/OS, face/family, supplied instant/NPT day/state, expected vs observed, pass/fail, outstanding issues.
+
+## Observation worksheet
+
+| # | Item | Expected | Observed | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Device patches / case size | recorded fields | | | |
+| 2 | Pairing + Developer Mode + install + first launch | Today appears | | | |
+| 3 | Rectangular slot (Modular middle) | weekday + BS day/month + year/Gregorian line | | | |
+| 4 | Inline slot (Utility bottom) | full BS day/month/year | | | |
+| 5 | Circular slot (Infograph inner) | stacked BS day/month | | | |
+| 6 | Corner slot (Infograph outer) | BS day + month/year label | | | |
+| 7 | Tap-to-Today per family | Today, current NPT day | | | |
+| 8 | Longest month/combining marks (कात्तिक) | no clipping or illegible fit | | | |
+| 9 | Large text + Today scrolling | fallback composition, scrollable | | | |
+| 10 | Full-color + accented rendering | states distinguishable without color | | | |
+| 11 | VoiceOver | Latin-digit full BS speech; conditional Gregorian | | | |
+| 12 | Offline + phone unavailable | both products answer | | | |
+| 13 | Alternate device timezone | NPT semantics unchanged | | | |
+| 14 | Deactivate/reactivate across a day | immediate recomputation | | | |
+| 15 | Fixture: boundaryBefore / boundaryAfter | explicit unavailable copy + support context | | | |
+| 16 | Fixture: projected2084 | renders via shared dataset; provisional | | | |
+| 17 | Fixture: terminal | 15-entry timeline behavior visible | | | |
+| 18 | Fixture: error with/without context | error copy; Gregorian only when resolved | | | |
+| 19 | Real NPT midnight (ordinary build, no debugger) | date flips per family; observed timing recorded | | | |
+| 20 | Profile validity covered the session | yes/no; re-sign performed | | | |
+
+## Gates after this session
+
+Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.
