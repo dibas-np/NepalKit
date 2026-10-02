@@ -24,6 +24,7 @@
 - Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
 - Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
 - Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
+- An Apple Watch app and four complication styles for Today's date (in development).
 - Optional launch at login.
 
 Date conversion and clocks work offline. NepalKit has no account, analytics, or telemetry. The app uses network access for updates.
@@ -72,6 +73,19 @@ Spoken answers use Latin digits and your chosen month-name language. Dates displ
 
 Date conversions currently work through Shortcuts. Siri cannot yet collect the conversion parameters reliably. Available phrases appear in **Settings → General → Siri & Shortcuts**.
 
+## On the Apple Watch
+
+<p align="center">
+  <img src="docs/img/watch-today.png" alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date" width="200" />
+  <img src="docs/img/watch-complications.png" alt="An Infograph watch face with NepalKit corner complications showing १७ असोज २०८३ along the bezel" width="200" />
+</p>
+
+NepalKit lives on the watch face with four complication styles — rectangular, inline, circular, and corner. Tapping a complication opens Today: the full Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day.
+
+The Watch app works offline and follows Nepal Time regardless of the watch's time zone. It requires watchOS 26 or later.
+
+The Watch app is in development and not part of the current download.
+
 ## Supported dates and calendar data
 
 NepalKit supports **1975 through 2084 Bikram Sambat**, corresponding to **April 13, 1918 through April 12, 2028 Gregorian**. Dates outside the bundled dataset are reported as unsupported.
@@ -92,7 +106,7 @@ cd NepalKit
 open NepalKit.xcodeproj
 ```
 
-Select the **NepalKit** scheme in Xcode and run the app.
+Select the **NepalKit** scheme in Xcode and run the app. The Watch app builds and runs the same way from the **NepalKitWatch Watch App** scheme with a watch simulator or device destination.
 
 To build the app and run the local checks from the repository root:
 
@@ -110,11 +124,14 @@ To run either Swift test suite separately:
 ```
 
 ```text
-NepalKitCore/   Calendar dataset, conversion, formatting, and spoken dates
-NepalKit/       SwiftUI menu-bar app, settings, models, and App Intents
-NepalKitTests/  App-layer tests
-scripts/       Local checks, release packaging, and verification
-docs/adr/      Architecture decision records
+NepalKitCore/                 Calendar dataset, conversion, formatting, and spoken dates
+NepalKit/                     SwiftUI menu-bar app, settings, models, and App Intents
+NepalKitTests/                App-layer tests
+NepalKitWatch Watch App/      SwiftUI Watch app, Today screen, and lifecycle model
+NepalKitComplications/        Watch complications (WidgetKit extension)
+NepalKitWatch Watch AppTests/ Watch tests, run on a watchOS simulator
+scripts/                      Local checks, release packaging, and verification
+docs/adr/                     Architecture decision records
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODING_STANDARDS.md](CODING_STANDARDS.md) before submitting changes.
