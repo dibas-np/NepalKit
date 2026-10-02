@@ -30,6 +30,9 @@ final class TodayModel {
     private let dataset: CalendarDataset
     private let clockChanges: @Sendable () -> ClockChangeStream
     private let nextMidnight: @Sendable (Date) -> Date?
+    /// The production resolver by default; the development fixture harness
+    /// injects failure points through it without changing any calendar answer.
+    private let resolveDay: @Sendable (GADay, CalendarDataset) throws -> ResolvedDay
 
     private var midnightTask: Task<Void, Never>?
     private var clockChangeTask: Task<Void, Never>?
@@ -38,12 +41,14 @@ final class TodayModel {
         now: @escaping @Sendable () -> Date = { Date.now },
         dataset: CalendarDataset = .v2,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
-        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) }
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) },
+        resolveDay: @escaping @Sendable (GADay, CalendarDataset) throws -> ResolvedDay = resolvedDay(for:in:)
     ) {
         self.now = now
         self.dataset = dataset
         self.clockChanges = clockChanges
         self.nextMidnight = nextMidnight
+        self.resolveDay = resolveDay
     }
 
     /// Launch or foreground activation. Repeated activation while already
@@ -70,7 +75,10 @@ final class TodayModel {
     private func refresh() {
         let instant = now()
         do {
-            let day = try resolvedDay(now: instant, in: dataset)
+            guard let today = try todayAD(now: instant) else {
+                throw DayResolutionError.unreadableInstant(instant)
+            }
+            let day = try resolveDay(today, dataset)
             display = watchDayDisplay(for: day, settings: .watch, in: dataset)
         } catch let error as DayResolutionError {
             display = watchCalculationErrorDisplay(

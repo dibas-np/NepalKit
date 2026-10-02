@@ -7,7 +7,7 @@ import WidgetKit
 /// families. Tapping it opens the Watch app, whose sole destination is Today.
 struct TodayComplication: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "NepalKitTodayComplication", provider: TodayComplicationProvider()) { entry in
+        StaticConfiguration(kind: "NepalKitTodayComplication", provider: makeTodayProvider()) { entry in
             TodayComplicationView(entry: entry)
         }
         .configurationDisplayName("Today in Bikram Sambat")
@@ -20,3 +20,15 @@ struct TodayComplication: Widget {
         ])
     }
 }
+
+/// The provider factory: ordinary in every nondevelopment build, fixture-wired
+/// only when the development condition is compiled in.
+#if NEPALKIT_WATCH_FIXTURES
+private func makeTodayProvider() -> TodayComplicationProvider {
+    ComplicationFixtures.makeProvider()
+}
+#else
+private func makeTodayProvider() -> TodayComplicationProvider {
+    TodayComplicationProvider()
+}
+#endif

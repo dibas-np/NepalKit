@@ -13,7 +13,35 @@ import NepalKitCore
 /// system clock changes — all lifecycle behavior lives in `TodayModel`; this
 /// view only wires the scene phase to it.
 struct TodayView: View {
+    #if NEPALKIT_WATCH_FIXTURES
+    @State private var model = TodayFixtures.makeModel()
+    @State private var fixtureNote = TodayFixtures.bannerNote
+    #else
     @State private var model = TodayModel()
+    #endif
+
+    var body: some View {
+        #if NEPALKIT_WATCH_FIXTURES
+        Group {
+            if let fixtureNote {
+                // The active fixture identifies itself on screen.
+                Text(fixtureNote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            TodayScreen(model: model)
+        }
+        #else
+        TodayScreen(model: model)
+        #endif
+    }
+}
+
+/// The screen itself: renders the model's display state and wires the scene
+/// phase to the lifecycle, so activation, the midnight refresh and
+/// clock-change handling all follow the app to the foreground and background.
+struct TodayScreen: View {
+    let model: TodayModel
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {

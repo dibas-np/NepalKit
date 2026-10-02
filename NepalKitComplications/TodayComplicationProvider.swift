@@ -16,10 +16,30 @@ struct TodayComplicationProvider: TimelineProvider {
 
     private let now: @Sendable () -> Date
     private let dataset: CalendarDataset
+    private let makeBuilder: @Sendable () -> TodayTimelineBuilder
 
     init(now: @escaping @Sendable () -> Date = { Date.now }, dataset: CalendarDataset = .v2) {
         self.now = now
         self.dataset = dataset
+        self.makeBuilder = {
+            TodayTimelineBuilder(
+                dataset: dataset,
+                resolveDay: { try resolvedDay(for: $0, in: dataset) },
+                nextMidnight: { nextNPTMidnight(after: $0) }
+            )
+        }
+    }
+
+    /// The fixture/test path: a builder constructed elsewhere so development
+    /// failure injection reaches the production timeline construction.
+    init(
+        now: @escaping @Sendable () -> Date,
+        dataset: CalendarDataset,
+        makeBuilder: @escaping @Sendable () -> TodayTimelineBuilder
+    ) {
+        self.now = now
+        self.dataset = dataset
+        self.makeBuilder = makeBuilder
     }
 
     /// Neutral and clock-free: WidgetKit redacts placeholder content, so the
@@ -56,26 +76,25 @@ struct TodayComplicationProvider: TimelineProvider {
         do {
             let day = try resolvedDay(now: instant, in: dataset)
             state = .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
-        } catch {
+        } catch let error as DayResolutionError {
             // A snapshot failure is an error, never a boundary state or a
-            // fabricated sample; the NPT day was not derived, so there is no
-            // Gregorian context to carry.
+            // fabricated sample; it carries the Gregorian day only when one
+            // was actually resolved.
+            state = .day(watchCalculationErrorDisplay(
+                gregorianDay: error.resolvedGregorianDay,
+                settings: .watch
+            ))
+        } catch {
             state = .day(watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch))
         }
         return TodayComplicationEntry(date: instant, state: state)
     }
 
     /// The full timeline from one clock read through the deterministic
-    /// builder, with production's resolver and midnight seam.
+    /// builder.
     func timeline() -> BuiltTimeline {
         let instant = now()
-        let dataset = self.dataset
-        let builder = TodayTimelineBuilder(
-            dataset: dataset,
-            resolveDay: { try resolvedDay(for: $0, in: dataset) },
-            nextMidnight: { nextNPTMidnight(after: $0) }
-        )
-        return builder.build(now: instant)
+        return makeBuilder().build(now: instant)
     }
 
     private var previewEntry: TodayComplicationEntry {
