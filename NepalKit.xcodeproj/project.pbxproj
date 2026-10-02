@@ -12,6 +12,11 @@
 		4C1E7A0100000000000000A2 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 4C1E7A0100000000000000A1 /* LICENSE */; };
 		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
 		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
+		CAFEF00D0000000000000001 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D000000000000002E /* NepalKitCore */; };
+		CAFEF00D0000000000000002 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D000000000000002F /* NepalKitCore */; };
+		CAFEF00D0000000000000003 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D0000000000000030 /* NepalKitCore */; };
+		CAFEF00D0000000000000036 /* NepalKitWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */; };
+		CAFEF00D0000000000000037 /* NepalKitComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CAFEF00D0000000000000009 /* NepalKitComplications.appex */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -22,6 +27,27 @@
 			remoteGlobalIDString = 233B3DC6306975960098472F;
 			remoteInfo = NepalKit;
 		};
+		CAFEF00D0000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 233B3DBF306975960098472F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAFEF00D0000000000000015;
+			remoteInfo = "NepalKitWatch Watch App";
+		};
+		CAFEF00D0000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 233B3DBF306975960098472F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAFEF00D0000000000000016;
+			remoteInfo = NepalKitComplications;
+		};
+		CAFEF00D0000000000000006 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 233B3DBF306975960098472F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAFEF00D0000000000000015;
+			remoteInfo = "NepalKitWatch Watch App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +55,10 @@
 		4C1E7A0100000000000000A1 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		7A7B7C0106975960098472F /* NepalKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NepalKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A110C001C0DE000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		CAFEF00D0000000000000007 /* NepalKitWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NepalKitWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "NepalKitWatch Watch App.app"; path = "NepalKitWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAFEF00D0000000000000009 /* NepalKitComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NepalKitComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAFEF00D000000000000000A /* NepalKitWatch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "NepalKitWatch Watch AppTests.xctest"; path = "NepalKitWatch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -38,6 +68,28 @@
 				Info.plist,
 			);
 			target = 233B3DC6306975960098472F /* NepalKit */;
+		};
+		CAFEF00D000000000000000B /* Exceptions for "NepalKitComplications" folder in "NepalKitComplications" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CAFEF00D0000000000000016 /* NepalKitComplications */;
+		};
+		CAFEF00D000000000000000C /* Exceptions for "NepalKitComplications" folder in "NepalKitWatch Watch AppTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				NepalKitComplicationsBundle.swift,
+			);
+			target = CAFEF00D0000000000000017 /* NepalKitWatch Watch AppTests */;
+		};
+		CAFEF00D000000000000000D /* Exceptions for "NepalKitWatch Watch App" folder in "NepalKitWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CAFEF00D0000000000000015 /* NepalKitWatch Watch App */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -55,7 +107,54 @@
 			path = NepalKitTests;
 			sourceTree = "<group>";
 		};
+		CAFEF00D000000000000000E /* NepalKitWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CAFEF00D000000000000000D /* Exceptions for "NepalKitWatch Watch App" folder in "NepalKitWatch Watch App" target */,
+			);
+			path = "NepalKitWatch Watch App";
+			sourceTree = "<group>";
+		};
+		CAFEF00D000000000000000F /* NepalKitComplications */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CAFEF00D000000000000000B /* Exceptions for "NepalKitComplications" folder in "NepalKitComplications" target */,
+				CAFEF00D000000000000000C /* Exceptions for "NepalKitComplications" folder in "NepalKitWatch Watch AppTests" target */,
+			);
+			path = NepalKitComplications;
+			sourceTree = "<group>";
+		};
+		CAFEF00D0000000000000010 /* NepalKitWatch Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "NepalKitWatch Watch AppTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CAFEF00D0000000000000014 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Watch;
+			dstSubfolderSpec = 1;
+			files = (
+				CAFEF00D0000000000000036 /* NepalKitWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CAFEF00D0000000000000035 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CAFEF00D0000000000000037 /* NepalKitComplications.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		233B3DC4306975960098472F /* Frameworks */ = {
@@ -71,6 +170,24 @@
 				7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */,
 			);
 		};
+		CAFEF00D0000000000000011 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				CAFEF00D0000000000000001 /* NepalKitCore in Frameworks */,
+			);
+		};
+		CAFEF00D0000000000000012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				CAFEF00D0000000000000002 /* NepalKitCore in Frameworks */,
+			);
+		};
+		CAFEF00D0000000000000013 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				CAFEF00D0000000000000003 /* NepalKitCore in Frameworks */,
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -79,6 +196,9 @@
 			children = (
 				233B3DC9306975960098472F /* NepalKit */,
 				7A7B7C0206975960098472F /* NepalKitTests */,
+				CAFEF00D000000000000000E /* NepalKitWatch Watch App */,
+				CAFEF00D000000000000000F /* NepalKitComplications */,
+				CAFEF00D0000000000000010 /* NepalKitWatch Watch AppTests */,
 				A110C001C0DE000000000001 /* AppIcon.icon */,
 				4C1E7A0100000000000000A1 /* LICENSE */,
 				233B3DC8306975960098472F /* Products */,
@@ -90,6 +210,10 @@
 			children = (
 				233B3DC7306975960098472F /* NepalKit.app */,
 				7A7B7C0106975960098472F /* NepalKitTests.xctest */,
+				CAFEF00D0000000000000007 /* NepalKitWatch.app */,
+				CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */,
+				CAFEF00D0000000000000009 /* NepalKitComplications.appex */,
+				CAFEF00D000000000000000A /* NepalKitWatch Watch AppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -143,6 +267,94 @@
 			productReference = 7A7B7C0106975960098472F /* NepalKitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		CAFEF00D0000000000000018 /* NepalKitWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFEF00D0000000000000031 /* Build configuration list for PBXNativeTarget "NepalKitWatch" */;
+			buildPhases = (
+				CAFEF00D0000000000000019 /* Resources */,
+				CAFEF00D0000000000000014 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CAFEF00D0000000000000020 /* PBXTargetDependency */,
+			);
+			name = NepalKitWatch;
+			productName = NepalKitWatch;
+			productReference = CAFEF00D0000000000000007 /* NepalKitWatch.app */;
+			productType = "com.apple.product-type.application.watchapp2-container";
+		};
+		CAFEF00D0000000000000015 /* NepalKitWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFEF00D0000000000000032 /* Build configuration list for PBXNativeTarget "NepalKitWatch Watch App" */;
+			buildPhases = (
+				CAFEF00D000000000000001D /* Sources */,
+				CAFEF00D0000000000000011 /* Frameworks */,
+				CAFEF00D000000000000001A /* Resources */,
+				CAFEF00D0000000000000035 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CAFEF00D0000000000000021 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CAFEF00D000000000000000E /* NepalKitWatch Watch App */,
+			);
+			name = "NepalKitWatch Watch App";
+			packageProductDependencies = (
+				CAFEF00D000000000000002E /* NepalKitCore */,
+			);
+			productName = "NepalKitWatch Watch App";
+			productReference = CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CAFEF00D0000000000000016 /* NepalKitComplications */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFEF00D0000000000000033 /* Build configuration list for PBXNativeTarget "NepalKitComplications" */;
+			buildPhases = (
+				CAFEF00D000000000000001E /* Sources */,
+				CAFEF00D0000000000000012 /* Frameworks */,
+				CAFEF00D000000000000001B /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				CAFEF00D000000000000000F /* NepalKitComplications */,
+			);
+			name = NepalKitComplications;
+			packageProductDependencies = (
+				CAFEF00D000000000000002F /* NepalKitCore */,
+			);
+			productName = NepalKitComplications;
+			productReference = CAFEF00D0000000000000009 /* NepalKitComplications.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		CAFEF00D0000000000000017 /* NepalKitWatch Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFEF00D0000000000000034 /* Build configuration list for PBXNativeTarget "NepalKitWatch Watch AppTests" */;
+			buildPhases = (
+				CAFEF00D000000000000001F /* Sources */,
+				CAFEF00D0000000000000013 /* Frameworks */,
+				CAFEF00D000000000000001C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CAFEF00D0000000000000022 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CAFEF00D0000000000000010 /* NepalKitWatch Watch AppTests */,
+				CAFEF00D000000000000000F /* NepalKitComplications */,
+			);
+			name = "NepalKitWatch Watch AppTests";
+			packageProductDependencies = (
+				CAFEF00D0000000000000030 /* NepalKitCore */,
+			);
+			productName = "$(TARGET_NAME)";
+			productReference = CAFEF00D000000000000000A /* NepalKitWatch Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -157,6 +369,18 @@
 						CreatedOnToolsVersion = 27.0;
 					};
 					7A7B7C0306975960098472F = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					CAFEF00D0000000000000015 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					CAFEF00D0000000000000016 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					CAFEF00D0000000000000017 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					CAFEF00D0000000000000018 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -181,6 +405,10 @@
 			targets = (
 				233B3DC6306975960098472F /* NepalKit */,
 				7A7B7C0306975960098472F /* NepalKitTests */,
+				CAFEF00D0000000000000015 /* NepalKitWatch Watch App */,
+				CAFEF00D0000000000000016 /* NepalKitComplications */,
+				CAFEF00D0000000000000017 /* NepalKitWatch Watch AppTests */,
+				CAFEF00D0000000000000018 /* NepalKitWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -198,6 +426,26 @@
 			files = (
 			);
 		};
+		CAFEF00D0000000000000019 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		CAFEF00D000000000000001A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		CAFEF00D000000000000001B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		CAFEF00D000000000000001C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -211,6 +459,21 @@
 			files = (
 			);
 		};
+		CAFEF00D000000000000001D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		CAFEF00D000000000000001E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		CAFEF00D000000000000001F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -218,6 +481,21 @@
 			isa = PBXTargetDependency;
 			target = 233B3DC6306975960098472F /* NepalKit */;
 			targetProxy = 7A7B7C0806975960098472F /* PBXContainerItemProxy */;
+		};
+		CAFEF00D0000000000000020 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CAFEF00D0000000000000015 /* NepalKitWatch Watch App */;
+			targetProxy = CAFEF00D0000000000000004 /* PBXContainerItemProxy */;
+		};
+		CAFEF00D0000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CAFEF00D0000000000000016 /* NepalKitComplications */;
+			targetProxy = CAFEF00D0000000000000005 /* PBXContainerItemProxy */;
+		};
+		CAFEF00D0000000000000022 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CAFEF00D0000000000000015 /* NepalKitWatch Watch App */;
+			targetProxy = CAFEF00D0000000000000006 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -460,6 +738,214 @@
 			};
 			name = Release;
 		};
+		CAFEF00D0000000000000023 /* Debug configuration for PBXNativeTarget "NepalKitWatch" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = NepalKit;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		CAFEF00D0000000000000024 /* Release configuration for PBXNativeTarget "NepalKitWatch" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = NepalKit;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CAFEF00D0000000000000025 /* Debug configuration for PBXNativeTarget "NepalKitWatch Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "NepalKitWatch Watch App/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch.watchkitapp;
+				PRODUCT_MODULE_NAME = NepalKitWatchApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		CAFEF00D0000000000000026 /* Release configuration for PBXNativeTarget "NepalKitWatch Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "NepalKitWatch Watch App/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch.watchkitapp;
+				PRODUCT_MODULE_NAME = NepalKitWatchApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		CAFEF00D0000000000000027 /* Debug configuration for PBXNativeTarget "NepalKitComplications" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = NepalKitComplications/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch.watchkitapp.NepalKitComplications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		CAFEF00D0000000000000028 /* Release configuration for PBXNativeTarget "NepalKitComplications" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				INFOPLIST_FILE = NepalKitComplications/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatch.watchkitapp.NepalKitComplications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		CAFEF00D0000000000000029 /* Debug configuration for PBXNativeTarget "NepalKitWatch Watch AppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatchTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		CAFEF00D000000000000002A /* Release configuration for PBXNativeTarget "NepalKitWatch Watch AppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = CA89X9954L;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dibas.NepalKit.NepalKitWatchTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -484,6 +970,38 @@
 			buildConfigurations = (
 				7A7B7C0A06975960098472F /* Debug configuration for PBXNativeTarget "NepalKitTests" */,
 				7A7B7C0B06975960098472F /* Release configuration for PBXNativeTarget "NepalKitTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		CAFEF00D0000000000000031 /* Build configuration list for PBXNativeTarget "NepalKitWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAFEF00D0000000000000023 /* Debug configuration for PBXNativeTarget "NepalKitWatch" */,
+				CAFEF00D0000000000000024 /* Release configuration for PBXNativeTarget "NepalKitWatch" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		CAFEF00D0000000000000032 /* Build configuration list for PBXNativeTarget "NepalKitWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAFEF00D0000000000000025 /* Debug configuration for PBXNativeTarget "NepalKitWatch Watch App" */,
+				CAFEF00D0000000000000026 /* Release configuration for PBXNativeTarget "NepalKitWatch Watch App" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		CAFEF00D0000000000000033 /* Build configuration list for PBXNativeTarget "NepalKitComplications" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAFEF00D0000000000000027 /* Debug configuration for PBXNativeTarget "NepalKitComplications" */,
+				CAFEF00D0000000000000028 /* Release configuration for PBXNativeTarget "NepalKitComplications" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		CAFEF00D0000000000000034 /* Build configuration list for PBXNativeTarget "NepalKitWatch Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAFEF00D0000000000000029 /* Debug configuration for PBXNativeTarget "NepalKitWatch Watch AppTests" */,
+				CAFEF00D000000000000002A /* Release configuration for PBXNativeTarget "NepalKitWatch Watch AppTests" */,
 			);
 			defaultConfigurationName = Release;
 		};
@@ -522,6 +1040,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		CAFEF00D000000000000002E /* NepalKitCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
+			productName = NepalKitCore;
+		};
+		CAFEF00D000000000000002F /* NepalKitCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
+			productName = NepalKitCore;
+		};
+		CAFEF00D0000000000000030 /* NepalKitCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
+			productName = NepalKitCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

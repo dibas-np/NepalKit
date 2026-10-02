@@ -6,13 +6,14 @@ import PackageDescription
 
 let package = Package(
     name: "NepalKitCore",
-    // Matches the app's deployment floor (ADR-0003). Without this the package
-    // inherits the toolchain's default target, which is *lower* than the app's,
-    // so a macOS 27-only API in the core would compile cleanly here and only
-    // fail on the floor. Declaring it makes the core honest about the floor it
-    // has to run on, and keeps this manifest agreeing with the app-test
-    // harness, which already pins `.macOS(.v26)`.
-    platforms: [.macOS(.v26)],
+    // Matches the app's deployment floor (ADR-0003) and, since the Watch app
+    // arrived, the Watch products' watchOS 26.0 floor. Without these the
+    // package inherits the toolchain's default target, which is *lower* than
+    // the app's, so a macOS 27-only API in the core would compile cleanly
+    // here and only fail on the floor. Declaring them makes the core honest
+    // about the floors it has to run on, and keeps this manifest agreeing
+    // with the app-test harness, which already pins `.macOS(.v26)`.
+    platforms: [.macOS(.v26), .watchOS(.v26)],
     products: [
         .library(name: "NepalKitCore", targets: ["NepalKitCore"]),
     ],
