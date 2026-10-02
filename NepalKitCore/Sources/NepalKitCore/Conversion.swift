@@ -173,6 +173,22 @@ public func daysInGregorianMonth(year: Int, month: Int) -> Int? {
     return range.count
 }
 
+extension GADay {
+    /// The civil day `days` after this one (before it, for negative values),
+    /// or nil if the result does not name a real Gregorian day. Civil-day
+    /// arithmetic, not instant arithmetic: the timeline horizon and any future
+    /// day progression advance through here so the result is the named
+    /// Gregorian day regardless of time zone.
+    public func advanced(byDays days: Int) -> GADay? {
+        guard let date = utcDate(from: self),
+              let advanced = utcGregorian.date(byAdding: .day, value: days, to: date)
+        else { return nil }
+        let components = utcGregorian.dateComponents([.year, .month, .day], from: advanced)
+        guard let year = components.year, let month = components.month, let day = components.day else { return nil }
+        return GADay(year: year, month: month, day: day)
+    }
+}
+
 /// Today's Bikram Sambat date, anchored to Nepal Time (UTC+5:45) unconditionally:
 /// the Bikram Sambat date flips at NPT midnight regardless of the system time zone.
 /// The clock is injected (`now`) so the anchoring is testable.
