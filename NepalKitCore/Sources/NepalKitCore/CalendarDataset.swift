@@ -88,6 +88,17 @@ public struct CalendarDataset: Sendable {
         years[bsYear]
     }
 
+    /// The first day the table can express, as a Gregorian civil day: the
+    /// Gregorian start of `supportedRange`. Nil only if the table is broken.
+    ///
+    /// Derived, never stored, for the same reason `gregorianEnd` is: the
+    /// Watch's boundary classification and support context read the exact
+    /// bounds, so a table change moves them without a Gregorian literal to
+    /// hunt down.
+    public var gregorianStart: GADay? {
+        bsToAD(BSDay(year: supportedRange.lowerBound, month: 1, day: 1), in: self)
+    }
+
     /// The last day the table can express, as a Gregorian civil day: the
     /// Gregorian end of `supportedRange`. Nil only if the table is broken.
     ///

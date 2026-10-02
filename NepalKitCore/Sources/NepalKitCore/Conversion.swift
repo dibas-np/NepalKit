@@ -33,7 +33,9 @@ let nptGregorian: Calendar = {
 /// civil-day validity is checked. `Calendar` normalizes impossible input —
 /// February 30 silently becomes March 1 — so anything that does not round-trip
 /// exactly is rejected here rather than by each caller repeating the check.
-private func utcDate(from ad: GADay) -> Date? {
+/// Module-internal so the resolved-day resolvers validate input through this
+/// same check instead of repeating it.
+func utcDate(from ad: GADay) -> Date? {
     guard (1 ... 12).contains(ad.month) else { return nil }
     var components = DateComponents()
     components.year = ad.year
@@ -62,8 +64,12 @@ public func noonUTC(for ad: GADay) -> Date? {
 /// Month lengths for a Bikram Sambat date after range and component
 /// validation, or nil if the date is invalid or outside the table.
 func validatedMonths(for bs: BSDay, in dataset: CalendarDataset) -> [Int]? {
+    // A non-positive month length cannot appear in real data; guarding it
+    // here keeps a corrupt row answering nil instead of building a reversed
+    // range and trapping at conversion time.
     guard dataset.supportedRange.contains(bs.year),
           let months = dataset.monthLengths(for: bs.year),
+          months.allSatisfy({ $0 >= 1 }),
           (1 ... 12).contains(bs.month),
           (1 ... months[bs.month - 1]).contains(bs.day)
     else { return nil }
