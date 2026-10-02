@@ -74,6 +74,11 @@ public struct WatchErrorComponents: Sendable, Hashable {
     public let gregorianDay: String?
     public let gregorianMonthName: String?
     public let gregorianYear: String?
+
+    /// The spoken form of the resolved Gregorian date with Latin digits, for
+    /// accessibility compositions. nil when no day was resolved — speech
+    /// never reads the visual Devanagari digits.
+    public let spokenGregorian: String?
 }
 
 /// What a Watch surface renders for one day: a supported date, an expected
@@ -123,7 +128,8 @@ public func watchCalculationErrorDisplay(
     .calculationError(WatchErrorComponents(
         gregorianDay: gregorianDay.map { formatNumber($0.day, digits: settings.digits) },
         gregorianMonthName: gregorianDay.map { gregorianMonthName($0.month) },
-        gregorianYear: gregorianDay.map { formatNumber($0.year, digits: settings.digits) }
+        gregorianYear: gregorianDay.map { formatNumber($0.year, digits: settings.digits) },
+        spokenGregorian: gregorianDay.map { SpokenDate.ad($0) }
     ))
 }
 

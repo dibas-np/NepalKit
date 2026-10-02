@@ -5,25 +5,136 @@ import WidgetKit
 import NepalKitCore
 
 /// Renders a Today entry in whichever accessory family the face slot asks
-/// for. The four accepted family compositions, their large-text fallbacks and
-/// the full accessibility contract arrive with the presentation ticket; for
-/// now every family shows the entry's state as one honest line so the
-/// extension renders real resolved meaning.
+/// for, per the accepted Day-first composition. Views render the supplied
+/// state only — no clock reads, no date resolution, no color carrying
+/// meaning: every state is distinct text, so full-color, accented and
+/// redacted rendering modes cannot obscure the distinction and
+/// `widgetRenderingMode` needs no branch here.
+///
+/// The large-text fallbacks swap composition deterministically at
+/// accessibility text sizes rather than truncating or shrinking.
 struct TodayComplicationView: View {
+    @Environment(\.widgetFamily) private var family
     let entry: TodayComplicationEntry
 
     var body: some View {
-        TodayComplicationContent(state: entry.state)
-            .containerBackground(for: .widget) {
-                // watchOS 10+ accessory widgets must declare their container
-                // background; the complication supplies none of its own.
+        Group {
+            switch family {
+            case .accessoryRectangular:
+                TodayRectangularComplication(state: entry.state)
+            case .accessoryInline:
+                TodayInlineComplication(state: entry.state)
+            case .accessoryCircular:
+                TodayCircularComplication(state: entry.state)
+            case .accessoryCorner:
+                TodayCornerComplication(state: entry.state)
+            default:
+                TodayInlineComplication(state: entry.state)
             }
+        }
+        .containerBackground(for: .widget) {
+            // watchOS 10+ accessory widgets must declare their container
+            // background; the complication supplies none of its own.
+        }
     }
 }
 
-/// One line per state — the firm compact copy for boundary and failure, the
-/// Bikram Sambat day and month for supported days.
-struct TodayComplicationContent: View {
+/// Rectangular: one weekday and the Bikram Sambat day/month, with the year
+/// and the corresponding Gregorian day/month on a secondary line. At
+/// accessibility sizes the weekday and Gregorian detail are removed first,
+/// preserving day/month then year — and the announced label drops what the
+/// visuals dropped.
+struct TodayRectangularComplication: View {
+    let state: TodayComplicationState
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        switch state {
+        case .placeholder:
+            Text("NepalKit")
+        case .day(.supported(let components)):
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading) {
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
+                        .font(.title3)
+                    Text(components.bikramSambatYear)
+                        .font(.body)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
+            } else {
+                VStack(alignment: .leading) {
+                    Text(components.weekdayName)
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
+                        .font(.title3)
+                    Text("\(components.bikramSambatYear) · \(components.gregorianDay) \(components.gregorianMonthName)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true))
+            }
+        case .day(.rangeBoundary(let boundary)):
+            VStack(alignment: .leading) {
+                Text(WatchDayCopy.boundaryFull)
+                    .font(.headline)
+                Text(boundary.contextLine)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text("\(boundary.gregorianDay) \(boundary.gregorianMonthName) \(boundary.gregorianYear)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+        case .day(.calculationError(let components)):
+            Text(WatchDayCopy.failureFull)
+                .font(.headline)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+        }
+    }
+}
+
+/// Inline: the full Bikram Sambat day/month/year on one line; at
+/// accessibility sizes the year leaves the visuals but stays in speech.
+struct TodayInlineComplication: View {
+    let state: TodayComplicationState
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        switch state {
+        case .placeholder:
+            Text("NepalKit")
+        case .day(.supported(let components)):
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
+                } else {
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName) \(components.bikramSambatYear)")
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
+        case .day(.rangeBoundary(let boundary)):
+            Text(WatchDayCopy.boundaryCompact)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+        case .day(.calculationError(let components)):
+            Text(WatchDayCopy.failureCompact)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+        }
+    }
+}
+
+/// Circular: the stacked Bikram Sambat day and month; the composition holds
+/// at accessibility sizes and the announced year fills the gap.
+struct TodayCircularComplication: View {
     let state: TodayComplicationState
 
     var body: some View {
@@ -31,11 +142,65 @@ struct TodayComplicationContent: View {
         case .placeholder:
             Text("NepalKit")
         case .day(.supported(let components)):
-            Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
-        case .day(.rangeBoundary):
+            VStack {
+                Text(components.bikramSambatDay)
+                    .font(.title3)
+                Text(components.bikramSambatMonthName)
+                    .font(.caption)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
+        case .day(.rangeBoundary(let boundary)):
             Text(WatchDayCopy.boundaryCompact)
-        case .day(.calculationError):
+                .font(.caption)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+        case .day(.calculationError(let components)):
             Text(WatchDayCopy.failureCompact)
+                .font(.caption)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+        }
+    }
+}
+
+/// Corner: the Bikram Sambat day, with the month/year in the native
+/// `widgetLabel` — the family's own supplementary slot, which stays even at
+/// accessibility sizes.
+struct TodayCornerComplication: View {
+    let state: TodayComplicationState
+
+    var body: some View {
+        switch state {
+        case .placeholder:
+            Text("NepalKit")
+        case .day(.supported(let components)):
+            Text(components.bikramSambatDay)
+                .font(.title3)
+                .widgetLabel {
+                    Text("\(components.bikramSambatMonthName) \(components.bikramSambatYear)")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
+        case .day(.rangeBoundary(let boundary)):
+            Text(WatchDayCopy.boundaryCompact)
+                .font(.caption)
+                .widgetLabel {
+                    Text("\(boundary.gregorianDay) \(boundary.gregorianMonthName)")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+        case .day(.calculationError(let components)):
+            Text(WatchDayCopy.failureCompact)
+                .font(.caption)
+                .widgetLabel {
+                    if let day = components.gregorianDay,
+                       let month = components.gregorianMonthName {
+                        Text("\(day) \(month)")
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
         }
     }
 }
