@@ -101,6 +101,17 @@ Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** sch
 | 4/9 | **Defect**: the large-text fallbacks never triggered — the watchOS Text Size slider's maximum stops below the accessibility size categories, so `isAccessibilitySize` never fired on-device. Fixed — fallbacks now switch from xxLarge; re-check pending. Today's scrolling fallback itself worked once reached. |
 | — | **Gap**: no app icon (empty appiconset). Fixed — the shared Icon Composer `AppIcon.icon` now ships with the Watch app; on-device appearance re-check pending. |
 
+### 2026-10-03 — second iteration
+
+| Item | Result |
+| --- | --- |
+| Rectangular (two-line, weekday at caption2) | **Still clipped** — three Devanagari-bearing rows do not fit; reworked again: day/month alone on line one, weekday · year on line two, the optional Gregorian piece leaving the visuals (label follows). Re-check pending. |
+| Circular | Fixed and confirmed. |
+| App icon | Fixed and confirmed. |
+| Large text in app | Fallback appears from the top slider steps as designed; text scaling within the top steps is subtle by design. Scaling confirmed when the slider returns below xxLarge (hero returns smaller) — pending user confirmation. |
+| VoiceOver | Two findings: list separators announced aloud ("comma") — fixed, labels now join with line breaks; and the Devanagari month name was skipped in speech (user heard "day and year" where day+month is shown), consistent with the documented platform-side speech risk when the active voice does not cover the script. The spec's decision to keep canonical Nepali names in speech stands; transliterated speech would need an explicit spec decision. |
+| Independence (offline/timezone) | Reported working. |
+
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.

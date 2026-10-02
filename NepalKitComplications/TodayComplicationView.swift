@@ -75,23 +75,20 @@ struct TodayRectangularComplication: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
             } else {
-                // Two lines are all a real Modular middle slot fits — the
-                // three-line arrangement clipped on a 44 mm watch even with
-                // the weekday at caption2. The weekday joins the day/month
-                // line at its own smaller size; year and Gregorian detail
-                // stay on the secondary line.
+                // Two lines are all a real Modular middle slot fits, and
+                // the first attempt put the weekday on the day/month line —
+                // which truncated the month. The day/month stands alone;
+                // the weekday joins the year on the secondary line, and the
+                // optional Gregorian piece leaves the visuals entirely.
                 VStack(alignment: .leading) {
-                    Text(components.weekdayName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    + Text(" \(components.bikramSambatDay) \(components.bikramSambatMonthName)")
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
-                    Text("\(components.bikramSambatYear) · \(components.gregorianDay) \(components.gregorianMonthName)\(ComplicationFixtureMarker.suffix)")
+                    Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true))
+                .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: false))
             }
         case .day(.rangeBoundary(let boundary)):
             VStack(alignment: .leading) {

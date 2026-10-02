@@ -26,7 +26,9 @@ enum ComplicationAccessibility {
         if gregorian {
             parts.append(components.spokenGregorian)
         }
-        return parts.joined(separator: ", ")
+        // Line breaks, not commas: VoiceOver announces commas aloud under
+        // its default punctuation setting, and a break reads as a pause.
+        return parts.joined(separator: "\n")
     }
 
     /// The boundary label: the full unavailable statement with its
@@ -41,6 +43,6 @@ enum ComplicationAccessibility {
     /// always Latin digits in speech.
     static func errorLabel(_ components: WatchErrorComponents) -> String {
         guard let spokenGregorian = components.spokenGregorian else { return WatchDayCopy.failureFull }
-        return "\(WatchDayCopy.failureFull), \(spokenGregorian)"
+        return "\(WatchDayCopy.failureFull)\n\(spokenGregorian)"
     }
 }

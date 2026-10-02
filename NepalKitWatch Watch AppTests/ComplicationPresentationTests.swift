@@ -31,7 +31,7 @@ struct ComplicationPresentationTests {
 
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true)
-                == "आइत, 11 असोज 2083, 27 September 2026"
+                == "आइत\n11 असोज 2083\n27 September 2026"
         )
     }
 
@@ -80,7 +80,7 @@ struct ComplicationPresentationTests {
             return
         }
 
-        #expect(ComplicationAccessibility.errorLabel(components) == "Date calculation failed, 13 April 2028")
+        #expect(ComplicationAccessibility.errorLabel(components) == "Date calculation failed\n13 April 2028")
     }
 
     @Test func errorLabelWithoutContextSuppliesNoDate() {
