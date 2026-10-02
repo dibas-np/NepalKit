@@ -3,38 +3,113 @@
 import Foundation
 import NepalKitCore
 
-/// Resolves the Watch's read-only Today state from one instant read per
-/// operation. The clock is injected so tests pin the instant; production owns
-/// the one function that reads wall time, and no view ever resolves a date.
+/// The Watch's read-only Today state: resolves the current Nepal Time day and
+/// keeps it current without polling or persistence.
 ///
-/// This is the seed of the Today lifecycle model: launch/activation handling,
-/// the active-midnight refresh and clock-change observation arrive with the
-/// Today ticket; this scaffold only proves the shared core and dataset answer
-/// in a Watch target context.
+/// Lifecycle contract: `activate()` computes immediately, starts clock-change
+/// observation and schedules a refresh for the next Nepal midnight;
+/// `deactivate()` cancels both. Reactivating after any number of inactive days
+/// recomputes at once. Repeated activation does not duplicate work — the
+/// observation guard makes the second call a no-op. The clock is injected and
+/// read exactly once per refresh; every refresh resolves from the current
+/// reading and reschedules.
+///
+/// While active, a system clock change cancels the stale midnight work,
+/// re-resolves and reschedules — forward and backward changes both land on
+/// the correct day. A missed signal may leave the active display stale until
+/// the next wake or activation, whose immediate recomputation is the
+/// corrective fallback; no polling is added to mask it.
 @MainActor
 @Observable
 final class TodayModel {
+    /// The complete display meaning of the current day, or nil before the
+    /// first resolution at launch.
+    private(set) var display: WatchDayDisplay?
+
     private let now: @Sendable () -> Date
+    private let dataset: CalendarDataset
+    private let clockChanges: @Sendable () -> ClockChangeStream
+    private let nextMidnight: @Sendable (Date) -> Date?
 
-    /// The rendered Today line, or the range-boundary statement when the
-    /// current NPT day lies outside the dataset's supported range. Calculation
-    /// failures become their own distinct state with the display/speech
-    /// tickets; the scaffold renders both boundary and failure through the
-    /// shared firm copy until then.
-    private(set) var displayText: String
+    private var midnightTask: Task<Void, Never>?
+    private var clockChangeTask: Task<Void, Never>?
 
-    init(now: @escaping @Sendable () -> Date = { Date.now }) {
+    init(
+        now: @escaping @Sendable () -> Date = { Date.now },
+        dataset: CalendarDataset = .v2,
+        clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) }
+    ) {
         self.now = now
-        self.displayText = ""
+        self.dataset = dataset
+        self.clockChanges = clockChanges
+        self.nextMidnight = nextMidnight
     }
 
-    /// Reads the clock once and resolves Today through the shared core.
-    func refresh() {
+    /// Launch or foreground activation. Repeated activation while already
+    /// active does nothing — the observation task is the marker of an active
+    /// lifecycle, so recomputation, scheduling and subscription cannot
+    /// duplicate.
+    func activate() {
+        guard clockChangeTask == nil else { return }
+        refresh()
+        observeClockChanges()
+    }
+
+    /// Background or inactivation: cancel the scheduled midnight refresh and
+    /// the clock-change observation; the next activation recomputes.
+    func deactivate() {
+        midnightTask?.cancel()
+        midnightTask = nil
+        clockChangeTask?.cancel()
+        clockChangeTask = nil
+    }
+
+    /// Reads the clock once, resolves the current Nepal Time day, and
+    /// reschedules the next-midnight refresh.
+    private func refresh() {
         let instant = now()
-        if let bs = todayBS(now: instant, in: .v2) {
-            displayText = formatBS(bs, settings: .watch)
-        } else {
-            displayText = "Bikram Sambat unavailable"
+        do {
+            let day = try resolvedDay(now: instant, in: dataset)
+            display = watchDayDisplay(for: day, settings: .watch, in: dataset)
+        } catch let error as DayResolutionError {
+            display = watchCalculationErrorDisplay(
+                gregorianDay: error.resolvedGregorianDay,
+                settings: .watch
+            )
+        } catch {
+            display = watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)
+        }
+        scheduleMidnightRefresh(after: instant)
+    }
+
+    /// Sleeps until the next Nepal midnight, then re-resolves from the clock
+    /// as it stands at wake — never from the instant the schedule was made.
+    private func scheduleMidnightRefresh(after instant: Date) {
+        midnightTask?.cancel()
+        guard let next = nextMidnight(instant) else {
+            // Calendar arithmetic failed to name the next midnight: the
+            // display stays as resolved until the next wake, activation or
+            // clock-change signal recomputes. No polling is added to mask it.
+            return
+        }
+        let interval = next.timeIntervalSince(instant)
+        midnightTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(interval))
+            guard !Task.isCancelled else { return }
+            self?.refresh()
+        }
+    }
+
+    /// Owns one clock-change observation for the active lifecycle. Cancelling
+    /// the task ends the stream, which removes the notification observer.
+    private func observeClockChanges() {
+        guard clockChangeTask == nil else { return }
+        let stream = clockChanges()
+        clockChangeTask = Task { [weak self] in
+            for await _ in stream {
+                self?.refresh()
+            }
         }
     }
 }

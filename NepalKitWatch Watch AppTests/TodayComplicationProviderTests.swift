@@ -74,10 +74,11 @@ struct TodayComplicationProviderTests {
         #expect(components.bikramSambatYear == "२०८३")
     }
 
-    @Test func snapshotFailureStaysAnErrorAndCarriesNoDate() {
+    @Test func snapshotFailureStaysAnErrorAndCarriesTheDerivedDay() throws {
         // A table whose supported-range year has zero-length months cannot
         // resolve anything: the snapshot must report the calculation error,
-        // not a boundary or a fabricated sample.
+        // not a boundary or a fabricated sample. The NPT day itself was
+        // derived, so the error carries it as context.
         let broken = CalendarDataset(
             version: "broken-snapshot-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
@@ -85,7 +86,10 @@ struct TodayComplicationProviderTests {
             anchorAD: GADay(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
-        let provider = TodayComplicationProvider(now: { .distantPast }, dataset: broken)
+        // 26 Sep 2026, 18:30 UTC: the NPT day 2026-09-27 is derived before
+        // the table fails to answer it.
+        let now = try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
+        let provider = TodayComplicationProvider(now: { now }, dataset: broken)
 
         let entry = provider.snapshot(isPreview: false)
 
@@ -93,8 +97,7 @@ struct TodayComplicationProviderTests {
             Issue.record("Expected a calculation error snapshot")
             return
         }
-        // The NPT day was never derived, so no Gregorian context is invented.
-        #expect(components.gregorianDay == nil)
+        #expect(components.gregorianDay == "२७")
     }
 
     @Test func timelineFailureFallsBackToOneOriginalInstantError() throws {

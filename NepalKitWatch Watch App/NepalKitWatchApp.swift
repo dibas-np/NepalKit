@@ -6,7 +6,7 @@ import SwiftUI
 struct NepalKitWatchApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TodayView()
         }
     }
 }

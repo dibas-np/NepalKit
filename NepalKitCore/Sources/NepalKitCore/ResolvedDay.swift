@@ -62,6 +62,18 @@ public enum DayResolutionError: Error, Sendable, Hashable {
     /// The Nepal Time civil day could not be read from the supplied instant.
     /// Defensive: unreachable while Foundation behaves.
     case unreadableInstant(Date)
+
+    /// The Gregorian day this error carries as display context, when one was
+    /// actually resolved. Failures that never derived a day supply nothing —
+    /// an error display never invents a date.
+    public var resolvedGregorianDay: GADay? {
+        switch self {
+        case .datasetAssumptionFailure(let day), .calendarCalculationFailure(let day):
+            day
+        case .invalidCivilDay, .unreadableInstant:
+            nil
+        }
+    }
 }
 
 /// Whether the components name a real Gregorian civil day. The same
