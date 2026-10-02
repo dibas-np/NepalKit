@@ -25,6 +25,9 @@ enum TodayFixtures {
         if fixture.failTodayWithoutContext == true {
             parts.append("today resolution failure without context")
         }
+        if fixture.failActivation {
+            parts.append("midnight calculation failure")
+        }
         guard !parts.isEmpty else { return nil }
         return "FIXTURE — " + parts.joined(separator: ", ")
     }
@@ -33,22 +36,26 @@ enum TodayFixtures {
     /// by default — or the ordinary model when no fixture is present.
     static func makeModel(arguments: [String] = ProcessInfo.processInfo.arguments) -> TodayModel {
         guard let fixture = WatchFixtureControl.fixture(arguments: arguments) else { return TodayModel() }
-        let now: @Sendable () -> Date
-        if let instant = fixture.instant {
-            now = { instant }
+        let nextMidnight: @Sendable (Date) -> Date?
+        if fixture.failActivation {
+            nextMidnight = { _ in nil }
         } else {
-            now = { Date.now }
+            nextMidnight = { nextNPTMidnight(after: $0) }
         }
         return TodayModel(
-            now: now,
-            resolveDay: { day, dataset in
+            now: WatchFixtureControl.clock(for: fixture),
+            nextMidnight: nextMidnight,
+            displayFor: { instant in
                 switch (fixture.failTodayWithContext, fixture.failTodayWithoutContext) {
                 case (true, _):
-                    throw DayResolutionError.datasetAssumptionFailure(day)
+                    // The failure keeps the day the instant resolved as
+                    // context, exactly as a production resolution failure
+                    // would.
+                    return watchCalculationErrorDisplay(gregorianDay: todayAD(now: instant), settings: .watch)
                 case (_, true):
-                    throw DayResolutionError.unreadableInstant(Date.now)
+                    return watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)
                 default:
-                    return try resolvedDay(for: day, in: dataset)
+                    return watchDayDisplay(now: instant, settings: .watch, in: CalendarDataset.v2)
                 }
             }
         )

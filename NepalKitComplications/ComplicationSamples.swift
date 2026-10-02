@@ -40,9 +40,6 @@ enum ComplicationSamples {
     }
 
     private static func dayState(for day: GADay, in dataset: CalendarDataset) -> TodayComplicationState {
-        guard let resolved = try? resolvedDay(for: day, in: dataset) else {
-            return .day(watchCalculationErrorDisplay(gregorianDay: day, settings: .watch))
-        }
-        return .day(watchDayDisplay(for: resolved, settings: .watch, in: dataset))
+        .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
     }
 }

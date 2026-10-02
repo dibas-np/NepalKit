@@ -30,9 +30,10 @@ final class TodayModel {
     private let dataset: CalendarDataset
     private let clockChanges: @Sendable () -> ClockChangeStream
     private let nextMidnight: @Sendable (Date) -> Date?
-    /// The production resolver by default; the development fixture harness
-    /// injects failure points through it without changing any calendar answer.
-    private let resolveDay: @Sendable (GADay, CalendarDataset) throws -> ResolvedDay
+    /// The production resolve-and-display path by default; the development
+    /// fixture harness injects resolution failure points through it without
+    /// changing any calendar answer.
+    private let displayFor: @Sendable (Date) -> WatchDayDisplay
 
     private var midnightTask: Task<Void, Never>?
     private var clockChangeTask: Task<Void, Never>?
@@ -42,13 +43,25 @@ final class TodayModel {
         dataset: CalendarDataset = .v2,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
         nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) },
-        resolveDay: @escaping @Sendable (GADay, CalendarDataset) throws -> ResolvedDay = resolvedDay(for:in:)
+        displayFor: @escaping @Sendable (Date) -> WatchDayDisplay
     ) {
         self.now = now
         self.dataset = dataset
         self.clockChanges = clockChanges
         self.nextMidnight = nextMidnight
-        self.resolveDay = resolveDay
+        self.displayFor = displayFor
+    }
+
+    /// The ordinary production model.
+    convenience init(
+        now: @escaping @Sendable () -> Date = { Date.now },
+        dataset: CalendarDataset = .v2,
+        clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) }
+    ) {
+        self.init(now: now, dataset: dataset, clockChanges: clockChanges, nextMidnight: nextMidnight) { instant in
+            watchDayDisplay(now: instant, settings: .watch, in: dataset)
+        }
     }
 
     /// Launch or foreground activation. Repeated activation while already
@@ -71,23 +84,12 @@ final class TodayModel {
     }
 
     /// Reads the clock once, resolves the current Nepal Time day, and
-    /// reschedules the next-midnight refresh.
+    /// reschedules the next-midnight refresh. Core maps any resolution
+    /// failure to the calculation-error display with only genuinely resolved
+    /// Gregorian context.
     private func refresh() {
         let instant = now()
-        do {
-            guard let today = todayAD(now: instant) else {
-                throw DayResolutionError.unreadableInstant(instant)
-            }
-            let day = try resolveDay(today, dataset)
-            display = watchDayDisplay(for: day, settings: .watch, in: dataset)
-        } catch let error as DayResolutionError {
-            display = watchCalculationErrorDisplay(
-                gregorianDay: error.resolvedGregorianDay,
-                settings: .watch
-            )
-        } catch {
-            display = watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)
-        }
+        display = displayFor(instant)
         scheduleMidnightRefresh(after: instant)
     }
 

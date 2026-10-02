@@ -18,7 +18,7 @@ struct TodayComplicationProvider: TimelineProvider {
     private let dataset: CalendarDataset
     private let makeBuilder: @Sendable () -> TodayTimelineBuilder
 
-    init(now: @escaping @Sendable () -> Date = { Date.now }, dataset: CalendarDataset = .v2) {
+    nonisolated init(now: @escaping @Sendable () -> Date = { Date.now }, dataset: CalendarDataset = .v2) {
         self.now = now
         self.dataset = dataset
         self.makeBuilder = {
@@ -32,7 +32,7 @@ struct TodayComplicationProvider: TimelineProvider {
 
     /// The fixture/test path: a builder constructed elsewhere so development
     /// failure injection reaches the production timeline construction.
-    init(
+    nonisolated init(
         now: @escaping @Sendable () -> Date,
         dataset: CalendarDataset,
         makeBuilder: @escaping @Sendable () -> TodayTimelineBuilder
@@ -71,23 +71,11 @@ struct TodayComplicationProvider: TimelineProvider {
         if isPreview {
             return previewEntry
         }
+        // Core maps any resolution failure to the calculation-error display:
+        // an error, never a boundary or a fabricated sample, carrying the
+        // Gregorian day only when one was actually resolved.
         let instant = now()
-        let state: TodayComplicationState
-        do {
-            let day = try resolvedDay(now: instant, in: dataset)
-            state = .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
-        } catch let error as DayResolutionError {
-            // A snapshot failure is an error, never a boundary state or a
-            // fabricated sample; it carries the Gregorian day only when one
-            // was actually resolved.
-            state = .day(watchCalculationErrorDisplay(
-                gregorianDay: error.resolvedGregorianDay,
-                settings: .watch
-            ))
-        } catch {
-            state = .day(watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch))
-        }
-        return TodayComplicationEntry(date: instant, state: state)
+        return TodayComplicationEntry(date: instant, state: .day(watchDayDisplay(now: instant, settings: .watch, in: dataset)))
     }
 
     /// The full timeline from one clock read through the deterministic

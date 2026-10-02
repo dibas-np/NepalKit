@@ -61,6 +61,17 @@ Views then decide how to present a `nil`, which is where user-facing wording
 belongs. This keeps the whole conversion surface exhaustively testable without
 error-handling noise at every call site.
 
+**The Watch exception.** The accepted Watch handoff requires the resolved day
+to distinguish invalid civil input, broken dataset assumptions, and failed
+calendar arithmetic from an *expected* range boundary — a distinction
+optionals cannot carry, because `nil` would collapse "outside the range" into
+"the table is broken". `ResolvedDay.swift` therefore introduces the core's one
+error type (`DayResolutionError`) and its one throwing surface
+(`resolvedDay(for:in:)`, `resolvedDay(now:in:)`). The conversion functions
+above stay optional; do not widen `throws` beyond the resolved-day resolvers.
+Where a caller wants no error handling at all, the non-throwing
+`watchDayDisplay(...)` helpers map failures to the calculation-error display.
+
 ## Validate once, at the boundary
 
 Guard invalid components in a single shared helper rather than at each entry
@@ -163,6 +174,12 @@ This is not a localization system: v1 ships an English interface, and the
 month-name setting applies to Bikram Sambat month names and weekday names only.
 Gregorian month names are always English (`Formatting.swift:105`) — don't route
 them through the setting.
+
+**The Watch exception.** The Watch app and its complication extension both
+render the same firm state copy, and the extension cannot import the app's
+`Strings`, so the Watch's shared copy lives beside the display components in
+core (`WatchDayCopy` in `NepalKitCore`). The macOS app's copy still belongs in
+`Strings` alone; don't move it.
 
 App Intents metadata is the exception. Intent titles, descriptions, parameter
 summaries, phrases, and entity representations must be build-time literals at

@@ -43,27 +43,44 @@ struct WatchFixture: Sendable, Equatable {
     var failAtHorizonOffset: Int?
 
     /// Injects a resolution failure for Today itself: `true` keeps the
-    /// derived Gregorian context, `false` throws the context-less case.
+    /// derived Gregorian context, `false` fails without any context.
     var failTodayWithContext: Bool?
     var failTodayWithoutContext: Bool?
+
+    /// Makes the next-midnight calculation fail, exercising the
+    /// unknown-activation path end to end.
+    var failActivation: Bool
+
+    nonisolated init() {
+        self.instant = nil
+        self.failAtHorizonOffset = nil
+        self.failTodayWithContext = nil
+        self.failTodayWithoutContext = nil
+        self.failActivation = false
+    }
 }
 
 enum WatchFixtureControl {
     /// The launch arguments of the current process.
-    static var current: WatchFixture? {
+    nonisolated static var current: WatchFixture? {
         fixture(arguments: ProcessInfo.processInfo.arguments)
     }
 
     /// Parses the fixture launch arguments, or nil when none are present.
     /// Unknown names and values fail closed: the fixture is ignored rather
     /// than half-applied.
-    static func fixture(arguments: [String]) -> WatchFixture? {
+    nonisolated static func fixture(arguments: [String]) -> WatchFixture? {
         guard arguments.contains(where: \.hasFixturePrefix) else { return nil }
         var fixture = WatchFixture()
         var index = 0
         while index < arguments.count {
             let option = arguments[index]
             guard option.hasFixturePrefix else {
+                index += 1
+                continue
+            }
+            if option == "-NepalKitFixtureFailActivation" {
+                fixture.failActivation = true
                 index += 1
                 continue
             }
@@ -78,7 +95,7 @@ enum WatchFixtureControl {
     /// Applies one fixture option and its value. Returns false when the
     /// option is a fixture option whose value cannot be honored — the whole
     /// fixture then fails closed.
-    private static func apply(_ option: String, _ value: String, to fixture: inout WatchFixture) -> Bool {
+    nonisolated private static func apply(_ option: String, _ value: String, to fixture: inout WatchFixture) -> Bool {
         switch option {
         case "-NepalKitFixtureInstant":
             guard let instant = try? Date(value, strategy: .iso8601) else { return false }
@@ -98,7 +115,7 @@ enum WatchFixtureControl {
         return true
     }
 
-    private static func applyError(_ value: String, to fixture: inout WatchFixture) -> Bool {
+    nonisolated private static func applyError(_ value: String, to fixture: inout WatchFixture) -> Bool {
         switch value {
         case "today": fixture.failTodayWithContext = true
         case "withoutContext": fixture.failTodayWithoutContext = true
@@ -111,7 +128,7 @@ enum WatchFixtureControl {
     /// production code in the named situation — a day before the range, a day
     /// after it, inside the provisional 2084 year, on the day whose horizon
     /// ends at the dataset maximum, and minutes before a Nepal midnight.
-    private static func scenarioInstant(_ name: String) -> Date? {
+    nonisolated private static func scenarioInstant(_ name: String) -> Date? {
         switch name {
         case "boundaryBefore": try? Date("1918-04-12T06:15:00Z", strategy: .iso8601)
         case "boundaryAfter": try? Date("2028-04-13T06:15:00Z", strategy: .iso8601)
@@ -123,8 +140,18 @@ enum WatchFixtureControl {
     }
 }
 
+extension WatchFixtureControl {
+    /// The clock the fixture supplies: the fixed instant when one is set, the
+    /// ordinary wall clock otherwise. Shared by the app and extension
+    /// factories so the wiring exists once.
+    nonisolated static func clock(for fixture: WatchFixture) -> @Sendable () -> Date {
+        guard let instant = fixture.instant else { return { Date.now } }
+        return { instant }
+    }
+}
+
 private extension String {
-    var hasFixturePrefix: Bool {
+    nonisolated var hasFixturePrefix: Bool {
         hasPrefix("-NepalKitFixture")
     }
 }
@@ -132,7 +159,7 @@ private extension String {
 private extension [String] {
     /// The argument after the option at `index`, when present and not itself
     /// an option.
-    func value(after index: Int) -> String? {
+    nonisolated func value(after index: Int) -> String? {
         guard index + 1 < count, !self[index + 1].hasPrefix("-") else { return nil }
         return self[index + 1]
     }

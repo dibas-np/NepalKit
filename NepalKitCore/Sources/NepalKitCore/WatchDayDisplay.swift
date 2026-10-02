@@ -119,6 +119,49 @@ public func watchDayDisplay(
     }
 }
 
+/// Resolves the Nepal Time day of the supplied instant and builds its display
+/// meaning in one step, mapping a resolution failure to the calculation-error
+/// display. The error carries the Gregorian day only when one was actually
+/// resolved — never an invented date. Never throws: the display states are
+/// exhaustive.
+public func watchDayDisplay(
+    now instant: Date,
+    settings: DisplaySettings,
+    in dataset: CalendarDataset
+) -> WatchDayDisplay {
+    do {
+        let day = try resolvedDay(now: instant, in: dataset)
+        return watchDayDisplay(for: day, settings: settings, in: dataset)
+    } catch let error as DayResolutionError {
+        return watchCalculationErrorDisplay(
+            gregorianDay: error.resolvedGregorianDay,
+            settings: settings
+        )
+    } catch {
+        return watchCalculationErrorDisplay(gregorianDay: nil, settings: settings)
+    }
+}
+
+/// Resolves a Gregorian civil day and builds its display meaning in one step,
+/// with the same failure mapping as the instant-based variant.
+public func watchDayDisplay(
+    for civilDay: GADay,
+    settings: DisplaySettings,
+    in dataset: CalendarDataset
+) -> WatchDayDisplay {
+    do {
+        let day = try resolvedDay(for: civilDay, in: dataset)
+        return watchDayDisplay(for: day, settings: settings, in: dataset)
+    } catch let error as DayResolutionError {
+        return watchCalculationErrorDisplay(
+            gregorianDay: error.resolvedGregorianDay,
+            settings: settings
+        )
+    } catch {
+        return watchCalculationErrorDisplay(gregorianDay: nil, settings: settings)
+    }
+}
+
 /// Builds a calculation-error display, carrying the Gregorian day only when
 /// one was actually resolved.
 public func watchCalculationErrorDisplay(

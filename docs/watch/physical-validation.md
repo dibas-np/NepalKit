@@ -45,6 +45,7 @@ Build and run with the Watch targets' Debug configurations (they carry `NEPALKIT
 | `-NepalKitFixtureInstant <ISO-8601 Z>` | Any fixed instant |
 | `-NepalKitFixtureFailAt <offset>` | Timeline resolution fails at that horizon offset (prefix retained, `.after` +15 min) |
 | `-NepalKitFixtureError today` / `withoutContext` | Today resolution fails with / without Gregorian context |
+| `-NepalKitFixtureFailActivation` | The next-midnight calculation fails, exercising the unknown-activation fallback |
 
 The Today screen shows a `FIXTURE — …` banner while active. For the complication extension in Simulator, the same arguments can be supplied on the extension's scheme run. To return to ordinary mode for the real-midnight observation: build without the condition (Release, or remove it from the Debug configuration) and launch without arguments. Never change the device system date.
 

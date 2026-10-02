@@ -87,7 +87,7 @@ struct TodaySupportedView: View {
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
             ScrollView {
-                dateLines
+                TodayDateLinesView(components: components)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(spokenLabel)
             }
@@ -109,20 +109,25 @@ struct TodaySupportedView: View {
         }
     }
 
-    /// The large-text fallback: full date lines, scrollable, nothing dropped.
-    private var dateLines: some View {
+    /// Core supplies the spoken pieces: one weekday, the full Bikram Sambat
+    /// date with Latin digits, and the Gregorian date presented here.
+    private var spokenLabel: String {
+        "\(components.spokenWeekdayName), \(components.spokenBikramSambat), \(components.spokenGregorian)"
+    }
+}
+
+/// The large-text fallback for Today: full date lines, scrollable, nothing
+/// dropped.
+struct TodayDateLinesView: View {
+    let components: WatchDayComponents
+
+    var body: some View {
         VStack(alignment: .leading) {
             Text(components.weekdayName)
             Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName) \(components.bikramSambatYear)")
             Text("\(components.gregorianDay) \(components.gregorianMonthName) \(components.gregorianYear)")
         }
         .font(.body)
-    }
-
-    /// Core supplies the spoken pieces: one weekday, the full Bikram Sambat
-    /// date with Latin digits, and the Gregorian date presented here.
-    private var spokenLabel: String {
-        "\(components.spokenWeekdayName), \(components.spokenBikramSambat), \(components.spokenGregorian)"
     }
 }
 

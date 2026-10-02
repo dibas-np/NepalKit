@@ -9,7 +9,7 @@ Baseline: dataset 2.0.0 (Bikram Sambat 1975–2084; Gregorian 1918-04-13 through
 | Gate | Status |
 | --- | --- |
 | Implementation start (host baseline) | Passed |
-| Ready for physical validation (this record) | Passed for automated/build checks; interactive rendering checks and physical observations remain session obligations (below) |
+| Ready for physical validation (this record) | Automated, build and watchOS-26-runtime checks pass; the interactive native-rendering checks (full-color/accented modes, on-face glyph fit, real Dynamic Type and scrolling, VoiceOver) and every physical observation remain explicit session obligations — the gate's automated portion is what this record claims |
 | Physical validation | Not performed |
 | Final feature acceptance | Blocked: projected 2084 is provisional under the dataset-readiness policy and does not satisfy ADR-0001; not an implementation or validation blocker |
 
@@ -40,6 +40,7 @@ All commands run from the repository root on 2026-10-02.
 | Watch app + extension | `xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=26.0'` | watchOS 26.0 Simulator | 49 tests, 7 suites passed |
 | Watch, second case size | same, `-destination 'platform=watchOS Simulator,name=Apple Watch Ultra 3 (49mm),OS=26.0'` | watchOS 26.0 Simulator | 49 tests, 7 suites passed |
 | macOS regression | `xcodebuild test -project NepalKit.xcodeproj -scheme NepalKit -destination 'platform=macOS'` | macOS host | 167 tests, 24 suites passed |
+| Strict lint | `./scripts/swiftlint.sh lint --strict` | host | 0 violations, 0 serious in 117 files (run before each commit and re-run at review) |
 
 The watch suites run on the watchOS 26.0 runtime itself — this is watchOS 26 execution, not merely SDK 27 compilation. Suites cover: the resolved-day contract (endpoints, both boundaries, Gregorian progression past them, invalid input and broken-dataset errors distinct from boundaries, midnight and timezone anchoring), display/speech components and firm copy, the fourteen-day timeline (entry zero at the original reading, successive NPT midnights, future-only 24-hour spacing, entry into support, after-maximum progression, no duplicated boundary, the fifteen-entry terminal case), failure policy (first/intermediate/terminal failures, prefix retention, unknown activation falling back to one original-instant error, exact `.after(error activation + 15 min)` requests, `.atEnd` for successful and boundary timelines), snapshot/preview/placeholder contracts with one-clock and zero-clock behavior, the Today lifecycle (activation, active midnight wake, deactivation cancellation, multi-day resume, repeated activation, clock-change handling), accessible label composition per family, and the fixture harness through production code.
 

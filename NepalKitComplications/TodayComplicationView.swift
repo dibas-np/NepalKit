@@ -70,7 +70,7 @@ struct TodayRectangularComplication: View {
                         .foregroundStyle(.secondary)
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
-                    Text("\(components.bikramSambatYear) · \(components.gregorianDay) \(components.gregorianMonthName)")
+                    Text("\(components.bikramSambatYear) · \(components.gregorianDay) \(components.gregorianMonthName)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -91,10 +91,19 @@ struct TodayRectangularComplication: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
         case .day(.calculationError(let components)):
-            Text(WatchDayCopy.failureFull)
-                .font(.headline)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+            VStack(alignment: .leading) {
+                Text(WatchDayCopy.failureFull)
+                    .font(.headline)
+                if let day = components.gregorianDay,
+                   let month = components.gregorianMonthName,
+                   let year = components.gregorianYear {
+                    Text("\(day) \(month) \(year)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
         }
     }
 }
@@ -115,7 +124,7 @@ struct TodayInlineComplication: View {
                 if dynamicTypeSize.isAccessibilitySize {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                 } else {
-                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName) \(components.bikramSambatYear)")
+                    Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName) \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
                 }
             }
             .accessibilityElement(children: .ignore)
