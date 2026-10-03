@@ -61,6 +61,18 @@ import WidgetKit
     TodayComplicationEntry(date: .now, state: ComplicationSamples.errorState())
 }
 
+#Preview("Corner — longest month", as: .accessoryCorner) {
+    TodayComplication()
+} timeline: {
+    TodayComplicationEntry(date: .now, state: ComplicationSamples.longestMonthState())
+}
+
+#Preview("Rectangular — longest month", as: .accessoryRectangular) {
+    TodayComplication()
+} timeline: {
+    TodayComplicationEntry(date: .now, state: ComplicationSamples.longestMonthState())
+}
+
 #Preview("Placeholder", as: .accessoryRectangular) {
     TodayComplication()
 } timeline: {
