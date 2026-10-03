@@ -14,7 +14,8 @@
 /// governs the current base and update policy.
 ///
 /// Supported range: 1975-2084 Bikram Sambat, 1918-04-13 through 2028-04-12
-/// Gregorian. Dataset 2.0.1 keeps the existing anchor, values and range.
+/// Gregorian. Dataset 2.0.1 updates the provisional 2084 month lengths while
+/// preserving the anchor and supported range.
 public struct CalendarDataset: Sendable {
     /// Dataset version, e.g. "2.0.0" for the table narrowed to 1975-2084 BS.
     public let version: String

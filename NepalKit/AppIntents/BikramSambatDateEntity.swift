@@ -28,12 +28,11 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
 
     // Macro-generated property storage is not Hashable; compare calendar values.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.date == rhs.date && lhs.weekdayValue == rhs.weekdayValue
+        lhs.date == rhs.date
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(date)
-        hasher.combine(weekdayValue)
     }
 
     /// Stable text identity: the Bikram Sambat date it names.

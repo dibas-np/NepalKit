@@ -324,12 +324,13 @@ jobs:
             NepalKit.xcodeproj/project.pbxproj | sort -u | tr '\n' ' ')"
           echo "watchOS floor(s) declared in the project: $floor"
           usable=""
-          for runtime in $(xcrun simctl list runtimes --json | python3 -c '
+          runtimes="$(xcrun simctl list runtimes --json | python3 -c '
           import json, sys
           for runtime in json.load(sys.stdin)["runtimes"]:
               if runtime.get("isAvailable") and runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.watchOS-"):
                   print(runtime["version"])
-          ' | sort -V); do
+          ' | sort -V)"
+          for runtime in $runtimes; do
             if [ "$(printf '%s\n%s\n' "$runtime" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
               usable="$usable $runtime"
             fi

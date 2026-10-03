@@ -107,6 +107,18 @@ struct TodayIntentTests {
         #expect(BikramSambatDateEntity(idString: "not-a-date") == nil)
     }
 
+    @Test("Entity identity survives weekday presentation changes")
+    func entityIdentityUsesCalendarDate() throws {
+        let date = BSDay(year: 2082, month: 3, day: 15)
+        let english = try #require(BikramSambatDateEntity(bsDay: date, weekday: "Sunday"))
+        let nepali = try #require(BikramSambatDateEntity(bsDay: date, weekday: "आइतबार"))
+        let restored = try #require(BikramSambatDateEntity(idString: english.id))
+        #expect(english == nepali)
+        #expect(english == restored)
+        #expect(Set([english, nepali, restored]).count == 1)
+        #expect(english != BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 3, day: 16)))
+    }
+
     @Test("Entity queries retain the weekday for valid calendar dates")
     func entityQueriesRetainWeekday() async throws {
         let entity = try #require(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 3, day: 15)))

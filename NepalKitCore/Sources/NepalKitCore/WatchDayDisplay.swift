@@ -26,7 +26,7 @@ public struct WatchDayComponents: Sendable, Hashable {
     public let gregorianMonthName: String
     public let gregorianYear: String
 
-    /// The spoken Bikram Sambat date, e.g. `11 असोज 2083`.
+    /// The spoken Bikram Sambat date, e.g. `11 Ashoj 2083`.
     public let spokenBikramSambat: String
     /// The spoken weekday, transliterated so every voice reads it — carried
     /// separately from the visual weekday, which stays in the canonical

@@ -112,8 +112,7 @@ struct TodaySupportedView: View {
     /// Core supplies the spoken pieces: one weekday, the full Bikram Sambat
     /// date with Latin digits, and the Gregorian date presented here.
     private var spokenLabel: String {
-        // Line breaks, not commas — VoiceOver announces commas aloud.
-        "\(components.spokenWeekdayName)\n\(components.spokenBikramSambat)\n\(components.spokenGregorian)"
+        ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true)
     }
 }
 
