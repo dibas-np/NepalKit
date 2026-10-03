@@ -81,6 +81,10 @@ Result: **zero matches in both binaries.** The harness compiles only under `NEPA
 | `appintentsmetadataprocessor: Metadata extraction skipped, no AppIntents.framework dependency found` (Watch builds) | Benign: the Watch products intentionally declare no App Intents |
 | The Watch app's asset catalog declares a universal watchOS 1024×1024 app icon slot with no image yet | Recorded gap: icon art is a product decision and does not block development-signing or validation; required before any future distribution effort |
 
+## Floor ratification (2026-10-04)
+
+The watchOS deployment floor remains **26.0** by user decision. A cross-session change had raised it to 26.6; the restore keeps every Watch product at 26.0 and the floor gate reports consistent floors (macOS 26.6, watchOS 26.0, package floor 26). The watch suite passes on the watchOS 26.0 Simulator runtime after the restore, so this record's 26.0-runtime execution claims stay reproducible. The device observations of the SE 2 running watchOS 26.6 are unaffected — a device above the floor.
+
 ## Recorded risks carried forward (unchanged by a green run)
 
 - The 31 classified source/month comparison pairs (25 unique months) establish recorded arbitration, not independent correctness of every month. The BS 2004 Poush/Magh gap remains unresolved inherited risk with an unrecoverable rationale; passing round trips and pinned comparisons do not remove it.

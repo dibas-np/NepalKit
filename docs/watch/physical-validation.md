@@ -126,6 +126,12 @@ Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** sch
 | 15–18 | Pass (app surface): both boundaries, projected 2084, terminal, and error with/without context all render through production code, each launch clearly banner-identified. |
 | 8 (partial) | The on-device fixture instant cannot reach the complication extension process — launch arguments belong to the app, and no shared store is permitted (no App Group). The corner's कात्तिक curved-label fit is therefore judged via the new native previews ("Corner — longest month") now, with the natural occurrence on 18 October 2026 as the on-device confirmation. |
 
+### 2026-10-04 — session close
+
+Row 19: **pass** — the complications and Today rolled to the new date after the real NPT midnight, observed on the SE 2 without a debugger attached. Row 10 (accented rendering) was not separately exercised; the states are distinct text by construction and every slot was observed in full-color rendering. Row 8's कात्तिक corner confirmation remains due with the natural occurrence on 18 October 2026.
+
+**The physical session is complete.** The device-validation gate holds its evidence.
+
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.

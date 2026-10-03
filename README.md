@@ -82,7 +82,7 @@ Date conversions currently work through Shortcuts. Siri cannot yet collect the c
 
 The Watch app offers four complication styles: rectangular, inline, circular, and corner. Tapping a complication opens Today, showing the full Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day.
 
-The Watch app works offline, independently of the Mac and iPhone. It follows Nepal Time regardless of the watch's time zone and requires **watchOS 26.6 or later**.
+The Watch app works offline, independently of the Mac and iPhone. It follows Nepal Time regardless of the watch's time zone and requires **watchOS 26 or later**.
 
 Today refreshes when the app becomes active and schedules a refresh for the next Nepal midnight. Complications have future entries scheduled at Nepal midnight; watchOS controls when they appear on the face.
 
