@@ -1,34 +1,13 @@
 import Testing
 import NepalKitCore
 
-/// The month lengths that were actually **disputed** between sources, and the
-/// published material each dispute was settled against.
+/// Regression fixtures for retained calendar decisions.
 ///
-/// These are the only month boundaries in the suite that external evidence
-/// independently confirmed, which makes them the most load-bearing literals here:
-/// everything else about a month is self-consistent by construction. They live
-/// in their own suite for that reason — so their status is visible, and so a
-/// routine tidy of `MonthStartTests` cannot quietly drop them. `allDisputesAre
-/// Asserted` fails if a case is removed rather than replaced.
-///
-/// Two arbitration phases, both recorded in SOURCES.md:
-///
-/// 1. **Majority vote.** The base table and a second community table disagreed
-///    on 9 of 116 months; a third python table broke the ties, and the winners
-///    were then confirmed against published calendars wherever those exist.
-/// 2. **Post-review.** Remaining disputes settled month-by-month against
-///    published Patro reproductions using tithi continuity and self-consistent
-///    neighbouring-month pairs.
-///
-/// Note what these assertions do *not* establish. ADR-0010 records that the whole
-/// table is still derived from one base table across its entire range, and that
-/// the base table carries no licence file. Confirming ten months against
-/// published calendars is not a licence position, and nothing here should be
-/// read as one. It is also a small sample: these ten months are externally
-/// validated, and the other 102 supported years have no month-level assertion at
-/// all. That gap is recorded in ADR-0010 and is not closed by this file.
-/// The former 2084 cases were projected, not official attestations. Their
-/// replacement contracts live in Projected2084Tests and SOURCES.md.
+/// SOURCES.md records the current askbuddie base and local exceptions. The
+/// 1989 and 1993 pairs were checked against the Dharan e-BPS converter on
+/// 3 October 2026. Other fixtures retain their original evidence attribution;
+/// they do not establish complete independent verification of the dataset.
+/// The local 2084 projection is tested separately in Projected2084Tests.
 struct ArbitratedDisputeTests {
     /// Every arbitrated month decision, as a (year, month) pair. Presence is
     /// asserted below so the set cannot shrink silently.
@@ -43,6 +22,7 @@ struct ArbitratedDisputeTests {
         packed(1989, 8),  // Mangsir
         packed(1991, 8),  // Mangsir
         packed(1993, 3),  // Ashar
+        packed(1993, 4),  // Shrawan
         packed(2062, 1),  // Baisakh
         packed(2062, 2),  // Jestha
     ]
@@ -67,20 +47,21 @@ struct ArbitratedDisputeTests {
               label: "Bhadra 1 1975", source: "ashesh grid"),
         .init(bs: BSDay(year: 1975, month: 6, day: 1), ad: GADay(year: 1918, month: 9, day: 17),
               label: "Ashwin 1 1975", source: "ashesh grid"),
-        // 1989 kept the base table's row: ashesh's Kartik/Mangsir pair is
-        // self-consistent (Kartik 30 = 15 Nov, Mangsir 1 = 16 Nov) and
-        // tithi-continuous.
+        // Dharan e-BPS confirms Kartik/Mangsir 1989 as 30/29 days.
         .init(bs: BSDay(year: 1989, month: 7, day: 30), ad: GADay(year: 1932, month: 11, day: 15),
-              label: "Kartik end 1989 (30 days)", source: "ashesh grid"),
+              label: "Kartik end 1989 (30 days)", source: "Dharan e-BPS converter"),
         .init(bs: BSDay(year: 1989, month: 8, day: 1), ad: GADay(year: 1932, month: 11, day: 16),
-              label: "Mangsir 1 1989", source: "ashesh grid"),
+              label: "Mangsir 1 1989", source: "Dharan e-BPS converter"),
+        .init(bs: BSDay(year: 1989, month: 8, day: 29), ad: GADay(year: 1932, month: 12, day: 14),
+              label: "Mangsir end 1989 (29 days)", source: "Dharan e-BPS converter"),
         // 1991 kept the second table's row: ashesh Mangsir 1991 has 30 days.
         .init(bs: BSDay(year: 1991, month: 8, day: 30), ad: GADay(year: 1934, month: 12, day: 15),
               label: "Mangsir end 1991 (30 days)", source: "ashesh grid"),
-        // 1993 kept the base table's row: ashesh Ashar grid runs 31 days,
-        // ending 14 July.
+        // Dharan e-BPS confirms Ashar/Shrawan 1993 as 31/32 days.
         .init(bs: BSDay(year: 1993, month: 3, day: 31), ad: GADay(year: 1936, month: 7, day: 14),
-              label: "Ashar end 1993 (31 days)", source: "ashesh grid"),
+              label: "Ashar end 1993 (31 days)", source: "Dharan e-BPS converter"),
+        .init(bs: BSDay(year: 1993, month: 4, day: 32), ad: GADay(year: 1936, month: 8, day: 15),
+              label: "Shrawan end 1993 (32 days)", source: "Dharan e-BPS converter"),
         // 2062 kept the second table's rows: ashesh Baisakh/Jestha 31/31,
         // tithi-continuous.
         .init(bs: BSDay(year: 2062, month: 1, day: 31), ad: GADay(year: 2005, month: 5, day: 14),

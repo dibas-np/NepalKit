@@ -1,5 +1,8 @@
 # Bundled static BS reference table
 
+Current sourcing policy is [ADR-0014](0014-calendar-base-and-local-exceptions.md).
+The text below records the earlier decision and evidence, not the current base.
+
 BS month lengths are declared per year with no closed-form algorithm, so NepalKit ships a static conversion table transcribed year-by-year from the officially approved annual Nepali Patro, with New Year and month-start boundary dates cross-checked against two independent converters. This keeps conversion offline-first and deterministic with no network dependency.
 
 The table contains only verified calendar data: no extrapolated or projected years. Its supported BS range is explicitly defined by the dataset itself and expands only when new official Patro data becomes available.

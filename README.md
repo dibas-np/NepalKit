@@ -90,9 +90,9 @@ The Watch app is in development and not part of the current download.
 
 NepalKit supports **1975 through 2084 Bikram Sambat**, corresponding to **April 13, 1918 through April 12, 2028 Gregorian**. Dates outside the bundled dataset are reported as unsupported.
 
-Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.1 is cross-checked against independent community tables. The Kathmandu Metropolitan City calendar was compared against the previous 2.0.0 row, and that comparison does not describe the current one. Tests check every supported New Year boundary in both directions.
+Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.1 uses [askbuddie's month-length table](https://github.com/askbuddie/bikram-sambat/blob/d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts) as its base, with 14 retained corrections across 1989, 1993, 2004, 2082 and 2083. Tests check every supported New Year boundary in both directions. [SOURCES.md](SOURCES.md) records the corrections and evidence limits.
 
-**2084 Bikram Sambat is projected.** The source record documents official publication through 2083. The shipped 2084 row is a provisional projection adopted pending comparison with the official Nepali Patro, and it deliberately differs from the community tables and the government calendar that the previous version agreed with. It follows a reported birthday and Chaitra recurrence, not an attested calendar or a verified astronomical calculation. [SOURCES.md](SOURCES.md) records the comparison and its limits. Years beyond the supported range are excluded.
+**2084 Bikram Sambat is NepalKit's own provisional projection.** It follows a reported birthday and Chaitra recurrence and remains development/testing data pending comparison with the officially approved Nepali Patro. It is not an attested calendar or a verified astronomical calculation. Years beyond the supported range are excluded.
 
 Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data licensing. For official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
@@ -148,4 +148,4 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-The code is licensed under [GPL-3.0-or-later](LICENSE). The bundled calendar table has separate provenance and licensing considerations documented in [SOURCES.md](SOURCES.md).
+The code is licensed under [GPL-3.0-or-later](LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie; its [complete notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt) is retained. [SOURCES.md](SOURCES.md) documents local corrections, the 2084 projection and provenance limits.

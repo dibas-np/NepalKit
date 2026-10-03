@@ -1,5 +1,9 @@
 # Provisional 2084 dataset update
 
+Source-policy update: [ADR-0014](../adr/0014-calendar-base-and-local-exceptions.md)
+and [SOURCES.md](../../SOURCES.md) replace the four-source baseline described
+below. The 2084 values, dataset version and provisional status are unchanged.
+
 Date: 2026-10-03
 Dataset version: 2.0.1
 Status: user-approved temporary projection, not official calendar attestation

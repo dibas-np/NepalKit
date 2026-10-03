@@ -1,5 +1,8 @@
 # The supported range narrows on lost corroboration, not only on new data
 
+Current sourcing policy is [ADR-0014](0014-calendar-base-and-local-exceptions.md).
+The text below records the earlier decision and evidence, not the current base.
+
 **Refines ADR-0001. Applies the versioning separation in ADR-0009.**
 
 ADR-0001 decided that the bundled table holds only verified calendar data, that

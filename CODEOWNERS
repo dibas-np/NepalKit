@@ -17,6 +17,7 @@ NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift   @dibas-np
 NepalKitCore/Sources/NepalKitCore/Conversion.swift        @dibas-np
 NepalKitCore/Tests/                                       @dibas-np
 SOURCES.md                                                @dibas-np
+NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt @dibas-np
 scripts/verify-data-sources.py                           @dibas-np
 scripts/check-kathmandu-calendar.py                      @dibas-np
 

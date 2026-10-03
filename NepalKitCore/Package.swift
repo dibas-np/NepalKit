@@ -36,7 +36,10 @@ let package = Package(
         .library(name: "NepalKitCore", targets: ["NepalKitCore"]),
     ],
     targets: [
-        .target(name: "NepalKitCore"),
+        .target(
+            name: "NepalKitCore",
+            resources: [.copy("Resources/AskBuddie-LICENSE.txt")]
+        ),
         .testTarget(
             name: "NepalKitCoreTests",
             dependencies: ["NepalKitCore"]

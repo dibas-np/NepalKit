@@ -18,14 +18,14 @@ it needs evidence, not reasoning:
 python3 scripts/verify-data-sources.py
 ```
 
-That script re-runs the whole comparison against pinned commits and prints which
-shipped years each source cannot cover. If you change the table and the script
-does not agree, the change is wrong — not the script.
+That script compares the shipped table with the sole pinned askbuddie base and
+prints every difference. Use `--baseline scripts/data-sources-baseline.json` to
+fail on changes to the recorded observation. The baseline deliberately permits
+the corrections and provisional projection documented in SOURCES.md.
 
-`SOURCES.md` records what the data is, what is not licensed, and which months
-were arbitrated. **Do not make it more confident than the evidence.** A claim
-that cannot be checked from the repository is a bug, even when it is probably
-true.
+`SOURCES.md` records the MIT notice, local decisions and evidence limits.
+Do not describe a comparison result as official attestation or remove a
+provenance gap without supporting evidence. ADR-0014 governs the current policy.
 
 ## Getting set up
 
@@ -213,8 +213,8 @@ first.
 - Branch from `main`, keep the history readable, and describe **why**.
 - Continuous integration runs the comparison against the committed baseline
   (`data-sources.yml`): the baseline's differing months are the recorded
-  arbitrations, so a red gate means the table, a parser, or a source changed
-  without re-arbitrating. Regenerating the baseline
+  corrections and projection, so a red gate means the table, a parser, or a source changed
+  without documenting the new observation. Regenerating the baseline
   (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
   act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the

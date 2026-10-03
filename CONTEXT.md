@@ -17,7 +17,7 @@ Nepal's time zone, UTC+5:45.
 _Avoid_: Nepali time, Kathmandu time
 
 **Nepali Patro**:
-The officially approved annual calendar publication; NepalKit's conversion table is transcribed from it.
+The officially approved annual calendar publication. NepalKit currently uses a pinned community base with explicit historical corrections and a provisional 2084 projection; see SOURCES.md and ADR-0014.
 _Avoid_: Nepali calendar book
 
 ## Display
@@ -52,4 +52,4 @@ _Avoid_: Product boundary, date range, supported years
 What the user sees once the current date passes the supported range: a plain statement that the Bikram Sambat date is unavailable, naming the last supported year, shown beside the Gregorian date and Nepal Time that remain answerable. Never a silent placeholder, and never a menu-bar warning badge. A range boundary state is an expected domain result and does not prevent Gregorian calendar-day progression. An unexpected calendar calculation or dataset failure is an error and must remain distinguishable from it.
 _Avoid_: Error state, unavailable date, out-of-range
 
-A supported range is a property of the bundled dataset, not a fixed product limit: the release process extends it by shipping a new dataset when newer official Patro data is published, and narrows it by shipping a new dataset when the shipped table can no longer be corroborated for some of its years.
+A supported range is a property of the bundled dataset, not a fixed product limit: the release process extends it by shipping a new dataset when newer official Patro data is published, and narrows it by shipping a new dataset when the evidence no longer supports some of its years. The current base and local exceptions are governed by ADR-0014.
