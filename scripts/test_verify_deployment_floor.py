@@ -441,7 +441,37 @@ class DriftDetectionTests(unittest.TestCase):
         higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
         code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
         self.assertEqual(code, 1, "a package floor above the app's must fail")
-        self.assertIn("27", output)
+        # Naming the offending line, not just the number. Asserting only "27" passes
+        # on the digits alone and would still pass if the message lost its subject.
+        self.assertIn("Package.swift:6", output,
+                      "the message must name the line to edit")
+        self.assertIn("higher than the 26.6", output,
+                      "the message must say which way the two floors disagree")
+
+    def test_the_package_floor_failure_does_not_claim_the_appcast_would_lie(self) -> None:
+        # This message used to say "the appcast would then advertise support for
+        # watches that cannot run". That is false here and the repository can
+        # disprove it: appcast.xml is the Mac app's Sparkle feed, it contains no
+        # watchOS entry at all, and every <sparkle:minimumSystemVersion> in it is
+        # the macOS 26.6. A reader who believed it would go looking for a watchOS
+        # entry, find none, and stop trusting the gate.
+        #
+        # The sibling branch of this same function is deliberately careful not to
+        # overclaim - it says in as many words that it does not claim App Store
+        # rejection - so one branch asserting something the repo can disprove is
+        # exactly the defect this gate was written to end.
+        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
+        higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
+        _code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
+        self.assertNotIn("appcast", output.lower(),
+                         "the appcast says nothing about watches, so this message "
+                         "must not claim it does")
+        # ...and the consequence it does state has to be the real one, which is an
+        # availability failure on old watches rather than a build failure.
+        self.assertIn("availability", output,
+                      "the stated consequence must be the availability one")
+        self.assertIn("fails on an older watch", output,
+                      "the stated consequence must say where it surfaces")
 
     def test_a_package_floor_below_the_app_exits_zero(self) -> None:
         # The legitimate asymmetry: NepalKitCore's watchOS platform is a compile
@@ -545,10 +575,19 @@ class RealRepositoryTests(unittest.TestCase):
                          f"watchOS blocks disagree in the real project: {sorted(values)}")
 
     def test_the_repository_watchos_blocks_declare_26_6(self) -> None:
+        # A deliberate tripwire, and the only place a watchOS version is written
+        # down in code - the gate itself must not hard-code one, because its job
+        # is to prove the sources agree, not to decide what they should say.
+        # So if the product floor ever moves, this failing is the intended signal
+        # rather than a defect: update this value in the same change that moves
+        # every WATCHOS_DEPLOYMENT_TARGET in the project.
         values = {value for _, value in
                   vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
         self.assertEqual(values, {"26.6"},
-                         "d92dea8 raised the Watch app to 26.6; the rest must match it")
+                         "the watchOS product floor is 26.6, set by d92dea8. If the "
+                         "floor is moving, change every WATCHOS_DEPLOYMENT_TARGET "
+                         "in the project and this value together - that is the fix "
+                         "this failure is asking for, not a reason to doubt it")
 
     def test_the_repository_package_floor_is_not_above_the_app(self) -> None:
         text = vdf.PROJECT.read_text(encoding="utf-8")
