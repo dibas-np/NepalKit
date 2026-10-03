@@ -96,6 +96,7 @@ struct PopoverView: View {
         // left edge. Without this the date and the actions are left-aligned to
         // two different x positions and the block looks accidentally staggered.
         .frame(maxWidth: .infinity, alignment: .leading)
+        .task { await clock.refreshWhileVisible() }
 
         // Settings and Quit live below the content rather than inside either
         // destination. They open another window or end the process, so they are
@@ -114,8 +115,7 @@ struct PopoverView: View {
 #Preview("Popover") {
     PopoverView(
         settings: .preview,
-        // `refreshes: false` because a live clock schedules a main-run-loop
-        // timer on every redraw that nothing ever invalidates.
+        // Keep the preview clock fixed when the visibility task starts.
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
         dataset: AppData.dataset
