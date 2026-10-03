@@ -657,7 +657,12 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
-				WATCHOS_DEPLOYMENT_TARGET = 26.6;
+				/* No watchOS deployment target here on purpose: this is the
+				   macOS app, which embeds no watch content, so it declares no
+				   watchOS floor. The key was an Xcode template leftover. The
+				   watchOS floor belongs to the blocks that declare themselves
+				   watchOS targets, and scripts/verify-deployment-floor.py
+				   enforces that they all agree with each other. */
 			};
 			name = Debug;
 		};
@@ -693,7 +698,9 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
-				WATCHOS_DEPLOYMENT_TARGET = 26.6;
+				/* No watchOS deployment target here on purpose - see the
+				   Debug configuration above. This target is the macOS app, not
+				   a watch product, so it declares no watchOS floor. */
 			};
 			name = Release;
 		};
@@ -868,7 +875,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.6;
 			};
 			name = Debug;
 		};
@@ -899,7 +906,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.6;
 			};
 			name = Release;
 		};
@@ -925,7 +932,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.6;
 			};
 			name = Debug;
 		};
@@ -950,7 +957,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.6;
 			};
 			name = Release;
 		};
