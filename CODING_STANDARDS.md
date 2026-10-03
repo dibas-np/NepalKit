@@ -61,6 +61,17 @@ Views then decide how to present a `nil`, which is where user-facing wording
 belongs. This keeps the whole conversion surface exhaustively testable without
 error-handling noise at every call site.
 
+**The Watch exception.** The accepted Watch handoff requires the resolved day
+to distinguish invalid civil input, broken dataset assumptions, and failed
+calendar arithmetic from an *expected* range boundary — a distinction
+optionals cannot carry, because `nil` would collapse "outside the range" into
+"the table is broken". `ResolvedDay.swift` therefore introduces the core's one
+error type (`DayResolutionError`) and its one throwing surface
+(`resolvedDay(for:in:)`, `resolvedDay(now:in:)`). The conversion functions
+above stay optional; do not widen `throws` beyond the resolved-day resolvers.
+Where a caller wants no error handling at all, the non-throwing
+`watchDayDisplay(...)` helpers map failures to the calculation-error display.
+
 ## Validate once, at the boundary
 
 Guard invalid components in a single shared helper rather than at each entry
@@ -163,6 +174,21 @@ This is not a localization system: v1 ships an English interface, and the
 month-name setting applies to Bikram Sambat month names and weekday names only.
 Gregorian month names are always English (`Formatting.swift:105`) — don't route
 them through the setting.
+
+**The Watch exception.** The Watch app and its complication extension both
+render the same firm state copy, and the extension cannot import the app's
+`Strings`, so the Watch's shared copy lives beside the display components in
+core (`WatchDayCopy` in `NepalKitCore`). The macOS app's copy still belongs in
+`Strings` alone; don't move it.
+
+The same reasoning governs the Watch's shared *accessibility labels*, so
+`ComplicationAccessibility` lives in core for it: the two watchOS products
+cannot share a framework target and neither can see the other's files, which
+leaves `NepalKitCore` — already linked by both — as the only place a helper they
+must agree on byte for byte can live. A label a surface builds by hand is a
+duplicate that drifts silently, because the other product's suite goes on passing
+against its own copy. Do not hand-roll one in a watchOS target; if a label helper
+has no home yet, that is the argument for putting it in core too.
 
 App Intents metadata is the exception. Intent titles, descriptions, parameter
 summaries, phrases, and entity representations must be build-time literals at
@@ -314,7 +340,9 @@ read the skip as coverage.
 
 ## Commands
 
-- Everything: `scripts/check-all.sh`, the five local suites.
+- Everything: `scripts/check-all.sh`, the eleven local gates. That count is the
+  script's own `total`, and a green run prints `==> all 11 gates passed`, so the
+  number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
 - App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
   before connecting and is not the runner (see `README.md` and ADR-0005).
@@ -335,8 +363,9 @@ default:
 - `NEPAKIT_TAP_DIR` — a local clone of the Homebrew tap for `update-cask.sh`.
   Unset, it uses `../homebrew-tap`.
 - `NEPAKIT_BUILT_PLIST` — a built app's `Info.plist`, so `run-app-tests.sh`
-  checks the shipped product rather than skipping five tests. Unset, the script
-  discovers one and accepts it only if it is newer than the sources.
+  checks the shipped product rather than leaving InfoPlistKeysTests skipping.
+  Unset, the script discovers one and accepts it only if it is newer than the
+  sources.
 
 A new script that reads an environment variable adds it to `.env.example` in the
 same commit, with the same "unset means" line. A variable that appears in a

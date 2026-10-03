@@ -24,6 +24,14 @@ public struct DisplaySettings: Sendable, Hashable {
     }
 }
 
+extension DisplaySettings {
+    /// The fixed settings every Watch surface renders with: canonical Nepali
+    /// month and weekday names, Devanagari digits. The Watch has no settings,
+    /// so there is exactly one display configuration and it lives where the
+    /// other display components do.
+    public static let watch = DisplaySettings(digits: .devanagari, monthNames: .nepali)
+}
+
 /// Canonical transliterated English month names, Baisakh through Chaitra.
 public let transliteratedMonthNames = [
     "Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashoj",

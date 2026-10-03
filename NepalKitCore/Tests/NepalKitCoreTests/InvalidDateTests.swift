@@ -38,4 +38,25 @@ struct InvalidDateTests {
     func invalidADDatesReturnNil(testCase: (day: GADay, label: String)) {
         #expect(adToBS(testCase.day, in: .v2) == nil, "\(testCase.label)")
     }
+
+    @Test(arguments: [0, -1])
+    func corruptIntermediateRowRejectsReverseConversion(monthLength: Int) throws {
+        let validMonths = [Int](repeating: 30, count: 12)
+        var corruptMonths = validMonths
+        corruptMonths[5] = monthLength
+        let anchor = GADay(year: 2000, month: 1, day: 1)
+        let broken = CalendarDataset(
+            version: "corrupt-intermediate-test",
+            years: [2000: validMonths, 2001: corruptMonths, 2002: validMonths],
+            anchorBS: BSDay(year: 2000, month: 1, day: 1),
+            anchorAD: anchor,
+            supportedRange: 2000 ... 2002
+        )
+
+        #expect(adToBS(anchor, in: broken) == BSDay(year: 2000, month: 1, day: 1))
+        for offset in [400, 800] {
+            let day = try #require(anchor.advanced(byDays: offset))
+            #expect(adToBS(day, in: broken) == nil)
+        }
+    }
 }

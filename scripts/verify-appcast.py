@@ -344,6 +344,29 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("feed contains no <item>: an app checking this would see no updates at all")
     ok(f"well-formed, {len(items)} item(s)")
 
+    # Releases use numeric two- or three-component versions. Compare them
+    # numerically so historical feed ordering cannot change the current floor.
+    release_versions = []
+    for item in items:
+        version = item.findtext("sparkle:shortVersionString", default="", namespaces=NS)
+        if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", version):
+            fail(f"invalid release shortVersionString: {version!r}")
+        components = tuple(int(part) for part in version.split("."))
+        release_versions.append(components + (0,) * (3 - len(components)))
+    latest_version = max(release_versions)
+    if release_versions.count(latest_version) != 1:
+        fail("cannot identify a unique newest release")
+    current_item = items[release_versions.index(latest_version)]
+
+    if enclosure is not None:
+        matches = [item for item in items
+                   if item.find("enclosure") is not None
+                   and Path(urlparse(item.find("enclosure").get("url", "")).path).name
+                   == enclosure.name]
+        if len(matches) != 1:
+            fail(f"local enclosure {enclosure.name} must match exactly one feed item "
+                 f"(found {len(matches)})")
+
     # The two outcomes that are neither pass nor fail, counted so the run can
     # report them instead of printing a line and moving on. `verified` counts
     # items that cleared every layer; `skipped` names the ones where a layer
@@ -383,9 +406,11 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         minimum = item.findtext("sparkle:minimumSystemVersion", default=None, namespaces=NS)
         ok(f"version {version}: https url, length {declared_length}, 64-byte signature")
         if minimum is None:
-            # Absent, not wrong: an item without the element tells Sparkle
-            # nothing about the floor. Say so rather than passing in silence.
-            print(f"  ..    version {version}: no <sparkle:minimumSystemVersion>")
+            fail(f"version {version}: no <sparkle:minimumSystemVersion>")
+        if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", minimum):
+            fail(f"version {version}: malformed minimumSystemVersion {minimum!r}")
+        if item is not current_item:
+            ok(f"version {version}: historical minimumSystemVersion {minimum}")
         elif floor is None:
             print(f"  ..    version {version}: minimumSystemVersion {minimum} "
                   f"unchecked (no deployment floor available)")

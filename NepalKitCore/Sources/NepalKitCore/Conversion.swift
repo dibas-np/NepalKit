@@ -33,7 +33,9 @@ let nptGregorian: Calendar = {
 /// civil-day validity is checked. `Calendar` normalizes impossible input —
 /// February 30 silently becomes March 1 — so anything that does not round-trip
 /// exactly is rejected here rather than by each caller repeating the check.
-private func utcDate(from ad: GADay) -> Date? {
+/// Module-internal so the resolved-day resolvers validate input through this
+/// same check instead of repeating it.
+func utcDate(from ad: GADay) -> Date? {
     guard (1 ... 12).contains(ad.month) else { return nil }
     var components = DateComponents()
     components.year = ad.year
@@ -62,8 +64,12 @@ public func noonUTC(for ad: GADay) -> Date? {
 /// Month lengths for a Bikram Sambat date after range and component
 /// validation, or nil if the date is invalid or outside the table.
 func validatedMonths(for bs: BSDay, in dataset: CalendarDataset) -> [Int]? {
+    // A non-positive month length cannot appear in real data; guarding it
+    // here keeps a corrupt row answering nil instead of building a reversed
+    // range and trapping at conversion time.
     guard dataset.supportedRange.contains(bs.year),
           let months = dataset.monthLengths(for: bs.year),
+          months.allSatisfy({ $0 >= 1 }),
           (1 ... 12).contains(bs.month),
           (1 ... months[bs.month - 1]).contains(bs.day)
     else { return nil }
@@ -101,7 +107,8 @@ func bsDay(at index: Int, in dataset: CalendarDataset) -> BSDay? {
     guard index >= 0 else { return nil }
     for year in dataset.supportedRange {
         guard let yearStart = dataset.yearStartIndices[year],
-              let months = dataset.monthLengths(for: year)
+              let months = dataset.monthLengths(for: year),
+              months.allSatisfy({ $0 >= 1 })
         else { return nil }
         let yearLength = months.reduce(0, +)
         guard index >= yearStart + yearLength else {
@@ -165,6 +172,22 @@ public func daysInGregorianMonth(year: Int, month: Int) -> Int? {
           let range = utcGregorian.range(of: .day, in: .month, for: date)
     else { return nil }
     return range.count
+}
+
+extension GADay {
+    /// The civil day `days` after this one (before it, for negative values),
+    /// or nil if the result does not name a real Gregorian day. Civil-day
+    /// arithmetic, not instant arithmetic: the timeline horizon and any future
+    /// day progression advance through here so the result is the named
+    /// Gregorian day regardless of time zone.
+    public func advanced(byDays days: Int) -> GADay? {
+        guard let date = utcDate(from: self),
+              let advanced = utcGregorian.date(byAdding: .day, value: days, to: date)
+        else { return nil }
+        let components = utcGregorian.dateComponents([.year, .month, .day], from: advanced)
+        guard let year = components.year, let month = components.month, let day = components.day else { return nil }
+        return GADay(year: year, month: month, day: day)
+    }
 }
 
 /// Today's Bikram Sambat date, anchored to Nepal Time (UTC+5:45) unconditionally:

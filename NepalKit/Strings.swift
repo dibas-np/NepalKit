@@ -311,6 +311,7 @@ nonisolated enum Strings {
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
     }
+    static let datasetVersionLabel = "Dataset version"
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
     /// Shown on the Settings sidebar link. Short because the sidebar row is

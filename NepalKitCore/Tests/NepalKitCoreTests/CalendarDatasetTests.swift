@@ -7,7 +7,7 @@ struct CalendarDatasetTests {
 
         // Dataset 2.0.0 cut 1970-1974: those five years rested on the base
         // source alone, with no second table to corroborate them.
-        #expect(dataset.version == "2.0.0")
+        #expect(dataset.version == "2.0.1")
         #expect(dataset.supportedRange == 1975 ... 2084)
     }
 

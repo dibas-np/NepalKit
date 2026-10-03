@@ -1,48 +1,21 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-later AND MIT
 // Copyright (C) 2026 Dibas Sigdel
+// Copyright (c) 2023 Ask Buddie (historical base table)
 /// A versioned Bikram Sambat month-length table with its conversion anchor.
 ///
-/// Month lengths are declared per year by the official Nepali Patro; there is
-/// no closed-form algorithm, so conversion is table-driven.
+/// The historical base is askbuddie/bikram-sambat at the commit pinned in
+/// SOURCES.md, under MIT, copyright (c) 2023 Ask Buddie. Its complete notice
+/// is bundled in Resources/AskBuddie-LICENSE.txt.
 ///
-/// **Provenance is documented in `SOURCES.md` at the repository root**, with
-/// every source pinned to a commit, its licence and role recorded, and each
-/// arbitrated month listed. That document also states plainly what this table is
-/// not: it is not independently licensed. Read it before describing this data
-/// as verified or permissively sourced.
+/// NepalKit retains 14 local month-length corrections across 1989, 1993,
+/// 2004, 2082 and 2083. The 2084 row is the maintainer's own provisional
+/// development/testing projection, not official calendar attestation.
+/// SOURCES.md records every exception and its evidence limits; ADR-0014
+/// governs the current base and update policy.
 ///
-/// Provenance: month rows reproduce the officially approved
-/// annual Nepali Patro. Three community tables were cross-checked
-/// month-by-month (107/116 identical); all 9 disputes were arbitrated against
-/// published Patro reproductions (KMC government grids, Hamro Patro, Nepali
-/// Patro, mypatro, ashesh, rat32, khudra), with tithi-continuity, weekday, and
-/// month-handoff checks. New Year boundaries were checked against an independent
-/// anchor list over 1970-2090 — a wider window than this type ships, so that a
-/// table change could be detected from either end; two single-day typos in that
-/// list were corrected (1975, 2089). Range capped at 2084: the current officially
-/// published year; 2085+ excluded, no extrapolated years (ADR-0001).
-///
-/// Dataset 2.0.0 narrows the lower bound to 1975. The five years 1970-1974
-/// were the only ones the cross-check did not corroborate against a second
-/// table, and the cross-check they were missing from is what makes the rest of
-/// the range defensible. This is a breaking change to the conversion contract
-/// and a data-contract major bump, not a fix (ADR-0010). The Gregorian lower
-/// bound is a consequence of this range, not a setting of its own: 1 Baisakh 1975
-/// is 13 April 1918, so the convertible span begins there.
-///
-/// **Transcribe from a current checkout, not a pre-2025-03-14 one.** The base
-/// table `medic/bikram-sambat` shipped wrong Falgun and Chaitra lengths for BS
-/// 2081, corrected in its PR #27 (merged 14 March 2025). The shipped rows here
-/// are the corrected ones and match upstream exactly. The correction is
-/// dangerous to miss because the *year total is 366 either way* — 29+31 and
-/// 30+30 redistribute the same days — so a stale transcription produces the
-/// right 1 Baisakh 2082 and passes every year-level check while shifting all of
-/// Chaitra 2081 by a day and rejecting a real 31 Chaitra 2081. Re-verify those
-/// two rows after any re-transcription. See the coverage note in ADR-0010.
-///
-/// **2085 is absent on purpose.** The base table carries rows past 2084; they are
-/// not shipped because 2085 is not officially published, and "the source has it"
-/// is not a reason to widen the conversion contract (ADR-0001).
+/// Supported range: 1975-2084 Bikram Sambat, 1918-04-13 through 2028-04-12
+/// Gregorian. Dataset 2.0.1 updates the provisional 2084 month lengths while
+/// preserving the anchor and supported range.
 public struct CalendarDataset: Sendable {
     /// Dataset version, e.g. "2.0.0" for the table narrowed to 1975-2084 BS.
     public let version: String
@@ -88,6 +61,17 @@ public struct CalendarDataset: Sendable {
         years[bsYear]
     }
 
+    /// The first day the table can express, as a Gregorian civil day: the
+    /// Gregorian start of `supportedRange`. Nil only if the table is broken.
+    ///
+    /// Derived, never stored, for the same reason `gregorianEnd` is: the
+    /// Watch's boundary classification and support context read the exact
+    /// bounds, so a table change moves them without a Gregorian literal to
+    /// hunt down.
+    public var gregorianStart: GADay? {
+        bsToAD(BSDay(year: supportedRange.lowerBound, month: 1, day: 1), in: self)
+    }
+
     /// The last day the table can express, as a Gregorian civil day: the
     /// Gregorian end of `supportedRange`. Nil only if the table is broken.
     ///
@@ -101,14 +85,10 @@ public struct CalendarDataset: Sendable {
         return bsToAD(BSDay(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
     }
 
-    // Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
-    // The table below is NOT covered by the SPDX identifier at the top of
-    // this file. The code is GPL-3.0-or-later; the data is derived work whose
-    // licence chain does not terminate in a clear grant, and no licence this
-    // project applies can supply one. See SOURCES.md.
-    // SPDX-License-Identifier: LicenseRef-see-SOURCES.md
+    // MIT base with explicit NepalKit corrections and a local 2084 projection.
+    // See SOURCES.md for the pinned reference, exceptions and evidence limits.
     public static let v2 = CalendarDataset(
-        version: "2.0.0",
+        version: "2.0.1",
         years: [
             1975: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
             1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
@@ -219,7 +199,7 @@ public struct CalendarDataset: Sendable {
             2081: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
             2082: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             2083: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-            2084: [31, 31, 32, 31, 31, 30, 30, 30, 29, 30, 30, 30],
+            2084: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
         ],
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
         anchorAD: GADay(year: 2025, month: 4, day: 14),

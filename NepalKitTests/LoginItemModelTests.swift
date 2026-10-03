@@ -250,6 +250,44 @@ struct LoginItemModelTests {
         #expect(model.setupError == nil)
     }
 
+    @Test(arguments: [false, true])
+    func refreshFollowsExternalChangesWithoutSideEffects(configured: Bool) throws {
+        let defaults = try freshDefaults()
+        if configured { defaults.set(true, forKey: LoginItemModel.configuredKey) }
+        let storedFlag = defaults.object(forKey: LoginItemModel.configuredKey) as? Bool
+        let service = MockService()
+        let model = LoginItemModel(service: service, defaults: defaults)
+
+        service.registered = true
+        model.refreshStatus()
+        model.refreshStatus()
+        #expect(model.isOn)
+        #expect(model.launchAtLogin)
+        service.registered = false
+        model.refreshStatus()
+        model.refreshStatus()
+        #expect(!model.isOn)
+        #expect(service.registerCalls == 0)
+        #expect(service.unregisterCalls == 0)
+        #expect(defaults.object(forKey: LoginItemModel.configuredKey) as? Bool == storedFlag)
+    }
+
+    @Test func refreshPreservesExistingFailure() throws {
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        model.setOn(true)
+        let failure = model.setupError
+
+        service.registered = true
+        model.refreshStatus()
+
+        #expect(model.isOn)
+        #expect(model.setupError == failure)
+        #expect(service.registerCalls == 1)
+        #expect(service.unregisterCalls == 0)
+    }
+
     @Test func initReflectsCurrentSystemState() throws {
         let on = LoginItemModel(service: MockService(registered: true), defaults: try freshDefaults())
         let off = LoginItemModel(service: MockService(registered: false), defaults: try freshDefaults())

@@ -47,6 +47,72 @@ PBXPROJ = (
 )
 
 RELEASE_SH = "#!/bin/sh\nDEPLOYMENT_TARGET=26.6\nARCHIVE=x\n"
+SANDBOX_EVIDENCE = (
+    "# readiness evidence (sandbox)\n"
+    "\n"
+    "| Item | Value |\n"
+    "| --- | --- |\n"
+    "| watchOS floor (sandbox) | {floor} |\n"
+)
+
+PACKAGE_SW = (
+    "// swift-tools-version: 6.2\n"
+    "import PackageDescription\n"
+    "\n"
+    "let package = Package(\n"
+    "    name: \"NepalKitCore\",\n"
+    "    platforms: [.macOS(.v26), .watchOS(.v26)],\n"
+    "    targets: [\n"
+    "        .target(name: \"NepalKitCore\"),\n"
+    "    ]\n"
+    ")\n"
+)
+
+# A watchOS floor's value that appears in no other block of the fixture, so a test
+# can prove it was *not* reported by looking for its absence rather than by
+# counting what was.
+QUIET = "26.9"
+
+
+def watch_pbxproj(*blocks: tuple[str, str | None, str]) -> str:
+    """A project file whose blocks are exactly ``blocks``.
+
+    Each block is ``(name, sdkroot, floor)``. ``sdkroot`` of ``None`` is a block
+    that inherits its SDKROOT from the project level - the real shape of the macOS
+    app target at ``project.pbxproj:660``, which carries a WATCHOS_DEPLOYMENT_TARGET
+    and no SDKROOT of its own.
+    """
+    text = (
+        "// !$*UTF8*$!\n"
+        "{ objects = 1A2B3C /* Begin XCBuildConfiguration section */\n"
+    )
+    for name, sdkroot, floor in blocks:
+        text += f"\t\t1111 /* {name} */ = {{\n"
+        text += "\t\t\tisa = XCBuildConfiguration;\n"
+        text += "\t\t\tbuildSettings = {\n"
+        if sdkroot is not None:
+            text += f"\t\t\t\tSDKROOT = {sdkroot};\n"
+        text += f"\t\t\t\tWATCHOS_DEPLOYMENT_TARGET = {floor};\n"
+        text += "\t\t\t};\n"
+        text += "\t\t};\n"
+    return text + "/* End XCBuildConfiguration section */\n}\n"
+
+
+def floor_lines(text: str, value: str) -> list[int]:
+    """Line numbers of every ``WATCHOS_DEPLOYMENT_TARGET = <value>;`` in ``text``."""
+    needle = f"WATCHOS_DEPLOYMENT_TARGET = {value};"
+    return [n for n, line in enumerate(text.splitlines(), start=1) if needle in line]
+
+
+# The three block shapes present in the real project, in the order they appear
+# there: a watchOS block, another watchOS block, the macOS app target that
+# inherits macosx, and the iOS-side watch container.
+THREE_SHAPES = watch_pbxproj(
+    ("Watch App Debug", "watchos", "26.6"),
+    ("NepalKitComplications Debug", "watchos", "26.0"),
+    ("NepalKit Mac App Debug", None, QUIET),
+    ("NepalKitWatch Debug", "iphoneos", QUIET),
+)
 
 
 class ProjectFloorParsingTests(unittest.TestCase):
@@ -72,6 +138,102 @@ class ProjectFloorParsingTests(unittest.TestCase):
         remaining = vdf.project_floors(no_key)
         self.assertEqual([value for _, value in remaining], ["26.0"],
                          "only the block that still declares a floor is reported")
+
+
+class WatchOSProjectFloorParsingTests(unittest.TestCase):
+    """Which blocks are allowed to declare a watchOS floor, and which are not.
+
+    The exclusion is positive identification - a block declares a watchOS floor if
+    and only if it carries its own ``SDKROOT = watchos`` - so all three shapes in
+    the real project are exercised here, not just the one that is easy to get
+    right. A negative test ("anything that is not macOS") passes the inherited-
+    SDKROOT shape by accident and fails the watch container.
+    """
+
+    def test_only_blocks_that_declare_their_own_watchos_sdkroot_are_floors(self) -> None:
+        found = vdf.watchos_project_floors(THREE_SHAPES)
+        self.assertEqual(
+            [value for _, value in found], ["26.6", "26.0"],
+            "the two watchos blocks are the floors; the inherited-SDKROOT and "
+            "iphoneos blocks are not",
+        )
+        self.assertEqual(
+            [line for line, _ in found],
+            floor_lines(THREE_SHAPES, "26.6") + floor_lines(THREE_SHAPES, "26.0"),
+            "each floor is reported at the line that holds it",
+        )
+
+    def test_the_reported_line_holds_the_value_it_is_reported_for(self) -> None:
+        lines = THREE_SHAPES.splitlines()
+        for line, value in vdf.watchos_project_floors(THREE_SHAPES):
+            self.assertEqual(lines[line - 1].strip(),
+                             f"WATCHOS_DEPLOYMENT_TARGET = {value};",
+                             f"line {line} does not contain the value reported for it")
+
+    def test_an_inherited_sdkroot_block_does_not_declare_a_watchos_floor(self) -> None:
+        # The real shape of project.pbxproj:660 and :696. The block inherits
+        # macosx from the project level, so it carries a WATCHOS_DEPLOYMENT_TARGET
+        # that no shipped watch product reads.
+        only_inherited = watch_pbxproj(("NepalKit Mac App Debug", None, QUIET))
+        self.assertEqual(vdf.watchos_project_floors(only_inherited), [],
+                         "no SDKROOT of its own means no watchOS floor")
+
+    def test_the_watch_container_does_not_declare_a_watchos_floor(self) -> None:
+        # The real shape of project.pbxproj:758 and :775. The container is an
+        # iOS-side target embedding the Watch app; it declares an
+        # IPHONEOS_DEPLOYMENT_TARGET, not a watchOS floor.
+        only_container = watch_pbxproj(("NepalKitWatch Debug", "iphoneos", QUIET))
+        self.assertEqual(vdf.watchos_project_floors(only_container), [],
+                         "SDKROOT = iphoneos is not a watchOS floor")
+
+    def test_a_watchos_block_without_the_key_is_not_a_floor(self) -> None:
+        # Same reason as the macOS parser skips a block without its key: an absent
+        # key means "inherit", and inventing a value would fail the gate on
+        # configurations that are correct by not overriding anything.
+        no_key = watch_pbxproj(("Watch App Debug", "watchos", "26.6")).replace(
+            "\t\t\t\tWATCHOS_DEPLOYMENT_TARGET = 26.6;\n", "")
+        self.assertEqual(vdf.watchos_project_floors(no_key), [],
+                         "a watchos block that declares no floor is skipped, not defaulted")
+
+    def test_the_macOS_parser_still_ignores_a_watchos_key(self) -> None:
+        # The two keys must not be confusable in either direction: a block that
+        # carries both is one macOS floor and one watchOS floor.
+        both = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
+        both = both.replace("\t\t\t\tWATCHOS_DEPLOYMENT_TARGET = 26.6;\n",
+                            "\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 26.6;\n"
+                            "\t\t\t\tWATCHOS_DEPLOYMENT_TARGET = 26.6;\n")
+        self.assertEqual([value for _, value in vdf.project_floors(both)], ["26.6"])
+        self.assertEqual([value for _, value in vdf.watchos_project_floors(both)], ["26.6"])
+
+
+class PackageManifestFloorParsingTests(unittest.TestCase):
+    """``.watchOS(...)`` out of NepalKitCore/Package.swift's platforms list."""
+
+    def test_reads_the_declared_platform(self) -> None:
+        line, value = vdf.package_watchos_floor(PACKAGE_SW)
+        self.assertEqual(value, "26")
+        self.assertIn(".watchOS(.v26)", PACKAGE_SW.splitlines()[line - 1])
+
+    def test_a_manifest_with_no_watchos_platform_is_absent_not_a_default(self) -> None:
+        without = PACKAGE_SW.replace(".watchOS(.v26)", "")
+        self.assertIsNone(vdf.package_watchos_floor(without),
+                          "no .watchOS platform must read as absent, not as a version")
+
+    def test_a_platform_inside_a_comment_is_not_the_declaration(self) -> None:
+        # The comment Package.swift carries about .v26.6 and .v27 mentions those
+        # spellings. If the comment were read, the gate would compare a floor
+        # nobody declared - which is exactly the quiet lie this gate exists to
+        # catch, turned on the gate itself.
+        commented = "// was once: platforms: [.watchOS(.v27)]\n" + PACKAGE_SW
+        line, value = vdf.package_watchos_floor(commented)
+        self.assertEqual(value, "26", "the commented-out platform must not be read")
+        self.assertEqual(commented.splitlines()[line - 1].strip(),
+                         "platforms: [.macOS(.v26), .watchOS(.v26)],")
+
+    def test_the_macos_platform_is_not_mistaken_for_the_watchos_one(self) -> None:
+        line, value = vdf.package_watchos_floor(PACKAGE_SW)
+        self.assertIn(".watchOS", PACKAGE_SW.splitlines()[line - 1],
+                      "the line reported must be the one declaring .watchOS")
 
 
 class ReleaseScriptFloorParsingTests(unittest.TestCase):
@@ -114,27 +276,61 @@ class BuiltProductFloorTests(unittest.TestCase):
         self.assertIsNone(vdf.product_floor(Path("/nonexistent/Info.plist")))
 
 
-class DriftDetectionTests(unittest.TestCase):
-    """The bug, reproduced: one source out of step must be a non-zero exit."""
+class GateHarness:
+    """Sandbox plumbing shared by the suites that drive the gate's ``main``.
 
-    def _run(self, project: str, release: str, built: str | None) -> tuple[int, str]:
+    Patches the module's path constants at temporary files and restores them,
+    so a scenario can move any floor source without touching the repository.
+    """
+
+    def _run(self, project: str, release: str, built: str | None,
+             package: str = PACKAGE_SW,
+             evidence: str | None = None) -> tuple[int, str]:
         captured = io.StringIO()
         code = 0
         with contextlib.redirect_stdout(captured):
-            with self._patch_sources(project, release, built):
+            with self._patch_sources(project, release, built, package, evidence):
                 code = vdf.main()
         return code, captured.getvalue()
 
     @contextlib.contextmanager
-    def _patch_sources(self, project: str, release: str, built: str | None):
+    def _patch_sources(self, project: str, release: str, built: str | None,
+                       package: str = PACKAGE_SW, evidence: str | None = None):
         original_project, original_release = vdf.PROJECT, vdf.RELEASE_SCRIPT
+        # PACKAGE is absent until the gate reads the manifest, and this harness has
+        # to work in that state too: the suite is written before the gate, so
+        # reading it unconditionally would fail every drift test here for a reason
+        # that has nothing to do with what they assert.
+        had_package = hasattr(vdf, "PACKAGE")
+        original_package = getattr(vdf, "PACKAGE", None)
+        original_evidence = vdf.EVIDENCE
         original_locate = vdf._locate_built_product
         original_plist = vdf.product_floor
         project_path = Path(tempfile.mkdtemp()) / "project.pbxproj"
         project_path.write_text(project, encoding="utf-8")
         release_path = Path(tempfile.mkdtemp()) / "package-release.sh"
         release_path.write_text(release, encoding="utf-8")
+        package_path = Path(tempfile.mkdtemp()) / "Package.swift"
+        package_path.write_text(package, encoding="utf-8")
         vdf.PROJECT, vdf.RELEASE_SCRIPT = project_path, release_path
+        # Patched alongside the other two so a test can move the package's floor
+        # without editing the real manifest.
+        vdf.PACKAGE = package_path
+        # The sandbox evidence records whatever watchOS floor the sandbox project
+        # declares, so the evidence cross-check passes drift scenarios for the
+        # drift they actually test. An explicit `evidence` overrides it, which is
+        # how the cross-check's own failure modes are exercised.
+        watch_floors = {value for _, value in vdf.watchos_project_floors(project)}
+        evidence_path = Path(tempfile.mkdtemp()) / "readiness-evidence.md"
+        evidence_path.write_text(
+            SANDBOX_EVIDENCE.format(
+                floor=sorted(watch_floors)[0] if watch_floors else "26.0"
+            ),
+            encoding="utf-8",
+        )
+        vdf.EVIDENCE = evidence_path
+        if evidence is not None:
+            evidence_path.write_text(evidence, encoding="utf-8")
         # Both halves have to be patched. Returning None from the locator made the
         # patched product_floor unreachable, so a test for the built product
         # silently exercised the "no build" path and passed for the wrong reason.
@@ -148,8 +344,16 @@ class DriftDetectionTests(unittest.TestCase):
             yield
         finally:
             vdf.PROJECT, vdf.RELEASE_SCRIPT = original_project, original_release
+            if had_package:
+                vdf.PACKAGE = original_package
+            else:
+                del vdf.PACKAGE
+            vdf.EVIDENCE = original_evidence
             vdf._locate_built_product = original_locate
             vdf.product_floor = original_plist
+
+class DriftDetectionTests(GateHarness, unittest.TestCase):
+    """The bug, reproduced: one source out of step must be a non-zero exit."""
 
     def test_all_sources_agreeing_passes(self) -> None:
         code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, "26.6")
@@ -241,12 +445,177 @@ class DriftDetectionTests(unittest.TestCase):
         # failing on it would make the gate refuse a project it cannot judge.
         self.assertIsNone(vdf._project_format_problem("{ objects = 1; }\n"))
 
+    def test_watchos_blocks_that_disagree_fail_and_name_both(self) -> None:
+        # The defect this plan closes: an app at one floor with an .appex inside it
+        # at another, in the same file, with every other gate green.
+        code, output = self._run(THREE_SHAPES, RELEASE_SH, "26.6")
+        self.assertEqual(code, 1, "two watchOS blocks at different floors must fail")
+        for value in ("26.6", "26.0"):
+            self.assertIn(value, output, f"{value} missing from the report")
+
+    def test_all_watchos_blocks_agreeing_passes(self) -> None:
+        agreeing = watch_pbxproj(
+            ("Watch App Debug", "watchos", "26.6"),
+            ("NepalKitComplications Debug", "watchos", "26.6"),
+        )
+        code, output = self._run(agreeing, RELEASE_SH, "26.6")
+        self.assertEqual(code, 0, output)
+        # Not just "it passed": the watchOS blocks have to appear in the report, or
+        # this would pass against a gate that reads no watchOS key at all.
+        for line in floor_lines(agreeing, "26.6"):
+            self.assertIn(f"project.pbxproj:{line}", output,
+                          "an agreeing watchOS block must still be reported")
+
+    def test_a_package_floor_above_the_app_exits_one(self) -> None:
+        # The relation is <=, not ==. A library compiling against a *newer* watchOS
+        # than its consumer is a real hazard, so it fails. Being equal is fine.
+        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
+        higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
+        code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
+        self.assertEqual(code, 1, "a package floor above the app's must fail")
+        # Naming the offending line, not just the number. Asserting only "27" passes
+        # on the digits alone and would still pass if the message lost its subject.
+        self.assertIn("Package.swift:6", output,
+                      "the message must name the line to edit")
+        self.assertIn("higher than the 26.6", output,
+                      "the message must say which way the two floors disagree")
+
+    def test_the_package_floor_failure_does_not_claim_the_appcast_would_lie(self) -> None:
+        # This message used to say "the appcast would then advertise support for
+        # watches that cannot run". That is false here and the repository can
+        # disprove it: appcast.xml is the Mac app's Sparkle feed, it contains no
+        # watchOS entry at all, and every <sparkle:minimumSystemVersion> in it is
+        # the macOS 26.6. A reader who believed it would go looking for a watchOS
+        # entry, find none, and stop trusting the gate.
+        #
+        # The sibling branch of this same function is deliberately careful not to
+        # overclaim - it says in as many words that it does not claim App Store
+        # rejection - so one branch asserting something the repo can disprove is
+        # exactly the defect this gate was written to end.
+        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
+        higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
+        _code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
+        self.assertNotIn("appcast", output.lower(),
+                         "the appcast says nothing about watches, so this message "
+                         "must not claim it does")
+        # ...and the consequence it does state has to be the real one, which is an
+        # availability failure on old watches rather than a build failure.
+        self.assertIn("availability", output,
+                      "the stated consequence must be the availability one")
+        self.assertIn("fails on an older watch", output,
+                      "the stated consequence must say where it surfaces")
+
+    def test_a_package_floor_below_the_app_exits_zero(self) -> None:
+        # The legitimate asymmetry: NepalKitCore's watchOS platform is a compile
+        # floor for a Foundation library that genuinely runs on the older floor,
+        # while the app's is a product claim. Below is the allowed direction.
+        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
+        code, output = self._run(agreeing, RELEASE_SH, "26.6", package=PACKAGE_SW)
+        self.assertEqual(code, 0, output)
+        # Both floors have to be named, or "below" is not being compared - it is
+        # simply not being looked at.
+        self.assertIn(f"project.pbxproj:{floor_lines(agreeing, '26.6')[0]}", output)
+        self.assertIn("26", output)
+
+    def test_a_stale_watchos_key_on_an_inherited_sdkroot_block_is_silent(self) -> None:
+        # The real shape of project.pbxproj:660 and :696. A gate that policed it
+        # would demand a value that means nothing. A real watchOS block is present
+        # alongside it so that silence is a *choice*: the run has to report the
+        # one block that qualifies and stay silent about the one that does not.
+        mixed = watch_pbxproj(
+            ("Watch App Debug", "watchos", "26.6"),
+            ("NepalKit Mac App Debug", None, QUIET),
+        )
+        code, output = self._run(mixed, RELEASE_SH, "26.6")
+        self.assertEqual(code, 0, output)
+        self.assertIn(f"project.pbxproj:{floor_lines(mixed, '26.6')[0]}", output,
+                      "the watchos block must be reported")
+        self.assertNotIn(QUIET, output,
+                         "a block that inherits its SDKROOT declares no watchOS floor")
+        self.assertNotIn(f"project.pbxproj:{floor_lines(mixed, QUIET)[0]}", output,
+                         "the inherited-SDKROOT block must not be named as a source")
+
+    def test_a_watchos_key_on_the_watch_container_is_silent(self) -> None:
+        # The real shape of project.pbxproj:758 and :775.
+        mixed = watch_pbxproj(
+            ("Watch App Debug", "watchos", "26.6"),
+            ("NepalKitWatch Debug", "iphoneos", QUIET),
+        )
+        code, output = self._run(mixed, RELEASE_SH, "26.6")
+        self.assertEqual(code, 0, output)
+        self.assertIn(f"project.pbxproj:{floor_lines(mixed, '26.6')[0]}", output,
+                      "the watchos block must be reported")
+        self.assertNotIn(QUIET, output, "the iOS-side container declares no watchOS floor")
+        self.assertNotIn(f"project.pbxproj:{floor_lines(mixed, QUIET)[0]}", output,
+                         "the container must not be named as a source")
+
+    def test_every_disagreeing_watchos_block_is_named_not_just_the_first(self) -> None:
+        three = watch_pbxproj(
+            ("Watch App Debug", "watchos", "26.6"),
+            ("NepalKitComplications Debug", "watchos", "26.0"),
+            ("NepalKitWatchTests Debug", "watchos", "26.1"),
+        )
+        code, output = self._run(three, RELEASE_SH, "26.6")
+        self.assertEqual(code, 1)
+        for value in ("26.6", "26.0", "26.1"):
+            self.assertIn(value, output, f"{value} missing from the report")
+
     def test_the_gate_passes_with_no_built_product(self) -> None:
         # A clean checkout that has never been built must not be blocked by a
         # gate about a build it does not have.
         code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, None)
         self.assertEqual(code, 0, output)
         self.assertNotIn("built product", output)
+
+
+class EvidenceCrossCheckTests(GateHarness, unittest.TestCase):
+    """The 26.6 lesson: the project agreeing with itself is not the whole job.
+
+    A floor that moved without its validation record moved stayed green under
+    every check, because each proved the sources agreed with each other and
+    none compared them with the record. These tests hold the comparison.
+    """
+
+    def test_an_evidence_record_behind_the_project_fails(self) -> None:
+        # The watch floor is 26.0; a record still describing 26.6 is the
+        # interlude's exact shape.
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6",
+            evidence=SANDBOX_EVIDENCE.format(floor="26.6"),
+        )
+        self.assertEqual(code, 1, "a record behind the floor must fail")
+        self.assertIn("disagree", output)
+        self.assertIn("readiness-evidence.md", output)
+
+    def test_an_evidence_record_without_a_floor_row_fails(self) -> None:
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6", evidence="# no row here\n",
+        )
+        self.assertEqual(code, 1, "a record that states no floor must fail")
+        self.assertIn("does not record", output)
+        self.assertIn("watchOS floor (ratified", output)
+
+    def test_a_missing_evidence_record_fails(self) -> None:
+        original = vdf.EVIDENCE
+        vdf.EVIDENCE = Path(tempfile.mkdtemp()) / "absent.md"
+        try:
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                code = vdf.main()
+        finally:
+            vdf.EVIDENCE = original
+        self.assertEqual(code, 1, "a missing record must fail loudly")
+        self.assertIn("is missing", captured.getvalue())
+
+    def test_the_recorded_floor_appears_in_the_success_output(self) -> None:
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6",
+        )
+        self.assertEqual(code, 0, output)
+        self.assertIn("(recorded)", output)
 
 
 class RealRepositoryTests(unittest.TestCase):
@@ -267,6 +636,71 @@ class RealRepositoryTests(unittest.TestCase):
             problem = vdf._project_format_problem(
                 vdf.PROJECT.read_text(encoding="utf-8"))
         self.assertIsNone(problem, problem or "")
+
+    def test_every_watchos_block_in_the_project_is_read_by_the_gate(self) -> None:
+        # The gate has to see all six watchOS blocks in the real project, not just
+        # the ones that happen to agree today.
+        text = vdf.PROJECT.read_text(encoding="utf-8")
+        watchos_blocks = text.count("SDKROOT = watchos;")
+        self.assertEqual(
+            len(vdf.watchos_project_floors(text)), watchos_blocks,
+            "every block declaring its own watchOS SDKROOT must be read as a floor",
+        )
+
+    def test_the_repository_watchos_floor_is_consistent(self) -> None:
+        # The commit that raised the Watch app to 26.6 left the complications
+        # extension and the Watch test bundle at 26.0, and every gate was green
+        # because none of them read a watchOS key at all.
+        text = vdf.PROJECT.read_text(encoding="utf-8")
+        values = {value for _, value in vdf.watchos_project_floors(text)}
+        self.assertEqual(len(values), 1,
+                         f"watchOS blocks disagree in the real project: {sorted(values)}")
+
+    def test_the_repository_watchos_blocks_declare_26_0(self) -> None:
+        # A deliberate tripwire, and the only place a watchOS version is written
+        # down in code - the gate itself must not hard-code one, because its job
+        # is to prove the sources agree, not to decide what they should say.
+        # So if the product floor ever moves, this failing is the intended signal
+        # rather than a defect: update this value in the same change that moves
+        # every WATCHOS_DEPLOYMENT_TARGET in the project. 26.6 was a two-commit
+        # interlude; the user ratified 26.0 on 2026-10-04 (3342b41).
+        values = {value for _, value in
+                  vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
+        self.assertEqual(values, {"26.0"},
+                         "the watchOS product floor is 26.0, ratified by the user "
+                         "after the d92dea8 interlude. If the floor is moving, "
+                         "change every WATCHOS_DEPLOYMENT_TARGET in the project "
+                         "and this value together - that is the fix this failure "
+                         "is asking for, not a reason to doubt it")
+
+    def test_the_evidence_record_agrees_with_the_project_floor(self) -> None:
+        # The check the 26.6 interlude passed without: the floor the project
+        # declares and the floor the validation record states must be the same
+        # number, or the record describes a validation that never happened.
+        project = {value for _, value in
+                   vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
+        recorded = {value for _, value in
+                    vdf.evidence_recorded_floors(vdf.EVIDENCE.read_text(encoding="utf-8"))}
+        self.assertTrue(recorded,
+                        "the evidence record states no watchOS floor to compare")
+        self.assertEqual(project, recorded,
+                         "the project's watchOS floor and the evidence record's "
+                         "disagree; whichever moved, move the other in the same "
+                         "change")
+
+    def test_the_package_floor_is_not_above_the_app(self) -> None:
+        text = vdf.PROJECT.read_text(encoding="utf-8")
+        values = {value for _, value in vdf.watchos_project_floors(text)}
+        self.assertEqual(len(values), 1, "the watchOS floor must be one value first")
+        package = vdf.package_watchos_floor(vdf.PACKAGE.read_text(encoding="utf-8"))
+        self.assertIsNotNone(package, "NepalKitCore must still declare a watchOS platform")
+        assert package is not None
+        app_floor = values.pop()
+        self.assertLessEqual(
+            vdf._version(package[1]), vdf._version(app_floor),
+            f"Package.swift declares watchOS {package[1]} but the app declares "
+            f"{app_floor}; the package must not require more than its consumer",
+        )
 
     def test_the_release_script_floor_is_what_the_verifier_reads(self) -> None:
         # Ties this gate to the other one. If verify-appcast.py's notion of the

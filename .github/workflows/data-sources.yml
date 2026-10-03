@@ -1,17 +1,8 @@
-# Data-sources provenance gate.
-#
-# The shipped calendar table deliberately differs from its community sources
-# in months that were arbitrated and recorded in SOURCES.md. So this gate does
-# not fail on any diff — it fails when the comparison *result* changes from
-# the committed baseline (scripts/data-sources-baseline.json), whose differing
-# months ARE the recorded arbitrations.
-#
-# A red run means someone changed the shipped table, a parser in
-# scripts/verify-data-sources.py, or a pinned source without re-arbitrating:
-# re-run with --update-baseline deliberately, in the same PR as the table
-# change it reflects, and say why each new diff is recorded. The pinned
-# sources are immutable by construction, so the monthly schedule only catches
-# drift in the shipped table or the script — never a silent upstream move.
+# Compare the shipped calendar with its sole pinned askbuddie base.
+# The baseline records NepalKit's corrections and provisional 2084 projection.
+# A red run means the observed range, coverage or differences changed. Review
+# and regenerate the baseline with the corresponding dataset/source decision.
+# A green run does not establish official calendar attestation.
 name: Data sources
 
 on:

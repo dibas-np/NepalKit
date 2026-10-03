@@ -214,6 +214,46 @@ if [[ "$SIGNED_TEAM" != "$EXPECTED_TEAM" ]]; then
 fi
 echo "==> signed by team $SIGNED_TEAM, Gatekeeper-clean and stapled"
 
+# Match the macOS target, including every configuration, before pinning bytes.
+python3 - "$PBXPROJ" "$DMG_APP/Contents/Info.plist" "$APP" "$VERSION" <<'PYTHON'
+import json
+import plistlib
+import subprocess
+import sys
+
+project_path, plist_path, target_name, version = sys.argv[1:]
+try:
+    project = json.loads(subprocess.check_output(
+        ["plutil", "-convert", "json", "-o", "-", project_path]))
+    objects = project["objects"]
+    targets = [obj for obj in objects.values()
+               if obj.get("isa") == "PBXNativeTarget" and obj.get("name") == target_name]
+    if len(targets) != 1:
+        raise ValueError("cannot identify the macOS app target")
+    configs = objects[targets[0]["buildConfigurationList"]]["buildConfigurations"]
+    identifiers = {objects[key]["buildSettings"].get("PRODUCT_BUNDLE_IDENTIFIER")
+                   for key in configs}
+    if len(identifiers) != 1 or not all(isinstance(value, str) and value
+                                        for value in identifiers):
+        raise ValueError("macOS configurations disagree on the bundle identifier")
+    expected_identifier = identifiers.pop()
+    with open(plist_path, "rb") as source:
+        metadata = plistlib.load(source)
+    if not isinstance(metadata, dict):
+        raise ValueError("app Info.plist is not a dictionary")
+    for field, expected in (("CFBundleIdentifier", expected_identifier),
+                            ("CFBundleShortVersionString", version)):
+        actual = metadata.get(field)
+        if not isinstance(actual, str) or not actual:
+            raise ValueError(f"app Info.plist has no valid {field}")
+        if actual != expected:
+            raise ValueError(f"{field} is {actual}, expected {expected}")
+except (OSError, ValueError, KeyError, TypeError, plistlib.InvalidFileException,
+        subprocess.CalledProcessError) as error:
+    sys.exit(f"Refusing to pin the published DMG: {error}")
+print(f"==> app identity and version match {expected_identifier} {version}")
+PYTHON
+
 # The digest goes last, and that ordering is the whole substance of this change.
 # Every assertion above is a gate on these bytes; hashing earlier - for a log
 # line, or to overlap the download with something else - would compute the

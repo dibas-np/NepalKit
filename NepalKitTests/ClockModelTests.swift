@@ -128,4 +128,82 @@ struct ClockModelTests {
         let clock = ClockModel(now: try TestDates.utc(2026, 9, 27, 12, 0), refreshes: false)
         #expect(clock.localTimeZone.identifier == TimeZone.autoupdatingCurrent.identifier)
     }
+
+    @Test func initializationSchedulesNoRefreshWork() {
+        var reads = 0
+        var sleeps = 0
+        let initial = Date(timeIntervalSince1970: 0)
+        let clock = ClockModel(now: initial, currentTime: {
+            reads += 1
+            return .now
+        }, sleep: { _ in
+            sleeps += 1
+        })
+
+        #expect(clock.now == initial)
+        #expect(reads == 0)
+        #expect(sleeps == 0)
+    }
+
+    @Test func visibleRefreshStopsOnCancellationAndRestartsFromCurrentTime() async throws {
+        var instant = try TestDates.utc(2026, 9, 26, 18, 14)
+        var reads = 0
+        var sleeps = 0
+        var task: Task<Void, Never>?
+        let clock = ClockModel(currentTime: {
+            reads += 1
+            return instant
+        }, sleep: { interval in
+            #expect(interval == .seconds(1))
+            sleeps += 1
+            instant = instant.addingTimeInterval(60)
+            if sleeps.isMultiple(of: 2) {
+                task?.cancel()
+            }
+        })
+
+        task = Task { await clock.refreshWhileVisible() }
+        await task?.value
+        #expect(reads == 2)
+        #expect(sleeps == 2)
+        #expect(clock.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
+
+        // Simulate a long closed interval; reopening reads the new instant.
+        instant = try TestDates.utc(2026, 9, 28, 12, 0)
+        task = Task { await clock.refreshWhileVisible() }
+        await task?.value
+        #expect(reads == 4)
+        #expect(sleeps == 4)
+        #expect(clock.todayADDate() == GADay(year: 2026, month: 9, day: 28))
+        task = nil
+    }
+
+    @Test func cancellationBeforeAppearanceDoesNotReadOrSchedule() async {
+        var reads = 0
+        var sleeps = 0
+        let clock = ClockModel(currentTime: {
+            reads += 1
+            return .now
+        }, sleep: { _ in
+            sleeps += 1
+        })
+        let task = Task { await clock.refreshWhileVisible() }
+        task.cancel()
+        await task.value
+
+        #expect(reads == 0)
+        #expect(sleeps == 0)
+    }
+
+    @Test func fixedPreviewDoesNotRefreshWhenVisible() async throws {
+        let instant = try TestDates.utc(2026, 9, 27, 12, 0)
+        let clock = ClockModel(now: instant, refreshes: false, currentTime: {
+            Issue.record("A fixed clock must not read the live time")
+            return .now
+        }, sleep: { _ in
+            Issue.record("A fixed clock must not schedule refresh work")
+        })
+        await clock.refreshWhileVisible()
+        #expect(clock.now == instant)
+    }
 }

@@ -18,14 +18,14 @@ it needs evidence, not reasoning:
 python3 scripts/verify-data-sources.py
 ```
 
-That script re-runs the whole comparison against pinned commits and prints which
-shipped years each source cannot cover. If you change the table and the script
-does not agree, the change is wrong — not the script.
+That script compares the shipped table with the sole pinned askbuddie base and
+prints every difference. Use `--baseline scripts/data-sources-baseline.json` to
+fail on changes to the recorded observation. The baseline deliberately permits
+the corrections and provisional projection documented in SOURCES.md.
 
-`SOURCES.md` records what the data is, what is not licensed, and which months
-were arbitrated. **Do not make it more confident than the evidence.** A claim
-that cannot be checked from the repository is a bug, even when it is probably
-true.
+`SOURCES.md` records the MIT notice, local decisions and evidence limits.
+Do not describe a comparison result as official attestation or remove a
+provenance gap without supporting evidence. ADR-0014 governs the current policy.
 
 ## Getting set up
 
@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these nine, in this order:
+It runs these eleven, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -90,23 +90,33 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
 python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
-cd NepalKitCore && swift test               # 3. the calendar: 65 tests
-./scripts/run-app-tests.sh                  # 4. the app: 167 tests
+swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
+./scripts/run-app-tests.sh                  # 4. the app: 179 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
-python3 scripts/test_update_changelog.py    # 6. the changelog generator
-python3 scripts/test_unregister_launchservices.py  # 7. the release pipeline's LaunchServices hygiene
-python3 scripts/test_verify_appcast.py      # 8. the appcast verifier
-python3 scripts/verify-deployment-floor.py  # 9. the floor is one number everywhere
+python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
+python3 scripts/test_update_changelog.py    # 7. the changelog generator
+python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
+python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
+python3 scripts/test_verify_deployment_floor.py
+python3 scripts/verify-deployment-floor.py  # 10. the floor is one number everywhere
+xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
+    -configuration Debug \
+    -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+    CODE_SIGNING_ALLOWED=NO                   # 11. the Watch app and its complications
 ```
 
-Gate 7 is the only one that touches the machine rather than the repository: it
+Gate 8 is the only one that touches the machine rather than the repository: it
 registers and then unregisters real throwaway app bundles in this session's
 LaunchServices database. It is there because `scripts/unregister-launchservices.sh`
 guards a failure that is invisible from the outside — a bundle registered under a
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice.
+practice. Gate 10 runs the floor verifier's own suite before the verifier,
+because `scripts/test_verify_deployment_floor.py` is run by no other gate
+here, and in CI only by `.github/workflows/pages.yml`, which triggers only on
+`appcast.xml` changes pushed to `main`, or on demand. Without it, every test
+of that gate is dark on an ordinary pull request.
 
 The first lint run downloads SwiftLint 0.65.1 into the ignored `.build/tools`
 cache after checking its published checksum. For compiler-backed unused-import
@@ -116,7 +126,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those nine are the direct consequence of gates that once reported green
+Two of those eleven are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -126,12 +136,14 @@ through a SwiftPM harness that excludes `NepalKitApp.swift` and
 at all. Plan 021 set `SWIFT_VERSION = 6.0` and shipped a file the app could not
 compile, and twenty-two plans passed every gate in this list.
 
-**The floor check is last** because it compares the sources against each other
-rather than trusting any one of them. The app target built at 26.6 while
+**The floor check runs after the build** because it compares the sources against
+each other rather than trusting any one of them. The app target built at 26.6 while
 `package-release.sh` said 26.0, so the appcast gate — which reads the floor from
 that file — reported `26.0 matches the app's floor` and passed, while the feed
 offered updates to systems that could not launch the build. Nothing in the list
-above it could have caught that, because they all agreed with each other.
+above it could have caught that, because they all agreed with each other. The Watch
+gate now runs after it too, and is last only because it needs a watchOS simulator
+runtime rather than because it depends on the floor.
 
 `check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
 that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:
@@ -165,10 +177,10 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
 
 Prefer that recipe to leaving it to discovery. A discovered product is used only
 when it is **newer than the source that builds it**; an older one is refused,
-because those five tests exist to catch keys that reach the product — and a
+because those tests exist to catch keys that reach the product — and a
 product from last week is not what this source produces. Either way the run
 prints what it found and what it compared against. Without a usable product,
-five tests **skip with a reason** rather than pass silently. That is deliberate:
+the suite's tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
 
 ## Style
@@ -201,8 +213,8 @@ first.
 - Branch from `main`, keep the history readable, and describe **why**.
 - Continuous integration runs the comparison against the committed baseline
   (`data-sources.yml`): the baseline's differing months are the recorded
-  arbitrations, so a red gate means the table, a parser, or a source changed
-  without re-arbitrating. Regenerating the baseline
+  corrections and projection, so a red gate means the table, a parser, or a source changed
+  without documenting the new observation. Regenerating the baseline
   (`python3 scripts/verify-data-sources.py --update-baseline`) is a deliberate
   act that must land in the same pull request as the table change it reflects.
 - Continuous integration runs on the `macos26-floor` workflow. It is the

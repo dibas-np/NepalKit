@@ -96,7 +96,7 @@ struct TodayIntentTests {
     @Test("Entity id round-trips through its text identity")
     func entityIdRoundTrip() throws {
         let bs = BSDay(year: 2082, month: 3, day: 15)
-        let entity = try #require(BikramSambatDateEntity(bsDay: bs, weekday: "Sunday"))
+        let entity = try #require(BikramSambatDateEntity(bsDay: bs, monthNames: .transliterated))
 
         #expect(entity.id == "2082-3-15")
 
@@ -105,6 +105,50 @@ struct TodayIntentTests {
         #expect(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 13, day: 1)) == nil)
         #expect(BikramSambatDateEntity(idString: "2082-13-15") == nil)
         #expect(BikramSambatDateEntity(idString: "not-a-date") == nil)
+    }
+
+    @Test("Entity identity survives weekday presentation changes")
+    func entityIdentityUsesCalendarDate() throws {
+        let date = BSDay(year: 2082, month: 3, day: 15)
+        let english = try #require(BikramSambatDateEntity(bsDay: date, monthNames: .transliterated))
+        let nepali = try #require(BikramSambatDateEntity(bsDay: date, monthNames: .nepali))
+        let restored = try #require(BikramSambatDateEntity(idString: english.id))
+        #expect(english.weekday == "Sunday")
+        #expect(nepali.weekday == "आइत")
+        #expect(english == nepali)
+        #expect(english == restored)
+        #expect(Set([english, nepali, restored]).count == 1)
+        #expect(english != BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 3, day: 16)))
+    }
+
+    @Test("Entity queries retain the weekday for valid calendar dates")
+    func entityQueriesRetainWeekday() async throws {
+        let entity = try #require(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 3, day: 15)))
+        let expected = IntentAnswers.weekdayNameString(1)
+        #expect(entity.weekday == expected)
+        let query = BikramSambatDateQuery()
+        let rebuilt = try await query.entities(for: [entity.id])
+        #expect(rebuilt == [entity])
+        #expect(rebuilt.first?.weekday == expected)
+        let parsed = try await query.entities(matching: "15 Ashar 2082")
+        #expect(parsed == [entity])
+        #expect(parsed.first?.weekday == expected)
+        let suggested = try await query.suggestedEntities()
+        #expect(suggested.count <= 1)
+        for suggestion in suggested {
+            let gregorian = try #require(bsToAD(suggestion.bsDay, in: AppData.dataset))
+            #expect(suggestion.weekday == IntentAnswers.weekdayNameString(weekday(of: gregorian)))
+            #expect(BikramSambatDateEntity(idString: suggestion.id) == suggestion)
+        }
+    }
+
+    @Test("Entity construction rejects invalid and malformed calendar dates")
+    func entityRejectsInvalidDates() {
+        for identifier in ["2082-7-31", "2082-3-0", "2090-3-15", "2082-x-3-15", "2082--3-15"] {
+            #expect(BikramSambatDateEntity(idString: identifier) == nil)
+        }
+        #expect(BikramSambatDateEntity.parsing("31 Kartik 2082") == nil)
+        #expect(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 7, day: 31), monthNames: .transliterated) == nil)
     }
 
     @Test("Entity query parses typed dates against titles and synonyms")

@@ -40,6 +40,50 @@ this runs in a clean checkout that has never been built. Under ``check-all.sh``
 the build gate runs first, so it is always available there - which is the point:
 a contributor running one command cannot miss it, while a contributor with no
 build is not blocked by a gate about a build they do not have.
+
+The watchOS floor, and why it is not the same check
+---------------------------------------------------
+The watchOS floor is a *second* floor, in a *second* set of blocks, and it is
+compared separately rather than folded into the list above. A macOS value and a
+watchOS value are never equal to each other, so collapsing them into one set would
+make this gate permanently red and therefore useless.
+
+The rule that decides which blocks are allowed to declare a watchOS floor is
+**positive identification**: a block declares one if and only if it contains its
+own ``SDKROOT = watchos``. That is chosen over the more obvious negative test
+("anything that is not a macOS block") because the project contains three block
+shapes, and only positive identification is correct for all three:
+
+- ``SDKROOT = watchos`` - the Watch app, the complication extension and the Watch
+  test bundle. These declare the product's watchOS floor.
+- no ``SDKROOT`` of its own - the macOS app target, which inherits ``macosx``
+  from the project level. It carried a ``WATCHOS_DEPLOYMENT_TARGET`` left over
+  from Xcode's template; a macOS app embeds no watch content, so it declares no
+  watchOS floor. A negative test excludes these, but only by coincidence.
+- ``SDKROOT = iphoneos`` - the watchOS *container*, an iOS-side target that
+  embeds the Watch app and declares an ``IPHONEOS_DEPLOYMENT_TARGET``. A negative
+  test would wrongly classify it as a watchOS block.
+
+Positive identification is safe here because every platform-specific target in
+this project sets its own ``SDKROOT``, so no watchOS target inherits one and none
+can be silently skipped. **That is the assumption this rule rests on.** If a
+future target ever does inherit its ``SDKROOT``, this function will stop reading
+it, and the gate will go quiet rather than wrong - so a new watchOS target must
+declare its own ``SDKROOT``, as all six current ones do.
+
+The recorded floor is compared with ``==`` rather than trusted: the validation
+evidence doc states, in a toolchain-table row, the watchOS floor its results
+were produced at, and this gate requires that value to equal the project's. The
+26.6 interlude - a floor raised for two commits with every gate green - is why
+this check exists: consistency between sources is not consistency between the
+sources and the story told about them.
+
+``NepalKitCore``'s manifest is compared with ``<=`` rather than ``==``: the
+package's platform is the library's *compile* floor, while the app's deployment
+target is a *product* claim about the oldest supported watch. They are allowed to
+differ, and the only unsafe direction is the package requiring more than its
+consumer. (The package cannot express 26.6 at all - the manifest API's watchOS
+versions are discrete cases - so ``==`` would make this gate permanently red.)
 """
 
 from __future__ import annotations
@@ -52,6 +96,33 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECT = REPO_ROOT / "NepalKit.xcodeproj" / "project.pbxproj"
 RELEASE_SCRIPT = REPO_ROOT / "scripts" / "package-release.sh"
+PACKAGE = REPO_ROOT / "NepalKitCore" / "Package.swift"
+EVIDENCE = REPO_ROOT / "docs" / "watch" / "readiness-evidence.md"
+
+WATCHOS_SDKROOT = re.compile(r"^\s*SDKROOT = watchos;")
+WATCHOS_TARGET = re.compile(r"WATCHOS_DEPLOYMENT_TARGET = ([0-9.]+);")
+
+
+def _configuration_blocks(text: str) -> list[tuple[int, list[str]]]:
+    """(index of the ``isa`` line, that line and the rest of its block) per block.
+
+    Shared by both parsers so the two floors are read from exactly the same blocks.
+    A block runs from its ``isa = XCBuildConfiguration;`` line to the ``};`` that
+    closes ``buildSettings`` - which is every line either key can appear on.
+    """
+    lines = text.splitlines()
+    blocks: list[tuple[int, list[str]]] = []
+    index = 0
+    while index < len(lines):
+        if "isa = XCBuildConfiguration;" not in lines[index]:
+            index += 1
+            continue
+        end = index
+        while end < len(lines) and "};" not in lines[end]:
+            end += 1
+        blocks.append((index, lines[index:min(end, len(lines))]))
+        index = end + 1
+    return blocks
 
 
 def project_floors(text: str) -> list[tuple[int, str]]:
@@ -62,23 +133,99 @@ def project_floors(text: str) -> list[tuple[int, str]]:
     rather than treated as 26.0: an absent key means "inherit", and the project
     level is where inheritance is resolved, so an absent key is not a floor
     anyone ships.
+
+    Every block is a candidate here - the macOS floor is the one this project has
+    always declared in all of them - so this is deliberately *not* filtered by
+    ``SDKROOT`` the way :func:`watchos_project_floors` is.
     """
-    lines = text.splitlines()
     found: list[tuple[int, str]] = []
-    index = 0
-    while index < len(lines):
-        if "isa = XCBuildConfiguration;" not in lines[index]:
-            index += 1
-            continue
-        end = index
-        while end < len(lines) and "};" not in lines[end]:
-            end += 1
-        for offset in range(index, min(end, len(lines))):
-            match = re.search(r"MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);", lines[offset])
+    for start, body in _configuration_blocks(text):
+        for offset, line in enumerate(body, start=start):
+            match = re.search(r"MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);", line)
             if match:
                 found.append((offset + 1, match.group(1)))
-        index = end + 1
     return found
+
+
+def watchos_project_floors(text: str) -> list[tuple[int, str]]:
+    """Every ``WATCHOS_DEPLOYMENT_TARGET`` in a block declaring ``SDKROOT = watchos``.
+
+    A block declares a watchOS floor **if and only if it contains its own
+    ``SDKROOT = watchos``**. That is positive identification, and it is what makes
+    this correct for all three block shapes the project contains: the watchOS
+    blocks, the macOS app target that inherits its ``SDKROOT`` and carries a
+    leftover template key, and the iOS-side watch container. A negative test
+    ("anything that is not macOS") gets the first two right by accident and the
+    third wrong.
+
+    The assumption this rests on, and the one to re-check if a target is ever
+    added: every platform-specific target sets its own ``SDKROOT``, so no watchOS
+    target inherits one and none can be silently skipped. A watchOS target that
+    inherited its ``SDKROOT`` would be invisible here - the gate would go quiet
+    rather than wrong, which is the worse failure because it looks like a pass.
+
+    Line numbers are returned for the same reason as in :func:`project_floors`:
+    a failure should name the line to edit.
+    """
+    found: list[tuple[int, str]] = []
+    for start, body in _configuration_blocks(text):
+        if not any(WATCHOS_SDKROOT.search(line) for line in body):
+            continue
+        for offset, line in enumerate(body, start=start):
+            match = WATCHOS_TARGET.search(line)
+            if match:
+                found.append((offset + 1, match.group(1)))
+    return found
+
+
+def evidence_recorded_floors(text: str) -> list[tuple[int, str]]:
+    """The watchOS floor recorded in the validation evidence, with line numbers.
+
+    The evidence record states the floor its results were produced at as a
+    toolchain-table row of the form
+    ``| watchOS floor (ratified 2026-10-04) | 26.0 |``. That row is the
+    machine-readable half of the ratification record: the gate compares it
+    with the project so a floor that moves without moving its record fails
+    here instead of shipping green. The 26.6 interlude stayed green under
+    every check precisely because nothing made that comparison.
+    """
+    return [
+        (text[:match.start()].count("\n") + 1, match.group(1))
+        for match in re.finditer(
+            r"^\|\s*watchOS floor[^|\n]*\|\s*([0-9.]+)\s*\|\s*$",
+            text,
+            re.MULTILINE,
+        )
+    ]
+
+
+def package_watchos_floor(text: str) -> tuple[int, str] | None:
+    """The watchOS platform version declared in ``NepalKitCore/Package.swift``.
+
+    Returns (line number, version) or None if the manifest declares no watchOS
+    platform. Mirrors :func:`release_script_floor` for the manifest side of the
+    same ``<=`` relation.
+
+    ``//`` comments are stripped before matching. The manifest carries a comment
+    explaining that 26.6 and 27 are both rejected by the manifest compiler, and a
+    parser that read its own file's prose would invent a floor nobody declared -
+    the exact quiet lie this gate exists to catch, turned on the gate itself.
+    """
+    for number, line in enumerate(text.splitlines(), start=1):
+        code = line.split("//", 1)[0]
+        match = re.search(r"\.watchOS\(\.v([0-9.]+)\)", code)
+        if match:
+            return number, match.group(1)
+    return None
+
+
+def _version(value: str) -> tuple[int, ...]:
+    """A dotted version as a comparable tuple: ``26.6`` -> ``(26, 6)``.
+
+    Compared as tuples rather than floats because ``26.10`` is a real version
+    number and would compare below ``26.9`` as a float.
+    """
+    return tuple(int(part) for part in value.split("."))
 
 
 def release_script_floor(text: str) -> tuple[int, str] | None:
@@ -142,6 +289,40 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
             declared.append((f"built product {plist_path.parent.name}", built))
     problem = _project_format_problem(PROJECT.read_text(encoding="utf-8"))
     return declared, problem
+
+
+def watchos_declared_floors() -> tuple[list[tuple[str, str]], tuple[int, str] | None, str | None]:
+    """(watchOS floors, package's watchOS floor, problem) for the watchOS side.
+
+    Separate from :func:`declared_floors` because this is a second floor that must
+    be collapsed on its own: a macOS value and a watchOS value are never equal, so
+    putting them in one set would make the gate permanently red.
+
+    The package's floor is returned rather than folded into ``declared`` because
+    it is not required to *equal* the app's floor - only not to exceed it. The
+    asymmetry is legitimate: the package declares the core library's compile
+    floor, while the app declares a product support claim.
+    """
+    text = PROJECT.read_text(encoding="utf-8")
+    declared = [(f"{PROJECT.name}:{line}", value)
+                for line, value in watchos_project_floors(text)]
+    if not declared:
+        # A project with no watchOS product declares no watchOS floor, which is
+        # not a failure - there is nothing to be inconsistent about.
+        return declared, None, None
+    try:
+        package = package_watchos_floor(PACKAGE.read_text(encoding="utf-8"))
+    except FileNotFoundError as error:
+        return declared, None, f"{error.filename} is missing."
+    if package is None:
+        return declared, None, (
+            f"{PACKAGE.name} declares no watchOS platform, so there is nothing to "
+            "compare the app's watchOS floor against. Without it a package floor "
+            "above the app's would go unnoticed, and the app would be built "
+            "against a library that requires a newer watch than the app claims "
+            "to support."
+        )
+    return declared, package, None
 
 
 # The highest object version the CI toolchain can read. CI runs on the
@@ -211,9 +392,22 @@ def _locate_built_product() -> Path | None:
     return fallback if fallback.is_file() else None
 
 
+def _display_path(path: Path) -> str:
+    """Short form for output: repo-relative when the path is inside the repo.
+
+    The sandbox tests point this gate at files in temporary directories, so a
+    bare ``relative_to`` would raise on exactly the paths the tests exercise.
+    """
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
 def main() -> int:
     try:
         declared, problem = declared_floors()
+        watch_declared, package, watch_problem = watchos_declared_floors()
     except FileNotFoundError as error:
         print(f"FAIL  {error.filename} is missing, so the floor cannot be checked.")
         return 1
@@ -226,35 +420,135 @@ def main() -> int:
         print("FAIL  no deployment target is declared anywhere.")
         return 1
 
-    if problem is not None:
-        print(f"FAIL  {problem}")
-        return 1
-
     values = {value for _, value in declared}
     if len(values) == 1:
         floor = declared[0][1]
         print(f"Verifying the deployment floor is consistent everywhere")
         for source, value in declared:
             print(f"  ok    {source}: {value}")
-        print(f"Deployment floor is {floor} everywhere it is written.")
-        return 0
+        for source, value in watch_declared:
+            print(f"  watchOS {source}: {value}")
+    else:
+        # Every disagreeing source is named, not just the first. A reader who fixes
+        # one and re-runs should not have to come back for the next, and the list is
+        # the evidence that the drift was real rather than a single bad edit.
+        print("Deployment floor is NOT consistent. The floor is written in more than "
+              "one place and these disagree:\n")
+        for source, value in declared:
+            print(f"  {source}: {value}")
+        print(
+            "\n  Sparkle offers an update to any system at or above the minimum the\n"
+            "  feed declares, so a floor here that is lower than the app's real one\n"
+            "  offers updates to systems that cannot launch the build. Fix every\n"
+            "  source above to the same value, then re-sign appcast.xml if you moved\n"
+            "  its <sparkle:minimumSystemVersion> - editing a feed invalidates its\n"
+            "  signature. ADR-0003 records why this gate exists."
+        )
+        return 1
 
-    # Every disagreeing source is named, not just the first. A reader who fixes
-    # one and re-runs should not have to come back for the next, and the list is
-    # the evidence that the drift was real rather than a single bad edit.
-    print("Deployment floor is NOT consistent. The floor is written in more than "
-          "one place and these disagree:\n")
-    for source, value in declared:
-        print(f"  {source}: {value}")
-    print(
-        "\n  Sparkle offers an update to any system at or above the minimum the\n"
-        "  feed declares, so a floor here that is lower than the app's real one\n"
-        "  offers updates to systems that cannot launch the build. Fix every\n"
-        "  source above to the same value, then re-sign appcast.xml if you moved\n"
-        "  its <sparkle:minimumSystemVersion> - editing a feed invalidates its\n"
-        "  signature. ADR-0003 records why this gate exists."
-    )
-    return 1
+    if watch_problem is not None:
+        print(f"FAIL  {watch_problem}")
+        return 1
+
+    watch_values = {value for _, value in watch_declared}
+    if watch_declared and len(watch_values) != 1:
+        # Deliberately does not claim this will fail App Review. The documented,
+        # reproducible failure in this family runs the *other* way - an extension
+        # whose floor is higher than its containing app makes the app uninstallable
+        # on older watches - and this is the reverse. What is certain is that two
+        # bundles in one product contradict each other about the oldest watch the
+        # product supports, which is a bug whichever way it is resolved.
+        print("\nwatchOS deployment floor is NOT consistent. These watchOS targets "
+              "disagree:\n")
+        for source, value in watch_declared:
+            print(f"  watchOS {source}: {value}")
+        print(
+            "\n  Every watchOS target in one product must make the same claim about\n"
+            "  the oldest watch it supports: the Watch app, the complication\n"
+            "  extension and the Watch test bundle ship as one product, and a user\n"
+            "  cannot be given two answers. Set each of the sources above to the\n"
+            "  same value. An extension requiring *more* than its app is the\n"
+            "  direction known to break installation on older watches, so raise\n"
+            "  the extension and test bundle to the app's floor rather than\n"
+            "  lowering the app to theirs."
+        )
+        return 1
+
+    if watch_declared and package is not None:
+        assert watch_values
+        app_floor = watch_values.pop()
+        if _version(package[1]) > _version(app_floor):
+            print(
+                f"FAIL  {PACKAGE.name}:{package[0]} declares a watchOS floor of "
+                f"{package[1]}, which is higher than the {app_floor} the app's "
+                "watchOS targets declare."
+            )
+            print(
+                f"\n  NepalKitCore's watchOS platform is the *library's* compile\n"
+                f"  floor, so it is allowed to be lower than the app's product\n"
+                f"  claim - but not higher.\n"
+                f"\n"
+                f"  The consequence is an availability one, and it is a runtime\n"
+                f"  failure rather than a build failure: core code compiled\n"
+                f"  against a newer watchOS than the app claims can reference\n"
+                f"  API that does not exist on the floor the app actually ships,\n"
+                f"  so it builds cleanly here and then fails on an older watch.\n"
+                f"\n"
+                f"  Raise every watchOS target in the project to {package[1]} or\n"
+                f"  above, or lower {PACKAGE.name}'s watchOS platform to the newest\n"
+                f"  platform at or below {app_floor} that the manifest can express.\n"
+                f"  Note that the manifest API's watchOS versions are discrete\n"
+                f"  cases: an arbitrary version such as 26.6 is rejected outright\n"
+                f"  while the manifest is compiled, so \"exactly {app_floor}\" is\n"
+                f"  usually not an available answer."
+            )
+            return 1
+        if EVIDENCE.exists():
+            recorded = evidence_recorded_floors(EVIDENCE.read_text(encoding="utf-8"))
+        else:
+            print(f"FAIL  {_display_path(EVIDENCE)} is missing, so the "
+                  "watchOS floor the validation record describes cannot be "
+                  "compared with the project's.")
+            return 1
+        if not recorded:
+            print(
+                f"FAIL  {_display_path(EVIDENCE)} does not record the "
+                "watchOS floor its results were produced at.\n"
+                "\n"
+                "  Add a toolchain-table row of the form\n"
+                "\n"
+                "      | watchOS floor (ratified <date>) | <version> |\n"
+                "\n"
+                "  so this gate can prove the record and the project agree. The\n"
+                "  26.6 interlude stayed green under every check because each\n"
+                "  proved the sources agreed with each other and none compared\n"
+                "  them with the record."
+            )
+            return 1
+        recorded_values = {value for _, value in recorded}
+        if recorded_values != {app_floor}:
+            print(
+                "FAIL  the watchOS floor the project declares and the one the "
+                "validation record states disagree:\n"
+            )
+            for line, value in recorded:
+                print(f"  watchOS {_display_path(EVIDENCE)}:{line}: {value}")
+            print(
+                f"  watchOS project.pbxproj (all watchOS targets): {app_floor}\n"
+                "\n"
+                "  The record is what a reader trusts when this gate passes, so a\n"
+                "  floor that moved without its record moving is the drift the\n"
+                "  26.6 interlude shipped. If the floor moved deliberately, update\n"
+                "  the record's row in the same change; if only the record moved,\n"
+                "  re-run the validation it describes before trusting it."
+            )
+            return 1
+        print(f"  ok    {_display_path(EVIDENCE)}: {app_floor} (recorded)")
+        print(f"Deployment floors are consistent: macOS {floor}, "
+              f"watchOS {app_floor} (package floor {package[1]}).")
+    else:
+        print(f"Deployment floor is {floor} everywhere it is written.")
+    return 0
 
 
 if __name__ == "__main__":

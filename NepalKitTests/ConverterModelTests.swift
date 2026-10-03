@@ -41,7 +41,7 @@ struct ConverterModelTests {
     @Test func bsPickersBoundedToSupportedRange() {
         let model = bsModel()
         #expect(model.bsYears == Array(1975 ... 2084))
-        #expect(model.daysInBSMonth(year: 2084, month: 3) == 32)
+        #expect(model.daysInBSMonth(year: 2084, month: 2) == 32)
         #expect(model.daysInBSMonth(year: 1989, month: 8) == 29)
     }
 
@@ -65,12 +65,12 @@ struct ConverterModelTests {
 
     @Test func changingMonthClampsDay() {
         let model = ConverterModel(
-            direction: .bsToAD, bsYear: 2084, bsMonth: 3, bsDay: 32,
+            direction: .bsToAD, bsYear: 2084, bsMonth: 2, bsDay: 32,
             adYear: 2026, adMonth: 9, adDay: 27
         )
-        // Ashar 2084 has 32 days; Shrawan has 31 — the `bsMonth` setter
-        // re-clamps, so writing the month alone must pull the day down.
-        model.bsMonth = 4
+        // Projected Jestha has 32 days; Ashar has 31. Changing only
+        // the month must clamp the previously valid day 32 down to 31.
+        model.bsMonth = 3
         #expect(model.bsDay == 31)
     }
 
@@ -122,13 +122,13 @@ struct ConverterModelTests {
 
     @Test func bsDayBeyondTheRealMonthLengthClampsToThatMonth() {
         let model = bsModel()
-        // Ashar 2084 runs 32 days, so the 40th has to come back as the 32nd.
+        // Projected Jestha 2084 has 32 days, so day 40 clamps to 32.
         // A 30-day month would let an unclamped day pass unnoticed, which is
         // why this picks a month whose length is not 30.
         model.bsYear = 2084
-        model.bsMonth = 3
+        model.bsMonth = 2
         model.bsDay = 40
-        #expect(model.bsDate == BSDay(year: 2084, month: 3, day: 32))
+        #expect(model.bsDate == BSDay(year: 2084, month: 2, day: 32))
     }
 
     @Test func adYearAboveTheConvertibleSpanClampsToItsLastDay() {

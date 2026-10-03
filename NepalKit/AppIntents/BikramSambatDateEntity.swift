@@ -10,10 +10,30 @@ import NepalKitCore
 /// with the user's actual display settings, Devanagari digits included. The
 /// dialog an intent pairs with this entity stays in `SpokenDate` form.
 nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
-    var year: Int
-    var month: BikramSambatMonth
-    var day: Int
-    var weekday: String?
+    private let date: BSDay
+    private let calendarMonth: BikramSambatMonth
+    private let weekdayValue: String?
+
+    @ComputedProperty(title: "Year")
+    var year: Int { date.year }
+
+    @ComputedProperty(title: "Month")
+    var month: BikramSambatMonth { calendarMonth }
+
+    @ComputedProperty(title: "Day")
+    var day: Int { date.day }
+
+    @ComputedProperty(title: "Weekday")
+    var weekday: String? { weekdayValue }
+
+    // Macro-generated property storage is not Hashable; compare calendar values.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.date == rhs.date
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(date)
+    }
 
     /// Stable text identity: the Bikram Sambat date it names.
     var id: String { "\(year)-\(month.rawValue)-\(day)" }
@@ -27,16 +47,15 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     }
 
     /// The dataset-world day this entity names.
-    var bsDay: BSDay { BSDay(year: year, month: month.rawValue, day: day) }
+    var bsDay: BSDay { date }
 
-    /// The entity for a converted table row, or nil if the month number does
-    /// not name a month (which a successful conversion never produces).
-    init?(bsDay: BSDay, weekday: String? = nil) {
-        guard let month = BikramSambatMonth(rawValue: bsDay.month) else { return nil }
-        self.year = bsDay.year
-        self.month = month
-        self.day = bsDay.day
-        self.weekday = weekday
+    /// Validates the calendar day and supplies its weekday for every query path.
+    init?(bsDay: BSDay, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) {
+        guard let month = BikramSambatMonth(rawValue: bsDay.month),
+              let gregorian = bsToAD(bsDay, in: AppData.dataset) else { return nil }
+        self.date = bsDay
+        self.calendarMonth = month
+        self.weekdayValue = IntentAnswers.weekdayNameString(NepalKitCore.weekday(of: gregorian), monthNames: monthNames)
     }
 
     /// Today's date, anchored to Nepal Time. Nil once the current date passes
@@ -101,11 +120,9 @@ nonisolated struct BikramSambatDateQuery: EntityStringQuery {
 nonisolated extension BikramSambatDateEntity {
     /// Rebuilds the entity from its `id` ("year-month-day").
     init?(idString: String) {
-        let parts = idString.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3, let month = BikramSambatMonth(rawValue: parts[1]) else { return nil }
-        self.year = parts[0]
-        self.month = month
-        self.day = parts[2]
-        self.weekday = nil
+        let parts = idString.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3,
+              let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]) else { return nil }
+        self.init(bsDay: BSDay(year: year, month: month, day: day))
     }
 }

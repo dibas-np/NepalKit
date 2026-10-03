@@ -2,45 +2,14 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Report what every pinned calendar source says about one BS year.
-
-Why this is separate from verify-data-sources.py: that script compares the
-*shipped* range against its sources and fails when the comparison result moves
-off the committed baseline. This one is the other direction — it asks what a
-single year, usually the year about to be added, looks like across the same
-sources, before there is anything shipped to compare it against.
-
-It imports verify-data-sources.py rather than restating its pins and parsers.
-A second copy of four regexes and four commit hashes would drift silently, and
-the drift would be invisible precisely when it mattered: the year being widened
-on the strength of a comparison that had quietly stopped parsing.
-
-READ THIS BEFORE READING A GREEN SUMMARY
-
-A row that several sources agree on is corroboration of the *values*, not proof
-of official attestation. Agreement between projections is not attestation. Only
-the Nepal Panchanga Nirnayak Samiti can attest a year, and only its published
-almanac can. Per ADR-0001 the table holds no extrapolated or projected years,
-so a year becomes shippable when the Samiti publishes it — not when four
-community tables and a government website match. This script informs that
-arbitration; it does not perform it, and it never decides that a year is ready
-to ship. SOURCES.md's "What this does not establish" is the long form.
+"""Report the sole pinned base source's row for a candidate Bikram Sambat year.
 
 Usage: python3 scripts/verify-candidate-year.py 2085 [month_lengths_csv]
 
-  python3 scripts/verify-candidate-year.py 2085
-      What does each pinned source say about 2085? A source that publishes no
-      row for the year is reported as such — silence would read as agreement.
-
-  python3 scripts/verify-candidate-year.py 2085 31,32,31,32,30,31,30,30,29,30,30,30
-      The same, plus a per-month agreement table against that candidate row and
-      its year total.
-
-Exits nonzero only on an internal error — a source that could not be fetched,
-or bytes that would not parse. Sources that disagree with the candidate are a
-REPORT, not a failure: whether a disagreement is a defect, a recorded
-arbitration, or the correct side of a dispute is a human decision against
-published material, and this script is not entitled to it.
+Pins, caching and parsing are shared with verify-data-sources.py. Differences
+are reported rather than resolved. A row in a community table is not proof of
+an official calendar publication. Only 2084 has an explicitly approved local
+projection; a later year needs evidence under ADR-0014 before adoption.
 """
 
 from __future__ import annotations
@@ -67,12 +36,6 @@ def load(name):
 
 vds = load("verify-data-sources.py")
 
-PARSERS = {
-    "medic": vds.parse_medic,
-    "askbuddie": vds.parse_askbuddie,
-    "go-bs": vds.parse_go_bs,
-    "nepali-date": vds.parse_nepali_date,
-}
 
 MONTHS = vds.MONTHS
 
@@ -100,7 +63,7 @@ def fetch_row(name, year):
     if body is None:
         raise OSError("could not fetch %s (%s)" % (name, url))
     del vds.NOTES[:]
-    table = PARSERS[name](body)
+    table = vds.parse_askbuddie(body)
     if not table:
         raise ValueError("%s fetched, but no rows parsed — the file's shape "
                          "changed and the comparison would be silently empty"
@@ -206,7 +169,7 @@ def main():
              ", ".join(sorted(differing)) if differing else "none"))
     if differing:
         print("A disagreement is a report, not a failure. SOURCES.md records the "
-              "shipped\ntable's arbitrations by year and source; add this one "
+              "shipped\ntable's corrections and projection; add this one "
               "there rather than\nresolving it here.")
 
     del vds.NOTES[:]
@@ -221,7 +184,7 @@ def main():
               "365 or 366\ndays. Re-read the row before shipping it.")
     print("\nAttestation is not what this script measures. Agreement between "
           "projections is\nnot attestation: only the Samiti's published almanac "
-          "makes a year shippable\n(ADR-0001). See SOURCES.md.")
+          "attests a year. See ADR-0014 and SOURCES.md.")
 
 
 if __name__ == "__main__":

@@ -168,7 +168,7 @@ struct AppMetadataTests {
         // Ticket 03 narrowed the range and bumped the dataset version. If About
         // carried a literal for either, the next dataset release would make it
         // stale with nothing failing.
-        #expect(CalendarDataset.v2.version == "2.0.0")
+        #expect(CalendarDataset.v2.version == "2.0.1")
         #expect(CalendarDataset.v2.supportedRange == 1975 ... 2084)
     }
 }

@@ -2,35 +2,18 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Re-run NepalKit's shipped calendar table against its two community sources.
+"""Compare NepalKit's dataset with its sole pinned base, askbuddie.
 
-The point is reproducibility. The provenance claims in SOURCES.md — that the
-shipped table is medic-derived, which months were arbitrated, and in whose favour
-— are only worth anything if anyone else can run them and get the same answer.
+All differences are explicit NepalKit corrections or the local 2084 projection.
+A passing baseline check establishes that the recorded comparison still holds,
+not that either table is officially attested. See SOURCES.md.
 
-Read-only. Compares the table in CalendarDataset.swift against each source's
-published data and prints every month that differs. It does not judge which side
-is correct; that was decided once against published calendars and is recorded in
-SOURCES.md, and re-deciding it here would quietly replace a documented decision
-with a two-source coin toss.
+Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
 
-Usage:  python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
-
-  --offline   skip the network fetch and only report what is already cached in
-               ~/.cache/nepalkit-data-sources/, for use where the network is
-               unavailable.
-  --baseline <path>
-              compare the live observation against the committed JSON baseline
-              and exit 1 on any difference. Combines with --offline.
-  --update-baseline [path]
-              write the live observation to scripts/data-sources-baseline.json
-              (or the given path) and exit 0. Regenerating the baseline is a
-              deliberate act that must land in the same PR as the table change
-              it reflects.
-
-Sources are pinned to commits rather than branches: licences get changed
-silently, and the base source's own history contains exactly that — a fork that
-adopted a licence its upstream never had.
+--offline reads the pinned source cached in ~/.cache/nepalkit-data-sources/.
+--baseline compares with the committed observation and fails on any change.
+--update-baseline deliberately regenerates scripts/data-sources-baseline.json
+(or the given path); review it together with the source or dataset change.
 """
 
 import json
@@ -47,18 +30,9 @@ MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashwin",
 
 # Pinned commits. See SOURCES.md for why each is pinned and what it is for.
 PINS = {
-    "medic": ("https://raw.githubusercontent.com/medic/bikram-sambat/"
-              "aeaa7b88332384bddeea98c2445308d437966641/test-data/daysInMonth.json",
-              "medic/bikram-sambat"),
     "askbuddie": ("https://raw.githubusercontent.com/askbuddie/bikram-sambat/"
                   "d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts",
                   "askbuddie/bikram-sambat"),
-    "go-bs": ("https://raw.githubusercontent.com/SuprimKhatri77/go-bs/"
-              "5853e0e91482d8bb6f400da4f69138fbe69a85dc/data.go",
-              "SuprimKhatri77/go-bs"),
-    "nepali-date": ("https://raw.githubusercontent.com/subeshb1/Nepali-Date/"
-                    "2183c30ada24a7fe678a24d58a5aa61ce8cdfa85/src/date-config.ts",
-                    "subeshb1/Nepali-Date"),
 }
 
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
@@ -100,62 +74,12 @@ def fetch(name, url, offline):
     return body
 
 
-def parse_medic(body):
-    rows = {int(k): v for k, v in json.loads(body).items()}
-    check_impossible(rows)
-    return rows
-
-
 def check_impossible(rows):
     """Flag year totals that cannot occur. Applies to every source, not one."""
     for year, values in sorted(rows.items()):
         if sum(values) not in (365, 366):
             NOTES.append("  note: %d BS sums to %d days, which is impossible; "
                          "the source table contains an error" % (year, sum(values)))
-
-
-def parse_go_bs(body):
-    """Parse go-bs's generated Go table: rows are positional, with the year in a comment.
-
-    The array is indexed from MinBSYear rather than keyed by year, so the year has
-    to come from the trailing comment. Guessing the range instead would silently
-    shift every row if MinBSYear ever moves.
-    """
-    rows = {}
-    for lengths, year in re.findall(r"\{([\d,\s]+)\},\s*//\s*(\d{4})", body):
-        rows[int(year)] = [int(x) for x in lengths.split(",") if x.strip()]
-    if not rows:
-        return {}
-    # A year table is 365 or 366 days. Anything else means the parse went wrong,
-    # and a silently mis-parsed comparison is worse than no comparison.
-    check_impossible(rows)
-    return rows
-
-
-def parse_nepali_date(body):
-    """Parse subeshb1/Nepali-Date's date-config map.
-
-    Keyed by month *name* rather than index, so the order is taken from the type
-    declaration at the top of the file instead of being assumed. A source that
-    reordered its months would otherwise be compared month-for-month against the
-    wrong column and produce a table of plausible-looking nonsense.
-    """
-    order = re.search(r"\[year: string\]: \{(.*?)\n\}", body, re.S)
-    if not order:
-        return {}
-    months = re.findall(r"([A-Za-z]+):\s*number", order.group(1))
-    table = {}
-    for year, block in re.findall(r"'(\d{4})'\s*:\s*\{(.*?)\n  \}", body, re.S):
-        values = []
-        for month in months:
-            found = re.search(month + r":\s*(\d+)", block)
-            if not found:
-                values = None
-                break
-            values.append(int(found.group(1)))
-        if values:
-            table[int(year)] = values
-    return table
 
 
 def parse_askbuddie(body):
@@ -275,8 +199,7 @@ def main():
             }
             continue
         del NOTES[:]
-        table = {"medic": parse_medic, "askbuddie": parse_askbuddie,
-                 "go-bs": parse_go_bs, "nepali-date": parse_nepali_date}[name](body)
+        table = parse_askbuddie(body)
         if not table:
             print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
             print("  no rows parsed; 0 years overlap the shipped range\n")
@@ -348,8 +271,8 @@ def main():
                 print("  " + problem)
             sys.exit(1)
         total_diffs = sum(len(entry["diffs"]) for entry in observation["sources"].values())
-        print("baseline holds: %d sources, %d differing months "
-              "(all recorded arbitrations)"
+        print("baseline holds: %d sources, %d source/month comparison pairs "
+              "(all recorded in baseline)"
               % (len(observation["sources"]), total_diffs))
 
 

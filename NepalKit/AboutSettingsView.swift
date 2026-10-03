@@ -5,7 +5,7 @@ import SwiftUI
 
 /// The "About" tab: what this build is, and how to keep it current.
 ///
-/// Three things and no more — the version, the calendar range it can convert,
+/// Shows app and dataset versions, the supported calendar range,
 /// and software update. Everything else this app could say about itself is
 /// either already in the sidebar footer (name, icon, repository) or is prose that
 /// belongs in the repository rather than in a preferences window.
@@ -29,6 +29,10 @@ struct AboutSettingsView: View {
                 LabeledContent(Strings.versionLabel(metadata.versionDescription)) {
                     Text(Strings.aboutCurrentBuild)
                         .foregroundStyle(.secondary)
+                }
+                LabeledContent(Strings.datasetVersionLabel) {
+                    Text(dataset.version)
+                        .monospacedDigit()
                 }
                 LabeledContent(Strings.supportedRangeLabel) {
                     Text(Strings.supportedRange(dataset.supportedRange))

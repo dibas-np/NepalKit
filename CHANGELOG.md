@@ -4,6 +4,27 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.6.0 — unreleased
+
+### Today on your Apple Watch
+
+NepalKit now lives on your wrist. A standalone Apple Watch app shows today's Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day — offline, independent of your Mac and iPhone, and anchored to Nepal Time whatever time zone the watch is in.
+
+- Four complication styles for your watch face — rectangular, inline, circular, and corner — each showing today's Bikram Sambat date at a glance.
+- Tapping any complication opens Today on the watch.
+- VoiceOver announces the full date with Latin digits and transliterated month names that every voice reads, and includes the Gregorian date wherever it is shown.
+- The complications' dates are scheduled ahead on Nepal Time midnights, so the date rolls over on its own; the exact refresh moment is the system's to choose.
+- Requires watchOS 26 or later. The Watch app installs on your watch from Xcode for now; the Mac DMG installs only the macOS app.
+
+### Calendar data, carefully sourced
+
+The bundled dataset is now version 2.0.1. Bikram Sambat 2084 remains projected: no official publication confirms the year yet, and 1.6.0's revised 2084 month lengths follow the cross-checked sources, so conversions inside 2084 may differ from 1.5.0. Read SOURCES.md for provenance and what is still outstanding.
+
+### Fixes
+
+- The popover's live clock ticks only while the popover is visible, so the app sits quieter on your Mac in the background.
+- Shortcuts date entities derive their weekday from the shared calendar engine, keeping Siri and Shortcuts answers consistent with the app.
+
 ## 1.5.0 — 2026-10-01
 
 ### Siri and Shortcuts support

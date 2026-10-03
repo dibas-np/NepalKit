@@ -1,0 +1,57 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.76569,0.20836,0.25034,1.00000",
+      "display-p3:0.53180,0.13392,0.18413,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "foreground-glyph.svg",
+          "name" : "foreground-glyph"
+        },
+        {
+          "image-name" : "foreground-page.svg",
+          "name" : "foreground-page",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -12,
+              -20
+            ]
+          }
+        },
+        {
+          "hidden" : true,
+          "image-name" : "background.svg",
+          "name" : "background",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -32,
+              12
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : [
+      "macOS"
+    ]
+  }
+}

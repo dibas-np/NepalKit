@@ -1,5 +1,8 @@
 # Sources delivery spike — recommendation
 
+Historical spike: the current source and licence policy is documented in
+[SOURCES.md](../../SOURCES.md) and [ADR-0014](../adr/0014-calendar-base-and-local-exceptions.md).
+
 **The promise, verbatim.** `NepalKit/Strings.swift:221` (declared `:216-221`,
 rendered `NepalKit/AboutView.swift:96`): *"Applies to the app code. The bundled
 calendar data carries no licence from this project; see SOURCES.md in the
