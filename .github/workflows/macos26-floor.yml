@@ -269,3 +269,88 @@ jobs:
           path: ${{ runner.temp }}/NepalKitDerivedData/Logs/Build
           if-no-files-found: ignore
           retention-days: 14
+
+  watch:
+    # Separate from the floor job on purpose. That job's name is fixed by the
+    # main ruleset's required status check, so nothing about it may change; and
+    # this one needs a watchOS simulator runtime, which is a different dependency
+    # with a different failure mode. Sharing a job would couple the Mac app's
+    # floor evidence to whether a Watch runtime happens to be installed.
+    #
+    # **If no usable runtime is installed, this job passes rather than fails**,
+    # with a warning annotation in the log saying the Watch targets were not
+    # exercised. A gate that turns red for an environment reason teaches people
+    # to ignore red, which is how the 26.0/26.6 floor drift shipped; but the
+    # cost of that choice is that a green run here is *not* by itself evidence
+    # about the Watch targets. Overturn it deliberately, by making the discovery
+    # step below `exit 1`.
+    #
+    # The device-architecture build exists because the simulator's `arm64` is not
+    # the shipping architecture. The watchOS targets do not override ARCHS, so
+    # this compiles both slices of the universal binary
+    # `docs/watch/readiness-evidence.md` records - a `-target
+    # arm64_32-apple-watchos26.6` compile appears in its log - which the
+    # simulator run above does not. What it still cannot establish is that the
+    # result runs on a device. That is the physical session's, and it is listed
+    # at `docs/watch/physical-validation.md`.
+    name: build and test the Watch app
+    runs-on: xcode-27
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Says what it decided and why, so a red or skipped run is diagnosable from
+      # the log alone rather than needing someone to have read this comment.
+      #
+      # "Is there a watchOS runtime" is NOT the right question, and answering it
+      # that way is how this job would have gone quietly green forever. Since the
+      # project's watchOS floor is 26.6, a 26.0 runtime is present but *unusable*:
+      # a destination older than the deployment target cannot run the product, so
+      # the suite would not execute while the job reported success. So the test is
+      # a runtime at or above the floor, read from the project rather than
+      # hard-coded here — which also means this step follows the floor if it moves.
+      - name: Record whether a usable watchOS simulator runtime is available
+        id: watchos
+        run: |
+          set -euo pipefail
+          xcrun simctl list runtimes
+          floor="$(sed -n 's/.*WATCHOS_DEPLOYMENT_TARGET = \([0-9.]*\);.*/\1/p' \
+            NepalKit.xcodeproj/project.pbxproj | sort -u | tr '\n' ' ')"
+          echo "watchOS floor(s) declared in the project: $floor"
+          usable=""
+          for runtime in $(xcrun simctl list runtimes | \
+                            sed -n 's/^watchOS \([0-9.]*\) .*/\1/p' | sort -V); do
+            if [ "$(printf '%s\n%s\n' "$runtime" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
+              usable="$usable $runtime"
+            fi
+          done
+          if [ -n "$usable" ]; then
+            echo "usable watchOS runtime(s):$usable"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run, and a green result here says nothing about the Watch targets."
+          fi
+
+      - name: Watch suite
+        if: steps.watchos.outputs.available == 'true'
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -project NepalKit.xcodeproj \
+            -scheme "NepalKitWatch Watch App" \
+            -configuration Debug \
+            -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: The Watch targets at least build for device architecture
+        if: steps.watchos.outputs.available == 'true'
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project NepalKit.xcodeproj \
+            -scheme "NepalKitWatch Watch App" \
+            -destination 'generic/platform=watchOS' \
+            CODE_SIGNING_ALLOWED=NO
