@@ -22,6 +22,7 @@ import SwiftUI
 /// open a window onto a page the user did not ask for. `SettingsTab.landingTab`
 /// is the resting state.
 struct SettingsView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
     /// The updater is constructed and started at launch (NepalKitApp), so the About
@@ -90,6 +91,12 @@ struct SettingsView: View {
         // opens at whatever the user last set, and refuses to go below the point
         // where the content stops fitting.
         .frame(minWidth: 640, minHeight: 440)
+        .task { loginItem.refreshStatus() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                loginItem.refreshStatus()
+            }
+        }
     }
 
     // MARK: - Destinations

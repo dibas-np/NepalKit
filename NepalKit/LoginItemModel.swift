@@ -107,6 +107,11 @@ final class LoginItemModel {
         }
     }
 
+    /// Re-reads external changes without changing registration or first-launch policy.
+    func refreshStatus() {
+        isOn = service.isRegistered
+    }
+
     func setOn(_ on: Bool) {
         do {
             // The service throws a confusing already-registered error when asked

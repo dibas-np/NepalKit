@@ -39,7 +39,7 @@ struct WatchFixture: Sendable, Equatable {
 
     /// The horizon offset (0 = today) whose day resolution fails, for
     /// exercising prefix retention and the error reload policy. The failed
-    /// day keeps its Gregorian context.
+    /// day keeps its Gregorian context. Requires a fixed instant or scenario.
     var failAtHorizonOffset: Int?
 
     /// Injects a resolution failure for Today itself: `true` keeps the
@@ -89,6 +89,7 @@ enum WatchFixtureControl {
             else { return nil }
             index += 2
         }
+        guard fixture.failAtHorizonOffset == nil || fixture.instant != nil else { return nil }
         return fixture
     }
 

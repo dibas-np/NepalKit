@@ -107,7 +107,8 @@ func bsDay(at index: Int, in dataset: CalendarDataset) -> BSDay? {
     guard index >= 0 else { return nil }
     for year in dataset.supportedRange {
         guard let yearStart = dataset.yearStartIndices[year],
-              let months = dataset.monthLengths(for: year)
+              let months = dataset.monthLengths(for: year),
+              months.allSatisfy({ $0 >= 1 })
         else { return nil }
         let yearLength = months.reduce(0, +)
         guard index >= yearStart + yearLength else {

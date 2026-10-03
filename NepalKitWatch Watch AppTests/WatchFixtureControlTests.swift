@@ -59,6 +59,28 @@ struct WatchFixtureControlTests {
         #expect(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureFailAt", "-1"]) == nil)
     }
 
+    @Test func failureOffsetRequiresAFixedInstant() {
+        #expect(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureFailAt", "3"]) == nil)
+    }
+
+    @Test func failureOffsetCanPrecedeTheFixedInstant() throws {
+        let fixture = try #require(WatchFixtureControl.fixture(arguments: [
+            "-NepalKitFixtureFailAt", "3",
+            "-NepalKitFixtureInstant", "2026-09-26T18:30:00Z",
+        ]))
+        #expect(fixture.failAtHorizonOffset == 3)
+        #expect(fixture.instant == (try Date("2026-09-26T18:30:00Z", strategy: .iso8601)))
+    }
+
+    @Test func failureOffsetCanUseAScenarioInstant() throws {
+        let fixture = try #require(WatchFixtureControl.fixture(arguments: [
+            "-NepalKitFixtureFailAt", "3",
+            "-NepalKitFixtureScenario", "midnightApproach",
+        ]))
+        #expect(fixture.failAtHorizonOffset == 3)
+        #expect(fixture.instant == (try Date("2026-09-26T18:10:00Z", strategy: .iso8601)))
+    }
+
     // MARK: The harness exercises production paths
 
     @Test func fixtureModelRendersTheAfterBoundaryThroughProductionCode() async throws {
@@ -76,8 +98,8 @@ struct WatchFixtureControlTests {
 
     @Test func fixtureProviderInjectsTheTimelineFailureAtTheRequestedOffset() throws {
         let provider = ComplicationFixtures.makeProvider(arguments: [
-            "-NepalKitFixtureInstant", "2026-09-26T18:30:00Z",
             "-NepalKitFixtureFailAt", "3",
+            "-NepalKitFixtureInstant", "2026-09-26T18:30:00Z",
         ])
         let built = provider.timeline()
 

@@ -413,15 +413,79 @@ class VerifyAppcastTest(unittest.TestCase):
             output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.6")
         self.assertIn("minimumSystemVersion 26.6 matches the app's floor", output)
 
-    def test_absent_feed_floor_is_reported_not_ignored(self) -> None:
+    def test_absent_feed_floor_is_rejected(self) -> None:
         # An item without the element tells Sparkle nothing about the floor.
         # That is not the same as a correct value, so it must be visible.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
             feed = sign_feed(tmp_path, make_item(minimum_system_version=None), priv)
-            output = capture_verify(feed, write_plist_with_key(tmp_path, key), "26.6")
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, key), "26.6")
         self.assertIn("no <sparkle:minimumSystemVersion>", output)
+
+    def test_blank_and_malformed_feed_floors_are_rejected(self) -> None:
+        for minimum in ("", " ", "26", "26.x", "-1.0", "26.6.0.1"):
+            with self.subTest(minimum=minimum), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                key, private = ed25519_keypair(directory)
+                feed = sign_feed(directory, make_item(minimum_system_version=minimum), private)
+                output = run_verify(self, feed, write_plist_with_key(directory, key), "26.6")
+                self.assertIn("minimumSystemVersion", output)
+
+    def test_historical_floor_survives_out_of_order_feed_and_archive_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            key, private = ed25519_keypair(directory)
+            payload = b"archive fixture"
+            signature = base64.b64encode(ed25519_sign(private, directory, payload)).decode()
+            historical = make_item(version="1.0", minimum_system_version="26.0",
+                                   length=str(len(payload)), signature=signature)
+            latest = make_item(version="1.1", minimum_system_version="26.6",
+                               url="https://example.com/NepalKit-1.1.zip",
+                               length=str(len(payload)), signature=signature)
+            feed = sign_feed(directory, historical + latest, private)
+            plist = write_plist_with_key(directory, key)
+            output = capture_verify(feed, plist, "26.6")
+            self.assertIn("historical minimumSystemVersion 26.0", output)
+            for version in ("1.0", "1.1"):
+                archive = directory / f"NepalKit-{version}.zip"
+                archive.write_bytes(payload)
+                result = run_cli(str(feed), "--info-plist", str(plist),
+                                 "--enclosure", str(archive), "--allow-partial")
+                self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_current_floor_mismatch_is_rejected_with_historical_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            key, private = ed25519_keypair(directory)
+            payload = b"fixture"
+            signature = base64.b64encode(ed25519_sign(private, directory, payload)).decode()
+            feed = sign_feed(directory,
+                             make_item(minimum_system_version="26.0", length=str(len(payload)),
+                                       signature=signature)
+                             + make_item(version="1.1", minimum_system_version="26.0",
+                                         url="https://example.com/NepalKit-1.1.zip"), private)
+            archive = directory / "NepalKit-1.0.zip"
+            archive.write_bytes(payload)
+            result = run_cli(str(feed), "--info-plist", str(write_plist_with_key(directory, key)),
+                             "--enclosure", str(archive), "--allow-partial")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("minimumSystemVersion is 26.0 but the app ships as 26.6", result.stdout)
+
+    def test_local_archive_requires_one_matching_feed_item(self) -> None:
+        for body in (make_item(), make_item() + make_item(version="1.1")):
+            with self.subTest(body=body), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                key, private = ed25519_keypair(directory)
+                feed = sign_feed(directory, body, private)
+                archive = directory / ("unlisted.zip" if body == make_item()
+                                       else "NepalKit-1.0.zip")
+                archive.write_bytes(b"fixture")
+                result = run_cli(str(feed), "--info-plist",
+                                 str(write_plist_with_key(directory, key)),
+                                 "--enclosure", str(archive), "--allow-partial")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("exactly one feed item", result.stdout)
 
     def test_generation_seeds_the_staging_dir_with_the_live_feed(self) -> None:
         # `generate_appcast` merges into an existing appcast only when one is

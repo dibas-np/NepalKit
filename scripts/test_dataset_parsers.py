@@ -23,15 +23,13 @@ pinned URLs in verify-data-sources.PINS, cached under
 ~/.cache/nepalkit-data-sources/<name>-days.json. Provenance per fixture is named
 in its docstring. The one exception is labelled CORRUPTED: no published source
 contains an impossible year, so that row is a real row with one month
-lengthened by a day. The gate-decision fixtures are instead read from
-scripts/data-sources-baseline.json, shrunk, and mutated one field at a time.
+lengthened by a day. The gate-decision fixtures use
+synthetic observations matching the baseline schema, mutated one field at a time.
 """
 
 from __future__ import annotations
 
-import copy
 import importlib.util
-import json
 import sys
 import tempfile
 import unittest
@@ -279,22 +277,20 @@ class ShippedRangeTests(unittest.TestCase):
 
 
 def gate_fixture():
-    """A two-source copy of the committed baseline, for the decision tests.
-
-    Read from scripts/data-sources-baseline.json so that every key name and
-    value type below is one the gate actually reads; nothing is invented. Two of
-    the four recorded sources are kept, picked because between them they hold a
-    non-empty `uncovered` list (go-bs cannot cover 1975-1978 BS) and a non-empty
-    `diffs` list (medic's recorded arbitrations), so both directions of both
-    comparisons are reachable without any hand-made data.
-
-    A fresh deep copy per call, so a test can mutate exactly one field.
-    """
-    raw = json.loads((HERE / "data-sources-baseline.json").read_text(encoding="utf-8"))
+    """Fresh synthetic observations isolate decisions from dataset revisions."""
     return {
-        "shipped": copy.deepcopy(raw["shipped"]),
-        "sources": {name: copy.deepcopy(raw["sources"][name])
-                    for name in ("medic", "go-bs")},
+        "shipped": {"first": 1975, "last": 2084, "years": 110},
+        "sources": {
+            "medic": {
+                "shared": 110, "exact": 107, "uncovered": [],
+                "diffs": [[1975, 4], [1975, 5], [1991, 7], [1991, 8],
+                          [2062, 0], [2062, 1]],
+            },
+            "go-bs": {
+                "shared": 106, "exact": 104, "uncovered": [1975, 1976, 1977, 1978],
+                "diffs": [[1991, 7], [1991, 8], [2062, 0], [2062, 1]],
+            },
+        },
     }
 
 

@@ -137,6 +137,35 @@ struct ResolvedDayTests {
         }
     }
 
+    @Test(arguments: [0, -1])
+    func corruptIntermediateRowIsAnErrorInsideDerivedBounds(monthLength: Int) throws {
+        let validMonths = [Int](repeating: 30, count: 12)
+        var corruptMonths = validMonths
+        corruptMonths[5] = monthLength
+        let anchor = GADay(year: 2000, month: 1, day: 1)
+        let broken = CalendarDataset(
+            version: "corrupt-intermediate-test",
+            years: [2000: validMonths, 2001: corruptMonths, 2002: validMonths],
+            anchorBS: BSDay(year: 2000, month: 1, day: 1),
+            anchorAD: anchor,
+            supportedRange: 2000 ... 2002
+        )
+        let start = try #require(broken.gregorianStart)
+        let end = try #require(broken.gregorianEnd)
+
+        for offset in [400, 800] {
+            let day = try #require(anchor.advanced(byDays: offset))
+            #expect(day >= start && day <= end)
+            #expect(throws: DayResolutionError.datasetAssumptionFailure(day)) {
+                try resolvedDay(for: day, in: broken)
+            }
+        }
+        let before = try #require(start.advanced(byDays: -1))
+        let after = try #require(end.advanced(byDays: 1))
+        #expect(try resolvedDay(for: before, in: broken).bikramSambat == .beforeSupportedRange)
+        #expect(try resolvedDay(for: after, in: broken).bikramSambat == .afterSupportedRange)
+    }
+
     // MARK: The instant resolver
 
     @Test func instantResolverAnchorsToNepalTime() throws {

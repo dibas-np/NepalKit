@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these nine, in this order:
+It runs these ten, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -90,16 +90,17 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
 python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
-cd NepalKitCore && swift test               # 3. the calendar: 65 tests
-./scripts/run-app-tests.sh                  # 4. the app: 167 tests
+swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
+./scripts/run-app-tests.sh                  # 4. the app: 175 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
-python3 scripts/test_update_changelog.py    # 6. the changelog generator
-python3 scripts/test_unregister_launchservices.py  # 7. the release pipeline's LaunchServices hygiene
-python3 scripts/test_verify_appcast.py      # 8. the appcast verifier
-python3 scripts/verify-deployment-floor.py  # 9. the floor is one number everywhere
+python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
+python3 scripts/test_update_changelog.py    # 7. the changelog generator
+python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
+python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
+python3 scripts/verify-deployment-floor.py  # 10. the floor is one number everywhere
 ```
 
-Gate 7 is the only one that touches the machine rather than the repository: it
+Gate 8 is the only one that touches the machine rather than the repository: it
 registers and then unregisters real throwaway app bundles in this session's
 LaunchServices database. It is there because `scripts/unregister-launchservices.sh`
 guards a failure that is invisible from the outside — a bundle registered under a
@@ -116,7 +117,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those nine are the direct consequence of gates that once reported green
+Two of those ten are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 

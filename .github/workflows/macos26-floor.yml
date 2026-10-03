@@ -194,6 +194,9 @@ jobs:
             build
           echo "NEPAKIT_BUILT_PLIST=$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/Info.plist" >> "$GITHUB_ENV"
 
+      - name: Cask updater suite
+        run: python3 scripts/test_update_cask.py
+
       # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
       # builds the app clean and then hangs before connecting, reproducibly and
       # including with an empty test; it is a toolchain issue, not a reason to
