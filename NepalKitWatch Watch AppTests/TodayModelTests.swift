@@ -182,6 +182,23 @@ struct TodayModelTests {
         #expect(clock.reads == readsAtDeactivation)
     }
 
+    @Test func deactivationDiscardsBufferedClockChanges() async throws {
+        let clock = MutableClock(try anchoredInstant())
+        let signals = SignalFixture()
+        let model = makeModel(clock: clock, signals: signals)
+        model.activate()
+        let displayAtDeactivation = model.display
+
+        // No suspension lets the observer run before the task is cancelled.
+        clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
+        signals.continuation.yield()
+        model.deactivate()
+        await settle()
+
+        #expect(clock.reads == 1)
+        #expect(model.display == displayAtDeactivation)
+    }
+
     // MARK: The active-midnight refresh
 
     @Test func scheduledMidnightRefreshResolvesFromCurrentTime() async throws {

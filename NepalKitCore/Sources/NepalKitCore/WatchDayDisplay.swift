@@ -59,6 +59,14 @@ public struct WatchBoundaryComponents: Sendable, Hashable {
     /// `Supported from १९७५ BS`.
     public let contextLine: String
 
+    /// Support context for a compact complication, preserving the bound and year.
+    public var compactContextLine: String {
+        switch side {
+        case .before: "From \(contextYear) BS"
+        case .after: "Through \(contextYear) BS"
+        }
+    }
+
     /// The Gregorian day the boundary belongs to; it remains answerable.
     public let gregorianDay: String
     public let gregorianMonthName: String

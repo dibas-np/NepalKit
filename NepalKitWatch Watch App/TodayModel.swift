@@ -118,6 +118,8 @@ final class TodayModel {
         let stream = clockChanges()
         clockChangeTask = Task { [weak self] in
             for await _ in stream {
+                // AsyncStream may deliver buffered events after cancellation.
+                guard !Task.isCancelled else { return }
                 self?.refresh()
             }
         }

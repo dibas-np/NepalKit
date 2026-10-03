@@ -52,10 +52,10 @@ struct WatchPresentationWiringTests {
 
     @Test func everyBoundaryCallSiteMatchesTheFamilyThatMakesIt() throws {
         // Past the supported range there is no date to announce, so the boundary
-        // label's whole job is the support context: the two families drawing a
-        // Gregorian day/month keep it in speech, the two compact families do not.
+        // label retains the support context. Only the corner family draws a
+        // Gregorian day/month and includes it in speech.
         let expected: [String: (weekday: Bool?, gregorian: Bool)] = [
-            "TodayRectangularComplication.standard": (nil, true),
+            "TodayRectangularComplication.standard": (nil, false),
             "TodayInlineComplication.standard": (nil, false),
             "TodayCircularComplication": (nil, false),
             "TodayCornerComplication": (nil, true),

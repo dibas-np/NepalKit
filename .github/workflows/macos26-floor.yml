@@ -278,11 +278,12 @@ jobs:
     # floor evidence to whether a Watch runtime happens to be installed.
     #
     # **If no usable runtime is installed, this job passes rather than fails**,
-    # with a warning annotation in the log saying the Watch targets were not
-    # exercised. A gate that turns red for an environment reason teaches people
+    # with a warning annotation in the log saying the Watch suite did not run.
+    # Device compilation still runs independently. A gate that turns red for an
+    # environment reason teaches people
     # to ignore red, which is how the 26.0/26.6 floor drift shipped; but the
     # cost of that choice is that a green run here is *not* by itself evidence
-    # about the Watch targets. Overturn it deliberately, by making the discovery
+    # that Watch tests ran. Overturn it deliberately, by making the discovery
     # step below `exit 1`.
     #
     # The device-architecture build exists because the simulator's `arm64` is not
@@ -323,8 +324,12 @@ jobs:
             NepalKit.xcodeproj/project.pbxproj | sort -u | tr '\n' ' ')"
           echo "watchOS floor(s) declared in the project: $floor"
           usable=""
-          for runtime in $(xcrun simctl list runtimes | \
-                            sed -n 's/^watchOS \([0-9.]*\) .*/\1/p' | sort -V); do
+          for runtime in $(xcrun simctl list runtimes --json | python3 -c '
+          import json, sys
+          for runtime in json.load(sys.stdin)["runtimes"]:
+              if runtime.get("isAvailable") and runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.watchOS-"):
+                  print(runtime["version"])
+          ' | sort -V); do
             if [ "$(printf '%s\n%s\n' "$runtime" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
               usable="$usable $runtime"
             fi
@@ -339,7 +344,7 @@ jobs:
             echo "runtime=$(printf '%s\n' $usable | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run, and a green result here says nothing about the Watch targets."
+            echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run; device compilation is checked separately."
           fi
 
       - name: Watch suite
@@ -354,7 +359,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: The Watch targets at least build for device architecture
-        if: steps.watchos.outputs.available == 'true'
         run: |
           set -euo pipefail
           xcodebuild build \

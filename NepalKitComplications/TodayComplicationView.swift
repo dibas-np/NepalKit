@@ -98,18 +98,17 @@ struct TodayRectangularComplication: View {
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: false))
             }
         case .day(.rangeBoundary(let boundary)):
-            VStack(alignment: .leading) {
-                Text(WatchDayCopy.boundaryFull)
+            // The boundary uses the same two-line budget as supported dates.
+            // Gregorian detail remains available in the app after tapping.
+            VStack(alignment: .leading, spacing: 2) {
+                Text(WatchDayCopy.boundaryCompact)
                     .font(.headline)
-                Text(boundary.contextLine)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text("\(boundary.gregorianDay) \(boundary.gregorianMonthName) \(boundary.gregorianYear)")
+                Text(boundary.compactContextLine)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary, gregorian: true))
+            .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary, gregorian: false))
         case .day(.calculationError(let components)):
             VStack(alignment: .leading) {
                 Text(WatchDayCopy.failureFull)
