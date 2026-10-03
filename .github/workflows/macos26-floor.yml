@@ -328,21 +328,29 @@ jobs:
           import json, sys
           for runtime in json.load(sys.stdin)["runtimes"]:
               if runtime.get("isAvailable") and runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.watchOS-"):
-                  print(runtime["version"])
+                  print(runtime["version"], runtime["identifier"])
           ' | sort -V)"
-          for runtime in $runtimes; do
-            if [ "$(printf '%s\n%s\n' "$runtime" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
-              usable="$usable $runtime"
+          while read -r version identifier; do
+            if [ -n "$version" ] && [ "$(printf '%s\n%s\n' "$version" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
+              usable="$usable$version $identifier"$'\n'
             fi
-          done
+          done <<< "$runtimes"
           if [ -n "$usable" ]; then
-            echo "usable watchOS runtime(s):$usable"
+            selected="$(printf '%s' "$usable" | sort -V | tail -1)"
+            version="${selected%% *}"
+            identifier="${selected#* }"
+            device="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"].get(sys.argv[1], [])
+          available = sorted((device for device in devices if device.get("isAvailable")), key=lambda device: device["udid"])
+          if not available:
+              sys.exit("No available simulator device for selected watchOS runtime " + sys.argv[1])
+          print(available[0]["udid"])
+          ' "$identifier")"
+            echo "Selected watchOS $version simulator: $device"
             echo "available=true" >> "$GITHUB_OUTPUT"
-            # The newest usable runtime, published so the destinations below name
-            # the same runtime this step accepted. Accepting a runtime and then
-            # pinning a different one is how a runner holding only the floor
-            # runtime passed discovery and failed the destination.
-            echo "runtime=$(printf '%s\n' $usable | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
+            echo "runtime=$version" >> "$GITHUB_OUTPUT"
+            echo "device=$device" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run; device compilation is checked separately."
@@ -356,7 +364,7 @@ jobs:
             -project NepalKit.xcodeproj \
             -scheme "NepalKitWatch Watch App" \
             -configuration Debug \
-            -destination "platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=${{ steps.watchos.outputs.runtime }}" \
+            -destination "platform=watchOS Simulator,id=${{ steps.watchos.outputs.device }}" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: The Watch targets at least build for device architecture

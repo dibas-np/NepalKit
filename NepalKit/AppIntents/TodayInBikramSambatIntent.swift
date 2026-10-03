@@ -23,7 +23,7 @@ struct TodayInBikramSambatIntent: AppIntent {
             throw SiriIntentError(dialog: Self.beyondRangeDialog(now: now, in: dataset))
         }
         let bsWeekday = weekday(of: bs, in: dataset)
-        guard let entity = BikramSambatDateEntity(bsDay: bs, weekday: IntentAnswers.weekdayNameString(bsWeekday)) else {
+        guard let entity = BikramSambatDateEntity(bsDay: bs) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
         return .result(value: entity, dialog: "Today is \(IntentAnswers.weekdayPrefix(bsWeekday))\(IntentAnswers.spoken(bs)).")

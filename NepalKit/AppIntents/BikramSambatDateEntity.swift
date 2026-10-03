@@ -50,12 +50,12 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     var bsDay: BSDay { date }
 
     /// Validates the calendar day and supplies its weekday for every query path.
-    init?(bsDay: BSDay, weekday: String? = nil) {
+    init?(bsDay: BSDay, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) {
         guard let month = BikramSambatMonth(rawValue: bsDay.month),
               let gregorian = bsToAD(bsDay, in: AppData.dataset) else { return nil }
         self.date = bsDay
         self.calendarMonth = month
-        self.weekdayValue = weekday ?? IntentAnswers.weekdayNameString(NepalKitCore.weekday(of: gregorian))
+        self.weekdayValue = IntentAnswers.weekdayNameString(NepalKitCore.weekday(of: gregorian), monthNames: monthNames)
     }
 
     /// Today's date, anchored to Nepal Time. Nil once the current date passes

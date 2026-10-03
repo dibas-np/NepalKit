@@ -96,7 +96,7 @@ struct TodayIntentTests {
     @Test("Entity id round-trips through its text identity")
     func entityIdRoundTrip() throws {
         let bs = BSDay(year: 2082, month: 3, day: 15)
-        let entity = try #require(BikramSambatDateEntity(bsDay: bs, weekday: "Sunday"))
+        let entity = try #require(BikramSambatDateEntity(bsDay: bs, monthNames: .transliterated))
 
         #expect(entity.id == "2082-3-15")
 
@@ -110,9 +110,11 @@ struct TodayIntentTests {
     @Test("Entity identity survives weekday presentation changes")
     func entityIdentityUsesCalendarDate() throws {
         let date = BSDay(year: 2082, month: 3, day: 15)
-        let english = try #require(BikramSambatDateEntity(bsDay: date, weekday: "Sunday"))
-        let nepali = try #require(BikramSambatDateEntity(bsDay: date, weekday: "आइतबार"))
+        let english = try #require(BikramSambatDateEntity(bsDay: date, monthNames: .transliterated))
+        let nepali = try #require(BikramSambatDateEntity(bsDay: date, monthNames: .nepali))
         let restored = try #require(BikramSambatDateEntity(idString: english.id))
+        #expect(english.weekday == "Sunday")
+        #expect(nepali.weekday == "आइत")
         #expect(english == nepali)
         #expect(english == restored)
         #expect(Set([english, nepali, restored]).count == 1)
@@ -146,7 +148,7 @@ struct TodayIntentTests {
             #expect(BikramSambatDateEntity(idString: identifier) == nil)
         }
         #expect(BikramSambatDateEntity.parsing("31 Kartik 2082") == nil)
-        #expect(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 7, day: 31), weekday: "Sunday") == nil)
+        #expect(BikramSambatDateEntity(bsDay: BSDay(year: 2082, month: 7, day: 31), monthNames: .transliterated) == nil)
     }
 
     @Test("Entity query parses typed dates against titles and synonyms")

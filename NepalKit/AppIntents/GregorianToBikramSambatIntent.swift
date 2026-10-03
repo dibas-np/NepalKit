@@ -30,10 +30,7 @@ struct GregorianToBikramSambatIntent: AppIntent {
             throw SiriIntentError(dialog: "NepalKit couldn't read that date.")
         }
         if let bs = adToBS(ad, in: dataset) {
-            guard let entity = BikramSambatDateEntity(
-                bsDay: bs,
-                weekday: IntentAnswers.weekdayNameString(weekday(of: ad))
-            ) else {
+            guard let entity = BikramSambatDateEntity(bsDay: bs) else {
                 throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
             }
             return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: weekday(of: ad))))
