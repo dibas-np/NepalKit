@@ -4,12 +4,27 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// The complication presentation contract: accessible labels retain the
-/// complete Bikram Sambat information (Latin digits, full year), announce the
-/// weekday only where the family shows one, add Gregorian detail only where
-/// the surface presents it, and keep the firm compact copy exact. The longest
-/// canonical month names — including their combining marks — are exercised
-/// through core-generated samples.
+/// What `ComplicationAccessibility`'s label composition produces: the exact
+/// wording for named argument combinations, the two boundary label shapes, the
+/// error speech with and without resolved Gregorian context, and the canonical
+/// month names — including their combining marks — through core-generated
+/// samples.
+///
+/// **What this suite does not assert**, now stated plainly because it used to
+/// imply otherwise: which family passes which flags. Every test here calls the
+/// helper directly, so the correspondence between a family's visuals and its
+/// announced label is not exercised here at all — a second test that made the
+/// same call as its neighbour and asserted the same string was removed for
+/// claiming a view behaviour it never touched. That correspondence is pinned by
+/// `NepalKitTests/WatchPresentationWiringTests`, which derives it from each call
+/// site in `TodayComplicationView.swift`.
+///
+/// No rendering assertion is attempted, deliberately: these are SwiftUI views,
+/// and confirming the announced detail matches what is drawn needs either a
+/// rendering harness this repository does not have or a third-party
+/// view-inspection dependency `AGENTS.md` forbids without asking. The real check
+/// is a device and a screen reader, recorded at
+/// `docs/watch/physical-validation.md:57`.
 struct ComplicationPresentationTests {
     private let dataset = CalendarDataset.v2
 
@@ -40,17 +55,6 @@ struct ComplicationPresentationTests {
 
         // Circular, inline and corner show no weekday and no Gregorian date;
         // the announced year fills what the visuals omit.
-        #expect(
-            ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false)
-                == "11 Ashoj 2083"
-        )
-    }
-
-    @Test func largeRectangularFallbackDropsWhatTheVisualsDrop() throws {
-        let components = try supportedComponents
-
-        // The large-text fallback removes the weekday and Gregorian detail
-        // first; the label follows the visuals.
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false)
                 == "11 Ashoj 2083"
