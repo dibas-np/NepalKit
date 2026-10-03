@@ -131,4 +131,11 @@ gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcas
 # the gate that would have caught the 26.0/26.6 drift before a user did:
 # every other gate here agreed, because they all trusted a declared number
 # rather than comparing the sources to each other.
-gate "deployment floor consistency" python3 "$repo_root/scripts/verify-deployment-floor.py"
+# Runs the gate's own suite first, so the checks that decide *how* the floors are
+# read cannot themselves rot: CI runs that suite only when appcast.xml changes, so
+# without this every test of this gate is dark on an ordinary pull request.
+gate "deployment floor consistency" bash -c '
+    set -euo pipefail
+    python3 "$1/scripts/test_verify_deployment_floor.py"
+    python3 "$1/scripts/verify-deployment-floor.py"
+' _ "$repo_root"
