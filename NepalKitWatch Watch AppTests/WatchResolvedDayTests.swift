@@ -66,7 +66,7 @@ struct WatchResolvedDayTests {
         #expect(components.bikramSambatDay == "११")
         #expect(components.bikramSambatMonthName == "असोज")
         #expect(components.bikramSambatYear == "२०८३")
-        #expect(components.spokenBikramSambat == "11 असोज 2083")
+        #expect(components.spokenBikramSambat == "11 Ashoj 2083")
         #expect(components.spokenGregorian == "27 September 2026")
     }
 }

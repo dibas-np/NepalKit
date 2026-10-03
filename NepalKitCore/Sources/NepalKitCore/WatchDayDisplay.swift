@@ -10,8 +10,11 @@ import Foundation
 /// Nepali names and the settings' digit script; Gregorian month names stay
 /// English while their digits still honor the settings — the intentional mix
 /// CONTEXT.md describes. Speech is independent of the visuals: Latin digits,
-/// canonical Nepali names, and the complete year, whatever is fitted on
-/// screen.
+/// transliterated month and weekday names, and the complete year, whatever is
+/// fitted on screen. The first on-device session (2026-10-03) found the
+/// watch's VoiceOver voices skipping Devanagari month names entirely, so
+/// transliterated names — which every voice reads — carry the spoken meaning
+/// while the visuals keep the canonical Devanagari script.
 public struct WatchDayComponents: Sendable, Hashable {
     /// The resolved day's weekday, named per the settings. Shown once, no
     /// matter how many calendar representations the surface renders.
@@ -25,9 +28,9 @@ public struct WatchDayComponents: Sendable, Hashable {
 
     /// The spoken Bikram Sambat date, e.g. `11 असोज 2083`.
     public let spokenBikramSambat: String
-    /// The spoken weekday — the same name the visuals show under the Watch's
-    /// fixed settings, but carried separately so a future display change
-    /// cannot silently change speech.
+    /// The spoken weekday, transliterated so every voice reads it — carried
+    /// separately from the visual weekday, which stays in the canonical
+    /// script.
     public let spokenWeekdayName: String
     /// The spoken Gregorian date, for surfaces that present it.
     public let spokenGregorian: String
@@ -100,6 +103,7 @@ public func watchDayDisplay(
     switch day.bikramSambat {
     case .supported(let bs):
         let weekday = weekdayName(for: day.weekday, style: settings.monthNames) ?? String(day.weekday)
+        let spokenWeekday = weekdayName(for: day.weekday, style: .transliterated) ?? String(day.weekday)
         return .supported(WatchDayComponents(
             weekdayName: weekday,
             bikramSambatDay: formatNumber(bs.day, digits: settings.digits),
@@ -108,8 +112,8 @@ public func watchDayDisplay(
             gregorianDay: formatNumber(day.gregorian.day, digits: settings.digits),
             gregorianMonthName: gregorianMonthName(day.gregorian.month),
             gregorianYear: formatNumber(day.gregorian.year, digits: settings.digits),
-            spokenBikramSambat: SpokenDate.bs(bs, monthNames: settings.monthNames),
-            spokenWeekdayName: weekday,
+            spokenBikramSambat: SpokenDate.bs(bs, monthNames: .transliterated),
+            spokenWeekdayName: spokenWeekday,
             spokenGregorian: SpokenDate.ad(day.gregorian)
         ))
     case .beforeSupportedRange:

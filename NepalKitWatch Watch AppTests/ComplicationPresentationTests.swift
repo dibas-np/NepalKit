@@ -31,7 +31,7 @@ struct ComplicationPresentationTests {
 
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true)
-                == "आइत\n11 असोज 2083\n27 September 2026"
+                == "Sunday\n11 Ashoj 2083\n27 September 2026"
         )
     }
 
@@ -42,7 +42,7 @@ struct ComplicationPresentationTests {
         // the announced year fills what the visuals omit.
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false)
-                == "11 असोज 2083"
+                == "11 Ashoj 2083"
         )
     }
 
@@ -53,7 +53,7 @@ struct ComplicationPresentationTests {
         // first; the label follows the visuals.
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false)
-                == "11 असोज 2083"
+                == "11 Ashoj 2083"
         )
     }
 

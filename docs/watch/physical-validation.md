@@ -112,6 +112,13 @@ Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** sch
 | VoiceOver | Two findings: list separators announced aloud ("comma") — fixed, labels now join with line breaks; and the Devanagari month name was skipped in speech (user heard "day and year" where day+month is shown), consistent with the documented platform-side speech risk when the active voice does not cover the script. The spec's decision to keep canonical Nepali names in speech stands; transliterated speech would need an explicit spec decision. |
 | Independence (offline/timezone) | Reported working. |
 
+### 2026-10-03 — third iteration
+
+| Item | Result |
+| --- | --- |
+| Rectangular (two-line: day/month over weekday · year) | Pass — fits without clipping or truncation, confirmed on the 44 mm slot. |
+| VoiceOver speech decision | The user approved switching spoken month and weekday names to transliterated ("17 Ashoj 2083", "Sunday"), because the watch's active voice skips Devanagari month names. Visuals keep the canonical Devanagari script. Implemented in the core display builder; on-device re-check pending the next install. |
+
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.

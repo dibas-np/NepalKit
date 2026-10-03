@@ -39,10 +39,12 @@ struct WatchDayDisplayTests {
             return
         }
 
-        // Speech uses Latin digits, canonical Nepali names, and the complete
-        // year — whatever the visuals render.
-        #expect(components.spokenBikramSambat == "11 असोज 2083")
-        #expect(components.spokenWeekdayName == "आइत")
+        // Speech uses Latin digits, transliterated names, and the complete
+        // year — whatever the visuals render. The on-device session found
+        // watch voices skip Devanagari month names, so speech reads
+        // transliterated while the visuals keep the canonical script.
+        #expect(components.spokenBikramSambat == "11 Ashoj 2083")
+        #expect(components.spokenWeekdayName == "Sunday")
         #expect(components.spokenGregorian == "27 September 2026")
     }
 
