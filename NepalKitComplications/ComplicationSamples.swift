@@ -39,6 +39,15 @@ enum ComplicationSamples {
         .placeholder
     }
 
+    /// The worst-case month sample: Kartik, the longest canonical name with
+    /// combining marks. Kartik does not occur naturally until 18 October
+    /// 2026, and the on-device fixture harness cannot reach the extension
+    /// process, so the curved-label and row-width fit is judged through
+    /// previews until then.
+    static func longestMonthState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
+        dayState(for: GADay(year: 2026, month: 10, day: 20), in: dataset)
+    }
+
     private static func dayState(for day: GADay, in dataset: CalendarDataset) -> TodayComplicationState {
         .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
     }

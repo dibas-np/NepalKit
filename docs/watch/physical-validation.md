@@ -119,6 +119,13 @@ Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** sch
 | Rectangular (two-line: day/month over weekday · year) | Pass — fits without clipping or truncation, confirmed on the 44 mm slot. |
 | VoiceOver speech decision | The user approved switching spoken month and weekday names to transliterated ("17 Ashoj 2083", "Sunday"), because the watch's active voice skips Devanagari month names. Visuals keep the canonical Devanagari script. Implemented in the core display builder; on-device re-check pending the next install. |
 
+### 2026-10-03 — fixture batch
+
+| Row | Result |
+| --- | --- |
+| 15–18 | Pass (app surface): both boundaries, projected 2084, terminal, and error with/without context all render through production code, each launch clearly banner-identified. |
+| 8 (partial) | The on-device fixture instant cannot reach the complication extension process — launch arguments belong to the app, and no shared store is permitted (no App Group). The corner's कात्तिक curved-label fit is therefore judged via the new native previews ("Corner — longest month") now, with the natural occurrence on 18 October 2026 as the on-device confirmation. |
+
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.
