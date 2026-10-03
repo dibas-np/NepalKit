@@ -1,6 +1,6 @@
 {
   "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+    "automatic-gradient" : "display-p3:0.76567,0.20787,0.25146,1.00000"
   },
   "groups" : [
     {
@@ -11,11 +11,25 @@
         },
         {
           "image-name" : "foreground-page.svg",
-          "name" : "foreground-page"
+          "name" : "foreground-page",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -12,
+              -20
+            ]
+          }
         },
         {
           "image-name" : "background.svg",
-          "name" : "background"
+          "name" : "background",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "shadow" : {
