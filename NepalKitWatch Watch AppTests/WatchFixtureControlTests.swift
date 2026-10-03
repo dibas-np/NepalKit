@@ -10,6 +10,7 @@ import NepalKitCore
 /// production seams — fixed instants through the clock, failure points
 /// through the resolver — without changing any calendar answer. Every symbol
 /// here exists only when NEPALKIT_WATCH_FIXTURES compiles in.
+@MainActor
 struct WatchFixtureControlTests {
     @Test func noFixtureArgumentsYieldNoFixture() {
         #expect(WatchFixtureControl.fixture(arguments: []) == nil)

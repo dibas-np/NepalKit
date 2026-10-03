@@ -928,7 +928,11 @@
 				SDKROOT = watchos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG NEPALKIT_WATCH_FIXTURES $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				/* This bundle compiles NepalKitComplications/ because that folder
+				   is in its synchronised groups, so it mirrors the NepalKitComplications
+				   extension's nonisolated default rather than the app's: otherwise all
+				   52 tests would exercise a copy the shipping extension never builds. */
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
@@ -953,7 +957,11 @@
 				SDKROOT = watchos;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				/* This bundle compiles NepalKitComplications/ because that folder
+				   is in its synchronised groups, so it mirrors the NepalKitComplications
+				   extension's nonisolated default rather than the app's: otherwise all
+				   52 tests would exercise a copy the shipping extension never builds. */
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NepalKitWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NepalKitWatch Watch App";
