@@ -90,9 +90,9 @@ The Watch app is in development and not part of the current download.
 
 NepalKit supports **1975 through 2084 Bikram Sambat**, corresponding to **April 13, 1918 through April 12, 2028 Gregorian**. Dates outside the bundled dataset are reported as unsupported.
 
-Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.0 is cross-checked against independent community tables and the Kathmandu Metropolitan City calendar. Tests check every supported New Year boundary in both directions.
+Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.1 is cross-checked against independent community tables. The Kathmandu Metropolitan City calendar was compared against the previous 2.0.0 row, and that comparison does not describe the current one. Tests check every supported New Year boundary in both directions.
 
-**2084 Bikram Sambat is projected.** The source record documents official publication through 2083. The shipped 2084 values agree across several sources but have not been officially confirmed. Years beyond the supported range are excluded.
+**2084 Bikram Sambat is projected.** The source record documents official publication through 2083. The shipped 2084 row is a provisional projection adopted pending comparison with the official Nepali Patro, and it deliberately differs from the community tables and the government calendar that the previous version agreed with. It follows a reported birthday and Chaitra recurrence, not an attested calendar or a verified astronomical calculation. [SOURCES.md](SOURCES.md) records the comparison and its limits. Years beyond the supported range are excluded.
 
 Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data licensing. For official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
@@ -114,14 +114,20 @@ To build the app and run the local checks from the repository root:
 ./scripts/check-all.sh
 ```
 
-The script builds the app, runs SwiftLint, executes the core and app-layer tests, checks the supporting scripts, and verifies the deployment target. Calendar provenance and release verification have separate checks documented in [CONTRIBUTING.md](CONTRIBUTING.md).
+The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs eleven gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run.
 
-To run either Swift test suite separately:
+To run the three Swift test suites separately:
 
 ```sh
 (cd NepalKitCore && swift test)
 ./scripts/run-app-tests.sh
+xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
+    -configuration Debug \
+    -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+    CODE_SIGNING_ALLOWED=NO
 ```
+
+The Watch tests run on a watchOS Simulator, as the directory listing below notes. That exact device and runtime have to be installed, or `xcodebuild` fails with a list of the destinations it can use.
 
 ```text
 NepalKitCore/                 Calendar dataset, conversion, formatting, and spoken dates
