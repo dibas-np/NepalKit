@@ -129,3 +129,21 @@ Setup: Developer Mode on; paired install via the **NepalKitWatch Watch App** sch
 ## Gates after this session
 
 Physical evidence from this worksheet establishes **device validation**. **Final feature acceptance** additionally requires an ADR-0001-compliant shared dataset (projected 2084 currently blocks it independently). App Store/TestFlight and public distribution remain a separate follow-on effort; nothing here prepares or claims them.
+
+## 2026-10-03 signed-build refresh
+
+The current Debug and Release Watch app and embedded extension rebuilt successfully for device architecture. Signatures, profile authorization, certificate membership/expiry, containment and Release fixture exclusion were inspected. See the [signed-build refresh](signed-build-refresh-2026-10-03.md) for artifact paths, exact commands and observed expiry dates. This refresh does not complete physical observations or rerun Watch runtime tests.
+
+### 2026-10-03 — refreshed Release build confirmation
+
+After the refreshed signed build and physical-install instructions, the user confirmed: "yeah everything works in release". Record this as user-reported successful Release installation and operation on the reference Watch. No installation blocker was reported.
+
+This broad confirmation does not separately enumerate VoiceOver output, every face/family/text-size combination, profile inspection on the installed device, or the expected/observed timing of an ordinary-path Nepal-midnight session. Those detailed worksheet observations remain unrecorded rather than being inferred from the general confirmation. Projected Bikram Sambat 2084 still independently blocks final feature acceptance pending ADR-0001 compliance.
+
+## Dataset 2.0.1 follow-up
+
+The user-approved provisional 2084 row is now updated in the shared core, with
+regression/native-runtime checks and a refreshed signed Release artifact. See
+the [provisional dataset update](provisional-2084-update.md) for exact values,
+results and current fingerprints. Historical dataset 2.0.0 evidence above is
+preserved as history. The projection still does not clear ADR-0001 acceptance.

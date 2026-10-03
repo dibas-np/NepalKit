@@ -1,6 +1,9 @@
 {
   "fill" : {
-    "automatic-gradient" : "display-p3:0.76567,0.20787,0.25146,1.00000"
+    "linear-gradient" : [
+      "display-p3:0.76569,0.20836,0.25034,1.00000",
+      "display-p3:0.53180,0.13392,0.18413,1.00000"
+    ]
   },
   "groups" : [
     {
@@ -21,13 +24,14 @@
           }
         },
         {
+          "hidden" : true,
           "image-name" : "background.svg",
           "name" : "background",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
-              0,
-              0
+              -32,
+              12
             ]
           }
         }

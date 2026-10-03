@@ -11,16 +11,19 @@
 /// not: it is not independently licensed. Read it before describing this data
 /// as verified or permissively sourced.
 ///
-/// Provenance: month rows reproduce the officially approved
-/// annual Nepali Patro. Three community tables were cross-checked
+/// Historical provenance: month rows were compared with reproductions of
+/// annual Nepali Patro. The projected 2084 row is not officially attested.
+/// Three community tables were cross-checked
 /// month-by-month (107/116 identical); all 9 disputes were arbitrated against
 /// published Patro reproductions (KMC government grids, Hamro Patro, Nepali
 /// Patro, mypatro, ashesh, rat32, khudra), with tithi-continuity, weekday, and
 /// month-handoff checks. New Year boundaries were checked against an independent
 /// anchor list over 1970-2090 — a wider window than this type ships, so that a
 /// table change could be detected from either end; two single-day typos in that
-/// list were corrected (1975, 2089). Range capped at 2084: the current officially
-/// published year; 2085+ excluded, no extrapolated years (ADR-0001).
+/// list were corrected (1975, 2089). Range includes provisional 2084 for
+/// development/testing; it does not satisfy ADR-0001. Dataset 2.0.1 adopts the
+/// user-approved 365-day projection pending official-calendar comparison.
+/// See SOURCES.md for the exact decision and inherited evidence limits.
 ///
 /// Dataset 2.0.0 narrows the lower bound to 1975. The five years 1970-1974
 /// were the only ones the cross-check did not corroborate against a second
@@ -112,14 +115,14 @@ public struct CalendarDataset: Sendable {
         return bsToAD(BSDay(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
     }
 
-    // Verified table: 1975-2084 BS (1918-04-13 through 2028-04-12 Gregorian).
+    // Table with provisional 2084: 1975-2084 BS, through 2028-04-12 Gregorian.
     // The table below is NOT covered by the SPDX identifier at the top of
     // this file. The code is GPL-3.0-or-later; the data is derived work whose
     // licence chain does not terminate in a clear grant, and no licence this
     // project applies can supply one. See SOURCES.md.
     // SPDX-License-Identifier: LicenseRef-see-SOURCES.md
     public static let v2 = CalendarDataset(
-        version: "2.0.0",
+        version: "2.0.1",
         years: [
             1975: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
             1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
@@ -230,7 +233,7 @@ public struct CalendarDataset: Sendable {
             2081: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
             2082: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             2083: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-            2084: [31, 31, 32, 31, 31, 30, 30, 30, 29, 30, 30, 30],
+            2084: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
         ],
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
         anchorAD: GADay(year: 2025, month: 4, day: 14),

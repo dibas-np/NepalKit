@@ -38,7 +38,8 @@ row is projected rather than published**, correcting a false claim this document
 previously made, and it initially contested that year by a day. The Kathmandu
 Metropolitan City calendar then settled it: it reproduces 2083 exactly and gives
 2084 identically to the shipped table, making the split three sources to one.
-**The shipped data is unchanged.** See "Why 2084 is the upper bound". It is
+**That earlier dataset 2.0.0 decision is superseded for 2084 by the provisional
+2.0.1 decision below.** See "Why 2084 is the upper bound". It is
 **MIT and not a fork**, so it is the best-licensed of the three and has no
 unlicensed ancestor — but it cannot be the base table (it does not cover
 1975–1978), and its own documentation records that its 2000–2100 rows were
@@ -47,6 +48,44 @@ picture and leaves the provenance question where it was. **No entry in this
 document has been removed on the strength of it**, because the shipped table
 still derives from the base source and saying otherwise would make this file
 false.
+
+## Current provisional 2084 decision (dataset 2.0.1)
+
+On 3 October 2026, the user explicitly selected this temporary development/testing
+projection pending comparison with the official 2084 Nepali Patro:
+
+`[31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30]`
+
+It totals 365 days. Relative to dataset 2.0.0, Jestha changes 31 → 32,
+Ashar 32 → 31, Shrawan 31 → 32, and Magh 30 → 29. Bhadra 22 now maps
+to 8 September 2027 using the existing year-start anchor; Chaitra remains
+30 days. The Gregorian supported interval remains 1918-04-13 through
+2028-04-12. Both Mac and Watch use this one shared compiled table. The dataset
+version is bumped to 2.0.1; the public major-version symbol remains v2.
+
+This is a user-approved candidate based on the reported birthday recurrence
+and Chaitra pattern, not a transcription of an officially approved calendar,
+not an output of a verified Drik calculation, and not a majority-source result.
+It differs from the earlier KMC/medic/askbuddie projection and also differs from
+the 366-day subeshb1 row, whose Chaitra has 31 days. Historical source comparisons
+below describe dataset 2.0.0 unless explicitly stated otherwise.
+
+2084 remains provisional development/testing data and does not satisfy
+ADR-0001. This change does not authorize public distribution, amend that policy
+or clear the Watch final-feature-acceptance blocker. When the official 2084
+Patro becomes available, compare all twelve month lengths and independently
+check New Year/month-start boundaries, record provenance, revise values as
+needed and version the shared dataset again. Do not assume the temporary row
+will match or impose a four-year extrapolation rule on future years.
+
+The 2084 regression fixtures now explicitly test this provisional decision in
+Projected2084Tests, rather than presenting it as external attestation in the
+published-calendar/arbitration suites. Historical anchored fixtures remain.
+The regenerated pinned-source baseline records 39 comparison pairs over 25
+unique months. All non-2084 differences are unchanged; the current row differs
+in four months from each of medic/askbuddie/go-bs and only Chaitra from
+subeshb1. The baseline records these changed differences honestly; a green comparison means the recorded observation holds,
+not that the projection is correct.
 
 ## The licence covers the code, not this table
 
@@ -202,8 +241,9 @@ twelve requests. Run it deliberately:
 scripts/check-kathmandu-calendar.py 2083 2084 2085
 ```
 
-**Results:** 2083 matches the shipped table exactly. **2084 matches the shipped
-table exactly.** 2085 is not shipped.
+**Historical results against dataset 2.0.0:** 2083 matched exactly. 2084
+matched that former projection exactly. The current 2.0.1 projection deliberately
+differs; that historical match does not describe it. 2085 is not shipped.
 
 **Licensing and permission remain unresolved, and are not asserted away.** No open
 licence is offered. `robots.txt` permitting crawling is not permission to
@@ -342,7 +382,7 @@ document's to make silently.
 **2085 and beyond are excluded outright.** `medic` does publish rows past 2084,
 and they are deliberately not shipped.
 
-### 2084 was contested, and the shipped row stands
+### Historical 2084 arbitration, superseded by dataset 2.0.1
 
 `subeshb1/Nepali-Date` (section 3) disagreed with the shipped 2084 row in five
 months, **and on the year total**:
@@ -380,15 +420,16 @@ a source that happens to agree. That makes the split **three sources to one**:
 | Kathmandu Metropolitan City | 365 — matches shipped | none stated |
 | `subeshb1/Nepali-Date` | **366** | MIT |
 
-So the shipped 2084 values are kept. **No change was made to the data.**
+That investigation retained the dataset 2.0.0 values at the time. The
+provisional 2.0.1 decision above subsequently changes four months.
 
 **What this does not establish.** A match is corroboration of the *values*, not
 proof of *official attestation*. KMC republishes the national calendar, but
 showing a future BS year is also exactly what a projection does — and 2084 does
 not begin until April 2027, so the site is showing it roughly seven months
 ahead. Only the Samiti can attest a year. The table above stands as corrected:
-**2084 is projected, not published**, and it is now projected *consistently* by
-three sources rather than contested by one.
+**The former 2084 row was projected, not attested**, with three sources
+corroborating that projection. This does not corroborate the revised 2.0.1 row.
 
 For the future, KMC's 2085 is `[31, 32, 31, 32, 30, 31, 30, 30, 29, 30, 30, 30]`
 (366 days), which matches the Hamro Patro / `nepali-datetime` pair independently

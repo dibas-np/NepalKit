@@ -22,11 +22,13 @@ import NepalKitCore
 ///
 /// Note what these assertions do *not* establish. ADR-0010 records that the whole
 /// table is still derived from one base table across its entire range, and that
-/// the base table carries no licence file. Confirming thirteen months against
+/// the base table carries no licence file. Confirming ten months against
 /// published calendars is not a licence position, and nothing here should be
-/// read as one. It is also a small sample: these thirteen months are externally
+/// read as one. It is also a small sample: these ten months are externally
 /// validated, and the other 102 supported years have no month-level assertion at
 /// all. That gap is recorded in ADR-0010 and is not closed by this file.
+/// The former 2084 cases were projected, not official attestations. Their
+/// replacement contracts live in Projected2084Tests and SOURCES.md.
 struct ArbitratedDisputeTests {
     /// Every arbitrated month decision, as a (year, month) pair. Presence is
     /// asserted below so the set cannot shrink silently.
@@ -34,9 +36,6 @@ struct ArbitratedDisputeTests {
         // Phase 1 — majority vote, confirmed against published calendars.
         packed(2082, 10), // Magh
         packed(2083, 6),  // Ashoj
-        packed(2084, 1),  // Baisakh
-        packed(2084, 2),  // Jestha
-        packed(2084, 3),  // Ashar
         // Phase 2 — post-review arbitration against published Patro.
         packed(1975, 5),  // Bhadra
         packed(1975, 6),  // Ashwin
@@ -60,15 +59,6 @@ struct ArbitratedDisputeTests {
         // 2083: KMC government grid settled that Ashoj has 31 days, not 30.
         .init(bs: BSDay(year: 2083, month: 6, day: 31), ad: GADay(year: 2026, month: 10, day: 17),
               label: "Ashar end 2083 (31 days)", source: "KMC government calendar grid"),
-        // 2084: Hamro Patro + mypatro + ashesh grids settled Baisakh 31,
-        // Jestha 31, Ashar 32. Baisakh was the one that had no assertion.
-        .init(bs: BSDay(year: 2084, month: 1, day: 31), ad: GADay(year: 2027, month: 5, day: 14),
-              label: "Baisakh end 2084 (31 days)", source: "Hamro Patro + mypatro + ashesh grids"),
-        .init(bs: BSDay(year: 2084, month: 2, day: 1), ad: GADay(year: 2027, month: 5, day: 15),
-              label: "Jestha 1 2084", source: "Hamro Patro + mypatro + ashesh grids"),
-        .init(bs: BSDay(year: 2084, month: 3, day: 1), ad: GADay(year: 2027, month: 6, day: 15),
-              label: "Ashar 1 2084", source: "Hamro Patro + mypatro + ashesh grids"),
-
         // -- Phase 2: post-review arbitration against published Patro --
         // 1975 kept the second table's row: the ashesh Bhadra/Ashwin pair is
         // Navami-to-Dwadashi tithi-continuous, and the Bhadra grid is missing

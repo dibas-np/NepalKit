@@ -348,8 +348,8 @@ def main():
                 print("  " + problem)
             sys.exit(1)
         total_diffs = sum(len(entry["diffs"]) for entry in observation["sources"].values())
-        print("baseline holds: %d sources, %d differing months "
-              "(all recorded arbitrations)"
+        print("baseline holds: %d sources, %d source/month comparison pairs "
+              "(all recorded in baseline)"
               % (len(observation["sources"]), total_diffs))
 
 

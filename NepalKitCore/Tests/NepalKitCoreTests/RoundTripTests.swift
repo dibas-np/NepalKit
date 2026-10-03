@@ -124,18 +124,18 @@ struct RoundTripTests {
         // (Hamro's own Falgun cells mislabel it 16; header + Poush grid agree on 17.)
         #expect(adToBS(GADay(year: 2024, month: 2, day: 29), in: .v2) == BSDay(year: 2080, month: 11, day: 17))
         #expect(weekday(of: BSDay(year: 2080, month: 11, day: 17), in: .v2) == 5)
-        // Feb 29 2028 (Tuesday) — Falgun 2084 spans Feb 13–Mar 13.
+        // Provisional 2084 contract: Feb 29 2028 is Tuesday; not an official anchor.
         #expect(adToBS(GADay(year: 2028, month: 2, day: 29), in: .v2) == BSDay(year: 2084, month: 11, day: 17))
         #expect(weekday(of: BSDay(year: 2084, month: 11, day: 17), in: .v2) == 3)
     }
 
     @Test func variableLengthMonthExtremes() {
-        // 32-day Ashar 2084 — Hamro Patro grid.
-        #expect(bsToAD(BSDay(year: 2084, month: 3, day: 32), in: .v2) == GADay(year: 2027, month: 7, day: 16))
+        // User-approved projection has 32-day Jestha, ending 15 June 2027.
+        #expect(bsToAD(BSDay(year: 2084, month: 2, day: 32), in: .v2) == GADay(year: 2027, month: 6, day: 15))
         // 29-day Mangsir 1989 — ashesh grid.
         #expect(bsToAD(BSDay(year: 1989, month: 8, day: 29), in: .v2) == GADay(year: 1932, month: 12, day: 14))
         // Day after each extreme still maps consecutively.
-        #expect(bsToAD(BSDay(year: 2084, month: 4, day: 1), in: .v2) == GADay(year: 2027, month: 7, day: 17))
+        #expect(bsToAD(BSDay(year: 2084, month: 3, day: 1), in: .v2) == GADay(year: 2027, month: 6, day: 16))
         #expect(bsToAD(BSDay(year: 1989, month: 9, day: 1), in: .v2) == GADay(year: 1932, month: 12, day: 15))
     }
 
@@ -146,7 +146,7 @@ struct RoundTripTests {
     }
 
     @Test func rangeMaximumBothDirections() {
-        // Chaitra 2084 — rat32 grid.
+        // Provisional 2084 contract; unchanged endpoint, not official attestation.
         #expect(bsToAD(BSDay(year: 2084, month: 12, day: 30), in: .v2) == GADay(year: 2028, month: 4, day: 12))
         #expect(adToBS(GADay(year: 2028, month: 4, day: 12), in: .v2) == BSDay(year: 2084, month: 12, day: 30))
     }

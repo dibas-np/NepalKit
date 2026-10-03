@@ -91,3 +91,15 @@ Result: **zero matches in both binaries.** The harness compiles only under `NEPA
 ## Remaining obligations of the physical session
 
 Interactive checks that automated runs cannot honestly substitute: complication rendering in full-color and accented modes on real faces, native glyph fit for the longest canonical month names (including combining marks) in actual family slots, large-text and Today scrolling behavior under real Dynamic Type, tap-to-Today per family, offline/phone-unavailable operation, alternate-timezone behavior, activation refresh, the real Nepal-midnight transition outside the debugger, and VoiceOver. The checklist and worksheet live in [physical-validation.md](physical-validation.md).
+
+## 2026-10-03 signed-build refresh
+
+The current Debug and Release Watch app and embedded extension rebuilt successfully for device architecture. Signatures, profile authorization, certificate membership/expiry, containment and Release fixture exclusion were inspected. See the [signed-build refresh](signed-build-refresh-2026-10-03.md) for artifact paths, exact commands and observed expiry dates. This refresh does not complete physical observations or rerun Watch runtime tests.
+
+## Dataset 2.0.1 follow-up
+
+The user-approved provisional 2084 row is now updated in the shared core, with
+regression/native-runtime checks and a refreshed signed Release artifact. See
+the [provisional dataset update](provisional-2084-update.md) for exact values,
+results and current fingerprints. Historical dataset 2.0.0 evidence above is
+preserved as history. The projection still does not clear ADR-0001 acceptance.
