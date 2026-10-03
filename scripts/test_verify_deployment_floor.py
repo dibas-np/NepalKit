@@ -47,6 +47,13 @@ PBXPROJ = (
 )
 
 RELEASE_SH = "#!/bin/sh\nDEPLOYMENT_TARGET=26.6\nARCHIVE=x\n"
+SANDBOX_EVIDENCE = (
+    "# readiness evidence (sandbox)\n"
+    "\n"
+    "| Item | Value |\n"
+    "| --- | --- |\n"
+    "| watchOS floor (sandbox) | {floor} |\n"
+)
 
 PACKAGE_SW = (
     "// swift-tools-version: 6.2\n"
@@ -269,21 +276,26 @@ class BuiltProductFloorTests(unittest.TestCase):
         self.assertIsNone(vdf.product_floor(Path("/nonexistent/Info.plist")))
 
 
-class DriftDetectionTests(unittest.TestCase):
-    """The bug, reproduced: one source out of step must be a non-zero exit."""
+class GateHarness:
+    """Sandbox plumbing shared by the suites that drive the gate's ``main``.
+
+    Patches the module's path constants at temporary files and restores them,
+    so a scenario can move any floor source without touching the repository.
+    """
 
     def _run(self, project: str, release: str, built: str | None,
-             package: str = PACKAGE_SW) -> tuple[int, str]:
+             package: str = PACKAGE_SW,
+             evidence: str | None = None) -> tuple[int, str]:
         captured = io.StringIO()
         code = 0
         with contextlib.redirect_stdout(captured):
-            with self._patch_sources(project, release, built, package):
+            with self._patch_sources(project, release, built, package, evidence):
                 code = vdf.main()
         return code, captured.getvalue()
 
     @contextlib.contextmanager
     def _patch_sources(self, project: str, release: str, built: str | None,
-                       package: str = PACKAGE_SW):
+                       package: str = PACKAGE_SW, evidence: str | None = None):
         original_project, original_release = vdf.PROJECT, vdf.RELEASE_SCRIPT
         # PACKAGE is absent until the gate reads the manifest, and this harness has
         # to work in that state too: the suite is written before the gate, so
@@ -291,6 +303,7 @@ class DriftDetectionTests(unittest.TestCase):
         # that has nothing to do with what they assert.
         had_package = hasattr(vdf, "PACKAGE")
         original_package = getattr(vdf, "PACKAGE", None)
+        original_evidence = vdf.EVIDENCE
         original_locate = vdf._locate_built_product
         original_plist = vdf.product_floor
         project_path = Path(tempfile.mkdtemp()) / "project.pbxproj"
@@ -303,6 +316,21 @@ class DriftDetectionTests(unittest.TestCase):
         # Patched alongside the other two so a test can move the package's floor
         # without editing the real manifest.
         vdf.PACKAGE = package_path
+        # The sandbox evidence records whatever watchOS floor the sandbox project
+        # declares, so the evidence cross-check passes drift scenarios for the
+        # drift they actually test. An explicit `evidence` overrides it, which is
+        # how the cross-check's own failure modes are exercised.
+        watch_floors = {value for _, value in vdf.watchos_project_floors(project)}
+        evidence_path = Path(tempfile.mkdtemp()) / "readiness-evidence.md"
+        evidence_path.write_text(
+            SANDBOX_EVIDENCE.format(
+                floor=sorted(watch_floors)[0] if watch_floors else "26.0"
+            ),
+            encoding="utf-8",
+        )
+        vdf.EVIDENCE = evidence_path
+        if evidence is not None:
+            evidence_path.write_text(evidence, encoding="utf-8")
         # Both halves have to be patched. Returning None from the locator made the
         # patched product_floor unreachable, so a test for the built product
         # silently exercised the "no build" path and passed for the wrong reason.
@@ -320,8 +348,12 @@ class DriftDetectionTests(unittest.TestCase):
                 vdf.PACKAGE = original_package
             else:
                 del vdf.PACKAGE
+            vdf.EVIDENCE = original_evidence
             vdf._locate_built_product = original_locate
             vdf.product_floor = original_plist
+
+class DriftDetectionTests(GateHarness, unittest.TestCase):
+    """The bug, reproduced: one source out of step must be a non-zero exit."""
 
     def test_all_sources_agreeing_passes(self) -> None:
         code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, "26.6")
@@ -536,6 +568,56 @@ class DriftDetectionTests(unittest.TestCase):
         self.assertNotIn("built product", output)
 
 
+class EvidenceCrossCheckTests(GateHarness, unittest.TestCase):
+    """The 26.6 lesson: the project agreeing with itself is not the whole job.
+
+    A floor that moved without its validation record moved stayed green under
+    every check, because each proved the sources agreed with each other and
+    none compared them with the record. These tests hold the comparison.
+    """
+
+    def test_an_evidence_record_behind_the_project_fails(self) -> None:
+        # The watch floor is 26.0; a record still describing 26.6 is the
+        # interlude's exact shape.
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6",
+            evidence=SANDBOX_EVIDENCE.format(floor="26.6"),
+        )
+        self.assertEqual(code, 1, "a record behind the floor must fail")
+        self.assertIn("disagree", output)
+        self.assertIn("readiness-evidence.md", output)
+
+    def test_an_evidence_record_without_a_floor_row_fails(self) -> None:
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6", evidence="# no row here\n",
+        )
+        self.assertEqual(code, 1, "a record that states no floor must fail")
+        self.assertIn("does not record", output)
+        self.assertIn("watchOS floor (ratified", output)
+
+    def test_a_missing_evidence_record_fails(self) -> None:
+        original = vdf.EVIDENCE
+        vdf.EVIDENCE = Path(tempfile.mkdtemp()) / "absent.md"
+        try:
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                code = vdf.main()
+        finally:
+            vdf.EVIDENCE = original
+        self.assertEqual(code, 1, "a missing record must fail loudly")
+        self.assertIn("is missing", captured.getvalue())
+
+    def test_the_recorded_floor_appears_in_the_success_output(self) -> None:
+        code, output = self._run(
+            watch_pbxproj(("Watch App Debug", "watchos", "26.0")),
+            RELEASE_SH, "26.6",
+        )
+        self.assertEqual(code, 0, output)
+        self.assertIn("(recorded)", output)
+
+
 class RealRepositoryTests(unittest.TestCase):
     """The committed tree, which is the state the gate actually runs on."""
 
@@ -591,7 +673,22 @@ class RealRepositoryTests(unittest.TestCase):
                          "and this value together - that is the fix this failure "
                          "is asking for, not a reason to doubt it")
 
-    def test_the_repository_package_floor_is_not_above_the_app(self) -> None:
+    def test_the_evidence_record_agrees_with_the_project_floor(self) -> None:
+        # The check the 26.6 interlude passed without: the floor the project
+        # declares and the floor the validation record states must be the same
+        # number, or the record describes a validation that never happened.
+        project = {value for _, value in
+                   vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
+        recorded = {value for _, value in
+                    vdf.evidence_recorded_floors(vdf.EVIDENCE.read_text(encoding="utf-8"))}
+        self.assertTrue(recorded,
+                        "the evidence record states no watchOS floor to compare")
+        self.assertEqual(project, recorded,
+                         "the project's watchOS floor and the evidence record's "
+                         "disagree; whichever moved, move the other in the same "
+                         "change")
+
+    def test_the_package_floor_is_not_above_the_app(self) -> None:
         text = vdf.PROJECT.read_text(encoding="utf-8")
         values = {value for _, value in vdf.watchos_project_floors(text)}
         self.assertEqual(len(values), 1, "the watchOS floor must be one value first")

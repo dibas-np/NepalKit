@@ -71,6 +71,13 @@ future target ever does inherit its ``SDKROOT``, this function will stop reading
 it, and the gate will go quiet rather than wrong - so a new watchOS target must
 declare its own ``SDKROOT``, as all six current ones do.
 
+The recorded floor is compared with ``==`` rather than trusted: the validation
+evidence doc states, in a toolchain-table row, the watchOS floor its results
+were produced at, and this gate requires that value to equal the project's. The
+26.6 interlude - a floor raised for two commits with every gate green - is why
+this check exists: consistency between sources is not consistency between the
+sources and the story told about them.
+
 ``NepalKitCore``'s manifest is compared with ``<=`` rather than ``==``: the
 package's platform is the library's *compile* floor, while the app's deployment
 target is a *product* claim about the oldest supported watch. They are allowed to
@@ -90,6 +97,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECT = REPO_ROOT / "NepalKit.xcodeproj" / "project.pbxproj"
 RELEASE_SCRIPT = REPO_ROOT / "scripts" / "package-release.sh"
 PACKAGE = REPO_ROOT / "NepalKitCore" / "Package.swift"
+EVIDENCE = REPO_ROOT / "docs" / "watch" / "readiness-evidence.md"
 
 WATCHOS_SDKROOT = re.compile(r"^\s*SDKROOT = watchos;")
 WATCHOS_TARGET = re.compile(r"WATCHOS_DEPLOYMENT_TARGET = ([0-9.]+);")
@@ -168,6 +176,27 @@ def watchos_project_floors(text: str) -> list[tuple[int, str]]:
             if match:
                 found.append((offset + 1, match.group(1)))
     return found
+
+
+def evidence_recorded_floors(text: str) -> list[tuple[int, str]]:
+    """The watchOS floor recorded in the validation evidence, with line numbers.
+
+    The evidence record states the floor its results were produced at as a
+    toolchain-table row of the form
+    ``| watchOS floor (ratified 2026-10-04) | 26.0 |``. That row is the
+    machine-readable half of the ratification record: the gate compares it
+    with the project so a floor that moves without moving its record fails
+    here instead of shipping green. The 26.6 interlude stayed green under
+    every check precisely because nothing made that comparison.
+    """
+    return [
+        (text[:match.start()].count("\n") + 1, match.group(1))
+        for match in re.finditer(
+            r"^\|\s*watchOS floor[^|\n]*\|\s*([0-9.]+)\s*\|\s*$",
+            text,
+            re.MULTILINE,
+        )
+    ]
 
 
 def package_watchos_floor(text: str) -> tuple[int, str] | None:
@@ -363,6 +392,18 @@ def _locate_built_product() -> Path | None:
     return fallback if fallback.is_file() else None
 
 
+def _display_path(path: Path) -> str:
+    """Short form for output: repo-relative when the path is inside the repo.
+
+    The sandbox tests point this gate at files in temporary directories, so a
+    bare ``relative_to`` would raise on exactly the paths the tests exercise.
+    """
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
 def main() -> int:
     try:
         declared, problem = declared_floors()
@@ -462,6 +503,47 @@ def main() -> int:
                 f"  usually not an available answer."
             )
             return 1
+        if EVIDENCE.exists():
+            recorded = evidence_recorded_floors(EVIDENCE.read_text(encoding="utf-8"))
+        else:
+            print(f"FAIL  {_display_path(EVIDENCE)} is missing, so the "
+                  "watchOS floor the validation record describes cannot be "
+                  "compared with the project's.")
+            return 1
+        if not recorded:
+            print(
+                f"FAIL  {_display_path(EVIDENCE)} does not record the "
+                "watchOS floor its results were produced at.\n"
+                "\n"
+                "  Add a toolchain-table row of the form\n"
+                "\n"
+                "      | watchOS floor (ratified <date>) | <version> |\n"
+                "\n"
+                "  so this gate can prove the record and the project agree. The\n"
+                "  26.6 interlude stayed green under every check because each\n"
+                "  proved the sources agreed with each other and none compared\n"
+                "  them with the record."
+            )
+            return 1
+        recorded_values = {value for _, value in recorded}
+        if recorded_values != {app_floor}:
+            print(
+                "FAIL  the watchOS floor the project declares and the one the "
+                "validation record states disagree:\n"
+            )
+            for line, value in recorded:
+                print(f"  watchOS {_display_path(EVIDENCE)}:{line}: {value}")
+            print(
+                f"  watchOS project.pbxproj (all watchOS targets): {app_floor}\n"
+                "\n"
+                "  The record is what a reader trusts when this gate passes, so a\n"
+                "  floor that moved without its record moving is the drift the\n"
+                "  26.6 interlude shipped. If the floor moved deliberately, update\n"
+                "  the record's row in the same change; if only the record moved,\n"
+                "  re-run the validation it describes before trusting it."
+            )
+            return 1
+        print(f"  ok    {_display_path(EVIDENCE)}: {app_floor} (recorded)")
         print(f"Deployment floors are consistent: macOS {floor}, "
               f"watchOS {app_floor} (package floor {package[1]}).")
     else:
