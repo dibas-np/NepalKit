@@ -34,15 +34,15 @@ enum ComplicationAccessibility {
     /// The boundary label: the full unavailable statement with its
     /// dataset-derived support context, even where compact visuals cannot fit
     /// the context.
-    static func boundaryLabel(_ boundary: WatchBoundaryComponents) -> String {
-        boundary.spokenDescription
+    static func boundaryLabel(_ boundary: WatchBoundaryComponents, gregorian: Bool = false) -> String {
+        guard gregorian else { return boundary.spokenDescription }
+        return "\(boundary.spokenDescription)\n\(boundary.spokenGregorian)"
     }
 
     /// The failure label: the full error statement plus the spoken Gregorian
     /// date only when one was actually resolved — never an invented date, and
     /// always Latin digits in speech.
     static func errorLabel(_ components: WatchErrorComponents) -> String {
-        guard let spokenGregorian = components.spokenGregorian else { return WatchDayCopy.failureFull }
-        return "\(WatchDayCopy.failureFull)\n\(spokenGregorian)"
+        components.spokenDescription
     }
 }

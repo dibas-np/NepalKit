@@ -62,6 +62,12 @@ execution point under the Mac scheme. No rendered-preview success is claimed.
 The About view compiles in the Mac build and regression harness. The original
 Watch scheme and physical destination were restored after verification.
 
+A subsequent native About-page check could not complete: the computer-use tool
+timed out twice selecting the built Mac app by its exact path. Selection by
+bundle identifier reported multiple installed/build copies and required an exact
+path. No native visual-verification success is claimed; the Dataset version row
+remains verified by source inspection, compilation and the regression harness.
+
 ## Refreshed signed artifact
 
 The updated Release app is at:

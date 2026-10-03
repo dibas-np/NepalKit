@@ -159,7 +159,7 @@ struct TodayBoundaryView: View {
                 .font(.body)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(boundary.spokenDescription)
+        .accessibilityLabel("\(boundary.spokenDescription)\n\(boundary.spokenGregorian)")
     }
 }
 
@@ -182,5 +182,6 @@ struct TodayErrorView: View {
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(components.spokenDescription)
     }
 }

@@ -147,3 +147,22 @@ regression/native-runtime checks and a refreshed signed Release artifact. See
 the [provisional dataset update](provisional-2084-update.md) for exact values,
 results and current fingerprints. Historical dataset 2.0.0 evidence above is
 preserved as history. The projection still does not clear ADR-0001 acceptance.
+
+### 2026-10-03 — additional user-reported validation
+
+The user reports that the other requested physical checks have passed, while
+asking how to perform activation refresh and identifying the real Nepal-midnight
+observation as pending. Record this as user-reported completion of the remaining
+layout/accessibility, offline, navigation and timezone checks; no per-case timing
+or screenshots were supplied. Activation refresh (worksheet 14) remains pending
+confirmation, and the ordinary-build real-midnight observation (worksheet 19)
+remains pending. This report does not attest the provisional 2084 dataset.
+
+For activation refresh, open Today shortly before Nepal midnight, note both
+dates, press the Digital Crown to return to the face without force-quitting,
+and reopen the existing app shortly after midnight. Today must show the new NPT
+day without a manual refresh or relaunch. Reopening within the same day is a
+lifecycle smoke check, not proof of stale-date correction across a day boundary.
+Use the ordinary Release build without a debugger; the fixed-instant fixture
+clock does not advance with real elapsed time and cannot prove this physical
+transition by waiting.

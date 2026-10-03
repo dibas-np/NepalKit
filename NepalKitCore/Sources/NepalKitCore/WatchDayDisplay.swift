@@ -64,6 +64,9 @@ public struct WatchBoundaryComponents: Sendable, Hashable {
     public let gregorianMonthName: String
     public let gregorianYear: String
 
+    /// The resolved Gregorian date formatted for speech with Latin digits.
+    public let spokenGregorian: String
+
     /// The complete accessible description with Latin digits, e.g.
     /// `Bikram Sambat unavailable, supported from 1975 BS`. Support context is
     /// retained even where the visuals cannot fit it.
@@ -82,6 +85,12 @@ public struct WatchErrorComponents: Sendable, Hashable {
     /// accessibility compositions. nil when no day was resolved — speech
     /// never reads the visual Devanagari digits.
     public let spokenGregorian: String?
+
+    /// The failure statement, followed only by genuinely resolved date context.
+    public var spokenDescription: String {
+        guard let spokenGregorian else { return WatchDayCopy.failureFull }
+        return "\(WatchDayCopy.failureFull)\n\(spokenGregorian)"
+    }
 }
 
 /// What a Watch surface renders for one day: a supported date, an expected
@@ -206,6 +215,7 @@ private func boundary(
         gregorianDay: formatNumber(day.gregorian.day, digits: settings.digits),
         gregorianMonthName: gregorianMonthName(day.gregorian.month),
         gregorianYear: formatNumber(day.gregorian.year, digits: settings.digits),
+        spokenGregorian: SpokenDate.ad(day.gregorian),
         spokenDescription: "\(WatchDayCopy.boundaryFull), \(spokenContext)"
     )
 }

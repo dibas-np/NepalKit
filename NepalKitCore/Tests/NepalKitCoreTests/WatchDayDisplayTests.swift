@@ -85,6 +85,7 @@ struct WatchDayDisplayTests {
         #expect(boundary.gregorianDay == "१२")
         #expect(boundary.gregorianMonthName == "April")
         #expect(boundary.gregorianYear == "१९१८")
+        #expect(boundary.spokenGregorian == "12 April 1918")
         #expect(boundary.spokenDescription == "Bikram Sambat unavailable, supported from 1975 BS")
     }
 
@@ -102,6 +103,7 @@ struct WatchDayDisplayTests {
         #expect(boundary.gregorianDay == "१३")
         #expect(boundary.gregorianMonthName == "April")
         #expect(boundary.gregorianYear == "२०२८")
+        #expect(boundary.spokenGregorian == "13 April 2028")
         #expect(boundary.spokenDescription == "Bikram Sambat unavailable, supported through 2084 BS")
     }
 

@@ -69,6 +69,8 @@ struct ComplicationPresentationTests {
         // Compact visuals show only "Unavailable"; the announced label keeps
         // the support context the visuals cannot fit.
         #expect(ComplicationAccessibility.boundaryLabel(boundary) == "Bikram Sambat unavailable, supported through 2084 BS")
+        #expect(ComplicationAccessibility.boundaryLabel(boundary, gregorian: true)
+            == "Bikram Sambat unavailable, supported through 2084 BS\n13 April 2028")
     }
 
     @Test func errorLabelAnnouncesResolvedGregorianContextWithLatinDigits() {

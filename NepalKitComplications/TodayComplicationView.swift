@@ -66,7 +66,7 @@ struct TodayRectangularComplication: View {
             Text("NepalKit")
         case .day(.supported(let components)):
             if dynamicTypeSize.watchLargeTextFallback {
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
                     Text(components.bikramSambatYear)
@@ -80,7 +80,7 @@ struct TodayRectangularComplication: View {
                 // which truncated the month. The day/month stands alone;
                 // the weekday joins the year on the secondary line, and the
                 // optional Gregorian piece leaves the visuals entirely.
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
                     Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
@@ -102,7 +102,7 @@ struct TodayRectangularComplication: View {
                     .foregroundStyle(.secondary)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+            .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary, gregorian: true))
         case .day(.calculationError(let components)):
             VStack(alignment: .leading) {
                 Text(WatchDayCopy.failureFull)
@@ -214,7 +214,7 @@ struct TodayCornerComplication: View {
                     Text("\(boundary.gregorianDay) \(boundary.gregorianMonthName)")
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary))
+                .accessibilityLabel(ComplicationAccessibility.boundaryLabel(boundary, gregorian: true))
         case .day(.calculationError(let components)):
             Text(WatchDayCopy.failureCompact)
                 .font(.caption)
