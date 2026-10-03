@@ -177,10 +177,10 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
 
 Prefer that recipe to leaving it to discovery. A discovered product is used only
 when it is **newer than the source that builds it**; an older one is refused,
-because those five tests exist to catch keys that reach the product — and a
+because those tests exist to catch keys that reach the product — and a
 product from last week is not what this source produces. Either way the run
 prints what it found and what it compared against. Without a usable product,
-five tests **skip with a reason** rather than pass silently. That is deliberate:
+the suite's tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
 
 ## Style

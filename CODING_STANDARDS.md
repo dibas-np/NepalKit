@@ -363,8 +363,9 @@ default:
 - `NEPAKIT_TAP_DIR` — a local clone of the Homebrew tap for `update-cask.sh`.
   Unset, it uses `../homebrew-tap`.
 - `NEPAKIT_BUILT_PLIST` — a built app's `Info.plist`, so `run-app-tests.sh`
-  checks the shipped product rather than skipping five tests. Unset, the script
-  discovers one and accepts it only if it is newer than the sources.
+  checks the shipped product rather than leaving InfoPlistKeysTests skipping.
+  Unset, the script discovers one and accepts it only if it is newer than the
+  sources.
 
 A new script that reads an environment variable adds it to `.env.example` in the
 same commit, with the same "unset means" line. A variable that appears in a
