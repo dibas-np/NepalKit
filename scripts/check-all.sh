@@ -35,6 +35,12 @@
 #     documents it separately, for that case.
 #   - The other `scripts/verify-*` and `scripts/package-release.sh`, which are
 #     release-time gates over packaged artifacts and a live feed.
+#   - Physical-device validation of the Watch targets. The last gate below builds
+#     all three Watch targets and runs the Watch suite, but on a simulator: a
+#     green run is not evidence that the app launches on an Apple Watch, that a
+#     complication renders in a real slot, or that VoiceOver reaches either.
+#     docs/watch/physical-validation.md owns that session, and nothing here
+#     stands in for it.
 #
 # It compiles the app and Xcode test bundle, including their actor-isolation
 # settings and hosted linkage, which the SwiftPM harness cannot check.
@@ -51,7 +57,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=10
+total=11
 ran=0
 summary=""
 current=""
@@ -139,3 +145,29 @@ gate "deployment floor consistency" bash -c '
     python3 "$1/scripts/test_verify_deployment_floor.py"
     python3 "$1/scripts/verify-deployment-floor.py"
 ' _ "$repo_root"
+# Last, and last in the file for a reason: this is the only gate that needs a
+# watchOS simulator runtime, so a contributor on a machine without one should
+# discover that from its own line rather than have it fail three gates earlier.
+# It is also the only gate that builds three products - the Watch app, the
+# complications extension and the Watch test bundle - and runs their tests, so
+# placing it anywhere earlier would make every gate after it queue behind a
+# simulator boot for evidence nobody reads first. Order in this script is
+# load-bearing - the header says so about gate 1 - so this is a decision, not a
+# default.
+#
+# Signing off, for the reason gate 1 gives: a pull-request job and a local run
+# must both need no credentials. Simulator builds are not signed anyway.
+#
+# The device name is hard-coded on purpose. A custom simulator device does not
+# exist on a CI runner or on a fresh clone, and the fallback this deliberately
+# does not have - probing for any watchOS device and running on whatever it
+# finds - would make the result depend on the machine rather than on the code.
+# If this name is missing, xcodebuild fails and prints the destinations it *can*
+# use, which is the right failure: silently skipping is the property
+# run-app-tests.sh:67-74 refuses, for the same reason.
+gate "Watch suite (watchOS Simulator)" xcodebuild test \
+    -project "$repo_root/NepalKit.xcodeproj" \
+    -scheme "NepalKitWatch Watch App" \
+    -configuration Debug \
+    -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+    CODE_SIGNING_ALLOWED=NO

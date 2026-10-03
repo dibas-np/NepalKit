@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these ten, in this order:
+It runs these eleven, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -98,6 +98,10 @@ python3 scripts/test_update_changelog.py    # 7. the changelog generator
 python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
 python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
 python3 scripts/verify-deployment-floor.py  # 10. the floor is one number everywhere
+xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
+    -configuration Debug \
+    -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+    CODE_SIGNING_ALLOWED=NO                   # 11. the Watch app and its complications
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -117,7 +121,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those ten are the direct consequence of gates that once reported green
+Two of those eleven are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -127,12 +131,14 @@ through a SwiftPM harness that excludes `NepalKitApp.swift` and
 at all. Plan 021 set `SWIFT_VERSION = 6.0` and shipped a file the app could not
 compile, and twenty-two plans passed every gate in this list.
 
-**The floor check is last** because it compares the sources against each other
-rather than trusting any one of them. The app target built at 26.6 while
+**The floor check runs after the build** because it compares the sources against
+each other rather than trusting any one of them. The app target built at 26.6 while
 `package-release.sh` said 26.0, so the appcast gate — which reads the floor from
 that file — reported `26.0 matches the app's floor` and passed, while the feed
 offered updates to systems that could not launch the build. Nothing in the list
-above it could have caught that, because they all agreed with each other.
+above it could have caught that, because they all agreed with each other. The Watch
+gate now runs after it too, and is last only because it needs a watchOS simulator
+runtime rather than because it depends on the floor.
 
 `check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
 that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:
