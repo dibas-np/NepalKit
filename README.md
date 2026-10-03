@@ -1,6 +1,6 @@
 <div align="center">
   <h1>NepalKit</h1>
-  <p>Today's Bikram Sambat date in your Mac's menu bar.</p>
+  <p>Today's Bikram Sambat date in your Mac's menu bar and on your Apple Watch.</p>
   <p>Nepal Time, Gregorian date conversion, and Siri and Shortcuts support in a native macOS app.</p>
 </div>
 
@@ -24,7 +24,7 @@
 - Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
 - Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
 - Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
-- An Apple Watch app and four complication styles for Today's date (in development).
+- A standalone Apple Watch app with rectangular, inline, circular, and corner complications.
 - Optional launch at login.
 
 Date conversion and clocks work offline. NepalKit has no account, analytics, or telemetry. The app uses network access for updates.
@@ -80,11 +80,15 @@ Date conversions currently work through Shortcuts. Siri cannot yet collect the c
   <img src="docs/img/watch-complications.png" alt="An Infograph watch face with NepalKit corner complications showing १७ असोज २०८३ along the bezel" width="200" />
 </p>
 
-NepalKit lives on the watch face with four complication styles — rectangular, inline, circular, and corner. Tapping a complication opens Today: the full Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day.
+The Watch app offers four complication styles: rectangular, inline, circular, and corner. Tapping a complication opens Today, showing the full Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day.
 
-The Watch app works offline and follows Nepal Time regardless of the watch's time zone. It requires watchOS 26 or later.
+The Watch app works offline, independently of the Mac and iPhone. It follows Nepal Time regardless of the watch's time zone and requires **watchOS 26.6 or later**.
 
-The Watch app is in development and not part of the current download.
+Today refreshes when the app becomes active and schedules a refresh for the next Nepal midnight. Complications have future entries scheduled at Nepal midnight; watchOS controls when they appear on the face.
+
+Large-text layouts preserve the primary date information, and VoiceOver announces dates using Latin digits and transliterated names. Dates outside the supported range show an unavailable state with support context; calculation failures have a separate error state.
+
+To install the Watch app from source, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. The Mac DMG installs only the macOS app.
 
 ## Supported dates and calendar data
 
