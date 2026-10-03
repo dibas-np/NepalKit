@@ -116,7 +116,7 @@ struct TodayRectangularComplication: View {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+            .accessibilityLabel(components.spokenDescription)
         }
     }
 }
@@ -149,7 +149,7 @@ struct TodayInlineComplication: View {
         case .day(.calculationError(let components)):
             Text(WatchDayCopy.failureCompact)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+                .accessibilityLabel(components.spokenDescription)
         }
     }
 }
@@ -184,7 +184,7 @@ struct TodayCircularComplication: View {
             Text(WatchDayCopy.failureCompact)
                 .font(.caption)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+                .accessibilityLabel(components.spokenDescription)
         }
     }
 }
@@ -225,7 +225,7 @@ struct TodayCornerComplication: View {
                     }
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(ComplicationAccessibility.errorLabel(components))
+                .accessibilityLabel(components.spokenDescription)
         }
     }
 }

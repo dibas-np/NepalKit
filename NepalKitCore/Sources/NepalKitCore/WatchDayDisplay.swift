@@ -67,9 +67,7 @@ public struct WatchBoundaryComponents: Sendable, Hashable {
     /// The resolved Gregorian date formatted for speech with Latin digits.
     public let spokenGregorian: String
 
-    /// The complete accessible description with Latin digits, e.g.
-    /// `Bikram Sambat unavailable, supported from 1975 BS`. Support context is
-    /// retained even where the visuals cannot fit it.
+    /// The unavailable statement and support context, spoken with Latin digits.
     public let spokenDescription: String
 }
 
@@ -86,7 +84,7 @@ public struct WatchErrorComponents: Sendable, Hashable {
     /// never reads the visual Devanagari digits.
     public let spokenGregorian: String?
 
-    /// The failure statement, followed only by genuinely resolved date context.
+    /// The failure statement and any resolved Gregorian date, formatted for speech.
     public var spokenDescription: String {
         guard let spokenGregorian else { return WatchDayCopy.failureFull }
         return "\(WatchDayCopy.failureFull)\n\(spokenGregorian)"

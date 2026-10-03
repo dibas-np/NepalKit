@@ -82,7 +82,7 @@ struct ComplicationPresentationTests {
             return
         }
 
-        #expect(ComplicationAccessibility.errorLabel(components) == "Date calculation failed\n13 April 2028")
+        #expect(components.spokenDescription == "Date calculation failed\n13 April 2028")
     }
 
     @Test func errorLabelWithoutContextSuppliesNoDate() {
@@ -94,7 +94,7 @@ struct ComplicationPresentationTests {
             return
         }
 
-        #expect(ComplicationAccessibility.errorLabel(components) == "Date calculation failed")
+        #expect(components.spokenDescription == "Date calculation failed")
     }
 
     // MARK: Longest canonical month representation
