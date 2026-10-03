@@ -97,6 +97,7 @@ python3 scripts/test_update_cask.py         # 6. downloaded app identity and ver
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
 python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
 python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
+python3 scripts/test_verify_deployment_floor.py
 python3 scripts/verify-deployment-floor.py  # 10. the floor is one number everywhere
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
@@ -111,7 +112,11 @@ guards a failure that is invisible from the outside — a bundle registered unde
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice.
+practice. Gate 10 runs the floor verifier's own suite before the verifier,
+because `scripts/test_verify_deployment_floor.py` is run by no other gate
+here, and in CI only by `.github/workflows/pages.yml`, which triggers only on
+`appcast.xml` changes pushed to `main`, or on demand. Without it, every test
+of that gate is dark on an ordinary pull request.
 
 The first lint run downloads SwiftLint 0.65.1 into the ignored `.build/tools`
 cache after checking its published checksum. For compiler-backed unused-import
