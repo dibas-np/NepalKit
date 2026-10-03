@@ -290,7 +290,7 @@ jobs:
     # the shipping architecture. The watchOS targets do not override ARCHS, so
     # this compiles both slices of the universal binary
     # `docs/watch/readiness-evidence.md` records - a `-target
-    # arm64_32-apple-watchos26.6` compile appears in its log - which the
+    # arm64_32-apple-watchos26.0` compile appears in its log - which the
     # simulator run above does not. What it still cannot establish is that the
     # result runs on a device. That is the physical session's, and it is listed
     # at `docs/watch/physical-validation.md`.
@@ -306,8 +306,9 @@ jobs:
       # the log alone rather than needing someone to have read this comment.
       #
       # "Is there a watchOS runtime" is NOT the right question, and answering it
-      # that way is how this job would have gone quietly green forever. Since the
-      # project's watchOS floor is 26.6, a 26.0 runtime is present but *unusable*:
+      # that way is how this job would have gone quietly green forever. With the
+      # ratified floor at 26.0, a 26.0 runtime is usable — but a runtime *older*
+      # than whatever floor the project declares is not:
       # a destination older than the deployment target cannot run the product, so
       # the suite would not execute while the job reported success. So the test is
       # a runtime at or above the floor, read from the project rather than
@@ -320,9 +321,11 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl list runtimes
+          # The strictest declared floor: a runtime that satisfies the lowest
+          # target but not the highest cannot run every watch product.
           floor="$(sed -n 's/.*WATCHOS_DEPLOYMENT_TARGET = \([0-9.]*\);.*/\1/p' \
-            NepalKit.xcodeproj/project.pbxproj | sort -u | tr '\n' ' ')"
-          echo "watchOS floor(s) declared in the project: $floor"
+            NepalKit.xcodeproj/project.pbxproj | sort -uV | tail -1)"
+          echo "watchOS floor declared in the project: $floor"
           usable=""
           runtimes="$(xcrun simctl list runtimes --json | python3 -c '
           import json, sys
@@ -331,7 +334,7 @@ jobs:
                   print(runtime["version"], runtime["identifier"])
           ' | sort -V)"
           while read -r version identifier; do
-            if [ -n "$version" ] && [ "$(printf '%s\n%s\n' "$version" "${floor%% *}" | sort -V | head -1)" = "${floor%% *}" ]; then
+            if [ -n "$version" ] && [ "$(printf '%s\n%s\n' "$version" "$floor" | sort -V | head -1)" = "$floor" ]; then
               usable="$usable$version $identifier"$'\n'
             fi
           done <<< "$runtimes"

@@ -24,7 +24,7 @@ Baseline: dataset 2.0.0 (Bikram Sambat 1975–2084; Gregorian 1918-04-13 through
 | macOS floor (unchanged) | 26.6 |
 | Language mode / concurrency | `SWIFT_VERSION = 6.0`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`, `SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES` |
 | Actor isolation | `MainActor` default on the Watch app and tests; `nonisolated` default on the complication extension (pure provider logic independent of the main actor) |
-| Dataset | `CalendarDataset.v2` version 2.0.0, compiled Swift table shared by all targets; BS 2084 is provisional development/testing data (separately blocks final acceptance) |
+| Dataset | `CalendarDataset.v2` version 2.0.0, compiled Swift table shared by all targets; BS 2084 is provisional development/testing data (separately blocks final acceptance). **Reconciliation 2026-10-04:** release 1.6.0 ships dataset 2.0.1, which retains the provisional 2084 row with revised month lengths recorded in `docs/watch/provisional-2084-update.md`; this record's runs predate that bump, and no claim here depends on the changed month lengths. |
 | Bundle identities | container `com.dibas.NepalKit.NepalKitWatch`; Watch app `…NepalKitWatch.watchkitapp`; extension `…watchkitapp.NepalKitComplications`; tests `com.dibas.NepalKit.NepalKitWatchTests` |
 | Signing | Team `CA89X9954L`, automatic; device-architecture Watch app and extension are signed with the team identity (codesign inspection) |
 

@@ -24,6 +24,21 @@ artifact with its own compatibility contract: narrowing the supported range is a
 breaking change to that contract and bumps the dataset version independently of
 any application release.
 
+## Products version in two tracks (2026-10-04)
+
+When the Apple Watch app shipped, the scheme became four tracks in principle and
+two in practice: the **Mac application** (1.6.0, build 8 — the Sparkle, cask and
+tag contract above binds only to it), and the **Watch products** (app and
+complication extension start at 0.1.0, build 1 — a fresh App Store identity that
+versions on its own cadence, since Watch apps distribute through the App Store
+with no Sparkle feed). `BuildNumberTests.versionLiteralsHaveOneHomeAndOneValue`
+governs each track per product: every copy of a literal must still agree within
+a product, but the Mac and Watch tracks may diverge by design. The Watch test
+bundle's versions are ungoverned — it ships in no store. The dataset version
+remains a third, cross-product concern: both platforms compile the same
+`CalendarDataset`, so its contract changes move through the shared core
+regardless of which product's release carries them.
+
 ## The application version is semantic, and the tag is derived from it
 
 `CFBundleShortVersionString` carries three numeric components. Git tags, the

@@ -657,6 +657,12 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				/* No watchOS deployment target here on purpose: this is the
+				   macOS app, which embeds no watch content, so it declares no
+				   watchOS floor. The key was an Xcode template leftover. The
+				   watchOS floor belongs to the blocks that declare themselves
+				   watchOS targets, and scripts/verify-deployment-floor.py
+				   enforces that they all agree with each other. */
 			};
 			name = Debug;
 		};
@@ -692,6 +698,9 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				/* No watchOS deployment target here on purpose - see the
+				   Debug configuration above. This target is the macOS app, not
+				   a watch product, so it declares no watchOS floor. */
 			};
 			name = Release;
 		};
@@ -919,6 +928,10 @@
 				SDKROOT = watchos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG NEPALKIT_WATCH_FIXTURES $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				/* This bundle compiles NepalKitComplications/ because that folder
+				   is in its synchronised groups, so it mirrors the NepalKitComplications
+				   extension's nonisolated default rather than the app's: otherwise all
+				   52 tests would exercise a copy the shipping extension never builds. */
 				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -944,6 +957,10 @@
 				SDKROOT = watchos;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				/* This bundle compiles NepalKitComplications/ because that folder
+				   is in its synchronised groups, so it mirrors the NepalKitComplications
+				   extension's nonisolated default rather than the app's: otherwise all
+				   52 tests would exercise a copy the shipping extension never builds. */
 				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 4;

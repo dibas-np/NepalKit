@@ -14,7 +14,7 @@ The engineering team needs an accepted, testable handoff that defines the Watch 
 
 ## Solution
 
-Plan a standalone Watch-only SwiftUI app targeting watchOS 26.6 or later and an embedded WidgetKit extension supporting accessoryRectangular, accessoryInline, accessoryCircular and accessoryCorner. Each complication opens the read-only Today screen, showing the full Bikram Sambat date and corresponding Gregorian date for the Nepal Time day.
+Plan a standalone Watch-only SwiftUI app targeting watchOS 26.0 or later and an embedded WidgetKit extension supporting accessoryRectangular, accessoryInline, accessoryCircular and accessoryCorner. Each complication opens the read-only Today screen, showing the full Bikram Sambat date and corresponding Gregorian date for the Nepal Time day.
 
 Both products use NepalKitCore and its existing shared compiled dataset. Display canonical Nepali names and Devanagari digits, with English Gregorian month names and complete accessible speech. Prepare deterministic tests, native layout checks and a development-signed app/extension for the user's Apple Watch SE 2 on watchOS 26, paired with iPhone 17 on iOS 27.
 
@@ -67,7 +67,7 @@ This spec is a planning deliverable. It defines future implementation and valida
 
 ## Implementation Decisions
 
-- Target watchOS 26.6 or later. Preserve macOS 26.6 app compatibility and existing package compatibility. Use Swift 6.4 or later, Swift 6 language mode and strict concurrency. SDK compilation must respect the minimum OS and is not minimum-runtime evidence.
+- Target watchOS 26.0 or later. Preserve macOS 26.6 app compatibility and existing package compatibility. Use Swift 6.4 or later, Swift 6 language mode and strict concurrency. SDK compilation must respect the minimum OS and is not minimum-runtime evidence.
 - Use Watch-only SwiftUI packaging with the template's iOS stub, no iPhone executable/UI, and an embedded watchOS WidgetKit extension. Do not add a legacy WatchKit code extension. Verify containment, extension safety, identities and actor isolation using current tooling.
 - Link NepalKitCore into both Watch code targets. Retain the compiled CalendarDataset table; no resource migration, decoder, App Group or separately maintained Watch table is needed.
 - The passing host tests are sufficient to begin a future implementation effort. Watch compilation, shared-dataset access in both target contexts and watchOS-relevant provider/calendar validation are implementation acceptance obligations.
@@ -148,4 +148,4 @@ Earlier continuation work started target/core changes outside the planning-only 
 
 ## Deployment floor amendment
 
-Commit `d8d5259` chose watchOS 26.6 for all Watch products. Earlier watchOS 26.0 runtime results are historical evidence, not validation of the current deployment floor.
+Commit `d8d5259` briefly set watchOS 26.6 for all Watch products; the user ratified **26.0** on 2026-10-04 and commit `3342b41` restored it, so the earlier watchOS 26.0 runtime results remain evidence at the current deployment floor.
