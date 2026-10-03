@@ -574,20 +574,22 @@ class RealRepositoryTests(unittest.TestCase):
         self.assertEqual(len(values), 1,
                          f"watchOS blocks disagree in the real project: {sorted(values)}")
 
-    def test_the_repository_watchos_blocks_declare_26_6(self) -> None:
+    def test_the_repository_watchos_blocks_declare_26_0(self) -> None:
         # A deliberate tripwire, and the only place a watchOS version is written
         # down in code - the gate itself must not hard-code one, because its job
         # is to prove the sources agree, not to decide what they should say.
         # So if the product floor ever moves, this failing is the intended signal
         # rather than a defect: update this value in the same change that moves
-        # every WATCHOS_DEPLOYMENT_TARGET in the project.
+        # every WATCHOS_DEPLOYMENT_TARGET in the project. 26.6 was a two-commit
+        # interlude; the user ratified 26.0 on 2026-10-04 (3342b41).
         values = {value for _, value in
                   vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
-        self.assertEqual(values, {"26.6"},
-                         "the watchOS product floor is 26.6, set by d92dea8. If the "
-                         "floor is moving, change every WATCHOS_DEPLOYMENT_TARGET "
-                         "in the project and this value together - that is the fix "
-                         "this failure is asking for, not a reason to doubt it")
+        self.assertEqual(values, {"26.0"},
+                         "the watchOS product floor is 26.0, ratified by the user "
+                         "after the d92dea8 interlude. If the floor is moving, "
+                         "change every WATCHOS_DEPLOYMENT_TARGET in the project "
+                         "and this value together - that is the fix this failure "
+                         "is asking for, not a reason to doubt it")
 
     def test_the_repository_package_floor_is_not_above_the_app(self) -> None:
         text = vdf.PROJECT.read_text(encoding="utf-8")
