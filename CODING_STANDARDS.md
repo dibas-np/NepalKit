@@ -181,6 +181,15 @@ render the same firm state copy, and the extension cannot import the app's
 core (`WatchDayCopy` in `NepalKitCore`). The macOS app's copy still belongs in
 `Strings` alone; don't move it.
 
+The same reasoning governs the Watch's shared *accessibility labels*, so
+`ComplicationAccessibility` lives in core for it: the two watchOS products
+cannot share a framework target and neither can see the other's files, which
+leaves `NepalKitCore` — already linked by both — as the only place a helper they
+must agree on byte for byte can live. A label a surface builds by hand is a
+duplicate that drifts silently, because the other product's suite goes on passing
+against its own copy. Do not hand-roll one in a watchOS target; if a label helper
+has no home yet, that is the argument for putting it in core too.
+
 App Intents metadata is the exception. Intent titles, descriptions, parameter
 summaries, phrases, and entity representations must be build-time literals at
 their declaration site: the toolchain extracts them from source, and a
@@ -331,7 +340,9 @@ read the skip as coverage.
 
 ## Commands
 
-- Everything: `scripts/check-all.sh`, the five local suites.
+- Everything: `scripts/check-all.sh`, the eleven local gates. That count is the
+  script's own `total`, and a green run prints `==> all 11 gates passed`, so the
+  number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
 - App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
   before connecting and is not the runner (see `README.md` and ADR-0005).

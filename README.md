@@ -130,7 +130,7 @@ xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
 The Watch tests run on a watchOS Simulator, as the directory listing below notes. That exact device and runtime have to be installed, or `xcodebuild` fails with a list of the destinations it can use.
 
 ```text
-NepalKitCore/                 Calendar dataset, conversion, formatting, and spoken dates
+NepalKitCore/                 Calendar dataset, conversion, formatting, spoken dates, and Watch display
 NepalKit/                     SwiftUI menu-bar app, settings, models, and App Intents
 NepalKitTests/                App-layer tests
 NepalKitWatch Watch App/      SwiftUI Watch app, Today screen, and lifecycle model

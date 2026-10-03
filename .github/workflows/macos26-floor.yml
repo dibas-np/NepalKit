@@ -311,6 +311,9 @@ jobs:
       # the suite would not execute while the job reported success. So the test is
       # a runtime at or above the floor, read from the project rather than
       # hard-coded here — which also means this step follows the floor if it moves.
+      # It publishes the runtime it chose as `runtime`, so the suite's destination
+      # follows that same choice instead of naming a runtime this runner may not
+      # have.
       - name: Record whether a usable watchOS simulator runtime is available
         id: watchos
         run: |
@@ -329,6 +332,11 @@ jobs:
           if [ -n "$usable" ]; then
             echo "usable watchOS runtime(s):$usable"
             echo "available=true" >> "$GITHUB_OUTPUT"
+            # The newest usable runtime, published so the destinations below name
+            # the same runtime this step accepted. Accepting a runtime and then
+            # pinning a different one is how a runner holding only the floor
+            # runtime passed discovery and failed the destination.
+            echo "runtime=$(printf '%s\n' $usable | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run, and a green result here says nothing about the Watch targets."
@@ -342,7 +350,7 @@ jobs:
             -project NepalKit.xcodeproj \
             -scheme "NepalKitWatch Watch App" \
             -configuration Debug \
-            -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
+            -destination "platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=${{ steps.watchos.outputs.runtime }}" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: The Watch targets at least build for device architecture

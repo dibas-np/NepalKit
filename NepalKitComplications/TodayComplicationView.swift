@@ -66,6 +66,10 @@ struct TodayRectangularComplication: View {
             Text("NepalKit")
         case .day(.supported(let components)):
             if dynamicTypeSize.watchLargeTextFallback {
+                // Leading is 2 rather than the default 8, and deliberately so: a
+                // real Modular middle slot admits two lines and no more, so both
+                // this large-text pair and the weekday-year pair below are held
+                // to that same two-line budget instead of to the default gap.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
@@ -79,7 +83,10 @@ struct TodayRectangularComplication: View {
                 // the first attempt put the weekday on the day/month line —
                 // which truncated the month. The day/month stands alone;
                 // the weekday joins the year on the secondary line, and the
-                // optional Gregorian piece leaves the visuals entirely.
+                // optional Gregorian piece leaves the visuals entirely. Same
+                // leading of 2 as the large-text fallback above, for the same
+                // reason: which of the two compositions runs, the slot's height
+                // budget does not change.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
