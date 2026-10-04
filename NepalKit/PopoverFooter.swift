@@ -29,7 +29,7 @@ struct PopoverFooter: View {
         // The container is a wrapping view, not a modifier — it has to *be* the
         // parent of the content it groups.
         //
-        // It wraps the whole footer rather than just the two buttons, so the
+        // It wraps the whole footer rather than only the buttons, so the
         // destination label sits inside the same sampling region and the buttons'
         // refraction of the text beside them is consistent. `spacing` matches the
         // `HStack` inside, which is what makes the grouping read as one group
@@ -74,10 +74,10 @@ struct PopoverFooter: View {
     /// Keeps its text, unlike the gear beside it — a glyph alone is not
     /// *download this app's next version*, and this is the one footer button whose
     /// consequence is replacing the running program. `.glassProminent`, which the
-    /// Quit button's note reserves for "the one action a surface wants you to
-    /// take": while it is on screen this is exactly that, where the gear opens a
-    /// window you choose to look at, and mistaking one for the other costs a click
-    /// rather than a wrong install.
+    /// Quit button's note reserves for "the one action a surface wants you to take":
+    /// while it is on screen this is exactly that, where the gear opens a window
+    /// you choose to look at, and mistaking one for the other costs a click rather
+    /// than a wrong install.
     private var updateButton: some View {
         Button(Strings.updateButtonLabel, systemImage: Symbols.update, action: updates.checkNow)
             .buttonStyle(.glassProminent)
@@ -131,12 +131,14 @@ struct PopoverFooter: View {
     /// (NepalKitApp.swift) so it works when the app is frontmost without the
     /// popover open. This is the discoverable control for the same action.
     ///
-    /// `.glass`, not `.glassProminent`. Prominent glass is for the one action a
-    /// surface wants you to take; Quit is the less likely of the two, and tinting
-    /// it would outrank Settings for someone who opened the app to read a date. It
-    /// being the only control that ends the process argues for it being
-    /// unmistakable — which is carried by the text and the hint, not by making the
-    /// process-ending one the visually louder of the pair.
+    /// `.glass`, not `.glassProminent`. Prominent glass is for the
+    /// one action a surface wants you to take, and while an update is waiting that
+    /// action is Update's — see its note, which is why it takes the prominent
+    /// treatment and this one does not. Quit being the only control that ends the
+    /// process argues for it being unmistakable — which is carried by the text and
+    /// the hint, not by tinting it: a louder Quit would outrank the gear for
+    /// someone who opened the app to read a date, which is the wrong priority for
+    /// the least likely of the three.
     private var quitButton: some View {
         Button(Strings.quitFooterLabel, action: AppTermination.quit)
             .buttonStyle(.glass)

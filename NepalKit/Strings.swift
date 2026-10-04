@@ -110,12 +110,13 @@ nonisolated enum Strings {
     /// again is the visual equivalent of "NepalKit" appearing twice in the menu
     /// bar. Still announced as `quitLabel` by the caller.
     static let quitFooterLabel = "Quit"
-    /// Spoken purposes for the footer's buttons. A symbol with no accessible name
-    /// is the worst case in the whole app: a screen-reader user hears "button"
-    /// twice and cannot tell the actions apart, while a sighted user sees two
-    /// distinct glyphs and reads them instantly. So the Settings button is drawn
-    /// as a bare glyph and still *named* here — that is the whole reason the
-    /// string survives the text being removed.
+    /// Spoken purposes for the two footer buttons that are always on screen. The
+    /// update button's hint lives further down, with its own reasoning. A symbol
+    /// with no accessible name is the worst case in the whole app: a screen-reader
+    /// user hears "button" twice and cannot tell the actions apart, while a sighted
+    /// user reads the marks instantly. So the Settings button is drawn as a bare
+    /// glyph and still *named* here — that is the whole reason the string survives
+    /// the text being removed.
     static let settingsHelp = "Opens the Settings window"
     static let quitHelp = "Quits NepalKit"
     /// Unused as drawn: the footer's Settings button shows the glyph alone. Kept
