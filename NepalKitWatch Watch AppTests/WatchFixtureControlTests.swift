@@ -60,6 +60,27 @@ struct WatchFixtureControlTests {
         #expect(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureFailAt", "-1"]) == nil)
     }
 
+    @Test func unknownPrefixedNameFailsClosed() {
+        #expect(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureUnknown", "value"]) == nil)
+        #expect(WatchFixtureControl.fixture(arguments: [
+            "-NepalKitFixtureScenario", "midnightApproach",
+            "-NepalKitFixtureUnknown", "value",
+        ]) == nil)
+        #expect(WatchFixtureControl.fixture(arguments: [
+            "-NepalKitFixtureUnknown", "value",
+            "-NepalKitFixtureScenario", "midnightApproach",
+        ]) == nil)
+    }
+
+    @Test func ordinaryArgumentsLeaveAValidFixtureIntact() throws {
+        let fixture = try #require(WatchFixtureControl.fixture(arguments: [
+            "-other", "args",
+            "-NepalKitFixtureScenario", "midnightApproach",
+            "--verbose",
+        ]))
+        #expect(fixture.instant == (try Date("2026-09-26T18:10:00Z", strategy: .iso8601)))
+    }
+
     @Test func failureOffsetRequiresAFixedInstant() {
         #expect(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureFailAt", "3"]) == nil)
     }

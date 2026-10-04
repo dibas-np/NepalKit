@@ -110,8 +110,7 @@ enum WatchFixtureControl {
         case "-NepalKitFixtureError":
             guard applyError(value, to: &fixture) else { return false }
         default:
-            // An unrecognized fixture-prefixed argument is inert.
-            break
+            return false
         }
         return true
     }
