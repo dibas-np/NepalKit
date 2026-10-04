@@ -7,8 +7,16 @@ The number, what it means, and why it is not a target yet.
 | Suite | Files | Lines | Regions | Functions |
 | --- | --- | --- | --- | --- |
 | `NepalKitCore` — the calendar engine | 9 | **85.62%** | 78.30% | 81.43% |
-| `NepalKit` — the app layer | 43 | **34.79%** | 53.44% | 53.85% |
+| `NepalKit` — the app layer, plus the core its harness links | 43 | **34.79%** | 53.44% | 53.85% |
 | **Combined** | **52** | **43.59%** | **57.74%** | **58.62%** |
+
+One caveat about that `Files` column: it is what the gate measured, not an
+app-only count. The app-test harness links `NepalKitCore`, so the app layer's
+row also carries core's 9 files and 452 lines — 43 files and 2,992 lines in all.
+The app layer on its own is 34 files and 2,540 executable lines, **30.12%**
+covered. Core's files therefore sit in both suite rows, and the combined row
+counts them twice. Wherever this document says "the app layer", the app-only
+figures are meant.
 
 Reproduce it:
 
@@ -24,21 +32,23 @@ point:
 - The calendar engine — conversion, month lengths, formatting, spoken dates — is
   **85.62%** covered, because it is pure logic with an exhaustive round-trip
   suite. This is the part where a bug is a wrong date.
-- The app layer is **34.79%** covered, because most of it is SwiftUI.
+- The app layer is **30.12%** covered, because most of it is SwiftUI.
 
-The app layer holds 43 of the 52 instrumented files — 83% — and returns 34.79%
-line coverage where the calendar engine returns 85.62%. A single combined
-percentage hides that the part which is easy to get wrong is well covered and
-the part which is mostly declarative layout is not.
+The app layer holds 85% of the executable lines the two suites instrument —
+2,540 of 2,992 — and returns 30.12% line coverage where the calendar engine
+returns 85.62%. A single combined percentage hides that the part which is easy
+to get wrong is well covered and the part which is mostly declarative layout is
+not.
 
 ## Why there is no target
 
 The OpenSSF badge asks for 80% and 90% statement coverage and 80% branch
-coverage. This project is at 43.59% / 57.74% / 58.62%. Those answers are `Unmet`
+coverage. This project is at 43.59% / 43.59% / 57.74%. Those answers are `Unmet`
 and writing a target above the truth would be a gate that fails every day.
 
 **The gap is not a chore; it is a refactor.** The six files below hold 1,198
-lines — 47% of the app layer — and every one of them is at exactly 0%:
+lines — 47% of the app layer's 2,540 executable lines — and every one of them is
+at exactly 0%:
 
 | File | Lines |
 | --- | --- |
@@ -97,8 +107,8 @@ column and reports a plausible number. This script parses positionally and
 asserts the field count.
 
 There is a third, subtler one: an earlier version of the subject-file filter used
-an absolute path, so it silently counted 9 of the app layer's 43 files and
-reported 62.65% where the truth is 34.79%. A coverage tool that measures the
+an absolute path, so it silently counted 9 files instead of the app layer's, and
+reported 62.65% where the truth is 30.12%. A coverage tool that measures the
 wrong files is worse than none, because the number looks real.
 
 ## Branches are not measured
