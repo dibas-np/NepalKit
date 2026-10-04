@@ -9,7 +9,7 @@
 # 10 and 11 of a fourteen-gate ladder that only existed when a human ran
 # `./scripts/check-all.sh` locally.
 #
-# That is precisely the failure CONTRIBUTING.md names: "a structural check that
+# That is precisely the failure .github/CONTRIBUTING.md names: "a structural check that
 # only runs when someone remembers to run it is not a gate." A gate nobody runs
 # is a comment. This workflow is what makes the claim on line 163 of that file
 # true rather than aspirational — the same reason dco.yml exists, for the same

@@ -44,7 +44,7 @@ narrowing is a legitimate outcome of that process rather than a failure of it.
 ### A second maintainer
 
 Not a feature, but the item most likely to change what this project can
-guarantee. See [GOVERNANCE.md](../GOVERNANCE.md) and finding F3 in
+guarantee. See [GOVERNANCE.md](../.github/GOVERNANCE.md) and finding F3 in
 [docs/security-assessment.md](security-assessment.md).
 
 *Blocked on:* a person willing to do it. Several badge criteria and one real

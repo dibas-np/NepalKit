@@ -31,7 +31,7 @@
 #
 #   - `scripts/verify-data-sources.py`, the provenance gate. It needs network
 #     access and it is the first thing to reach for when the calendar table
-#     changes; CONTRIBUTING.md's "The one thing that matters most" section
+#     changes; .github/CONTRIBUTING.md's "The one thing that matters most" section
 #     documents it separately, for that case.
 #   - The other `scripts/verify-*` and `scripts/package-release.sh`, which are
 #     release-time gates over packaged artifacts and a live feed.
