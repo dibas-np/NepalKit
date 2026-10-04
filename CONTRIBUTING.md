@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these eleven, in this order:
+It runs these thirteen, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -97,12 +97,14 @@ python3 scripts/test_update_cask.py         # 6. downloaded app identity and ver
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
 python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
 python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
+python3 scripts/test_verify_bestpractices_json.py  # 10. the badge entry's own checks
+python3 scripts/verify-bestpractices-json.py # 11. the badge entry is well-formed
 python3 scripts/test_verify_deployment_floor.py
-python3 scripts/verify-deployment-floor.py  # 10. the floor is one number everywhere
+python3 scripts/verify-deployment-floor.py  # 12. the floor is one number everywhere
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 11. the Watch app and its complications
+    CODE_SIGNING_ALLOWED=NO                   # 13. the Watch app and its complications
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -112,7 +114,7 @@ guards a failure that is invisible from the outside — a bundle registered unde
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice. Gate 10 runs the floor verifier's own suite before the verifier,
+practice. Gate 12 runs the floor verifier's own suite before the verifier,
 because `scripts/test_verify_deployment_floor.py` is run by no other gate
 here. CI runs both commands too: `.github/workflows/macos26-floor.yml` runs
 them on every pull request after its Mac build, so the checker compares the
@@ -129,7 +131,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those eleven are the direct consequence of gates that once reported green
+Two of those thirteen are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -148,12 +150,19 @@ above it could have caught that, because they all agreed with each other. The Wa
 gate now runs after it too, and is last only because it needs a watchOS simulator
 runtime rather than because it depends on the floor.
 
-`check-all.sh` deliberately does **not** run the `verify-*` scripts. The one
-that matters is `python3 scripts/verify-data-sources.py`, the provenance gate:
-it needs network access, and it is the first thing to reach for whenever the
-calendar table, the supported range or [SOURCES.md](SOURCES.md) changes — see
-"The one thing that matters most" above. The others are release-time gates over
-packaged artifacts and the published feed. CI runs all of them on any change
+`check-all.sh` does **not** run `verify-data-sources.py`, and that exclusion is
+deliberate: the provenance gate needs network access, and it is the first thing
+to reach for whenever the calendar table, the supported range or
+[SOURCES.md](SOURCES.md) changes — see "The one thing that matters most" above.
+The other release-time verifiers are likewise absent, because they run over
+packaged artifacts and the published feed rather than over a checkout.
+
+There is one `verify-*` script in the list, and the exception is worth naming so
+the rule above does not read as broader than it is:
+`scripts/verify-bestpractices-json.py` is gate 11 because it needs nothing but the
+committed entry file, and a structural check that only runs when someone
+remembers to run it is not a gate. Everything that needs the network, a
+credential, or a built artifact stays out. CI runs all of them on any change
 that touches them, so this command is the local half and not a replacement.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
@@ -222,7 +231,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 11 below and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 13 below and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
@@ -238,7 +247,7 @@ commands:
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** It is the same
-  eleven gates CI runs, and a red local run is a faster red than a red one after
+  thirteen gates CI runs, and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome
@@ -263,6 +272,13 @@ it.
   conflated.
 
 ## Decisions, not just code
+
+Changing an OpenSSF Best Practices answer in
+[`.bestpractices.json`](.bestpractices.json) is the same kind of change: the
+justification has to point at evidence in this repository, not assert a fact. See
+[docs/bestpractices-entry.md](docs/bestpractices-entry.md) for which answers a
+ruleset or workflow change can silently invalidate — relaxing branch protection
+is a small diff that makes a `Met` untrue without touching that file.
 
 Anything that changes a supported-range boundary, the licence, the data
 provenance, or a platform requirement needs a decision record in
