@@ -18,7 +18,12 @@ ROOT="${0:A:h:h}"
 # The repository URL has one home: AppMetadata.defaultRepositoryURL. Deriving
 # it here keeps the generated feed's enclosure URLs and link from outliving a
 # repository move that updated the app and the README but not this script.
-REPO_URL="$(sed -n 's/.*defaultRepositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | head -1)"
+# `awk 'NR == 1'` rather than `head -1`: sed writing into a pipe head has already
+# closed takes SIGPIPE, and this script runs under `set -euo pipefail`. On a
+# one-match file sed has usually finished by then, so it has never bitten, but the
+# safe form costs nothing and keeps the pipeline shape identical to the two other
+# places this was fixed.
+REPO_URL="$(sed -n 's/.*defaultRepositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | awk 'NR == 1 { print }')"
 [[ -n "$REPO_URL" ]] || { echo "could not read defaultRepositoryURL from NepalKit/AppMetadata.swift" >&2; exit 1; }
 ARCHIVES_DIR="${1:?usage: $0 <archives-dir> [download-url-prefix]}"
 # Default assumes a GitHub release tag matching the marketing version. Override
