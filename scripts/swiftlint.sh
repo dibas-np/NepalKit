@@ -17,7 +17,13 @@ if [ ! -x "$tool" ]; then
     trap 'rm -rf "$temporary_dir"' EXIT
     archive="$temporary_dir/SwiftLintBinary.artifactbundle.zip"
     url="https://github.com/realm/SwiftLint/releases/download/$version/SwiftLintBinary.artifactbundle.zip"
-    curl --fail --location --silent --show-error "$url" --output "$archive"
+    # `--proto '=https'` is load-bearing next to `--location`, not decoration:
+    # -L follows a redirect to whatever scheme the response names, including
+    # plain http, and a downgrade would move this download out of TLS. The
+    # checksum below would still have something to compare against, so a
+    # downgraded fetch that happens to match would be indistinguishable from a
+    # good one. Refuse the downgrade instead of trusting the host not to ask.
+    curl --fail --location --proto '=https' --tlsv1.2 --silent --show-error "$url" --output "$archive"
     actual_checksum="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
     if [ "$actual_checksum" != "$expected_checksum" ]; then
         echo "SwiftLint $version archive checksum did not match" >&2

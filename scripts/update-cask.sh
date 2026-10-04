@@ -77,7 +77,14 @@ trap cleanup EXIT
 trap 'cleanup; exit 129' HUP
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
-curl -fsSL -o "$TMP/NepalKit.dmg" "$DMG_URL" || {
+# `--proto '=https'` is what makes `-L` safe here. A release asset is served by a
+# redirect to objects.githubusercontent.com, and -L follows a redirect to whatever
+# scheme the response names: without the restriction, an http redirect would take
+# this fetch out of TLS, and every gate below - `hdiutil verify`, Gatekeeper, the
+# stapler, the sha256 that becomes the cask's trust anchor - would then be
+# asserting about bytes that crossed the network in clear text. The digest is
+# computed over whatever arrived, so nothing downstream would notice.
+curl -fsSL --proto '=https' --tlsv1.2 -o "$TMP/NepalKit.dmg" "$DMG_URL" || {
     echo "could not download the DMG for $VERSION." >&2
     echo "Is the release tagged and does it have NepalKit.dmg attached?" >&2
     exit 1

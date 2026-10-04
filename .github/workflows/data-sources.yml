@@ -74,8 +74,28 @@ jobs:
           print(block.group("version"))
           PY
           )
-          LATEST=$(curl -sf https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \
-            | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
+          # Downloaded to a file, then read from it. Piping the response into an
+          # interpreter hands that response the runner's credentials and its
+          # network the moment it arrives, and a non-JSON response - a rate-limit
+          # page, say - arrives as a traceback instead of as a statement of what
+          # went wrong. Nothing is executed from the network here: the response is
+          # data, and it is parsed as data.
+          RESPONSE="$RUNNER_TEMP/sparkle-latest-release.json"
+          curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
+            https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \
+            --output "$RESPONSE"
+          LATEST=$(python3 - "$RESPONSE" <<'PY'
+          import json, sys
+          try:
+              with open(sys.argv[1], encoding="utf-8") as source:
+                  payload = json.load(source)
+          except (OSError, ValueError) as error:
+              sys.exit(f"could not read the Sparkle release response: {error}")
+          if not isinstance(payload, dict) or "tag_name" not in payload:
+              sys.exit(f"the Sparkle release response carries no tag_name: {payload}")
+          print(payload["tag_name"].lstrip("v"))
+          PY
+          )
           echo "pinned=$PINNED latest=$LATEST"
           if [ "$PINNED" != "$LATEST" ]; then
             echo "::notice::Sparkle $LATEST is available; the pin is $PINNED. ADR-0012 owns the bump decision."
