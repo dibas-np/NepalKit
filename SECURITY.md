@@ -1,5 +1,15 @@
 # Security Policy
 
+Supporting documents, so the short answers here have somewhere to point:
+
+| Question | Where the full answer is |
+| --- | --- |
+| What is in scope, and what is not | [Threat model](docs/threat-model.md) |
+| What has actually been reviewed, and what was found | [Security assessment](docs/security-assessment.md) |
+| What secrets exist, where they live, how they are rotated | [Secrets policy](docs/secrets-policy.md) |
+| What the project depends on, and what happens when one is vulnerable | [Dependencies](docs/dependencies.md) |
+| How to check that a release you downloaded is ours | [Release verification](docs/release-verification.md) |
+
 ## Supported versions
 
 Security fixes land on the latest release. There is no long-term-support
@@ -59,14 +69,37 @@ and can check for updates over HTTPS. It holds no credentials, sends no
 analytics, and stores preferences in its own container.
 
 The parts worth hardening are the **updater** — which verifies an EdDSA signature
-before installing anything — and the **sandbox entitlements**, which grant
-outgoing network access and Mach lookups for Sparkle's two XPC services. If you
-find a way to make the app install an update that fails signature verification,
-that is the finding that matters most.
+before installing anything, and refuses an update feed that carries no signature
+at all — and the **sandbox entitlements**, which grant outgoing network access
+and Mach lookups for Sparkle's two XPC services. If you find a way to make the
+app install an update that fails signature verification, that is the finding that
+matters most.
+
+The full analysis, including the actors, the trust boundaries, and each threat
+with what stands in front of it, is in
+[docs/threat-model.md](docs/threat-model.md). Read it before reporting something
+that assumes a network capability the app does not have — the absence of any
+network call but the update check is the reason this project's threat model is
+short, and it is a claim worth trying to falsify.
 
 ## Disclosure
 
-Security advisories for this project are tracked with GitHub Security
-Advisories, and linked from the release notes. The repository is public, so
-those advisories can be filed from the repository's own Security tab rather than
-by email.
+**Where a published advisory lives.** Security advisories for this project are
+tracked as GitHub Security Advisories on this repository, so they are readable
+without an account:
+
+<https://github.com/dibas-np/NepalKit/security/advisories>
+
+A confirmed issue gets an advisory there **before** it is described publicly
+anywhere, and the advisory names the affected versions, how a user can tell
+whether they are affected, and what to do. Release notes link to the advisory
+when there is one.
+
+**There are no published advisories yet**, because no vulnerability has been
+reported. That is the current state, not a policy — this section is where the
+first one will appear, and the reporting path below is how it gets there.
+
+**If you want to check a release rather than report one**, the commands and the
+expected signing identity are in
+[docs/release-verification.md](docs/release-verification.md).
+

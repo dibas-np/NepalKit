@@ -151,6 +151,24 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODING_STANDARDS.md](CODING_STANDAR
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+## Security
+
+NepalKit has no account, no analytics, and no telemetry. Its only network access
+is checking for updates, and it holds no credentials.
+
+- [SECURITY.md](SECURITY.md) — reporting a vulnerability, and what is supported
+- [docs/release-verification.md](docs/release-verification.md) — how to confirm a
+  downloaded release is ours, and who signed it
+- [docs/threat-model.md](docs/threat-model.md) — the attack surface, and what
+  stands in front of it
+- [docs/secrets-policy.md](docs/secrets-policy.md) — the credential inventory, and
+  why none of it is reachable from a pull request
+
+Contributors should also read
+[docs/dependencies.md](docs/dependencies.md) before adding a dependency, and
+[docs/security-assessment.md](docs/security-assessment.md) for the standing
+policy on static-analysis findings.
+
 ## License
 
 The code is licensed under [GPL-3.0-or-later](LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie; its [complete notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt) is retained. [SOURCES.md](SOURCES.md) documents local corrections, the 2084 projection and provenance limits.

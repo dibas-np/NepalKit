@@ -1,0 +1,92 @@
+# Software composition analysis, as a merge gate.
+#
+# Dependabot watches the `github-actions` ecosystem. It cannot watch this
+# project's one real code dependency, and the reason is specific rather than a
+# general limitation: Dependabot's Swift support reads `Package.swift` and
+# `Package.resolved`, while Sparkle is pinned as an
+# `XCRemoteSwiftPackageReference` inside `NepalKit.xcodeproj/project.pbxproj`.
+# Nothing in this repository's automation therefore notices a vulnerability
+# announced in Sparkle. That gap is recorded in docs/dependencies.md rather
+# than papered over with an inert Dependabot entry.
+#
+# This workflow is the half that *is* automatable, and it is automatable
+# cheaply: `actions/dependency-review-action` reads the dependency graph GitHub
+# already builds for this repository and fails a pull request that introduces a
+# dependency with a known advisory. It needs no credentials, no scanner binary,
+# and no network fetch of a vulnerability database — the graph is the input.
+#
+# ## Why it runs on pull_request only
+#
+# The interesting comparison is "what does this pull request add?", which is a
+# diff between the base and the head. On a push to `main` there is no such diff,
+# so the action has nothing to say. The monthly Sparkle freshness job in
+# data-sources.yml covers the other direction — noticing a newer upstream
+# release — and the remediation thresholds for everything this job finds are in
+# docs/dependencies.md.
+#
+# ## Why this is a required status check, not a report
+#
+# A finding that lands in a list nobody reads has changed nothing. This job's
+# three checks are required on `main` by the `main` ruleset, so a pull request
+# that introduces a vulnerable dependency cannot be merged around — the same
+# reasoning, and the same deliberate choice, as the deployment-floor gate.
+#
+# ## What a failure means
+#
+# It means this pull request adds a dependency with a known advisory. The fix is
+# to not add it, or to add a version without one. Do not suppress the advisory
+# to get a green build; if a finding is genuinely not exploitable here, say so in
+# the pull request where the reasoning is reviewable, which is what
+# docs/security-assessment.md requires of suppressed CodeQL findings too.
+name: Dependency Review
+
+on:
+  pull_request:
+
+# Least privilege, and for the same reason the other workflows declare it: an
+# omitted `permissions:` block does not mean "no permissions", it means every
+# step gets the repository's default token, which for a public repository is
+# usually read/write on contents. This job only reads.
+permissions:
+  contents: read
+
+# One run per head commit. A superseded run costs minutes and reports on a diff
+# nobody will look at.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: no vulnerable dependency is introduced
+    runs-on: ubuntu-latest
+    # This reads a graph and applies a set of advisories. It is not a build. If
+    # it is still running after ten minutes, something is wrong upstream.
+    timeout-minutes: 10
+    steps:
+      # Pinned to a commit SHA with the version in a trailing comment, like every
+      # other action in this repository. A tag is mutable, and the action that
+      # decides whether a dependency is safe to merge is the last place to accept
+      # one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Review the dependency change
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          # Fail rather than annotate. `warn-only` and an omitted severity would
+          # make this workflow a report, and the whole argument for adding it is
+          # that a report does not stop anything.
+          #
+          # `moderate` and not `low` because that is the threshold
+          # docs/dependencies.md commits to: High and above block a release, and
+          # a Low advisory is fixed in the next release that touches the
+          # dependency. Failing the merge on it would train contributors to ignore
+          # the gate, which is how a real High gets waved through.
+          fail-on-severity: moderate
+          # Licence checking off, deliberately. It would fire on the one
+          # dependency this project has, and the licence obligations that are
+          # actually real — the MIT notice for the vendored askbuddie table — are
+          # enforced by that file being present in the resource bundle, which
+          # fails the build if it goes missing. A licence failure here would be a
+          # check crying wolf.
+          license-check: false
