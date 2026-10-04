@@ -25,14 +25,14 @@ for pair in "Sources/NepalKit:NepalKit" "Tests/NepalKitTests:NepalKitTests"; do
     expected="${pair##*:}"
     path="$harness/$link"
 
-    if [ ! -L "$path" ]; then
+    if [[ ! -L "$path" ]]; then
         echo "error: $path must be a symlink to ../../../$expected" >&2
         echo "       The harness compiles the real app sources; a copy drifts." >&2
         echo "       Fix: ln -sfn ../../../$expected $path" >&2
         exit 1
     fi
 
-    if [ ! -e "$path" ]; then
+    if [[ ! -e "$path" ]]; then
         echo "error: $path is a dangling symlink (expected ../../../$expected)" >&2
         exit 1
     fi
@@ -72,7 +72,7 @@ done
 # Exiting non-zero is the stricter reading of the same requirement and is
 # defensible, but it is a change of policy for a documented command rather than
 # a fix to a wrong one, so it is not made here.
-if [ -z "${NEPAKIT_BUILT_PLIST:-}" ]; then
+if [[ -z "${NEPAKIT_BUILT_PLIST:-}" ]]; then
     # Everything whose mtime decides whether this product is current: the app
     # target's sources and the plist, entitlements and assets it embeds; the
     # build settings that decide which INFOPLIST_KEY_* survive; and LICENSE,
@@ -97,20 +97,20 @@ if [ -z "${NEPAKIT_BUILT_PLIST:-}" ]; then
     product_mtime=0
     for candidate in "$repo_root"/build/Products/Debug/NepalKit.app \
                      "$HOME"/Library/Developer/Xcode/DerivedData/NepalKit-*/Build/Products/Debug/NepalKit.app; do
-        if [ -f "$candidate/Contents/Info.plist" ]; then
+        if [[ -f "$candidate/Contents/Info.plist" ]]; then
             candidate_mtime="$(stat -f %m "$candidate/Contents/Info.plist")"
-            if [ "$candidate_mtime" -gt "$product_mtime" ]; then
+            if [[ "$candidate_mtime" -gt "$product_mtime" ]]; then
                 product="$candidate"
                 product_mtime="$candidate_mtime"
             fi
         fi
     done
 
-    if [ -z "$product" ]; then
+    if [[ -z "$product" ]]; then
         # Said out loud. Previously the absence of a product was indistinguishable
         # from the five tests having run.
         echo "==> no built product found, so the five plist tests will skip"
-    elif [ -n "$newest_mtime" ] && [ "$product_mtime" -lt "$newest_mtime" ]; then
+    elif [[ -n "$newest_mtime" ]] && [[ "$product_mtime" -lt "$newest_mtime" ]]; then
         echo "==> not using the built product at $product, because it is stale"
         echo "    product $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$product/Contents/Info.plist")"
         echo "    source  $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$newest_path")"

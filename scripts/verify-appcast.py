@@ -343,12 +343,23 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
         # The 12-space indent is not cosmetic: the committed feed's formatting
         # depends on it, and an item spliced at a different indent is a feed
         # that reads as hand-edited in the middle of a generated document.
-        return re.sub(
-            r"(\s*)<enclosure ",
-            lambda m: f"\n            <description><![CDATA[\n{body}\n]]></description>\n            <enclosure ",
-            block,
-            count=1,
-        )
+        #
+        # This replaces `re.sub(r"(\s*)<enclosure ", ...)`, and the rewrite is
+        # not cosmetic either. That pattern re-tried every shorter alignment of
+        # the leading `\s*` at every offset in the block, so a long run of
+        # whitespace with no marker after it cost quadratic time to rule out —
+        # and this runs against a feed, which is remote input, at release time.
+        # `find` plus `rstrip` is linear, needs no 3.11-only regex syntax, and
+        # says the same thing: take everything before the first marker, drop the
+        # whitespace run the old pattern's greedy `\s*` would have consumed, and
+        # put back exactly one fixed-indent block.
+        marker = "<enclosure "
+        index = block.find(marker)
+        if index == -1:
+            return block
+        prefix = block[:index].rstrip()
+        return (f"{prefix}\n            <description><![CDATA[\n{body}\n]]></description>\n"
+                f"            {marker}{block[index + len(marker):]}")
 
     # Nothing is written until the whole pass has succeeded: a half-described
     # feed is a published feed with a silent hole in it, which is strictly worse

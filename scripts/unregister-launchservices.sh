@@ -31,12 +31,12 @@ set -euo pipefail
 
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
-if [ ! -x "$LSREGISTER" ]; then
+if [[ ! -x "$LSREGISTER" ]]; then
     echo "error: $LSREGISTER is missing; nothing can be unregistered" >&2
     exit 1
 fi
 
-if [ "$#" -eq 0 ]; then
+if [[ "$#" -eq 0 ]]; then
     echo "usage: $(basename "$0") <bundle> [bundle...]" >&2
     exit 2
 fi
@@ -64,7 +64,7 @@ declare -a still_registered=()
 declare -a gone_before_we_ran=()
 
 for bundle in "$@"; do
-    if [ ! -e "$bundle" ]; then
+    if [[ ! -e "$bundle" ]]; then
         # The exact failure this script is placed to prevent: the caller
         # cleaned up first. Recorded rather than silently skipped, because
         # nothing downstream can detect it.
@@ -90,7 +90,7 @@ for bundle in "$@"; do
         echo "error: could not verify unregistration of $bundle" >&2
         continue
     fi
-    if [ -n "$remaining" ]; then
+    if [[ -n "$remaining" ]]; then
         still_registered+=("$bundle")
         echo "error: still registered after unregistering:" >&2
         echo "$remaining" | sed 's/^/  /' >&2
@@ -100,10 +100,10 @@ for bundle in "$@"; do
 done
 
 status=0
-if [ "${#gone_before_we_ran[@]}" -gt 0 ]; then
+if [[ "${#gone_before_we_ran[@]}" -gt 0 ]]; then
     status=1
 fi
-if [ "${#still_registered[@]}" -gt 0 ]; then
+if [[ "${#still_registered[@]}" -gt 0 ]]; then
     status=1
 fi
 exit "$status"
