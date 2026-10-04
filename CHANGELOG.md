@@ -4,7 +4,7 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
-## 1.6.0 — unreleased
+## 1.6.0 — 2026-10-04
 
 ### Today on your Apple Watch
 
