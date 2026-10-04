@@ -160,10 +160,73 @@ jobs:
           # after a build, and this job deliberately runs no build. Reading the
           # project also keeps the check on a runner that needs no Xcode, which a
           # macOS-only reader would not.
-          APP_VERSION="$(sed -nE 's/^[[:space:]]*MARKETING_VERSION = ([^;]+);/\1/p' \
-            NepalKit.xcodeproj/project.pbxproj | sort -u)"
+          #
+          # Scoped to the Mac app target because ADR-0009 ("Products version in
+          # two tracks", 2026-10-04) ratified a second track: the Watch products
+          # version independently at 0.1.0 for the App Store, where no Sparkle
+          # feed, cask or tag consumes their number. The rule this replaced —
+          # exactly one distinct value across the whole project file — was
+          # written before that amendment and rejected every tag of a project
+          # that carries both tracks. Within-product agreement, product against
+          # product, stays governed by BuildNumberTests, which the floor job
+          # below runs; the Watch test bundle's versions are ungoverned by
+          # design, because it ships in no store.
+          #
+          # The app target is located by its own configuration-list comment,
+          # `Build configuration list for PBXNativeTarget "NepalKit"` — a quoted
+          # exact match, so NepalKitTests and NepalKitWatch cannot collide — and
+          # the two values are read from that target's Debug and Release
+          # configurations, where a bump that reached one and not the other
+          # shows up as two distinct values.
+          app_setting() {
+            python3 - "$1" <<'PY'
+          import re
+          import sys
+
+          setting = sys.argv[1]
+          text = open("NepalKit.xcodeproj/project.pbxproj").read()
+          APP = "NepalKit"
+
+          # A pbxproj object block opens at exactly two tabs. The native target
+          # also names its configuration list one tab deeper and ending in a
+          # semicolon, so the two-tab brace form matches only the list block
+          # itself, never the reference to it.
+          list_m = re.search(
+              r'\n\t\t([A-F0-9]{24}) /\* Build configuration list for PBXNativeTarget "%s" \*/ = \{' % APP,
+              text)
+          if not list_m:
+              sys.exit("no build configuration list for target %s" % APP)
+          list_end = text.find("\n\t\t};", list_m.start())
+          if list_end < 0:
+              sys.exit("unterminated configuration list block %s" % list_m.group(1))
+
+          configs = re.findall(
+              r'([A-F0-9]{24}) /\* ((?:Debug|Release) configuration for PBXNativeTarget "%s") \*/' % APP,
+              text[list_m.start():list_end])
+          if sorted(name.split()[0] for _, name in configs) != ["Debug", "Release"]:
+              sys.exit("expected exactly a Debug and a Release configuration for %s, found: %s"
+                       % (APP, ", ".join(name.split()[0] for _, name in configs) or "none"))
+
+          values = []
+          for config_id, config_name in configs:
+              block = re.search(
+                  r'\n\t\t%s /\* %s \*/ = \{(.*?)\n\t\t\};' % (config_id, re.escape(config_name)),
+                  text, re.S)
+              if not block:
+                  sys.exit("unreadable build configuration block %s" % config_id)
+              value = re.search(r'^\s*%s = ([^;]+);' % setting, block.group(1), re.M)
+              if not value:
+                  sys.exit("%s is missing from %s's %s configuration"
+                           % (setting, APP, config_name.split()[0]))
+              values.append(value.group(1).strip())
+
+          for value in sorted(set(values)):
+              print(value)
+          PY
+          }
+          APP_VERSION="$(app_setting MARKETING_VERSION)"
           if [[ -z "$APP_VERSION" || "$APP_VERSION" == *$'\n'* ]]; then
-            echo "Expected exactly one MARKETING_VERSION in project.pbxproj, found: ${APP_VERSION:-none}" >&2
+            echo "Expected exactly one MARKETING_VERSION in the NepalKit target, found: ${APP_VERSION:-none}" >&2
             exit 1
           fi
           if [[ "$APP_VERSION" != "$VERSION" ]]; then
@@ -178,21 +241,10 @@ jobs:
           # nobody already on the earlier one will be offered. Nothing below
           # bumps either value, so this is the only thing that notices a missed
           # one; the tag check above covers the version and never covered this.
-          #
-          # Asked of the whole file for the same reason the version check is:
-          # every CURRENT_PROJECT_VERSION in the project must agree, however
-          # many there are. Narrowing it to the app target would mean matching
-          # the block that holds the setting, which is what an earlier version
-          # of BuildNumberTests did — it read the test target's own
-          # configuration, could not tell the two targets apart, and passed
-          # because they happened to hold the same value. The extra echo names
-          # the offending lines, because "found: 5 6" alone sends you hunting.
-          BUILD_NUMBER="$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION = ([^;]+);/\1/p' \
-            NepalKit.xcodeproj/project.pbxproj | sort -u)"
+          # Scoped to the Mac track for the same reason as the version check.
+          BUILD_NUMBER="$(app_setting CURRENT_PROJECT_VERSION)"
           if [[ -z "$BUILD_NUMBER" || "$BUILD_NUMBER" == *$'\n'* ]]; then
-            echo "Expected exactly one CURRENT_PROJECT_VERSION in project.pbxproj, found: ${BUILD_NUMBER:-none}" >&2
-            grep -nE '^[[:space:]]*CURRENT_PROJECT_VERSION = ' \
-              NepalKit.xcodeproj/project.pbxproj >&2 || true
+            echo "Expected exactly one CURRENT_PROJECT_VERSION in the NepalKit target, found: ${BUILD_NUMBER:-none}" >&2
             exit 1
           fi
 
