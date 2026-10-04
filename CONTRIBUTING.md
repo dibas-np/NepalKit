@@ -114,9 +114,12 @@ that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
 practice. Gate 10 runs the floor verifier's own suite before the verifier,
 because `scripts/test_verify_deployment_floor.py` is run by no other gate
-here, and in CI only by `.github/workflows/pages.yml`, which triggers only on
-`appcast.xml` changes pushed to `main`, or on demand. Without it, every test
-of that gate is dark on an ordinary pull request.
+here. CI runs both commands too: `.github/workflows/macos26-floor.yml` runs
+them on every pull request after its Mac build, so the checker compares the
+built plist that build exports (`NEPAKIT_BUILT_PLIST`) against the sources,
+while `.github/workflows/pages.yml` still runs them with no build, comparing
+the sources to each other, when `appcast.xml` changes on `main`, or on
+demand.
 
 The first lint run downloads SwiftLint 0.65.1 into the ignored `.build/tools`
 cache after checking its published checksum. For compiler-backed unused-import

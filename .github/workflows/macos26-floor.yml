@@ -194,6 +194,16 @@ jobs:
             build
           echo "NEPAKIT_BUILT_PLIST=$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/Info.plist" >> "$GITHUB_ENV"
 
+      # Runs after the build so the checker inherits NEPAKIT_BUILT_PLIST and the
+      # built product joins the floor comparison; Pages' run has no build, so it
+      # compares only the sources. The self-tests are the verifier's own suite,
+      # and this step is the only gate on a pull request that runs them.
+      - name: Deployment floor self-tests and consistency
+        run: |
+          set -euo pipefail
+          python3 scripts/test_verify_deployment_floor.py
+          python3 scripts/verify-deployment-floor.py
+
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
