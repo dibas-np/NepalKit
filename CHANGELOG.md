@@ -8,7 +8,7 @@ the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
 ### Today on your Apple Watch
 
-NepalKit now lives on your wrist. A standalone Apple Watch app shows today's Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day — offline, independent of your Mac and iPhone, and anchored to Nepal Time whatever time zone the watch is in.
+NepalKit now lives on your wrist. A standalone Apple Watch app shows today's Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day — offline, independent of your Mac and iPhone, and anchored to Nepal Time no matter what time zone the watch is in.
 
 - Four complication styles for your watch face — rectangular, inline, circular, and corner — each showing today's Bikram Sambat date at a glance.
 - Tapping any complication opens Today on the watch.
@@ -18,7 +18,7 @@ NepalKit now lives on your wrist. A standalone Apple Watch app shows today's Bik
 
 ### Calendar data, carefully sourced
 
-The bundled dataset is now version 2.0.1. Bikram Sambat 2084 remains projected: no official publication confirms the year yet, and 1.6.0's revised 2084 month lengths follow the cross-checked sources, so conversions inside 2084 may differ from 1.5.0. Read SOURCES.md for provenance and what is still outstanding.
+The bundled dataset is now version 2.0.1. Bikram Sambat 2084 remains projected: no official publication confirms the year yet, and this version's revised 2084 month lengths follow the cross-checked sources, so conversions inside 2084 may differ from 1.5.0. The About window shows the dataset version and the supported calendar range.
 
 ### Fixes
 
