@@ -238,8 +238,8 @@ def write_notes_dir(tmp: Path, notes: dict[str, str]) -> Path:
 def make_generated_item(version: str, description: str | None = None) -> str:
     """An item shaped the way generate_appcast writes one, newlines included.
 
-    `make_item` is a single line, so the `(\\s*)<enclosure ` splice is only ever
-    exercised against an empty whitespace group there. This one puts the
+    `make_item` is a single line, so the whitespace run the splice strips is
+    only ever empty there. This one puts the
     enclosure on its own 12-space line, which is what the committed feed looks
     like, so the replacement template's indent is pinned against real input
     rather than only against a one-line fixture.
@@ -954,6 +954,53 @@ class EmbedNotesTest(unittest.TestCase):
         # The 12 spaces that preceded the enclosure are consumed, not doubled.
         self.assertEqual(out.replace(f"\n            <description><![CDATA[\n{body}\n"
                                      f"]]></description>\n            <enclosure ", "\n            <enclosure "), original)
+
+    def test_an_item_with_no_enclosure_is_left_byte_for_byte(self) -> None:
+        # The splice looks for `<enclosure ` and there is nothing to splice
+        # before when an item has none. Returning it untouched is the only safe
+        # outcome: an enclosure-less item is refused a moment later, by
+        # verification, with a message about the download. A mutation that
+        # rewrites an item it could not find a marker in would report that
+        # differently, and would have changed bytes it was never asked to.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, include_enclosure=False,
+                                           version="0.0"))
+            original = feed.read_text(encoding="utf-8")
+            capture_embed(feed, write_notes_dir(tmp_path, {"0.0": GOOD_NOTES}))
+            out = feed.read_text(encoding="utf-8")
+        self.assertNotIn("<enclosure ", out)
+        self.assertEqual(out, original)
+
+    def test_the_notes_land_before_the_first_of_several_enclosures(self) -> None:
+        # Only the first marker is spliced. Sparkle writes at most one enclosure
+        # per item, so nothing upstream produces this shape — it is here
+        # because "the first, and only the first" is the property that keeps the
+        # operation single-shot, and nothing else in this suite pins it. The
+        # regex it replaced said so with `count=1`; the `str.find` it became
+        # says so only by finding the first.
+        item = (
+            "<item>\n"
+            "    <title>t</title>\n"
+            "    <sparkle:shortVersionString>0.0</sparkle:shortVersionString>\n"
+            '    <enclosure url="https://example.com/first.zip" length="1"/>\n'
+            '    <enclosure url="https://example.com/second.zip" length="2"/>\n'
+            "</item>\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, item)
+            capture_embed(feed, write_notes_dir(tmp_path, {"0.0": GOOD_NOTES}))
+            out = feed.read_text(encoding="utf-8")
+        description = f"<description><![CDATA[\n{GOOD_NOTES}\n]]></description>"
+        self.assertEqual(out.count(description), 1)
+        self.assertIn(f'{description}\n            <enclosure url="https://example.com/first.zip"', out)
+        # The second is left exactly where it was, with no description of its own
+        # and with its own indentation: the splice normalises only the run of
+        # whitespace before the marker it replaces, and every byte from the end
+        # of that marker onwards is passed through untouched.
+        self.assertNotIn(f'{description}\n            <enclosure url="https://example.com/second.zip"', out)
+        self.assertIn('    <enclosure url="https://example.com/second.zip" length="2"/>\n', out)
 
     def test_running_twice_changes_nothing_the_second_time(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
