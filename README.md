@@ -119,7 +119,7 @@ To build the app and run the local checks from the repository root:
 ./scripts/check-all.sh
 ```
 
-The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs thirteen gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run.
+The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs fourteen gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run. No workflow invokes the script — CI runs the individual gates in the workflow that owns each one, and two gates are local-only for reasons stated in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 To run the three Swift test suites separately:
 
@@ -168,6 +168,13 @@ Contributors should also read
 [docs/dependencies.md](docs/dependencies.md) before adding a dependency, and
 [docs/security-assessment.md](docs/security-assessment.md) for the standing
 policy on static-analysis findings.
+
+Project documentation beyond the README lives in [docs/](docs/):
+[roadmap](docs/roadmap.md), [achievements](docs/achievements.md),
+[assurance case](docs/assurance-case.md), [threat model](docs/threat-model.md),
+[security assessment](docs/security-assessment.md),
+[coverage](docs/coverage.md), and the architecture decision records in
+[docs/adr/](docs/adr/).
 
 NepalKit's [OpenSSF Best Practices](https://bestpractices.dev/en/projects/15209)
 answers are kept in version control at

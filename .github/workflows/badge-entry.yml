@@ -1,0 +1,64 @@
+# Keep the OpenSSF Best Practices answers honest.
+#
+# ## Why this exists
+#
+# `.bestpractices.json` is 191 answers to a badge entry, and it is only worth
+# anything if a wrong one fails. `scripts/verify-bestpractices-json.py` checks
+# that structure, and `scripts/test_verify_bestpractices_json.py` checks the
+# checker — but until this workflow, no CI job ran either one. They were gates
+# 10 and 11 of a fourteen-gate ladder that only existed when a human ran
+# `./scripts/check-all.sh` locally.
+#
+# That is precisely the failure CONTRIBUTING.md names: "a structural check that
+# only runs when someone remembers to run it is not a gate." A gate nobody runs
+# is a comment. This workflow is what makes the claim on line 163 of that file
+# true rather than aspirational — the same reason dco.yml exists, for the same
+# reason: a rule that nothing enforces has quietly stopped being a rule.
+#
+# ## Why these two and not the rest of the ladder
+#
+# Both scripts are pure Python over a committed JSON file. No toolchain, no
+# simulator, no built product, roughly a fifth of a second together. That is what
+# makes them worth running on every pull request.
+#
+# The four local-only gates are absent for stated reasons, and this comment is
+# where those reasons live:
+#
+# * **LaunchServices unregistration** (gate 8) registers and unregisters real
+#   app bundles in the session's LaunchServices database. It needs a macOS
+#   session with a GUI login, which a CI runner does not have.
+# * **Coverage floor** (gate 12) runs both Swift suites under `swift test` with
+#   coverage instrumentation and reads the result with `xcrun llvm-cov`. It needs
+#   the macOS toolchain and roughly six minutes. Running it here would make this
+#   workflow the slowest one in the repository to protect a number that moves
+#   slowly. It is enforced locally and the floor is committed, so a regression
+#   is caught by whoever runs the ladder.
+#
+# Everything else in the ladder already runs in CI, in the workflow that owns it.
+# `check-all.sh` is a superset and is not invoked here on purpose: its first
+# gate builds the app, so running it would duplicate the macOS build rather than
+# add a check.
+name: Badge entry
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  badge-entry:
+    name: badge entry is well-formed and self-consistent
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: The checker's own suite
+        # First, so the checker is known to work before it is trusted to judge
+        # anything. A validator that has silently stopped validating is worse
+        # than no validator, because it reports green.
+        run: python3 scripts/test_verify_bestpractices_json.py
+      - name: The badge entry
+        run: python3 scripts/verify-bestpractices-json.py

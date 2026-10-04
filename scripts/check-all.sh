@@ -57,7 +57,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=13
+total=14
 ran=0
 summary=""
 current=""
@@ -140,6 +140,12 @@ gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcas
 # whether a criterion name is real, because that needs the badge's criteria YAML.
 gate "badge entry suite" python3 "$repo_root/scripts/test_verify_bestpractices_json.py"
 gate "badge entry consistency" python3 "$repo_root/scripts/verify-bestpractices-json.py"
+# Coverage has a floor and no target, which is the inversion docs/coverage.md
+# argues for: a ratchet that only rises is honest about a number that is
+# currently low, where a target above the truth fails every day and gets ignored.
+# Runs both suites with coverage, which is why it sits after the app-layer suite
+# rather than beside the other script suites - it is the slowest gate here.
+gate "coverage floor" python3 "$repo_root/scripts/measure-coverage.py"
 # After the build gate, so the built product exists and the check can compare
 # the floor the app actually shipped against the ones only declared. This is
 # the gate that would have caught the 26.0/26.6 drift before a user did:

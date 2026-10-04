@@ -9,6 +9,7 @@ Supporting documents, so the short answers here have somewhere to point:
 | What secrets exist, where they live, how they are rotated | [Secrets policy](docs/secrets-policy.md) |
 | What the project depends on, and what happens when one is vulnerable | [Dependencies](docs/dependencies.md) |
 | How to check that a release you downloaded is ours | [Release verification](docs/release-verification.md) |
+| Why the update path is the thing that matters | [Assurance case](docs/assurance-case.md) |
 
 ## Supported versions
 

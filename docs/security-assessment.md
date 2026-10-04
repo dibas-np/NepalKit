@@ -222,6 +222,15 @@ That is the difference between "the analysis ran" and "the finding was acted
 on", and only the first is enforced. Closing the second means adding the
 `code_scanning` rule with an alert threshold — recorded as F8.
 
+**A failing `github-advanced-security` check is usually not a finding.** That
+check is GitHub's AI code-scanning workflow, and it fails with `exit code 1` and
+no output when the Copilot quota behind it is exhausted (`statusCode: 402`,
+`errorCode: quota`) rather than when it finds anything. It is also not a required
+status check, so it does not block a merge. Observed failing on pull requests
+#14, #18 and #19 and passing on #15 with no code difference between them. Read
+the run log before treating it as a result; a quota error and a security finding
+look identical in the checks list.
+
 Two properties of that workflow are deliberate and worth not undoing:
 
 - **The Swift leg builds with tests.** The app scheme does not compile
