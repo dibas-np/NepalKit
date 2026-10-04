@@ -186,6 +186,68 @@ prints what it found and what it compared against. Without a usable product,
 the suite's tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
 
+## Tests: what has to come with a change
+
+**A change to behaviour comes with a change to the tests that cover it, in the
+same commit. A pull request that changes what the software does and does not
+change a test is incomplete, not merely under-tested.**
+
+That is the policy. The rest of this section is what "major change" and "update
+the tests" mean here, because a policy that needs interpretation gets ignored
+the first time it is inconvenient.
+
+### What counts as a major change
+
+Add or update tests for:
+
+- **Any change to the calendar.** Month lengths, the supported range, conversion,
+  clamping, weekday derivation, or the dataset. This is the correctness core and
+  it is CODEOWNERS'd for exactly this reason; `CONTRIBUTING.md` opens by saying
+  the bar is "is it true, and can you show me you checked".
+- **Any change to a value the user sees or hears** — a date, a name, a digit
+  script, a spoken form, a VoiceOver label.
+- **Any new App Intent, or a change to what one returns.** Intents are a public
+  interface: Shortcuts users depend on the returned field names and types.
+- **Any new release-contract artifact**: a key in `Info.plist`, an entitlement,
+  a deployment target, a feed URL, the bundle identifier.
+- **Any bug fix.** A regression test that fails without the fix is the evidence
+  the fix was needed. This is not optional and does not scale down for "small"
+  bugs — the small ones are the ones that come back.
+
+### What does not need a new test
+
+- Comment, documentation, and comment-only changes.
+- Pure refactors with no observable behaviour change. Say so in the pull request;
+  do not add a test that asserts the shape of the code rather than its behaviour.
+- Layout and visual design. **A warning:** this repository has already had a gate
+  report green while something was wrong, twice, and both times because a check
+  was measuring the wrong thing. If you cannot test it, do not claim it is
+  tested. Gate 11 below and the fresh-Mac procedure exist because app-layer and
+  on-device behaviour has limits, and those limits are documented rather than
+  papered over.
+
+### How to run them, and how to read the result
+
+`./scripts/check-all.sh` runs every gate in order and names each one. The full
+list, in order, is above. Two conventions matter more than the individual
+commands:
+
+- **A skipped test is not a passing test.** The plist tests skip with a reason
+  when there is no built product to read, and the Watch suite skips with an
+  annotation when no usable watchOS runtime is installed. Both are deliberate: a
+  test that cannot check something must not report that it did. If you see a
+  skip, fix the preconditions rather than reading it as a pass.
+- **Run the suite locally before opening the pull request.** It is the same
+  eleven gates CI runs, and a red local run is a faster red than a red one after
+  review.
+
+### Why a test-only commit is still welcome
+
+A pull request that adds coverage without changing behaviour is useful and will
+be merged. What is not acceptable is a behaviour change whose tests arrive
+later, or in a follow-up, because a follow-up is a promise with no gate behind
+it.
+
 ## Style
 
 - Swift, 4-space indent, no force-unwraps except where a value is known
@@ -227,10 +289,10 @@ first.
   that costs and why.
 - That gate is also a **required status check** on `main` (branch ruleset
   `main`, enforcement active — checkable under
-  Settings → Rules → Rulesets). Its single required check is named
-  `build, test, and launch on macOS 26`. The repository owner is a bypass
-  actor, so a broken gate can never lock a solo maintainer out of their own
-  repository; for everyone else it cannot be skipped.
+  Settings → Rules → Rulesets). Its name is `build, test, and launch on macOS
+  26`. The repository owner is a bypass actor, so a broken gate can never lock a
+  solo maintainer out of their own repository; for everyone else it cannot be
+  skipped.
 - **That name and the ruleset must change together, or not at all.** The check
   name above no longer describes what the job does — the job runs on macOS 27 —
   but renaming the `name:` alone would leave the ruleset demanding a check that
@@ -238,6 +300,26 @@ first.
   no failure to diagnose. To correct it, edit the ruleset's required check under
   Settings → Rules → Rulesets *and* the job's `name:` in the same change. This
   was nearly shipped the other way round.
+- The ruleset requires **more than one check now**, and the same
+  edit-the-ruleset-together rule applies to every one of them:
+
+  | Required check | Workflow | Why it is required rather than reported |
+  | --- | --- | --- |
+  | `build, test, and launch on macOS 26` | `macos26-floor.yml` | The deployment-floor claim. Nothing else attests it |
+  | `every commit carries a DCO sign-off` | `dco.yml` | The DCO is promised in this file. A check nobody has to pass is a promise nobody has to keep |
+  | `Analyze (swift)`, `Analyze (python)`, `Analyze (actions)` | `codeql.yml` | Static analysis. A finding in a list nobody reads has changed nothing |
+  | `no vulnerable dependency is introduced` | `dependency-review.yml` | The same argument, for dependencies |
+
+  Adding a required check is a change to what can block a merge, so it is a
+  deliberate act rather than a tidy-up. Removing one is more so: a required
+  check that silently stops being required is a security control that stopped
+  existing without anyone deciding.
+- **Adding a dependency?** Read [`docs/dependencies.md`](docs/dependencies.md)
+  first. The `dependency-review` gate fails the pull request if what you add has
+  a known advisory at `moderate` severity or above, and
+  [`docs/security-assessment.md`](docs/security-assessment.md) records why that
+  severity threshold is where it is. Dependabot cannot watch this project's
+  Swift pin at all, which that document explains.
 
 ## Licensing of contributions
 

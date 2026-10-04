@@ -38,6 +38,18 @@ back-and-forth into a one-message resolution.
 - [SOURCES.md](SOURCES.md) explains the calendar data, its supported range, and
   why the range can narrow as well as extend
 
+## Checking that a release is genuine
+
+If you want to confirm that a NepalKit you downloaded is the one this project
+published — rather than trusting that Gatekeeper already checked — the commands
+and the expected signing identity are in
+[docs/release-verification.md](docs/release-verification.md).
+
+You do not need this to install NepalKit. A notarized, stapled build passes
+Gatekeeper on first launch without a prompt. It is here for the case where you
+want to check rather than assume, and for Homebrew installs, where the recorded
+digest is the only check that path performs.
+
 ## There is no support chat
 
 There is no Discord, no forum, and no mailing list. Issues are the whole of
