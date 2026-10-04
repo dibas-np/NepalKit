@@ -133,10 +133,27 @@ echo "notary credentials: keychain profile '$NOTARY_PROFILE'"
 
 # Explicitly require a Developer ID Application certificate for this team —
 # a generic codesigning identity is not enough for distribution.
-# (The `|| true` keeps `set -euo pipefail` from firing on no match so the
-# friendly error below runs instead.)
+#
+# ## Why this is not `... | head -1`
+#
+# It was, and it had a failure mode that the `|| true` hid rather than fixed.
+# `head -1` exits after the first match, so `grep` can still be scanning the
+# keychain when the pipe closes underneath it. grep then dies on SIGPIPE, the
+# pipeline reports 141, and `|| true` swallows that into an empty IDENTITY — which
+# is indistinguishable from "no matching certificate". The result is a release
+# machine that *has* the certificate failing with "no Developer ID Application
+# certificate for team ...", on a large enough keychain to lose the race.
+#
+# Measured, not assumed: `seq 1 200000 | grep -o '[0-9]*' | head -1` returns 141
+# on this machine. A three-identity keychain finishes scanning before head leaves,
+# which is why this has never fired here — it is a keychain-size race, not a
+# correctness property.
+#
+# `awk` reads to end of input, so nothing closes the pipe early and the exit
+# status is grep's alone. The `|| true` stays, and now guards only what it says
+# it guards: a genuine no-match, which is what the friendly error below is for.
 IDENTITY="$(security find-identity -v -p codesigning \
-    | grep -o "Developer ID Application: .* ($TEAM_ID)" | head -1 || true)"
+    | grep -o "Developer ID Application: .* ($TEAM_ID)" | awk 'NR == 1 { print }' || true)"
 [[ -n "$IDENTITY" ]] || {
     echo "no Developer ID Application certificate for team $TEAM_ID in this keychain"
     exit 2

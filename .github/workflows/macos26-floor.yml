@@ -191,9 +191,16 @@ jobs:
       # and `xcodebuild` always exits 0. Same value, same assertion, no race.
       #
       # The rule this establishes for the rest of this file: **do not end a
-      # pipeline with `head` or `tail` in front of a native tool that may still
-      # be writing.** `sed`, `grep` and `awk` are tolerant of a closed pipe;
-      # `xcodebuild` is not.
+      # pipeline with `head` or `tail` in front of a tool that may still be
+      # writing.** `sed` and `awk` are tolerant of a closed pipe; `xcodebuild`
+      # raises on one, and `sort` can take SIGPIPE and report 141 under
+      # `pipefail`. The two `sort -V | head -1` comparisons further down this
+      # file were left in place by that first fix, on the reasoning that `sort`
+      # writes its whole two-line input in one go and so never notices `head`
+      # leaving. That is true for two lines and was measured rather than
+      # assumed, but it is the same shape of argument that let the original
+      # crash through: correct today, not guaranteed tomorrow. They now take the
+      # first line out of a captured string instead.
       - name: Resolve the image's default Xcode and assert its floor
         run: |
           set -euo pipefail
@@ -218,7 +225,8 @@ jobs:
             exit 1
           fi
 
-          if [ "$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | head -1)" != "$XCODE_FLOOR" ]; then
+          lowest="$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | awk 'NR == 1 { print }')"
+          if [ "$lowest" != "$XCODE_FLOOR" ]; then
             echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump. See ADR-0007."
             exit 1
           fi
@@ -393,7 +401,8 @@ jobs:
                   print(runtime["version"], runtime["identifier"])
           ' | sort -V)"
           while read -r version identifier; do
-            if [ -n "$version" ] && [ "$(printf '%s\n%s\n' "$version" "$floor" | sort -V | head -1)" = "$floor" ]; then
+            lowest="$(printf '%s\n%s\n' "$version" "$floor" | sort -V | awk 'NR == 1 { print }')"
+            if [ -n "$version" ] && [ "$lowest" = "$floor" ]; then
               usable="$usable$version $identifier"$'\n'
             fi
           done <<< "$runtimes"
