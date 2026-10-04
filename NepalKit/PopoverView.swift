@@ -43,6 +43,10 @@ struct PopoverView: View {
     /// Injected so the year named in the range boundary state is the same
     /// dataset the rest of the view reads, and so a test can control it.
     let dataset: CalendarDataset
+    /// The app's updater, owned by `NepalKitApp` and shared with the Settings
+    /// window. Read here only to hand it to the footer, which is where the
+    /// update button lives.
+    let updates: UpdateCheckModel
     /// Ephemeral by design: the popover closes on every activation, so a
     /// remembered selection would open onto Convert after a read of the date and
     /// back onto Today after a conversion, with no predictability. Today is the
@@ -103,10 +107,11 @@ struct PopoverView: View {
         // not a step in navigating Today and Convert, and burying them in one tab
         // would hide them from the other.
         //
-        // `destination` and `openSettings` are all this hands over, so a per-second
-        // clock tick never re-evaluates the footer - the same reasoning that made
-        // the header, Today and Clocks their own view types.
-        PopoverFooter(destination: destination) { openSettings() }
+        // `destination`, `openSettings` and the update state are all this hands
+        // over, so a per-second clock tick never re-evaluates the footer - the
+        // same reasoning that made the header, Today and Clocks their own view
+        // types.
+        PopoverFooter(destination: destination, openSettings: { openSettings() }, updates: updates)
     }
 
 }
@@ -118,7 +123,23 @@ struct PopoverView: View {
         // Keep the preview clock fixed when the visibility task starts.
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
-        dataset: AppData.dataset
+        dataset: AppData.dataset,
+        // The resting state: no update, so no update button in the footer.
+        updates: UpdateCheckModel(service: PreviewUpdateService())
+    )
+    .padding()
+}
+
+/// The state the default preview cannot reach. The footer only draws its update
+/// button once a check has found something, so without a reporting service this
+/// is the only place that button can be looked at.
+#Preview("Popover, update available") {
+    PopoverView(
+        settings: .preview,
+        clock: ClockModel(now: AppData.previewInstant, refreshes: false),
+        converter: ConverterModel(now: AppData.previewInstant),
+        dataset: AppData.dataset,
+        updates: UpdateCheckModel(service: PreviewUpdateService(reporting: .updateAvailable))
     )
     .padding()
 }

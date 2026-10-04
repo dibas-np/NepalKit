@@ -9,8 +9,9 @@ import Observation
 /// the model that owns the user-facing state is testable without the framework,
 /// a network, a published feed, or a signing key.
 ///
-/// Deliberately narrow. Only what the Settings surface offers: "check now",
-/// "automatically check", and reading when the last check ran. Whether an
+/// Deliberately narrow. What the Settings surface offers — "check now",
+/// "automatically check", and reading when the last check ran — plus the one
+/// question the popover footer asks: is there something to install? Whether an
 /// update is *available* is Sparkle's business, and its own user interface
 /// presents the result; this does not reimplement any of it.
 ///
@@ -123,6 +124,20 @@ final class UpdateCheckModel {
     /// framework updates it on scheduled checks that produce no new outcome
     /// here, and one authoritative value beats two that can disagree.
     var lastCheckDate: Date? { service.lastCheckDate }
+
+    /// Whether a check has found an update this build can install. Gates the
+    /// popover footer's update button.
+    ///
+    /// Read from `outcome` rather than from `isShowingReminder`: the two answer
+    /// different questions and only one survives the user looking. An update stays
+    /// available after the alert about it has been dismissed; the reminder does
+    /// not. Keying the button to the reminder would delete the only control for
+    /// installing an update the user chose to defer.
+    ///
+    /// False for `nil` and every other outcome, so neither an app that has never
+    /// checked nor a check that could not complete presents itself as an offer to
+    /// install something.
+    var isUpdateAvailable: Bool { outcome == .updateAvailable }
 
     /// What to show under the control. Deliberately says nothing before a check
     /// has happened, rather than implying the app is current — "not yet checked"

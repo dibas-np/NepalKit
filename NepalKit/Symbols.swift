@@ -44,7 +44,18 @@ enum Symbols {
     /// window. The word carries the meaning; the glyph marks it as a link.
     static let repository = "chevron.left.forwardslash.chevron.right"
 
+    /// The popover footer's update button, shown only when a check has found
+    /// something to install. The arrow-in-circle is the App Store's own mark for
+    /// "a new version has arrived", which is the one convention a user has already
+    /// met for this exact idea.
+    ///
+    /// Not `arrow.triangle.2.circlepath`, the conventional mark for "check again":
+    /// that is what this button asks the updater for when it cannot find the update
+    /// already in hand, so drawing it would name the fallback rather than the
+    /// offer. Not `square.and.arrow.down`, which reads as saving a file to disk.
+    static let update = "arrow.down.circle"
+
     static let all: [String] = [
-        launchAtLogin, settings, about, menuBar, general, repository
+        launchAtLogin, settings, about, menuBar, general, repository, update
     ]
 }

@@ -3,7 +3,7 @@
 import SwiftUI
 
 /// The bar along the bottom of the popover: the selected destination on the left,
-/// the two actions on the right.
+/// the actions on the right.
 ///
 /// This follows the reference layout, where the footer names where you are on the
 /// left and puts the actions on the right. Naming the destination here is what the
@@ -13,13 +13,17 @@ import SwiftUI
 ///
 /// Its own view type rather than a computed property on `PopoverView`, which is
 /// both the house rule (AGENTS.md:118) and the cheaper arrangement: this reads
-/// `destination` and the two actions, none of the clock, so a per-second tick
-/// never re-evaluates it.
+/// `destination` and the actions, none of the clock, so a per-second tick never
+/// re-evaluates it.
 struct PopoverFooter: View {
     let destination: PopoverDestination
     /// Passed in rather than read from the environment here, so this type depends
     /// on the action and not on how the popover happens to reach Settings.
     let openSettings: () -> Void
+    /// Passed in for the same reason. The observation dependency lands on this
+    /// type's own body, so a check completing re-evaluates the footer and nothing
+    /// above it.
+    let updates: UpdateCheckModel
 
     var body: some View {
         // The container is a wrapping view, not a modifier — it has to *be* the
@@ -32,9 +36,9 @@ struct PopoverFooter: View {
         // rather than two objects that happen to be near each other.
         //
         // Glass refracts light by sampling content from an area larger than itself,
-        // and glass cannot sample other glass — so two glass buttons left in
-        // separate containers render inconsistently against each other, which on a
-        // two-button bar shows as the pair disagreeing about their background.
+        // and glass cannot sample other glass — so glass buttons left in separate
+        // containers render inconsistently against each other, which on a bar of
+        // them shows as the group disagreeing about its background.
         GlassEffectContainer(spacing: 8) {
             VStack(spacing: 0) {
                 Divider()
@@ -45,6 +49,13 @@ struct PopoverFooter: View {
 
                     Spacer(minLength: 8)
 
+                    // Shown rather than `.disabled`: a permanently greyed button
+                    // invites the question "why can't I use this?" with no answer
+                    // available. Absent is an answer.
+                    if updates.isUpdateAvailable {
+                        updateButton
+                    }
+
                     settingsButton
                     quitButton
                 }
@@ -52,6 +63,28 @@ struct PopoverFooter: View {
                 .padding(.vertical, 8)
             }
         }
+    }
+
+    /// Update, shown only while there is an update to install.
+    ///
+    /// Deliberately the same `checkNow` the Settings button uses rather than a
+    /// second path that installs directly: calling in one place keeps one trigger
+    /// to reason about, and the framework presents the install flow it verified.
+    ///
+    /// Keeps its text, unlike the gear beside it — a glyph alone is not
+    /// *download this app's next version*, and this is the one footer button whose
+    /// consequence is replacing the running program. `.glassProminent`, which the
+    /// Quit button's note reserves for "the one action a surface wants you to
+    /// take": while it is on screen this is exactly that, where the gear opens a
+    /// window you choose to look at, and mistaking one for the other costs a click
+    /// rather than a wrong install.
+    private var updateButton: some View {
+        Button(Strings.updateButtonLabel, systemImage: Symbols.update, action: updates.checkNow)
+            .buttonStyle(.glassProminent)
+            .font(.caption)
+            .symbolRenderingMode(.monochrome)
+            .accessibilityLabel(Strings.updateButtonLabelSpoken)
+            .accessibilityHint(Strings.updateButtonHelp)
     }
 
     /// Settings, as a bare gear.

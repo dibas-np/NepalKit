@@ -80,21 +80,9 @@ struct AboutSettingsView: View {
 }
 
 #if DEBUG
-/// The same stand-ins `GeneralSettingsView` uses. Duplicated rather than shared so
-/// each preview block stays self-contained, which is the convention the file
-/// headers in this module already follow.
-@MainActor private final class AboutPreviewUpdateService: UpdateServicing {
-    var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
-    var onReminder: (@MainActor (Bool) -> Void)?
-    var automaticallyChecksForUpdates = true
-    var lastCheckDate: Date?
-    func start() {}
-    func checkForUpdates() {}
-}
-
 #Preview("About tab") {
     AboutSettingsView(
-        updates: UpdateCheckModel(service: AboutPreviewUpdateService()),
+        updates: UpdateCheckModel(service: PreviewUpdateService()),
         metadata: .current(),
         dataset: AppData.dataset
     )
