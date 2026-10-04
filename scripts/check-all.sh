@@ -67,10 +67,10 @@ current=""
 report() {
     local status=$?
     printf '\n==> summary\n'
-    if [ -n "$summary" ]; then
+    if [[ -n "$summary" ]]; then
         printf '%s' "$summary"
     fi
-    if [ "$status" -ne 0 ]; then
+    if [[ "$status" -ne 0 ]]; then
         printf '  FAIL  %s\n' "$current"
         printf '\n==> FAILED at: %s\n' "$current"
     else
@@ -105,14 +105,14 @@ gate "app and Xcode test targets build" bash -c '
         -configuration Debug -derivedDataPath "$2" \
         -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
     plist="$2/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
-    if [ ! -f "$plist" ]; then
+    if [[ ! -f "$plist" ]]; then
         echo "the build reported success but produced no Info.plist at $plist" >&2
         exit 1
     fi
     echo "NEPAKIT_BUILT_PLIST=$plist"
 ' _ "$repo_root" "$derived"
 # The gate above ran in a subshell, so its export did not reach this one.
-if [ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]; then
+if [[ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]]; then
     NEPAKIT_BUILT_PLIST="$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
     export NEPAKIT_BUILT_PLIST
 fi
