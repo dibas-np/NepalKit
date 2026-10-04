@@ -58,38 +58,41 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-# --- On the CodeQL suppressions in this file ---------------------------------
-# `pythonsecurity/S8707` (a file path built from a CLI argument) and
-# `pythonsecurity/S2083` (the same, on the openssl scratch files) fire on every
-# path that reaches a file here, and there is no version of this tool that can
-# avoid that: the file to be verified *is* the argument. The mitigation those
-# rules ask for - resolve the path, then confine it to a base directory - would
-# break the release path rather than narrow it. The feed is staged in a private
-# temporary directory outside the repository (scripts/package-release.sh), and
-# that is where it is supposed to be; a confinement check would fail every real
-# release to defend against a caller that already holds the access the check
-# removes.
+# --- On the NOSONAR markers in this file --------------------------------------
+# SonarCloud reports eight security findings here that this tool cannot satisfy by
+# changing what it does: `pythonsecurity:S8707` (a path built from a CLI argument)
+# on five lines, `pythonsecurity:S2083` (the same, on the openssl scratch file),
+# and `python:S5332` (a clear-text protocol) on the namespace below.
 #
-# What the rules are guarding is an agent being talked into reading a file it was
-# not asked to read. The callers here are the operator, CI, and
-# scripts/verify-appcast.sh, all of which run with the filesystem permissions
-# the confinement would take away, so the check would cost the tool its purpose
-# and leave the capability intact.
+# The remedy S8707 asks for is to resolve the path and confine it to a base
+# directory. That would break the release path rather than narrow it:
+# scripts/package-release.sh stages the feed and the archive in a private
+# temporary directory outside the repository, and scripts/verify-appcast.sh runs
+# this tool against exactly those paths. A confinement check would fail every
+# real release, to defend against a caller that already holds the filesystem
+# permissions the check would take away — the operator, CI, and any agent
+# invoking the script all reach the same bytes by the same means.
 #
-# The markers below are therefore scoped to the line that trips them rather than
-# switched off for the file: the rules stay live everywhere else, including on
-# anything added to this one later.
+# So the lines are marked NOSONAR, and the reasoning is written here rather than
+# left implicit in the marker. Two consequences worth stating rather than
+# leaving for the next reader to discover:
 #
-# The namespace on `SPARKLE_NS` is suppressed for a different reason and is not
-# a URL - see the comment there.
+# - NOSONAR is line-scoped, so it stops travelling when the call moves off its
+#   own line, and it is rule-blind: it silences every rule on that line, not
+#   only the path-injection one. That is why each marker sits on a line whose
+#   only content is the flagged call.
+# - Suppression is the only mechanism available. This project is analysed by
+#   SonarCloud's automatic analysis, which ignores `sonar-project.properties`
+#   and supports neither `sonar.issue.ignore.multicriteria` nor a per-rule
+#   exclusion. If SonarCloud ever offers one, it replaces these markers and
+#   their scope becomes rule-specific rather than line-specific.
 
 # The Sparkle XML namespace, which is spelled like a URL because XML namespaces
 # conventionally are, and is never resolved. Nothing in this process connects to
-# it: the string only ever matches the `sparkle:` prefix on feed elements, and the
-# feed's *enclosure* URLs are checked separately for https below. Rewriting it to
-# https would make every feed Sparkle has ever parsed stop matching, which is why
-# this is suppressed rather than fixed.
-SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # codeql[python/S5332]
+# it: the string only matches the `sparkle:` prefix on feed elements, and the
+# feed's *enclosure* urls are required to be https separately, below. Rewriting
+# it to https would make every feed Sparkle has ever parsed stop matching.
+SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # NOSONAR
 NS = {"sparkle": SPARKLE_NS}
 
 # The release-notes HTML contract shared with update-changelog.py's
@@ -148,7 +151,7 @@ def ok(message: str) -> None:
 
 def load_public_key(info_plist: Path) -> bytes:
     """Read SUPublicEDKey out of Info.plist and return raw 32-byte Ed25519 key."""
-    text = info_plist.read_text(encoding="utf-8")  # codeql[pythonsecurity/S8707]
+    text = info_plist.read_text(encoding="utf-8")  # NOSONAR
     marker = "SUPublicEDKey</key>"
     if marker not in text:
         fail(f"{info_plist} has no SUPublicEDKey")
@@ -172,7 +175,7 @@ def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         (tmp_path / "spki.der").write_bytes(ED25519_SPKI_PREFIX + public_key)
-        (tmp_path / "data.bin").write_bytes(data)  # codeql[pythonsecurity/S2083]
+        (tmp_path / "data.bin").write_bytes(data)  # NOSONAR
         (tmp_path / "sig.bin").write_bytes(signature)
         result = subprocess.run(
             [
@@ -236,7 +239,7 @@ def verify_feed_signature(appcast: Path, info_plist: Path) -> None:
     against the published feed in `.github/workflows/pages.yml`, which is the
     only place in the repository that sees the real thing.
     """
-    raw = appcast.read_bytes()  # codeql[pythonsecurity/S8707]
+    raw = appcast.read_bytes()  # NOSONAR
     content, signature_b64, declared_length = extract_feed_signature(raw)
 
     if signature_b64 is None:
@@ -318,7 +321,7 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
     a targeted text substitution rather than an XML reserialisation, so every
     other byte of the file — including anything Sparkle wrote — is untouched.
     """
-    raw = appcast.read_text(encoding="utf-8")  # codeql[pythonsecurity/S8707]
+    raw = appcast.read_text(encoding="utf-8")  # NOSONAR
 
     def describe(match: re.Match[str]) -> str:
         block = match.group(0)
@@ -351,7 +354,7 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
     # feed is a published feed with a silent hole in it, which is strictly worse
     # than a release that stopped.
     described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
-    appcast.write_text(described, encoding="utf-8")  # codeql[pythonsecurity/S8707]
+    appcast.write_text(described, encoding="utf-8")  # NOSONAR
     ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
 
 
@@ -474,7 +477,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
             # verify-appcast.sh runs one invocation per archive; only the item
             # whose enclosure names this file can be checked against it.
             if Path(parsed.path).name == enclosure.name:
-                payload = enclosure.read_bytes()  # codeql[pythonsecurity/S8707]
+                payload = enclosure.read_bytes()  # NOSONAR
         elif not skip_crypto:
             print(f"  ..    fetching {url}")
             try:
