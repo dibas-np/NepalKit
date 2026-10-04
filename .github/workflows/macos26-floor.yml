@@ -155,6 +155,45 @@ jobs:
           sw_vers
           echo "Product version: $(sw_vers -productVersion)"
 
+      # ## Do not pipe `xcodebuild` into `head`
+      #
+      # This step used to read the version as
+      #
+      #     resolved=$(DEVELOPER_DIR="$candidate" xcodebuild -version | head -1 | awk '{print $2}')
+      #
+      # which is a race, and this xcodebuild loses it by aborting rather than by
+      # exiting quietly. `xcodebuild -version` prints two lines; `head -1` exits
+      # after the first; the second write hits a closed pipe; and instead of
+      # dying on SIGPIPE the process raises an Objective-C exception:
+      #
+      #     *** Terminating app due to uncaught exception
+      #         'NSFileHandleOperationException', reason:
+      #         '*** -[_NSStdIOFileHandle writeData:]: Broken pipe'
+      #     ...
+      #     4   xcodebuild  -[XcodebuildPreIDEHandler handleVersionWithArguments:] + 552
+      #     ##[error]Process completed with exit code 134.
+      #
+      # 134 is 128 + 6, SIGABRT. Whether it happens depends on whether `head` has
+      # exited before `xcodebuild` writes its second line, so it is intermittent:
+      # the same commit passed on one pull request and failed on the next, minutes
+      # apart, on the same image. Nothing about the repository changed between
+      # them.
+      #
+      # It went unnoticed because this step had only ever run on runners where the
+      # timing went the right way. It surfaced the moment the check became
+      # something other than advisory for a branch that had nothing to do with
+      # CI: a documentation pull request was blocked by a crash in the toolchain
+      # probe, which is the clearest possible statement that a required check has
+      # to be a check and not a coin flip.
+      #
+      # The fix is to consume the whole stream and pick the first line out of it
+      # afterwards. `awk` reads to end of input, so nothing closes the pipe early
+      # and `xcodebuild` always exits 0. Same value, same assertion, no race.
+      #
+      # The rule this establishes for the rest of this file: **do not end a
+      # pipeline with `head` or `tail` in front of a native tool that may still
+      # be writing.** `sed`, `grep` and `awk` are tolerant of a closed pipe;
+      # `xcodebuild` is not.
       - name: Resolve the image's default Xcode and assert its floor
         run: |
           set -euo pipefail
@@ -165,15 +204,25 @@ jobs:
             exit 1
           fi
 
-          resolved=$(DEVELOPER_DIR="$candidate" xcodebuild -version | head -1 | awk '{print $2}')
+          version_output="$(DEVELOPER_DIR="$candidate" xcodebuild -version)"
+          resolved="$(printf '%s\n' "$version_output" | awk 'NR == 1 { print $2 }')"
           echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
           echo "Resolved Xcode: $resolved (floor ${XCODE_FLOOR})"
+
+          # An empty `resolved` would otherwise make the comparison below pass:
+          # sorting "27.0" and "" puts 27.0 first, so the assertion would be
+          # satisfied by a probe that read nothing. Refuse it explicitly.
+          if [ -z "$resolved" ]; then
+            echo "::error::Could not read an Xcode version from ${candidate}. Output was:"
+            printf '%s\n' "$version_output"
+            exit 1
+          fi
 
           if [ "$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | head -1)" != "$XCODE_FLOOR" ]; then
             echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump. See ADR-0007."
             exit 1
           fi
-          DEVELOPER_DIR="$candidate" xcodebuild -version
+          printf '%s\n' "$version_output"
 
       - name: Core suite
         working-directory: NepalKitCore
