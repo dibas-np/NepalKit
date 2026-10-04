@@ -57,7 +57,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=11
+total=13
 ran=0
 summary=""
 current=""
@@ -132,6 +132,14 @@ gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
 # throwaway bundles in this session's LaunchServices database.
 gate "LaunchServices unregistration suite" python3 "$repo_root/scripts/test_unregister_launchservices.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
+# The badge entry is a machine-read input to a third party, so a typo in it is a
+# silently dropped answer rather than a visible failure. This gate runs the
+# verifier's own suite first, for the reason the floor gate does: nothing else in
+# this list exercises the verifier, so without it the tests of this gate would be
+# dark on every ordinary run. Offline by design - it checks structure, not
+# whether a criterion name is real, because that needs the badge's criteria YAML.
+gate "badge entry suite" python3 "$repo_root/scripts/test_verify_bestpractices_json.py"
+gate "badge entry consistency" python3 "$repo_root/scripts/verify-bestpractices-json.py"
 # After the build gate, so the built product exists and the check can compare
 # the floor the app actually shipped against the ones only declared. This is
 # the gate that would have caught the 26.0/26.6 drift before a user did:

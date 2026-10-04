@@ -119,7 +119,7 @@ To build the app and run the local checks from the repository root:
 ./scripts/check-all.sh
 ```
 
-The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs eleven gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run.
+The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs thirteen gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run.
 
 To run the three Swift test suites separately:
 
@@ -168,6 +168,13 @@ Contributors should also read
 [docs/dependencies.md](docs/dependencies.md) before adding a dependency, and
 [docs/security-assessment.md](docs/security-assessment.md) for the standing
 policy on static-analysis findings.
+
+NepalKit's [OpenSSF Best Practices](https://bestpractices.dev/en/projects/15209)
+answers are kept in version control at
+[`.bestpractices.json`](.bestpractices.json), so they are reviewed in pull
+requests like anything else.
+[docs/bestpractices-entry.md](docs/bestpractices-entry.md) explains how that file
+relates to the entry and when an answer goes stale.
 
 ## License
 
