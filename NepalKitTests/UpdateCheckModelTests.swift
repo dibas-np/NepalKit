@@ -222,20 +222,31 @@ struct UpdateCheckModelTests {
         #expect(model.isUpdateAvailable, "the update is still installable after the alert is dismissed")
     }
 
+    /// One place a view reaches the install flow. A pair rather than a preformatted
+    /// string, so the assertions group by *which file* owns a trigger and the text
+    /// is only built where a human reads it.
+    private struct InstallCallSite {
+        let file: String
+        let line: String
+    }
+
     @Test func thePopoverAndSettingsShareOneTriggerForTheInstallFlow() throws {
         // "One trigger" is a claim about two view files, not about this model, so it
         // has to be checked where those files live: SwiftUI builds view trees by type
         // erasure, leaving nothing at runtime to ask. `checkNow` forwarding to the
         // service is already covered by `checkNowIsForwarded`.
         let appDir = Self.repositoryRoot.appendingPathComponent("NepalKit")
-        let names = try FileManager.default
-            .contentsOfDirectory(atPath: appDir.path)
-            .filter { $0.hasSuffix(".swift") }
-            .sorted()
-        #expect(!names.isEmpty, "found no app sources at all — the path walk is broken")
+        let names = try Self.appSources(under: appDir)
+        #expect(
+            names.contains("AboutSettingsView.swift") && names.contains("PopoverFooter.swift"),
+            "the walk did not reach the two surfaces this test guards — found \(names.count) files: \(names)"
+        )
 
-        // Read once. Two walks over the same directory would be two chances for the
-        // two checks below to disagree about what the sources say.
+        // Read once. Two walks over the same tree would be two chances for the two
+        // checks below to disagree about what the sources say. The walk is recursive
+        // because `AppIntents/` holds eight files a flat listing cannot see, and an
+        // App Intent reaching the install flow is exactly what the `.checkForUpdates()`
+        // sweep below exists to catch.
         let sources = try names.reduce(into: [String: String]()) { result, name in
             result[name] = try String(contentsOf: appDir.appendingPathComponent(name), encoding: .utf8)
         }
@@ -246,26 +257,52 @@ struct UpdateCheckModelTests {
         // UpdateCheckModel.swift and the comment in PopoverFooter.swift that names it
         // without a receiver. Doc comments are excluded so documenting the trigger in
         // a view is not a test failure — only calling it is.
-        let callSites = sources.flatMap { name, source -> [String] in
+        //
+        // This is a tripwire against the common mistake, not enforcement: matching
+        // text cannot see a call routed through a differently-named property, a key
+        // path (`\.checkNow`), or a closure handed down from a third view. If the
+        // install flow ever grows past two surfaces, putting the trigger behind a real
+        // seam beats loosening what is matched here.
+        let callSites = sources.flatMap { name, source -> [InstallCallSite] in
             source
                 .split(separator: "\n")
-                .compactMap { line -> String? in
+                .compactMap { line -> InstallCallSite? in
                     let trimmed = line.trimmingCharacters(in: .whitespaces)
                     guard trimmed.contains("updates.checkNow"),
                           !trimmed.hasPrefix("//"),
                           !trimmed.hasPrefix("///")
                     else { return nil }
-                    return "\(name): \(trimmed)"
+                    return InstallCallSite(file: name, line: trimmed)
                 }
         }
 
         // Both surfaces, and only them: the popover footer and the Settings About
         // tab. A third is a new way into the install flow and wants a decision
         // recorded rather than a silently passing test.
+        //
+        // Asserted on which files own a trigger, not on how many call sites exist.
+        // A count cannot tell the right two files from the wrong two, and it names
+        // nothing when it fails — so a surface that broke the rule was reported as
+        // a number instead of by name. The per-file count then holds each named
+        // surface to a single trigger.
+        let surfaces = Dictionary(grouping: callSites, by: \.file)
+
         #expect(
-            callSites.count == 2,
-            "expected two `updates.checkNow` call sites (popover footer, Settings About tab), found \(callSites.count): \(callSites)"
+            Set(surfaces.keys) == ["AboutSettingsView.swift", "PopoverFooter.swift"],
+            """
+            the install flow must be reachable from exactly the popover footer and the \
+            Settings About tab. Found triggers in: \(surfaces.mapValues(\.count)). \
+            A third surface is a new way into installing — record the decision, \
+            or route it through UpdateCheckModel.checkNow like these two do.
+            """
         )
+
+        for (file, sites) in surfaces {
+            #expect(
+                sites.count == 1,
+                "\(file) has \(sites.count) `updates.checkNow` call sites (\(sites.map(\.line))); expected exactly one"
+            )
+        }
 
         // And no view reaches the framework's own check directly, which is the same
         // install flow entered without the model in front of it.
@@ -309,5 +346,26 @@ struct UpdateCheckModelTests {
             }
         }
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    }
+
+    /// Every Swift file under `directory`, as paths relative to it, sorted.
+    ///
+    /// Recursive because a flat listing cannot see `AppIntents/` — eight files the
+    /// app target compiles and the install-flow sweep must not be able to miss.
+    /// `Assets.xcassets/` is skipped by name: it is a compiled asset catalogue, not
+    /// source. Paths come back relative so a failure message names `AppIntents/X.swift`
+    /// rather than an absolute path that differs per machine, and sorted so that
+    /// message is the same between runs.
+    private static func appSources(under directory: URL) throws -> [String] {
+        let root = directory.standardizedFileURL
+        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        let prefix = root.path + "/"
+        return enumerator
+            .compactMap { $0 as? URL }
+            .map { String($0.standardizedFileURL.path.dropFirst(prefix.count)) }
+            .filter { $0.hasSuffix(".swift") && !$0.split(separator: "/").contains { $0 == "Assets.xcassets" } }
+            .sorted()
     }
 }
