@@ -133,8 +133,8 @@ Two details that cost a wrong answer when this file was written:
 
    - **Structure** — JSON validity, field names, statuses, and the
      status/justification pairing.
-   - **Completeness** — the 64 criterion names are pinned in the verifier and
-     compared against the file. Deleting *both* halves of one answer leaves no
+   - **Completeness** — all 191 criterion names are pinned in the verifier
+     (64 Baseline and 127 Metal) and compared against the file. Deleting *both* halves of one answer leaves no
      unmatched pair for a structural check to notice, and the badge would then
      omit that answer with no error anywhere. Only a pinned set catches it.
 

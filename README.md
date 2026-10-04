@@ -119,7 +119,7 @@ To build the app and run the local checks from the repository root:
 ./scripts/check-all.sh
 ```
 
-The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs fourteen gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run.
+The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs fourteen gates, which [CONTRIBUTING.md](CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run. No workflow invokes the script — CI runs the individual gates in the workflow that owns each one, and two gates are local-only for reasons stated in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 To run the three Swift test suites separately:
 

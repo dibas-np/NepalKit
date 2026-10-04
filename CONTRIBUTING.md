@@ -158,13 +158,24 @@ to reach for whenever the calendar table, the supported range or
 The other release-time verifiers are likewise absent, because they run over
 packaged artifacts and the published feed rather than over a checkout.
 
-There is one `verify-*` script in the list, and the exception is worth naming so
+Two `verify-*` scripts are in the list, and the exceptions are worth naming so
 the rule above does not read as broader than it is:
 `scripts/verify-bestpractices-json.py` is gate 11 because it needs nothing but the
-committed entry file, and a structural check that only runs when someone
+committed entry file, and `scripts/verify-deployment-floor.py` is gate 13 because
+it needs only the built product. A structural check that only runs when someone
 remembers to run it is not a gate. Everything that needs the network, a
-credential, or a built artifact stays out. CI runs all of them on any change
-that touches them, so this command is the local half and not a replacement.
+credential, or a built artifact stays out.
+
+CI runs both, in `badge-entry.yml`, and runs the checker's own suite before the
+checker — a validator that has quietly stopped validating reports green, which
+is the failure mode this ladder exists to prevent. That claim was aspirational
+until that workflow existed: the two gates ran only when a human ran this
+script. Two further gates are deliberately local-only and say so in the same
+workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
+runner does not have, and the coverage floor (gate 12) needs the macOS
+toolchain and about six minutes. Every other gate here runs in CI, in the
+workflow that owns it. This command is the local half and not a replacement:
+it is the only thing that runs all fourteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
 the application.
@@ -232,7 +243,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 13 below and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 14 below and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
