@@ -2,13 +2,13 @@
 
 The number, what it means, and why it is not a target yet.
 
-**Measured 2026-10-04 at `280a3ed`, by `scripts/measure-coverage.py`.**
+**Measured 2026-10-04 at `24f4291`, by `scripts/measure-coverage.py`.**
 
 | Suite | Files | Lines | Regions | Functions |
 | --- | --- | --- | --- | --- |
 | `NepalKitCore` — the calendar engine | 9 | **85.62%** | 78.30% | 81.43% |
-| `NepalKit` — the app layer | 42 | **35.03%** | 53.02% | 52.76% |
-| **Combined** | **51** | **43.96%** | **57.48%** | **57.82%** |
+| `NepalKit` — the app layer | 43 | **34.79%** | 53.44% | 53.85% |
+| **Combined** | **52** | **43.59%** | **57.74%** | **58.62%** |
 
 Reproduce it:
 
@@ -24,29 +24,30 @@ point:
 - The calendar engine — conversion, month lengths, formatting, spoken dates — is
   **85.62%** covered, because it is pure logic with an exhaustive round-trip
   suite. This is the part where a bug is a wrong date.
-- The app layer is **35.03%** covered, because most of it is SwiftUI.
+- The app layer is **34.79%** covered, because most of it is SwiftUI.
 
-The app layer is 82% of the source lines and 41% of the coverage. A single
-combined percentage hides that the part which is easy to get wrong is well
-covered and the part which is mostly declarative layout is not.
+The app layer holds 43 of the 52 instrumented files — 83% — and returns 34.79%
+line coverage where the calendar engine returns 85.62%. A single combined
+percentage hides that the part which is easy to get wrong is well covered and
+the part which is mostly declarative layout is not.
 
 ## Why there is no target
 
 The OpenSSF badge asks for 80% and 90% statement coverage and 80% branch
-coverage. This project is at 43.96% / 43.96% / 57.48%. Those answers are `Unmet`
+coverage. This project is at 43.59% / 57.74% / 58.62%. Those answers are `Unmet`
 and writing a target above the truth would be a gate that fails every day.
 
-**The gap is not a chore; it is a refactor.** Of the 42 app files, 1,352 lines —
-23% of the layer — sit in files at exactly 0%:
+**The gap is not a chore; it is a refactor.** The six files below hold 1,198
+lines — 47% of the app layer — and every one of them is at exactly 0%:
 
 | File | Lines |
 | --- | --- |
-| `GeneralSettingsView.swift` | 319 |
-| `SettingsView.swift` | 253 |
+| `GeneralSettingsView.swift` | 316 |
+| `SettingsView.swift` | 247 |
 | `ConverterView.swift` | 221 |
-| `AboutSettingsView.swift` | 173 |
+| `AboutSettingsView.swift` | 170 |
+| `PopoverFooter.swift` | 137 |
 | `MenuBarSettingsView.swift` | 107 |
-| `PopoverFooter.swift` | 100 |
 
 Every one is a SwiftUI view. Covering them needs one of two things, and neither
 is a test-writing exercise:
@@ -96,9 +97,9 @@ column and reports a plausible number. This script parses positionally and
 asserts the field count.
 
 There is a third, subtler one: an earlier version of the subject-file filter used
-an absolute path, so it silently counted 9 of the app layer's 42 files and
-reported 62.65% where the truth is 35.03%. A coverage tool that measures the wrong
-files is worse than none, because the number looks real.
+an absolute path, so it silently counted 9 of the app layer's 43 files and
+reported 62.65% where the truth is 34.79%. A coverage tool that measures the
+wrong files is worse than none, because the number looks real.
 
 ## Branches are not measured
 
