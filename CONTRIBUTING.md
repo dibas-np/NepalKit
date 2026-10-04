@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these thirteen, in this order:
+It runs these fourteen, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -99,12 +99,13 @@ python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's L
 python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
 python3 scripts/test_verify_bestpractices_json.py  # 10. the badge entry's own checks
 python3 scripts/verify-bestpractices-json.py # 11. the badge entry is well-formed
+python3 scripts/measure-coverage.py    # 12. coverage has not fallen below its floor
 python3 scripts/test_verify_deployment_floor.py
-python3 scripts/verify-deployment-floor.py  # 12. the floor is one number everywhere
+python3 scripts/verify-deployment-floor.py  # 13. the floor is one number everywhere
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 13. the Watch app and its complications
+    CODE_SIGNING_ALLOWED=NO                   # 14. the Watch app and its complications
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -114,7 +115,7 @@ guards a failure that is invisible from the outside — a bundle registered unde
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice. Gate 12 runs the floor verifier's own suite before the verifier,
+practice. Gate 13 runs the floor verifier's own suite before the verifier,
 because `scripts/test_verify_deployment_floor.py` is run by no other gate
 here. CI runs both commands too: `.github/workflows/macos26-floor.yml` runs
 them on every pull request after its Mac build, so the checker compares the
@@ -131,7 +132,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those thirteen are the direct consequence of gates that once reported green
+Two of those fourteen are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -247,7 +248,7 @@ commands:
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** It is the same
-  thirteen gates CI runs, and a red local run is a faster red than a red one after
+  fourteen gates CI runs, and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome
@@ -288,6 +289,53 @@ costs. Existing ones are short; match that.
 If you are changing a supported-range boundary, there is a specific rule about
 narrowing versus widening — read [ADR-0010](docs/adr/0010-supported-range-narrowing.md)
 first.
+
+## Size of a change
+
+**A pull request should do one thing.** That is the whole policy, and the rest of
+this section is what "one thing" means when a change touches more than one file,
+which most of them do.
+
+**Aim for under about 400 changed lines, excluding generated files and
+lockfiles.** Above that, prefer splitting. Below it, do not split for the sake of
+the number — a three-line fix with a test is one change, not two.
+
+Split when the change contains separable work:
+
+- a refactor and a behaviour change → the refactor lands first, on its own
+- a data change and the code that consumes it → the data and its provenance note
+  together, the consumer separately if it can land after
+- a bug fix and the cleanup it made convenient → the fix first, alone
+- one feature and an unrelated fix found along the way → two pull requests, and
+  the second says so
+
+Keep together when separation would leave the repository in a state nobody wants
+to stop in:
+
+- a test and the fix it proves — a red test on its own is not a contribution
+- a schema or dataset change and everything needed for it to be correct
+- a licence or entitlement change and the release that has to carry it
+
+**Two exceptions, both deliberate.**
+
+*A dependency bump with the change that needs it.* A Dependabot pull request that
+also fixes the fallout of the bump is one change, because the bump alone would
+break something. Say in the description that it does both.
+
+*A gate that fails until another change lands.* When a fix is only correct
+alongside its gate, the gate is part of the fix. Every gate in this repository
+was added that way, and none of them landed as a separate pull request.
+
+### Why this rule is here
+
+This section is `small_tasks` on the OpenSSF badge entry, and the honest version
+of why it exists is that it is a policy, not a measurement. Large changes are
+harder to review and this repository has one reviewer, so the limit is set by
+what one person can hold in their head — not by a number anyone measured.
+
+What would make it more than a policy: opening an issue that takes a week. The
+honest answer today is that nothing in this repository's history has been tracked
+that way, so the claim is that changes are small, not that they are decomposed.
 
 ## Pull requests
 

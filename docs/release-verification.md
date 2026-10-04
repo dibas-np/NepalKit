@@ -56,7 +56,30 @@ verified:
 brew cat --cask dibas-np/tap/nepalkit | grep -A2 sha256
 ```
 
-### 2. Mount it, then check the signature and who signed it
+### 2. Check the tag signature, then the archive signature
+
+A release carries two signatures. The **tag** says who cut the release; the
+**archive** says what is inside it. Checking only the second tells you the bytes
+are intact, not who published them.
+
+```sh
+git fetch --tags
+git tag -v v1.6.1
+```
+
+Expect `Good "git" signature for dibas-np@github.com with ED25519 key` - the same
+key the commits are signed with, so `git log --show-signature` on the tagged
+commit should name the same fingerprint.
+
+Tags before **v1.6.1** are lightweight and unsigned, and you can see which is
+which without trusting this document:
+
+```sh
+git cat-file -t v1.6.0     # commit  -> unsigned
+git cat-file -t v1.6.1     # tag     -> signed
+```
+
+### 3. Mount it, then check the archive signature
 
 **A `.dmg` carries no code signature of its own, by design.** `codesign` on the
 image reports nothing useful, and `spctl` on the image always says "no usable
@@ -73,9 +96,9 @@ Expect `Authority=Developer ID Application: Dibas Sigdel (CA89X9954L)` and
 warning** — stop and read [SECURITY.md](../SECURITY.md).
 
 The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it
-somewhere else, use the path it prints. Leave it mounted for steps 4 and 5.
+somewhere else, use the path it prints. Leave it mounted for steps 5 and 6.
 
-### 3. Check the notarization ticket, offline
+### 4. Check the notarization ticket, offline
 
 ```sh
 xcrun stapler validate ~/Downloads/NepalKit-*.dmg
@@ -85,10 +108,10 @@ This must succeed with the machine offline. A ticket that validates only with a
 network connection means the stapling did not happen, and you should not install
 the build.
 
-### 4. Check Gatekeeper's own verdict
+### 5. Check Gatekeeper's own verdict
 
 ```sh
-# Still mounted from step 2. Assess without installing.
+# Still mounted from step 3. Assess without installing.
 spctl -a -t execute -vvv /Volumes/NepalKit/NepalKit.app
 hdiutil detach /Volumes/NepalKit
 ```
@@ -99,7 +122,7 @@ but not notarized reports `source=Developer ID Application` or
 `Unnotarized Developer ID`, and Gatekeeper will refuse it on another user's Mac
 even though it opens on yours.
 
-### 5. Confirm the inner app is intact
+### 6. Confirm the inner app is intact
 
 The identity check in step 2 answers *who* signed it. This one answers *is it
 unmodified*: the signature verifies, and the hardened runtime is present. It is

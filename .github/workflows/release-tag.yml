@@ -46,9 +46,25 @@
 # `update-cask.sh` checksums the DMG from the release page and verifies it with
 # `hdiutil`. A tag pushed before its release has the asset attached makes the
 # bump fail, deliberately: the alternative is a cask pinned to a digest computed
-# over GitHub's 404 page. Publish the release with `gh release create v<version>`
-# (which pushes the tag and so triggers this workflow) rather than pushing the tag
-# first.
+# over GitHub's 404 page.
+#
+# ## The tag is signed, and `--verify-tag` is what keeps it that way
+#
+#   git tag -s v<version> -m "NepalKit <version>"
+#   gh release create v<version> --verify-tag --title "v<version>" --notes-file <file>
+#
+# `--verify-tag` is load-bearing rather than decorative. Without it,
+# `gh release create` creates a *lightweight* tag when none exists, and a
+# lightweight tag carries no signature: `git cat-file -t v1.6.0` answers `commit`,
+# not `tag`, and `git tag -v` cannot verify it. Every tag before v1.6.1 is
+# lightweight. This is not a defect in those releases - the archive signature is
+# what protects users and has been present since 1.4.1 - but it means the tag
+# itself added nothing, so a publisher able to move a tag could change what a
+# release points at without the archive signature noticing.
+#
+# The tag is created before the release rather than pushed first because
+# `--verify-tag` needs it to exist locally. The signing key is the same SSH key
+# the commits use; docs/release-verification.md has the verification commands.
 
 name: release tag
 
