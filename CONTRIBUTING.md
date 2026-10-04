@@ -91,7 +91,7 @@ python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swi
 ./scripts/swiftlint.sh lint --strict
 
 swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
-./scripts/run-app-tests.sh                  # 4. the app: 179 tests
+./scripts/run-app-tests.sh                  # 4. the app: 184 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
