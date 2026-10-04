@@ -250,7 +250,19 @@ jobs:
         run: |
           set -euo pipefail
           cd NepalKitCore
-          swift build --build-tests
+          # `--force-resolved-versions`, and there is no Package.resolved to
+          # commit next to it: NepalKitCore declares no package dependencies, so
+          # resolution has nothing to resolve and `swift package resolve` writes
+          # no file here (checked, not assumed). The flag is what keeps that a
+          # property of the build rather than a coincidence of today - the day a
+          # dependency is added, this step fails instead of quietly resolving
+          # whatever is newest in the declared range, and the answer is to commit
+          # the Package.resolved it asks for.
+          #
+          # Deliberately not added to macos26-floor.yml or check-all.sh, which
+          # build the same manifest: there the flag would have nothing to
+          # enforce, and macos26-floor's job is the floor claim, not this one.
+          swift build --build-tests --force-resolved-versions
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2

@@ -102,7 +102,10 @@ def version_key(stem: str) -> tuple:
 
 def release_dates(appcast: Path) -> dict[str, str]:
     """Version → YYYY-MM-DD, from each item's pubDate."""
-    raw = appcast.read_text(encoding="utf-8")
+    # NOSONAR, for the reason recorded in scripts/verify-appcast.py: the feed is
+    # the argument, the caller is the operator or the release script, and
+    # confining the path to a base directory would break the staged-feed run.
+    raw = appcast.read_text(encoding="utf-8")  # NOSONAR
     dates: dict[str, str] = {}
     for item in re.findall(r"<item>.*?</item>", raw, flags=re.S):
         version = re.search(r"<sparkle:shortVersionString>([^<]+)</", item)
