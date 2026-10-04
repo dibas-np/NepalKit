@@ -81,10 +81,15 @@ would catch, because the signing happens off-review.
 
 The rule is the same and the bar is higher:
 
-- **Secrets live in one machine's keychain.** They are not shared, not backed up
-  to a repository, and not placed in CI. There is currently no path by which a
-  second person could be given one, and adding one is a decision that requires
-  writing down what changes — not an onboarding step.
+- **Signing and notarization credentials live in one machine's keychain.** They
+  are not shared, not backed up to a repository, and not placed in CI. There is
+  currently no path by which a second person could be given one, and adding one
+  is a decision that requires writing down what changes — not an onboarding step.
+- **The exception is `HOMEBREW_TAP_DEPLOY_KEY`**, which is a GitHub *environment*
+  secret in `release`, not a keychain item. It cannot sign anything and cannot
+  reach this repository; it exists so a tagged release can bump the Homebrew
+  cask, and it is scoped to that one repository. It is the only credential any
+  CI job can reach, and only on a `v*` tag pushed by the maintainer.
 - **A new maintainer does not inherit signing authority.** It is granted
   deliberately, per credential, after the same review.
 - **[`docs/secrets-policy.md`](docs/secrets-policy.md) is the authority** on

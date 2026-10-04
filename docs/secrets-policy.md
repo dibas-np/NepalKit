@@ -111,9 +111,15 @@ release to the calendar for no security benefit.
 | Dependency Review | `dependency-review.yml`, a required status check | Catches a vulnerable dependency arriving via a pull request — see [dependencies.md](dependencies.md) |
 
 Push protection is the one that matters most, because the realistic failure for
-a project this size is not a compromised keychain; it is a `TEAM_ID=` line with a
-real value pasted into a workflow by someone in a hurry. That push does not
-happen.
+a project this size is not a compromised keychain; it is pasting a credential
+that was meant to stay local into a workflow — a `HOMEBREW_TAP_DEPLOY_KEY:`
+value, a `SPARKLE_BIN:` path that names the keychain, a notarization key
+reference — while wiring up the release pipeline. That push does not happen.
+
+`TEAM_ID` is the obvious counter-example and it is why this paragraph is about
+*credentials*: `CA89X9954L` is printed on every signed build and is public, so
+pushing it is not a leak and push protection will not stop it. It is listed here
+as a non-secret precisely so nobody reads it as one.
 
 Two honest limits:
 

@@ -15,6 +15,22 @@
 # dependency with a known advisory. It needs no credentials, no scanner binary,
 # and no network fetch of a vulnerability database — the graph is the input.
 #
+# ## What this job does NOT cover: Sparkle
+#
+# **This job reviews only what GitHub's dependency graph can see, and Sparkle is
+# not in it.** Verified against that graph's own SBOM for this repository, which
+# holds `actions/*` and `github/codeql-action/*` and nothing else: zero Sparkle
+# entries, despite the tracked `Package.resolved` pinning Sparkle 2.10.0. The pin
+# lives in an `XCRemoteSwiftPackageReference` in `project.pbxproj`, which this
+# action never reads.
+#
+# So "no vulnerable dependency is introduced" means exactly that, for the
+# `github-actions` ecosystem. It is not a claim about the app's one real code
+# dependency. Sparkle advisories have to be reviewed by hand before a release;
+# docs/dependencies.md records that gap and the thresholds that apply to it.
+# Anyone reading a green run here as "the dependencies are clean" is reading more
+# into it than it says.
+#
 # ## Why it runs on pull_request only
 #
 # The interesting comparison is "what does this pull request add?", which is a
@@ -27,9 +43,11 @@
 # ## Why this is a required status check, not a report
 #
 # A finding that lands in a list nobody reads has changed nothing. This job's
-# three checks are required on `main` by the `main` ruleset, so a pull request
-# that introduces a vulnerable dependency cannot be merged around — the same
-# reasoning, and the same deliberate choice, as the deployment-floor gate.
+# check is required on `main` by the `main` ruleset, so a pull request that
+# introduces a vulnerable dependency *visible in GitHub's dependency graph*
+# cannot be merged around — the same reasoning, and the same deliberate choice,
+# as the deployment-floor gate. The Sparkle section above says what this does not
+# cover.
 #
 # ## What a failure means
 #

@@ -56,15 +56,24 @@ verified:
 brew cat --cask dibas-np/tap/nepalkit | grep -A2 sha256
 ```
 
-### 2. Check the signature and who signed it
+### 2. Mount it, then check the signature and who signed it
+
+**A `.dmg` carries no code signature of its own, by design.** `codesign` on the
+image reports nothing useful, and `spctl` on the image always says "no usable
+signature" — which is why step 4 below mounts first and assesses the `.app`
+inside. So the identity check runs against the app, not the disk image:
 
 ```sh
-codesign -dv --verbose=4 ~/Downloads/NepalKit-*.dmg 2>&1 | head -20
+hdiutil attach ~/Downloads/NepalKit-*.dmg -nobrowse -readonly
+codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | head -20
 ```
 
-Expect `Developer ID Application: Dibas Sigdel (CA89X9954L)` and
-`Authority=Developer ID Application`. **A different team here is a failure, not
-a warning** — stop and read [SECURITY.md](../SECURITY.md).
+Expect `Authority=Developer ID Application: Dibas Sigdel (CA89X9954L)` and
+`TeamIdentifier=CA89X9954L`. **A different team here is a failure, not a
+warning** — stop and read [SECURITY.md](../SECURITY.md).
+
+The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it
+somewhere else, use the path it prints. Leave it mounted for steps 4 and 5.
 
 ### 3. Check the notarization ticket, offline
 
@@ -79,8 +88,7 @@ the build.
 ### 4. Check Gatekeeper's own verdict
 
 ```sh
-# Mount without installing.
-hdiutil attach ~/Downloads/NepalKit-*.dmg -nobrowse -readonly
+# Still mounted from step 2. Assess without installing.
 spctl -a -t execute -vvv /Volumes/NepalKit/NepalKit.app
 hdiutil detach /Volumes/NepalKit
 ```
@@ -91,14 +99,11 @@ but not notarized reports `source=Developer ID Application` or
 `Unnotarized Developer ID`, and Gatekeeper will refuse it on another user's Mac
 even though it opens on yours.
 
-The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it
-somewhere else, use the path it prints.
+### 5. Confirm the inner app is intact
 
-### 5. Check the inner app, not just the image
-
-A DMG carries no code signature of its own by design, which is why steps 2 and 4
-both resolve to the `.app` inside it. This step is what `scripts/update-cask.sh`
-automates before it records a digest:
+The identity check in step 2 answers *who* signed it. This one answers *is it
+unmodified*: the signature verifies, and the hardened runtime is present. It is
+what `scripts/update-cask.sh` automates before it records a digest:
 
 ```sh
 codesign --verify --deep --strict --verbose=2 /Volumes/NepalKit/NepalKit.app
@@ -120,13 +125,29 @@ curl -sS https://dibas-np.github.io/NepalKit/appcast.xml | head -40
 ```
 
 You are looking for an `edSignature` element on the `<channel>` or on each
-`<item>`. **`SUPublicEDKey` on its own is not enough**: it means the app is *able*
+`<item>`.
+
+> **This step checks presence, not cryptography.** `curl | head` cannot verify
+> anything — it shows you whether a signature field exists, and nothing about
+> whether it is valid. Do not read a signature element here as a verified feed.
+> For the real check, run the verifier, which fetches each enclosure and checks
+> its Ed25519 signature against the committed public key:
+>
+> ```sh
+> python3 scripts/verify-appcast.py appcast.xml --info-plist NepalKit/Info.plist
+> ```
+>
+> That is the same check CI runs on every change to the feed
+> (`.github/workflows/pages.yml`) and the same one the release machine runs
+> before publishing.
+
+**`SUPublicEDKey` on its own is not enough** either: it means the app is *able*
 to verify a signature, not that it insists on one. An app that only verifies
 downloads trusts whatever the feed names — so a tampered feed could point an
 installation at a different archive. NepalKit refuses an unsigned feed, which is
 what the 1.4.1 release added.
 
-The public key is inside the installed app, not in this repository:
+The public key lives inside the installed app, not in this repository:
 
 ```sh
 defaults read /Applications/NepalKit.app/Contents/Info SUPublicEDKey

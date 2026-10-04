@@ -190,16 +190,35 @@ cut**, not after:
    itself, which is where a reviewer can act on them.
 2. **On `main`, before tagging**, the `sparkle-pin-freshness` job has to be
    green, so the release tag names a pin that was current when it was cut.
-3. **`release-tag.yml`'s preflight** refuses any tag whose commit is not a
-   GitHub-verified commit on `main`. A vulnerable tree that reached a tag by
-   accident is caught here rather than shipped.
+3. **`release-tag.yml`'s preflight** is a **provenance** check, not a
+   vulnerability check. It refuses a tag unless the tagged commit is a
+   GitHub-verified commit reachable from `main`, and it re-verifies that inside
+   the job holding the deploy key. It never inspects dependencies. What it
+   catches is a tree that reached a tag without passing review — not a tree
+   carrying a known advisory.
 
-There is no step that runs an SCA tool against the *packaged* artifact, and that
-is a known limitation rather than a decision: a macOS `.app`'s dependency set is
-its embedded frameworks, and the only third-party one is Sparkle, which
-`package-release.sh` already resolves from the same pinned `project.pbxproj`
-requirement the review job reads. Scanning the artifact would re-derive a
-smaller answer from more moving parts.
+There is no step that runs an SCA tool against the *packaged* artifact, and the
+graph-based gate does not reach Sparkle at all. Both are known limitations
+rather than decisions, and the second is the important one:
+
+> **The dependency-review job does not check Sparkle.** GitHub's dependency
+> graph for this repository contains `actions/*` and `github/codeql-action/*`
+> and no Sparkle entry at all, even though the tracked `Package.resolved` pins
+> Sparkle 2.10.0 — the pin lives in `project.pbxproj`, which the action does not
+> read. A green dependency-review run means the `github-actions` ecosystem is
+> clean. It says nothing about the app's only third-party code dependency.
+
+So the composition story has two tiers with different coverage:
+
+| Dependency | In the graph? | Covered by | Gap |
+| --- | --- | --- | --- |
+| GitHub Actions (`actions/*`, `github/codeql-action/*`) | yes | Dependabot, `dependency-review`, push-time pin updates | none known |
+| Sparkle, the app's only code dependency | **no** | nothing automated | **advisories must be reviewed by hand before each release** |
+
+The manual review is a real obligation rather than a formality: check the
+Sparkle release notes and the GitHub Advisory Database for the pinned version
+before cutting a tag. The thresholds in this section say what to do with what
+that review finds.
 
 ### The gap, stated plainly
 

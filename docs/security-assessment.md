@@ -161,6 +161,29 @@ pronounced; the spoken form is a separate code path from the visual one rather
 than a formatting flag; conversion returns an explicit unsupported or error state
 instead of a plausible wrong answer; accessibility labels are covered by tests.
 
+### F8 — A CodeQL alert does not block a merge
+
+**Impact if unmitigated:** a pull request introduces an `error`-severity
+finding, CI is green because the analysis *ran*, and the change lands. The
+finding sits in the Security tab until someone looks.
+
+**State: known gap, and it is the enforcement half of F3's problem.** The
+`Analyze (swift)`, `Analyze (python)` and `Analyze (actions)` checks are required
+status checks, so the analysis cannot be skipped. The `main` ruleset carries no
+`Require code scanning results` rule, so nothing blocks on an alert. The
+thresholds in this document are therefore a policy with no gate behind it.
+
+**Residual risk:** bounded by CODEOWNERS — the updater, the entitlements,
+`Info.plist` and the calendar engine all require the maintainer's review, and
+the documents that encode this policy do too. It is not bounded for a file
+nobody claimed.
+
+**How this would be closed:** add the `code_scanning` rule to the `main` ruleset
+with an `error` alert threshold. That is one ruleset change and no workflow
+change, and it is the same class of decision as the required-status-check list
+already in `CONTRIBUTING.md` — so it belongs to the maintainer, not to a
+documentation pull request.
+
 ### Things looked for and not found
 
 - **No hard-coded credentials.** No key, token, or password in any tracked file.
@@ -185,8 +208,19 @@ instead of a plausible wrong answer; accessibility labels are covered by tests.
 CodeQL runs on every push to `main`, every pull request to `main`, weekly on a
 schedule, and on demand — across Swift, Python, and Actions
 (`.github/workflows/codeql.yml`). Its three `Analyze (*)` checks are **required
-status checks** on `main`, so a new alert blocks the merge rather than sitting in
-a list.
+status checks** on `main`, so the analysis cannot be skipped or left unrun on
+the way to `main`.
+
+**What that does not do is block on an alert.** The `main` ruleset requires the
+*checks*; it carries no `Require code scanning results` rule, so a new
+`error`-severity finding surfaces in the Security tab and **does not by itself
+prevent a merge**. Verified against the live ruleset, whose rule types are
+exactly `deletion`, `non_fast_forward`, `pull_request` and
+`required_status_checks`.
+
+That is the difference between "the analysis ran" and "the finding was acted
+on", and only the first is enforced. Closing the second means adding the
+`code_scanning` rule with an alert threshold — recorded as F8.
 
 Two properties of that workflow are deliberate and worth not undoing:
 
