@@ -130,7 +130,7 @@
   "osps_vm_06_01_status": "Met",
   "osps_vm_06_01_justification": "docs/security-assessment.md sets SAST thresholds: any finding in the update path, entitlements or Info.plist before the next release; error 7 days; warning 30 days; note the next release touching the file. Suppression to get a green build is forbidden, and there is no CodeQL allowlist.",
   "osps_vm_06_02_status": "Unmet",
-  "osps_vm_06_02_justification": "CodeQL analyses run on every pull request for Swift, Python and Actions, and SonarCloud's quality gate reports alongside. Neither blocks a finding: the ruleset has no code-scanning-results rule, does not require the Sonar checks, and a failing required check can be waived. Evaluation is enforced; blocking is not. One-rule fix recorded as finding F8.",
+  "osps_vm_06_02_justification": "CodeQL analyses run on every pull request for Swift, Python and Actions. Four separate evaluators report alongside it - SonarCloud's quality gate, CodeRabbit, GitGuardian, and GitHub's own AI code-scanning findings - and not one of them blocks a merge: the ruleset has no code-scanning-results rule, does not require the Sonar, CodeRabbit, GitGuardian or AI-scanning checks, and a failing required check can be waived by the actor who is already the bypass actor. Evaluation is enforced; blocking is not. One-rule fix recorded as finding F8.",
   "access_continuity_status": "Unmet",
   "access_continuity_justification": "One maintainer. GOVERNANCE.md states there is no succession plan.",
   "accessibility_best_practices_status": "Met",
