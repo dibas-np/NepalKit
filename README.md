@@ -1,13 +1,14 @@
 <div align="center">
   <h1>NepalKit</h1>
   <p>Today's Bikram Sambat date in your Mac's menu bar and on your Apple Watch.</p>
-  <p>Nepal Time, Gregorian date conversion, and Siri and Shortcuts support in a native macOS app.</p>
+  <p>Nepal Time, Gregorian date conversion, and Siri and Shortcuts support in a native macOS app and a standalone watchOS app.</p>
 </div>
 
 <p align="center">
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/release/dibas-np/NepalKit?label=version&style=flat-square" alt="Latest release"></a>
   <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6 or later">
+  <img src="https://img.shields.io/badge/watchOS-26%2B-black?style=flat-square&logo=apple" alt="watchOS 26 or later">
   <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=build&style=flat-square" alt="Build status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="GPL version 3 or later"></a>
 </p>
