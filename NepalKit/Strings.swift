@@ -126,6 +126,25 @@ nonisolated enum Strings {
     /// continues past the footer, and there is nothing to add by saying it —
     /// "Settings" is the whole action.
     static let settingsLabelSpoken = "Settings"
+
+    /// The footer's update button, which exists only while a check has found
+    /// something to install.
+    ///
+    /// The word "Update" rather than "Check for Updates", which belongs to
+    /// Settings where asking the question is the action — here the answer is
+    /// already known. The ellipsis is this file's convention for work continuing
+    /// past the surface it is drawn on, and this button qualifies: the framework
+    /// presents the install flow in its own window.
+    static let updateButtonLabel = "Update…"
+    /// Spoken form: the ellipsis is a visual affordance and reads as a pause with
+    /// no meaning, so the announcement drops it.
+    static let updateButtonLabelSpoken = "Update"
+    /// Deliberately not "installs the update". One click asks the updater to
+    /// present the update it has already found; the install happens on the user
+    /// choosing Install in the framework's own alert. A hint promising a single tap
+    /// is the kind of thing a screen-reader user acts on and then finds did not
+    /// happen, on the one control whose consequence is replacing the app.
+    static let updateButtonHelp = "Shows the available update and its install options"
     // Spoken-channel strings. These are *said*, never shown: the visual date
     // always renders as configured, and only the accessibility representation
     // differs (SpokenDate).

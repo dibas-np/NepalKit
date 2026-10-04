@@ -242,28 +242,6 @@ private struct SourceLink: View {
 }
 
 #if DEBUG
-/// Preview stand-ins so the canvas renders without Sparkle, the login-item
-/// service, or persistence side effects. Nothing else may use these: the
-/// production seams live in NepalKitApp, and a mock that leaked past #if DEBUG
-/// would silently replace the real services. `PreviewUpdateService` is
-/// MainActor because `UpdateServicing` requires it; `PreviewLoginService` stays
-/// nonisolated because `LoginItemServicing` is nonisolated, and a MainActor
-/// conformance only satisfies that protocol where default isolation agrees.
-@MainActor private final class PreviewUpdateService: UpdateServicing {
-    var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
-    var onReminder: (@MainActor (Bool) -> Void)?
-    var automaticallyChecksForUpdates = true
-    var lastCheckDate: Date?
-    func start() {}
-    func checkForUpdates() {}
-}
-
-private final class PreviewLoginService: LoginItemServicing {
-    var isRegistered = true
-    func register() throws {}
-    func unregister() throws {}
-}
-
 #Preview("Settings window") {
     SettingsView(
         settings: .preview,
