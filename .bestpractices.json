@@ -70,7 +70,7 @@
   "osps_gv_01_02_status": "Met",
   "osps_gv_01_02_justification": "GOVERNANCE.md's 'Who decides' and 'What that means in practice' sections describe the maintainer's responsibilities for merge decisions, breaking changes and supported-range narrowing, releases, and the fact that licensing cannot be changed by contributors.",
   "osps_gv_03_02_status": "Met",
-  "osps_gv_03_02_justification": "CONTRIBUTING.md sets out the requirements for acceptable contributions: CODING_STANDARDS.md as a binding standard, the eleven local and CI gates and their order, the policy that a behaviour change ships with a test in the same commit, when a change needs an architecture decision record, and the per-commit Developer Certificate of Origin.",
+  "osps_gv_03_02_justification": "CONTRIBUTING.md sets out the requirements for acceptable contributions: https://github.com/dibas-np/NepalKit/blob/main/.github/CODING_STANDARDS.md as a binding standard, the eleven local and CI gates and their order, the policy that a behaviour change ships with a test in the same commit, when a change needs an architecture decision record, and the per-commit Developer Certificate of Origin.",
   "osps_le_01_01_status": "Met",
   "osps_le_01_01_justification": "A Developer Certificate of Origin (1.1) is required of every contributor and documented in CONTRIBUTING.md. It is enforced by .github/workflows/dco.yml, which fails a pull request when any commit in it lacks a Signed-off-by trailer, and that check is a required status check on main.",
   "osps_qa_03_01_status": "Met",

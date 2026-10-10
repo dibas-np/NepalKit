@@ -1,6 +1,6 @@
-# Developer Certificate of Origin, as promised in CONTRIBUTING.md.
+# Developer Certificate of Origin, as promised in .github/CONTRIBUTING.md.
 #
-# CONTRIBUTING.md asks every submitter to certify, per commit, that the work is
+# .github/CONTRIBUTING.md asks every submitter to certify, per commit, that the work is
 # theirs or that they have the right to submit it under GPL-3.0-or-later. That
 # promise was unenforced: the repository had no DCO check, and the history shows
 # why that is a real gap rather than a formality — the check never ran, so no
@@ -52,7 +52,10 @@ jobs:
           while read -r sha; do
             if ! git log -1 --format='%B' "$sha" | grep -qiE '^[[:space:]]*Signed-off-by:[[:space:]]*.+$'; then
               subject=$(git log -1 --format='%s' "$sha")
-              echo "::error file=CONTRIBUTING.md::Missing 'Signed-off-by:' in $sha — $subject"
+              # The path is the one the reader has to open, and the file moved to
+              # .github/ alongside this workflow. An annotation pointing at a path
+              # that no longer exists renders as an unclickable orphan.
+              echo "::error file=.github/CONTRIBUTING.md::Missing 'Signed-off-by:' in $sha — $subject"
               missing=$((missing + 1))
             fi
           done < <(git rev-list "${BASE}..${HEAD}")

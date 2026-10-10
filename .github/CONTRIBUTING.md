@@ -4,14 +4,14 @@ Thanks for considering it. NepalKit is a small macOS menu-bar app, so the bar
 for a change is not "does it compile" — it is **"is it true, and can you show
 me you checked."**
 
-Read [CODING_STANDARDS.md](CODING_STANDARDS.md) before writing code. It is short
+Read [CODING_STANDARDS.md](../CODING_STANDARDS.md) before writing code. It is short
 and it is not advisory.
 
 ## The one thing that matters most
 
 **The calendar data is the product's correctness core, and its provenance is
 documented rather than assumed.** If your change touches month lengths, the
-supported range, conversion, or the source record in [SOURCES.md](SOURCES.md),
+supported range, conversion, or the source record in [SOURCES.md](../SOURCES.md),
 it needs evidence, not reasoning:
 
 ```sh
@@ -33,7 +33,7 @@ The app's deployment floor is macOS 26, and `NepalKitCore` will not build
 against anything older.
 
 **The floor is macOS 26.6, and CI runs Xcode 27.** The floor gate
-([macos26-floor.yml](.github/workflows/macos26-floor.yml)) runs on the `xcode-27`
+([macos26-floor.yml](workflows/macos26-floor.yml)) runs on the `xcode-27`
 image and has completed successfully: core suite, app-layer suite, build, and a
 launch that survives and exits without a relaunch loop.
 
@@ -154,7 +154,7 @@ runtime rather than because it depends on the floor.
 `check-all.sh` does **not** run `verify-data-sources.py`, and that exclusion is
 deliberate: the provenance gate needs network access, and it is the first thing
 to reach for whenever the calendar table, the supported range or
-[SOURCES.md](SOURCES.md) changes — see "The one thing that matters most" above.
+[SOURCES.md](../SOURCES.md) changes — see "The one thing that matters most" above.
 The other release-time verifiers are likewise absent, because they run over
 packaged artifacts and the published feed rather than over a checkout.
 
@@ -183,7 +183,7 @@ the application.
 The app-layer suite runs through a SwiftPM harness that symlinks the real
 sources. It was introduced after a hosted Xcode runner hang; the hosted suite
 also passes on the current toolchain. See
-[ADR-0005](docs/adr/0005-app-layer-test-execution.md) for the history.
+[ADR-0005](../docs/adr/0005-app-layer-test-execution.md) for the history.
 To run the hosted suite directly:
 
 ```sh
@@ -280,25 +280,25 @@ it.
   Symbols, follow the HIG, and match what the surrounding code already does
 - Accessibility is not optional. Every surface needs a label, and the spoken
   form is a **separate channel** from the visual one — see
-  [SpokenDate.swift](NepalKit/SpokenDate.swift) for why the two must not be
+  [SpokenDate.swift](../NepalKit/SpokenDate.swift) for why the two must not be
   conflated.
 
 ## Decisions, not just code
 
 Changing an OpenSSF Best Practices answer in
-[`.bestpractices.json`](.bestpractices.json) is the same kind of change: the
+[`.bestpractices.json`](../.bestpractices.json) is the same kind of change: the
 justification has to point at evidence in this repository, not assert a fact. See
-[docs/bestpractices-entry.md](docs/bestpractices-entry.md) for which answers a
+[docs/bestpractices-entry.md](../docs/bestpractices-entry.md) for which answers a
 ruleset or workflow change can silently invalidate — relaxing branch protection
 is a small diff that makes a `Met` untrue without touching that file.
 
 Anything that changes a supported-range boundary, the licence, the data
 provenance, or a platform requirement needs a decision record in
-[docs/adr/](docs/adr/). One paragraph: the context, the decision, and what it
+[docs/adr/](../docs/adr). One paragraph: the context, the decision, and what it
 costs. Existing ones are short; match that.
 
 If you are changing a supported-range boundary, there is a specific rule about
-narrowing versus widening — read [ADR-0010](docs/adr/0010-supported-range-narrowing.md)
+narrowing versus widening — read [ADR-0010](../docs/adr/0010-supported-range-narrowing.md)
 first.
 
 ## Size of a change
@@ -389,17 +389,17 @@ that way, so the claim is that changes are small, not that they are decomposed.
   deliberate act rather than a tidy-up. Removing one is more so: a required
   check that silently stops being required is a security control that stopped
   existing without anyone deciding.
-- **Adding a dependency?** Read [`docs/dependencies.md`](docs/dependencies.md)
+- **Adding a dependency?** Read [`docs/dependencies.md`](../docs/dependencies.md)
   first. The `dependency-review` gate fails the pull request if what you add has
   a known advisory at `moderate` severity or above, and
-  [`docs/security-assessment.md`](docs/security-assessment.md) records why that
+  [`docs/security-assessment.md`](../docs/security-assessment.md) records why that
   severity threshold is where it is. Dependabot cannot watch this project's
   Swift pin at all, which that document explains.
 
 ## Licensing of contributions
 
 Contributions are accepted under the same terms as the project:
-**GPL-3.0-or-later**. See [LICENSE](LICENSE).
+**GPL-3.0-or-later**. See [LICENSE](../LICENSE).
 
 NepalKit uses a **Developer Certificate of Origin (1.1)**. By submitting a
 pull request you certify that:

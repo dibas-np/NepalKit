@@ -20,15 +20,15 @@ no governance model beyond this file.
   has been narrowed before, and will be again if the data cannot be
   corroborated — that is a decision about honesty, not about features.
 - **Releases** are cut by the maintainer, following the process in the
-  [fresh-Mac install procedure](docs/release-evidence/fresh-mac-install-procedure.md)
+  [fresh-Mac install procedure](../docs/release-evidence/fresh-mac-install-procedure.md)
   and driven by `scripts/package-release.sh`. Neither is in the README: a
   release is a maintainer action over a signed artifact on a machine that has
   never trusted the developer, and that is not something a contributor or an
-  install guide needs. The README's [Install](README.md#install) section is what
+  install guide needs. The README's [Install](../README.md#install) section is what
   a user reads.
 - **Licensing** cannot be changed by a majority vote of contributors. GPL-3.0 is
   a deliberate choice made for reasons recorded in
-  [SOURCES.md](SOURCES.md), and relicensing is a decision only the copyright
+  [SOURCES.md](../SOURCES.md), and relicensing is a decision only the copyright
   holder can make.
 
 ## Contributing
@@ -92,17 +92,17 @@ The rule is the same and the bar is higher:
   CI job can reach, and only on a `v*` tag pushed by the maintainer.
 - **A new maintainer does not inherit signing authority.** It is granted
   deliberately, per credential, after the same review.
-- **[`docs/secrets-policy.md`](docs/secrets-policy.md) is the authority** on
+- **[`docs/secrets-policy.md`](../docs/secrets-policy.md) is the authority** on
   what exists, who can reach it, and how it is rotated.
 
 ### The gap worth stating
 
-[OSPS-GV-04.01](docs/security-assessment.md) asks whether collaborators are
+[OSPS-GV-04.01](../docs/security-assessment.md) asks whether collaborators are
 reviewed before being granted escalated permissions. The honest answer for this
 repository today is: **yes, by the only person who could grant them, and there
 are none to review.** That is a real answer, but it is also a thin one, and it
 would stop being adequate the moment a second person were added. The
-[security assessment](docs/security-assessment.md) records this as finding F3
+[security assessment](../docs/security-assessment.md) records this as finding F3
 and says what would close it.
 
 ## Becoming more than one person

@@ -9,7 +9,7 @@ reviews:
   # `chill` rather than `assertive`: this repository's comments are long and
   # deliberate, so a profile that flags everything produces a review nobody reads.
   profile: "chill"
-  # A human merges. GOVERNANCE.md:17 makes merge decisions the maintainer's, so
+  # A human merges. .github/GOVERNANCE.md:17 makes merge decisions the maintainer's, so
   # CodeRabbit should never be the thing that blocks.
   request_changes_workflow: false
   allow_author_approval: true
@@ -21,7 +21,7 @@ reviews:
   review_status: true
   poem: false
   # SwiftLint is installed on the runner and this is a Swift project, so let
-  # CodeRabbit run it. CONTRIBUTING.md records the pre-existing violations, so the
+  # CodeRabbit run it. .github/CONTRIBUTING.md records the pre-existing violations, so the
   # value here is the project's configuration rather than the default.
   tools:
     swiftlint:
