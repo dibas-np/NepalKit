@@ -102,6 +102,11 @@ private struct ScrollPaging: ViewModifier {
     let model: MonthGridModel
     let isActive: Bool
     @State private var isHovering = false
+    /// `isActive` as the monitor reads it. The monitor's closure is made once,
+    /// on appearance, so a plain `let` would be read as it was then; the grid
+    /// stays laid out under the converter, so it never reappears to refresh
+    /// it. State is read through its storage, so the closure sees each change.
+    @State private var isActiveNow = true
     @State private var monitor: Any?
 
     func body(content: Content) -> some View {
@@ -110,10 +115,11 @@ private struct ScrollPaging: ViewModifier {
             // gaps between days still pages.
             .contentShape(.rect)
             .onHover { isHovering = $0 }
+            .onChange(of: isActive, initial: true) { isActiveNow = isActive }
             .onAppear {
                 guard monitor == nil else { return }
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
-                    guard isActive, isHovering else { return event }
+                    guard isActiveNow, isHovering else { return event }
                     model.scroll(
                         deltaY: event.scrollingDeltaY,
                         phase: MonthScrollPager.Phase(phase: event.phase, momentumPhase: event.momentumPhase)
@@ -197,11 +203,6 @@ private struct MonthGridDays: View {
     /// The day whose details are showing, owned by the grid view so the
     /// details card below the grid can read it.
     @Binding var selected: MonthGridDay?
-    /// The day to open in the converter once its popover has finished closing.
-    /// Switching destination while the popover is still closing tears down the
-    /// cell it is anchored to mid-layout: AppKit logs layout recursion and the
-    /// menu-bar popover jumps to the cell's frame before settling back.
-    @State private var pendingConverterDay: BSDay?
 
     var body: some View {
         let headers = model.weekdayHeaders(settings: settings)
@@ -216,9 +217,10 @@ private struct MonthGridDays: View {
                         .accessibilityLabel(spokenHeaders[column])
                 }
             }
-            ForEach(model.weeks.enumerated(), id: \.offset) { _, week in
+            ForEach(GridSlot.weeks(model.weeks)) { week in
                 GridRow {
-                    ForEach(week.enumerated(), id: \.offset) { _, cell in
+                    ForEach(week.slots) { slot in
+                        let cell = slot.day
                         if let cell, cell.isInShownMonth {
                             dayButton(cell)
                         } else if let cell {
@@ -255,6 +257,30 @@ private struct MonthGridDays: View {
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
         .accessibilityAddTraits(day.isToday || selected == day ? .isSelected : [])
         .accessibilityHint(Strings.monthGridDayHelp)
+    }
+}
+
+/// The grid's rows and cells with identities that outlive a month: a day is
+/// its Gregorian date, a week the date of its first day. Only the empty cells
+/// at the very ends of the dataset, which have no date, fall back to where
+/// they sit.
+struct GridSlot: Identifiable {
+    let id: AnyHashable
+    let day: MonthGridDay?
+
+    struct Week: Identifiable {
+        let id: AnyHashable
+        let slots: [GridSlot]
+    }
+
+    static func weeks(_ weeks: [[MonthGridDay?]]) -> [Week] {
+        weeks.enumerated().map { row, week in
+            let slots = week.enumerated().map { column, day in
+                GridSlot(id: day.map { AnyHashable($0.gregorian) } ?? AnyHashable("empty \(row) \(column)"), day: day)
+            }
+            let first = week.compactMap { $0 }.first
+            return Week(id: first.map { AnyHashable($0.gregorian) } ?? AnyHashable("empty \(row)"), slots: slots)
+        }
     }
 }
 
