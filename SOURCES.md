@@ -44,7 +44,7 @@ match askbuddie exactly.
 
 The government's national Panchanga for 2083 BS, published by the Nepal
 Panchanga Nirnayak Samiti under the Ministry of Culture, Tourism and Civil
-Aviation, confirms every 2083 month length. That includes the four corrected
+Aviation, confirms all twelve month lengths for 2083. That includes the four corrected
 months above.
 
 - Page: [npns.gov.np, Panchanga of the year 2083](https://npns.gov.np/pages/panchanga-of-the-year-2083-5/).
