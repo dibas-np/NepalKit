@@ -65,6 +65,17 @@ Gregorian date it also prints) and 1 Baisakh 2084 as a Wednesday (14 April 2027)
 This is the first source for 2083 that is both official and recorded. The 2084
 row stays a projection until the 2084 Panchanga is published.
 
+### Festivals and national days
+
+Festivals and national days come from the same national Panchanga, one year at
+a time, under [ADR-0016](docs/adr/0016-festivals-from-the-national-panchanga.md).
+For 2083 every day's observances were typed in from the PDF pinned above, 57
+were selected under the ADR's rule, and a second, independent read of the page
+images confirmed each one's day and wording, including the three printed as
+overflow in another day's row. The data is in
+[`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
+No other source is used for festival dates.
+
 The 2082 and 2083 descriptions preserve earlier evidence; those sources were
 not freshly checked during this cleanup. A maintainer-supplied claim of
 Parliamentary Portal or MOHA Gazette verification has no exact record or decree
