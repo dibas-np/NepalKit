@@ -6,7 +6,7 @@
 # anything if a wrong one fails. `scripts/verify-bestpractices-json.py` checks
 # that structure, and `scripts/test_verify_bestpractices_json.py` checks the
 # checker — but until this workflow, no CI job ran either one. They were gates
-# 10 and 11 of a fourteen-gate ladder that only existed when a human ran
+# 11 and 12 of a sixteen-gate ladder that only existed when a human ran
 # `./scripts/check-all.sh` locally.
 #
 # That is precisely the failure .github/CONTRIBUTING.md names: "a structural check that
@@ -15,26 +15,35 @@
 # true rather than aspirational — the same reason dco.yml exists, for the same
 # reason: a rule that nothing enforces has quietly stopped being a rule.
 #
-# ## Why these two and not the rest of the ladder
+# ## Why these and not the rest of the ladder
 #
-# Both scripts are pure Python over a committed JSON file. No toolchain, no
-# simulator, no built product, roughly a fifth of a second together. That is what
-# makes them worth running on every pull request.
+# The badge scripts are pure Python over a committed JSON file. The other four
+# suites here (the appcast verifier, the SwiftLint bootstrap, the release
+# product verifier, the coverage parser) run on stubs and fixtures only: no
+# toolchain, no simulator, no built product, no macOS tool. Together they take
+# a few seconds, which is what makes them worth running on every pull request.
+# Until they were added here, test_verify_appcast.py ran only when a feed was
+# published, and the other three ran in no workflow at all.
 #
-# The four local-only gates are absent for stated reasons, and this comment is
+# The two local-only gates are absent for stated reasons, and this comment is
 # where those reasons live:
 #
 # * **LaunchServices unregistration** (gate 8) registers and unregisters real
 #   app bundles in the session's LaunchServices database. It needs a macOS
 #   session with a GUI login, which a CI runner does not have.
-# * **Coverage floor** (gate 12) runs both Swift suites under `swift test` with
+# * **Coverage floor** (gate 14) runs both Swift suites under `swift test` with
 #   coverage instrumentation and reads the result with `xcrun llvm-cov`. It needs
 #   the macOS toolchain and roughly six minutes. Running it here would make this
 #   workflow the slowest one in the repository to protect a number that moves
 #   slowly. It is enforced locally and the floor is committed, so a regression
 #   is caught by whoever runs the ladder.
 #
-# Everything else in the ladder already runs in CI, in the workflow that owns it.
+# Every other gate runs in CI, in the workflow that owns it: this one runs the
+# pure-Python suites (gate 2's bootstrap suite and gates 9 to 13);
+# macos26-floor.yml builds the app and the hosted test bundle (gate 1, as
+# build-for-testing), runs the core, app and cask suites and the deployment
+# floor check; data-sources.yml runs the parser and changelog suites; codeql.yml
+# runs SwiftLint; the Watch job runs gate 16.
 # `check-all.sh` is a superset and is not invoked here on purpose: its first
 # gate builds the app, so running it would duplicate the macOS build rather than
 # add a check.
@@ -62,3 +71,15 @@ jobs:
         run: python3 scripts/test_verify_bestpractices_json.py
       - name: The badge entry
         run: python3 scripts/verify-bestpractices-json.py
+      - name: The appcast verifier's own suite
+        # pages.yml runs this only when a feed is published; a change to the
+        # verifier itself must be tested on the pull request that makes it.
+        run: python3 scripts/test_verify_appcast.py
+      - name: The SwiftLint bootstrap's own suite
+        run: python3 scripts/test_swiftlint.py
+      - name: The release product verifier's own suite
+        # codesign is stubbed in this suite, so it needs no macOS tool.
+        run: python3 scripts/test_verify_release_product.py
+      - name: The coverage parser's own suite
+        # Fixture text only; the xcrun llvm-cov call it parses is never made.
+        run: python3 scripts/test_measure_coverage.py
