@@ -103,14 +103,14 @@ struct MenuBarFormatTests {
             SpokenDate.menuBarDate(now: now, format: format, monthNames: names, in: .v2)
         }
         #expect(spoken(.standard, .transliterated) == "11 Ashoj 2083")
-        #expect(spoken(Self.everything, .transliterated) == "Sunday, 11 Ashoj 2083, 10:57")
-        #expect(spoken(MenuBarFormat(showsWeekday: true, showsTime: true, showsSeconds: true), .nepali) == "आइत, 11 असोज 2083, 10:57:07")
+        #expect(spoken(Self.everything, .transliterated) == "Sunday, 11 Ashoj 2083, 10:57 AM")
+        #expect(spoken(MenuBarFormat(showsWeekday: true, showsTime: true, showsSeconds: true), .nepali) == "आइत, 11 असोज 2083, 10:57:07 AM")
         #expect(spoken(MenuBarFormat(showsTime: true, usesTwentyFourHourClock: true), .transliterated) == "11 Ashoj 2083, 10:57")
     }
 
     @Test func spokenFormFollowsNepalTimeAcrossMidnight() throws {
         let spoken = SpokenDate.menuBarDate(now: try Self.utc(27, 18, 15, 30), format: Self.everything, monthNames: .transliterated, in: .v2)
-        #expect(spoken == "Monday, 12 Ashoj 2083, 12:00")
+        #expect(spoken == "Monday, 12 Ashoj 2083, 12:00 AM")
     }
 
     @Test func clockTimeInAnotherZone() throws {
@@ -126,5 +126,18 @@ struct MenuBarFormatTests {
         #expect((1 ... 7).map { shortWeekdayName(for: $0, style: .nepali) } == ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"])
         #expect(shortWeekdayName(for: 0, style: .transliterated) == nil)
         #expect(shortWeekdayName(for: 8, style: .nepali) == nil)
+    }
+
+    @Test func spokenTwelveHourTimeSaysWhichHalfOfTheDay() throws {
+        let time = MenuBarFormat(showsTime: true)
+        // 06:12 UTC is 11:57 in Nepal; 06:15 UTC is 12:00 noon, the first PM minute.
+        #expect(SpokenDate.menuBarDate(now: try Self.utc(27, 6, 12, 0), format: time, monthNames: .transliterated, in: .v2)
+            == "11 Ashoj 2083, 11:57 AM")
+        #expect(SpokenDate.menuBarDate(now: try Self.utc(27, 6, 15, 0), format: time, monthNames: .transliterated, in: .v2)
+            == "11 Ashoj 2083, 12:00 PM")
+        // The screen keeps no marker.
+        let shown = formatClockTime(try Self.utc(27, 6, 15, 0), timeZone: nepalTimeZone,
+                                    usesTwentyFourHourClock: false, showsSeconds: false, digits: .latin)
+        #expect(shown == "12:00")
     }
 }

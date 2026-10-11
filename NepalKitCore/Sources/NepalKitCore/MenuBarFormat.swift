@@ -43,7 +43,8 @@ public struct MenuBarFormat: Sendable, Hashable {
 /// The 12-hour form carries no AM/PM, as the macOS menu-bar clock does not:
 /// the menu bar is read at a glance by someone who knows whether it is morning,
 /// and there is no existing Nepali form of the marker to pair with Devanagari
-/// digits. Its hour has no leading zero ("9:05"); the 24-hour form pads it
+/// digits. The spoken form adds it (`SpokenDate.menuBarDate`), because a
+/// listener has no glance to tell 10:57 in the morning from the evening. Its hour has no leading zero ("9:05"); the 24-hour form pads it
 /// ("09:05"), which is how both clock styles are conventionally written.
 public func formatClockTime(
     _ date: Date,
@@ -128,13 +129,21 @@ extension SpokenDate {
         }
         parts.append(bs(today, monthNames: monthNames))
         if format.showsTime {
-            parts.append(formatClockTime(
+            let time = formatClockTime(
                 now,
                 timeZone: timeZone,
                 usesTwentyFourHourClock: format.usesTwentyFourHourClock,
                 showsSeconds: format.showsSeconds,
                 digits: .latin
-            ))
+            )
+            // Spoken only: the screen leaves AM/PM to the reader's glance, a
+            // voice cannot, so the 12-hour time says which half of the day.
+            if format.usesTwentyFourHourClock {
+                parts.append(time)
+            } else {
+                let hour = ClockCalendars.gregorian(timeZone: timeZone).component(.hour, from: now)
+                parts.append(time + (hour < 12 ? " AM" : " PM"))
+            }
         }
         return parts.joined(separator: ", ")
     }

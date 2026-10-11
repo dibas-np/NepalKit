@@ -63,6 +63,6 @@ struct TimeZoneTodayTests {
         let everything = MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true)
         #expect(try SpokenDate.menuBarDate(
             now: now, timeZone: Self.newYork(), format: everything, monthNames: .transliterated, in: .v2
-        ) == "Saturday, 10 Ashoj 2083, 7:30")
+        ) == "Saturday, 10 Ashoj 2083, 7:30 PM")
     }
 }
