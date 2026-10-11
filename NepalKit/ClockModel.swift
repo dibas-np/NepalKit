@@ -15,6 +15,17 @@ import NepalKitCore
 @Observable
 final class ClockModel {
     private(set) var now: Date
+    /// Today's Gregorian day in `timeZone`, stored apart from `now` and assigned
+    /// only when it changes, so views that show the day (the Today hero) are
+    /// invalidated once a day rather than on every per-second tick.
+    private(set) var today: GADay?
+    /// Whether the secondary clock row shows: the two clocks read differently.
+    /// The comparison is symmetric, so the row hides on the same condition
+    /// whichever clock is the header's: two identical readings, which is every
+    /// Mac set to Nepal's offset. Stored, like `today`, and assigned only on a
+    /// change (a zone switch or a daylight-saving change), so the row is not
+    /// invalidated every tick.
+    private(set) var showsSecondaryClock = false
     /// Which clock today follows, and so which one the header shows.
     private(set) var timeReference: TimeReference
     /// nil means "follow the system zone". Injected for tests. Resolved per read
@@ -52,6 +63,8 @@ final class ClockModel {
         self.refreshes = refreshes
         self.currentTime = currentTime
         self.sleep = sleep
+        self.today = todayAD(now: now, timeZone: timeZone)
+        self.showsSecondaryClock = !localTimeIsRedundant
     }
 
     /// Refreshes immediately, then once per interval until the view cancels its task.
@@ -59,6 +72,7 @@ final class ClockModel {
         guard refreshes else { return }
         while !Task.isCancelled {
             now = currentTime()
+            refreshToday()
             do {
                 try await sleep(refreshInterval)
             } catch {
@@ -73,11 +87,21 @@ final class ClockModel {
         injectedLocalTimeZone ?? systemZone()
     }
 
-    /// Follows a new time reference. The next read of today and of the clocks
-    /// uses it; nothing is scheduled here, because the popover's tick re-reads
-    /// both every second.
+    /// Follows a new time reference. Today is re-read at once and the clocks
+    /// read the new zone on their next read; nothing is scheduled here, because
+    /// the popover's tick re-reads both every second.
     func setTimeReference(_ timeReference: TimeReference) {
         self.timeReference = timeReference
+        refreshToday()
+    }
+
+    /// Re-reads today from `now`, assigning only on a change so an unchanged
+    /// day notifies no one.
+    private func refreshToday() {
+        let day = todayAD(now: now, timeZone: timeZone)
+        if day != today { today = day }
+        let differs = !localTimeIsRedundant
+        if differs != showsSecondaryClock { showsSecondaryClock = differs }
     }
 
     /// The zone today is read in: Nepal Time, or `localTimeZone`. Local is the
@@ -92,12 +116,12 @@ final class ClockModel {
 
     /// Today's Bikram Sambat date for the current tick, or nil outside the dataset.
     func todayBSDate(in dataset: CalendarDataset = AppData.dataset) -> BSDay? {
-        todayBS(now: now, timeZone: timeZone, in: dataset)
+        today.flatMap { adToBS($0, in: dataset) }
     }
 
     /// Today's Gregorian civil day in the zone today follows.
     func todayADDate() -> GADay? {
-        todayAD(now: now, timeZone: timeZone)
+        today
     }
 
     /// Weekday of today's civil day, in the selected display language.
@@ -165,10 +189,4 @@ final class ClockModel {
         }
     }
 
-    /// Whether the secondary row is shown. The comparison is symmetric, so the
-    /// row hides on the same condition whichever clock is the header's: two
-    /// identical readings, which is every Mac set to Nepal's offset.
-    var showsSecondaryClock: Bool {
-        !localTimeIsRedundant
-    }
 }

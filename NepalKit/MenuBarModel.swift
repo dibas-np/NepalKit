@@ -13,7 +13,8 @@ import NepalKitCore
 /// climbs into gigabytes, so the app never finishes launching. The label
 /// therefore reads observable state refreshed by a timer instead.
 ///
-/// The 30s poll keeps the label fresh cheaply; a one-shot midnight timer
+/// A 30s poll is a backstop that writes only when the day has turned under it
+/// (`pollForMissedChange`); a one-shot midnight timer
 /// fires just after the next midnight in `timeZone` (Nepal Time unless the user
 /// chose their own, ADR-0017) so the Bikram Sambat date flips within ~1s (User
 /// Story 6), then reschedules itself.
@@ -92,7 +93,7 @@ final class MenuBarModel {
         self.store = store
         if refreshes {
             timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
-                self?.now = .now
+                self?.pollForMissedChange()
             }
             observeClockDiscontinuity(
                 NSWorkspace.didWakeNotification,
@@ -116,6 +117,19 @@ final class MenuBarModel {
         timeTickTimer?.invalidate()
         for observer in clockObservers {
             observer.center.removeObserver(observer.token)
+        }
+    }
+
+    /// The poll is a backstop, not the label's clock: the midnight fire, the
+    /// time tick and the wake, clock and zone observers already move `now` at
+    /// every change the title can show. So it writes `now` only when the day
+    /// has turned under it (a missed fire or notification); writing every 30 s
+    /// redrew the menu-bar item for a title that had not changed, which was
+    /// nearly all of the app's idle work.
+    func pollForMissedChange() {
+        let fresh = Date.now
+        if todayAD(now: fresh, timeZone: timeZone) != todayAD(now: now, timeZone: timeZone) {
+            now = fresh
         }
     }
 

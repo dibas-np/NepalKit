@@ -189,16 +189,36 @@ private struct HeaderBar: View {
                 .font(.subheadline.weight(.medium))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Text(clock.headerTimeString(digits: settings.digits))
+            // Sized by a constant "00:00:00" and drawn in an overlay, so the
+            // per-second change never resizes anything: a ticking `Text` in the
+            // stack itself made SwiftUI re-measure the whole popover every
+            // second. Digits are monospaced, so the template is exactly as wide
+            // as every reading.
+            Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+                .hidden()
+                .overlay(alignment: .trailing) {
+                    HeaderClockTime(clock: clock, digits: settings.digits)
+                }
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                // Named aloud because nothing on screen says which clock this
-                // is, and with the user's own zone chosen it is not Nepal's.
-                .accessibilityLabel(
-                    "\(clock.headerClockLabel): \(clock.headerTimeString(digits: .latin))"
-                )
         }
+    }
+}
+
+/// The header's ticking reading: the only part of the header that reads the
+/// clock, so the tick re-evaluates this and not the row around it.
+private struct HeaderClockTime: View {
+    let clock: ClockModel
+    let digits: DigitScript
+
+    var body: some View {
+        Text(clock.headerTimeString(digits: digits))
+            // Named aloud because nothing on screen says which clock this
+            // is, and with the user's own zone chosen it is not Nepal's.
+            .accessibilityLabel(
+                "\(clock.headerClockLabel): \(clock.headerTimeString(digits: .latin))"
+            )
     }
 }
 
@@ -239,7 +259,14 @@ private struct ClocksSection: View {
                 // Nepal is not left with a rule above nothing.
                 Divider()
                 Label {
-                    Text(clock.secondaryTimeString(digits: settings.digits))
+                    // Sized by a constant reading and drawn in an overlay, as
+                    // the header's clock is, so the per-second change re-draws
+                    // only `SecondaryClockTime` and never re-measures the popover.
+                    Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+                        .hidden()
+                        .overlay(alignment: .leading) {
+                            SecondaryClockTime(clock: clock, digits: settings.digits)
+                        }
                 } icon: {
                     Text(clock.secondaryClockLabel)
                         .font(.caption)
@@ -248,10 +275,21 @@ private struct ClocksSection: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                .accessibilityLabel("\(clock.secondaryClockLabel): \(clock.secondaryTimeString(digits: .latin))")
             }
         }
         .accessibilityElement(children: .contain)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The secondary row's ticking reading: the only part of the row that reads
+/// the clock, so the tick re-evaluates this and not the row around it.
+private struct SecondaryClockTime: View {
+    let clock: ClockModel
+    let digits: DigitScript
+
+    var body: some View {
+        Text(clock.secondaryTimeString(digits: digits))
+            .accessibilityLabel("\(clock.secondaryClockLabel): \(clock.secondaryTimeString(digits: .latin))")
     }
 }
