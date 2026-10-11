@@ -2,21 +2,18 @@
 
 The number, what it means, and why it is not a target yet.
 
-**Measured 2026-10-04 at `24f4291`, by `scripts/measure-coverage.py`.**
+**Measured 2026-10-11 at `f351561`, by `scripts/measure-coverage.py`.**
 
 | Suite | Files | Lines | Regions | Functions |
 | --- | --- | --- | --- | --- |
 | `NepalKitCore` — the calendar engine | 9 | **85.62%** | 78.30% | 81.43% |
-| `NepalKit` — the app layer, plus the core its harness links | 43 | **34.79%** | 53.44% | 53.85% |
-| **Combined** | **52** | **43.59%** | **57.74%** | **58.62%** |
+| `NepalKit` — the app layer | 34 | **30.66%** | 56.82% | 52.84% |
+| **Combined** | **43** | **38.91%** | **62.32%** | **57.58%** |
 
-One caveat about that `Files` column: it is what the gate measured, not an
-app-only count. The app-test harness links `NepalKitCore`, so the app layer's
-row also carries core's 9 files and 452 lines — 43 files and 2,992 lines in all.
-The app layer on its own is 34 files and 2,540 executable lines, **30.12%**
-covered. Core's files therefore sit in both suite rows, and the combined row
-counts them twice. Wherever this document says "the app layer", the app-only
-figures are meant.
+Core's files are counted once, in their own row, and the combined row is
+Σhit/Σlines across both suites rather than a mean of two percentages. The app
+row holds `NepalKit/` only, although the app-test harness links `NepalKitCore`:
+the core rows in that report belong to the first row.
 
 Reproduce it:
 
@@ -32,10 +29,10 @@ point:
 - The calendar engine — conversion, month lengths, formatting, spoken dates — is
   **85.62%** covered, because it is pure logic with an exhaustive round-trip
   suite. This is the part where a bug is a wrong date.
-- The app layer is **30.12%** covered, because most of it is SwiftUI.
+- The app layer is **30.66%** covered, because most of it is SwiftUI.
 
 The app layer holds 85% of the executable lines the two suites instrument —
-2,540 of 2,992 — and returns 30.12% line coverage where the calendar engine
+2,560 of 3,012 — and returns 30.66% line coverage where the calendar engine
 returns 85.62%. A single combined percentage hides that the part which is easy
 to get wrong is well covered and the part which is mostly declarative layout is
 not.
@@ -43,11 +40,11 @@ not.
 ## Why there is no target
 
 The OpenSSF badge asks for 80% and 90% statement coverage and 80% branch
-coverage. This project is at 43.59% / 43.59% / 57.74%. Those answers are `Unmet`
+coverage. This project is at 38.91% lines / 62.32% regions / 57.58% functions. Those answers are `Unmet`
 and writing a target above the truth would be a gate that fails every day.
 
 **The gap is not a chore; it is a refactor.** The six files below hold 1,198
-lines — 47% of the app layer's 2,540 executable lines — and every one of them is
+lines — 47% of the app layer's 2,560 executable lines — and every one of them is
 at exactly 0%:
 
 | File | Lines |
@@ -58,6 +55,9 @@ at exactly 0%:
 | `AboutSettingsView.swift` | 170 |
 | `PopoverFooter.swift` | 137 |
 | `MenuBarSettingsView.swift` | 107 |
+
+These are llvm-cov executable-line counts and include compiler-expanded
+`#Preview` code, so they can exceed a file's physical length.
 
 Every one is a SwiftUI view. Covering them needs one of two things, and neither
 is a test-writing exercise:
@@ -75,7 +75,9 @@ is a test-writing exercise:
 ## What the gate does instead
 
 `scripts/measure-coverage.py` records a floor in `scripts/coverage-floor.json`
-and **fails when coverage drops below it**. It has no target.
+and **fails when coverage drops below it**. It has no target. The gate enforces
+the floor for each suite as well as for the combined row, so a fall in the app
+layer cannot hide behind a gain in the core.
 
 That is a deliberate inversion. A ratchet that only moves up is honest about a
 number that is currently low; a target set above the truth is a lie that fails
@@ -92,10 +94,10 @@ Raising the floor is a deliberate act:
 The `--update` flag exists so that lowering the floor is a visible, argued act
 rather than something that happens by editing a number.
 
-## Two measurement details that are easy to get wrong
+## Three measurement details that are easy to get wrong
 
-Both were got wrong in the first version of this script, and both produced a
-confident wrong answer rather than an error.
+The first two were got wrong in the first version of this script, and all three
+produced a confident wrong answer rather than an error.
 
 **llvm-cov strips the leading `/` from report paths.** Comparing them against an
 absolute repository prefix therefore matches *nothing* — which looks exactly like
@@ -106,9 +108,17 @@ parser that filters out the `-` standing in for "no data" shifts every later
 column and reports a plausible number. This script parses positionally and
 asserts the field count.
 
-There is a third, subtler one: an earlier version of the subject-file filter used
+**The app harness links the core.** Core rows therefore appear in the app suite's
+llvm-cov report and must be filtered out per suite. Counting them in both suites
+put core's 9 files in two rows and inflated both the app figure and the combined
+figure by about 4.7 points (34.79% against 30.12% for the app, 43.59% against
+38.91% combined, at the commit where it was found and fixed).
+The combined row is also weighted by executable lines: a mean of the two
+percentages weighted by file count counted a 6-line file like a 300-line one.
+
+There is a further, subtler one: an earlier version of the subject-file filter used
 an absolute path, so it silently counted 9 files instead of the app layer's, and
-reported 62.65% where the truth is 30.12%. A coverage tool that measures the
+reported 62.65% where the truth was 30.12% at the time. A coverage tool that measures the
 wrong files is worse than none, because the number looks real.
 
 ## Branches are not measured
