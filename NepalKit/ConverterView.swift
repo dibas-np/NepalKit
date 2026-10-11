@@ -57,6 +57,14 @@ struct ConverterView: View {
                         [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")
                     )
+                if model.resultIsProvisional {
+                    // Hidden from VoiceOver: the result's label above already
+                    // speaks it, and reading it twice is noise.
+                    Text(Strings.converterProvisionalNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
             } else {
                 // A plain Text already announces itself; no override needed.
                 Text(Strings.converterOutOfRange)

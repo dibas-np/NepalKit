@@ -41,6 +41,13 @@ struct AboutSettingsView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(Strings.supportedRangeLabel)
                 .accessibilityValue(Strings.supportedRangeSpoken(dataset.supportedRange))
+                if let note = Strings.provisionalYearsNote(dataset.provisionalYears) {
+                    // Directly under the range it qualifies. A plain Text
+                    // already announces itself.
+                    Text(note)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text(metadata.name)
             }

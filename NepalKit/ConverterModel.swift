@@ -297,6 +297,18 @@ final class ConverterModel {
         }
     }
 
+    /// Whether the conversion's Bikram Sambat side falls in a provisional
+    /// year of the dataset: the picked date going BS → AD, the converted one
+    /// going AD → BS. The dataset decides, so attesting a row clears this.
+    var resultIsProvisional: Bool {
+        switch direction {
+        case .bsToAD:
+            dataset.isProvisional(bsDate.year)
+        case .adToBS:
+            adToBS(adDate, in: dataset).map { dataset.isProvisional($0.year) } ?? false
+        }
+    }
+
     /// Converted date plus weekday, honoring both display settings.
     /// Gregorian months stay English (no Nepali Gregorian names are defined);
     /// digits and weekday names honor the settings.
@@ -311,7 +323,11 @@ final class ConverterModel {
     /// value cannot describe a different day than the shown one. The
     /// month-name language still follows the user's setting, because a matching
     /// VoiceOver voice reads it; only the digits are made pronounceable.
+    ///
+    /// Carries the provisional note when the shown result does, because the
+    /// view combines both into this one announcement.
     func spokenResult(settings: DisplaySettings) -> String? {
-        converted(settings: settings)?.spoken
+        guard let spoken = converted(settings: settings)?.spoken else { return nil }
+        return resultIsProvisional ? "\(spoken). \(Strings.converterProvisionalNote)" : spoken
     }
 }

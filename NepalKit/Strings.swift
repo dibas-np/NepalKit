@@ -107,6 +107,10 @@ nonisolated enum Strings {
     static let monthLabel = "Month"
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
+    /// Secondary line under a converter result whose Bikram Sambat side falls
+    /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
+    /// year: the result line above already shows it.
+    static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
     /// The menu command's title, in the app menu. Apple's convention there is the
     /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"
@@ -330,6 +334,19 @@ nonisolated enum Strings {
     /// case. Spoken only; the screen keeps the dash.
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
+    }
+    /// About surface: the projection caveat, generated from the dataset's
+    /// provisional years so attesting a row removes the year here too. Nil
+    /// when every row is attested, so the line disappears rather than empties.
+    static func provisionalYearsNote(_ years: Set<Int>) -> String? {
+        guard !years.isEmpty else { return nil }
+        // Joined by hand: this file imports only NepalKitCore, so no
+        // Foundation list formatting.
+        let sorted = years.sorted().map(String.init)
+        let list = sorted.count == 1 ? sorted[0] : "\(sorted.dropLast().joined(separator: ", ")) and \(sorted[sorted.count - 1])"
+        return years.count == 1
+            ? "\(list) BS is a provisional projection until the official Nepali Patro is published."
+            : "\(list) BS are provisional projections until the official Nepali Patro is published."
     }
     static let datasetVersionLabel = "Dataset version"
     static let supportedRangeLabel = "Supported range"

@@ -219,4 +219,42 @@ struct ConverterModelTests {
         #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 11))
         #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
     }
+
+    // 22 Bhadra 2084 is 8 September 2027 (Projected2084Tests); 2084 is the
+    // dataset's provisional row, 2083 is attested (SOURCES.md).
+    @Test("A Bikram Sambat to Gregorian result from 2084 is provisional, shown and spoken")
+    func bsToADResultInAProvisionalYear() {
+        let model = ConverterModel(direction: .bsToAD, bsYear: 2084, bsMonth: 5, bsDay: 22, adYear: 2027, adMonth: 9, adDay: 8)
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        #expect(model.resultIsProvisional)
+        #expect(model.convertedText(settings: settings) == "8 September 2027 · Wednesday")
+        #expect(model.spokenResult(settings: settings) == "8 September 2027, Wednesday. Provisional projection, not yet in the official Nepali Patro")
+    }
+
+    @Test("A Gregorian to Bikram Sambat result landing in 2084 is provisional")
+    func adToBSResultInAProvisionalYear() {
+        let model = ConverterModel(direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11, adYear: 2027, adMonth: 9, adDay: 8)
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        #expect(model.resultIsProvisional)
+        #expect(model.spokenResult(settings: settings)?.hasSuffix(". Provisional projection, not yet in the official Nepali Patro") == true)
+    }
+
+    @Test("Results in attested years carry no provisional note, both directions")
+    func attestedResultsAreNotProvisional() {
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        let bsSide = bsModel()
+        #expect(!bsSide.resultIsProvisional)
+        #expect(bsSide.spokenResult(settings: settings) == "27 September 2026, Sunday")
+        // 13 April 2027 is the last day of 2083 (Chaitra 30); 2084 starts the next day.
+        let adSide = ConverterModel(direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11, adYear: 2027, adMonth: 4, adDay: 13)
+        #expect(!adSide.resultIsProvisional)
+        #expect(adSide.spokenResult(settings: settings)?.contains("Provisional") == false)
+    }
+
+    @Test("The About note is generated from the dataset's provisional years")
+    func provisionalYearsNoteFollowsTheDataset() {
+        #expect(Strings.provisionalYearsNote([2084]) == "2084 BS is a provisional projection until the official Nepali Patro is published.")
+        #expect(Strings.provisionalYearsNote([]) == nil)
+        #expect(Strings.provisionalYearsNote(AppData.dataset.provisionalYears) != nil)
+    }
 }
