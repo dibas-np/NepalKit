@@ -82,3 +82,6 @@ jobs:
       - name: The coverage parser's own suite
         # Fixture text only; the xcrun llvm-cov call it parses is never made.
         run: python3 scripts/test_measure_coverage.py
+      - name: The signing-key check's own suite
+        # Throwaway keys only; it never sees the real signing key.
+        run: python3 scripts/test_check_signing_key.py

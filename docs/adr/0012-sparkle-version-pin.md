@@ -197,6 +197,22 @@ The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
 
+**Closing both boxes.** On the release machine, after `scripts/check-all.sh`
+has built the pinned Sparkle tools into `DerivedData/`:
+
+1. `scripts/check-signing-key.py` confirms the keychain key signs what the
+   shipped `SUPublicEDKey` verifies.
+2. Export it: `DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x ~/sparkle-key.txt`.
+   The file holds the private seed as one line of base64. It is the secret.
+3. Make the copy outside Apple's cloud: print that line, or write it to
+   removable media kept offline, and store it physically. Not iCloud Drive, not
+   a synced folder, never the repository.
+4. Restore from that copy, not from the export: type or copy it into a new
+   file, then run `scripts/check-signing-key.py --key-file <that file>`. An `ok`
+   is the restore the second box asks for; it imports nothing into the keychain.
+5. Delete both temporary files and empty the Trash, then tick the boxes above
+   with the date.
+
 *Note, 2026-10-11:* both boxes above are still unticked. A lost key ends
 updates for every existing install; it is not a manual recovery (see
 "`SURequireSignedFeed` also requires ..." below).
