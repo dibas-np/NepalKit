@@ -224,16 +224,30 @@ private struct TodaySection: View {
                 // Shown exactly as configured; announced in a form a voice can
                 // pronounce. The two come from the same date, so they cannot
                 // drift into describing different days.
-                Text(formatBS(todayBS, settings: settings))
-                    .font(.largeTitle.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                    // Label only: `children: .ignore` leaves a `Text` with no
-                    // accessibility role at all. Replacing the label keeps its
-                    // static-text role.
-                    // The Gregorian date is no longer a line of its own (the
-                    // grid shows it under today), so the announcement carries
-                    // it: one sentence with both calendars and the weekday.
-                    .accessibilityLabel(heroAnnouncement(todayBS))
+                //
+                // The weekday sits beside the date, a step down, so the day of
+                // the week is read with the date instead of hunted for in the
+                // grid's header. Two `Text`s, like the Gregorian line below, so
+                // a long weekday wraps on its own rather than breaking the date;
+                // one `Text` at the hero's size did not fit "Wednesday" on the
+                // row.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(formatBS(todayBS, settings: settings))
+                        .font(.largeTitle.weight(.semibold))
+                    if let weekday = clock.weekdayString(style: settings.monthNames) {
+                        Text("\(Strings.weekdaySeparator) \(weekday)")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                // Combined so the row is one element, and relabelled: the
+                // Gregorian date is no longer a line of its own (the grid shows
+                // it under today), so the announcement carries it - one
+                // sentence with both calendars and the weekday, which it
+                // already names, so the shown weekday is not said twice.
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(heroAnnouncement(todayBS))
             } else {
                 // Range boundary state: the bundled data has ended. Say so in
                 // words rather than showing a blank, and keep the Gregorian date

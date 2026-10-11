@@ -200,6 +200,18 @@ struct MonthGridModelTests {
         #expect(SpokenDate.today(bs, gregorian: nil, weekday: nil, monthNames: .transliterated) == "1 Kartik 2083")
     }
 
+    @Test func theHeroAnnouncesItsShownWeekdayOnce() throws {
+        // The hero shows the weekday beside the date and is relabelled with
+        // `SpokenDate.today`, which already names it: the label must say it
+        // once, not once for the date sentence and again for the shown text.
+        let clock = ClockModel(now: try TestDates.utc(2026, 10, 18, 6, 0), refreshes: false)
+        let bs = try #require(clock.todayBSDate())
+        let weekday = try #require(clock.weekdayString(style: .transliterated))
+        let spoken = SpokenDate.today(bs, gregorian: clock.todayADDate(), weekday: weekday, monthNames: .transliterated)
+        #expect(spoken.components(separatedBy: weekday).count == 2)
+        #expect(spoken == "1 Kartik 2083. 18 October 2026, Sunday")
+    }
+
     @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
 

@@ -9,12 +9,13 @@ nonisolated enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
     /// Separator between a date and its weekday on a shown date line.
     ///
-    /// Shared by both places the pairing appears — the popover's Gregorian
-    /// line, which lays the two halves out as separate `Text`s in an `HStack`
-    /// so they wrap independently, and the converter's shown result, which
-    /// composes them through `datedWithWeekday`. The popover therefore does not
-    /// call the composer; what must not drift is the separator itself, because
-    /// the spoken channel has to avoid it in both.
+    /// Shared by every place the pairing appears — the popover's hero date and
+    /// its Gregorian line past the range, which lay the two halves out as
+    /// separate `Text`s in an `HStack` so they wrap independently, and the
+    /// converter's shown result, which composes them through
+    /// `datedWithWeekday`. The popover therefore does not call the composer;
+    /// what must not drift is the separator itself, because the spoken channel
+    /// has to avoid it in all of them.
     static let weekdaySeparator = "·"
     static func datedWithWeekday(_ date: String, _ weekday: String) -> String {
         "\(date) \(weekdaySeparator) \(weekday)"
