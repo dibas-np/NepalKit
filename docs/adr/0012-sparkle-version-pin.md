@@ -189,7 +189,7 @@ housekeeping item; it is now the single failure that ends distribution.
 
 Concretely outstanding:
 
-- [ ] A copy exists outside Apple's cloud, ideally printed and stored physically
+- [x] A copy exists outside Apple's cloud, ideally printed and stored physically (2026-10-11, on paper)
 - [x] A restore has been *performed* (2026-10-11, `scripts/check-signing-key.py --key-file`) and a signature produced from the restored
       material, verified against the public key in `NepalKit/Info.plist`
 
@@ -215,7 +215,7 @@ tools into `DerivedData/`:
 5. Delete both temporary files and empty the Trash, then tick the boxes above
    with the date.
 
-*Note, 2026-10-11:* the restore box is ticked; the backup it was tested from is still inside Apple's cloud, so the first box stays open. A lost key ends
+*Note, 2026-10-11:* both boxes are ticked: a paper copy exists outside Apple's cloud, and a restore has been tested. A lost key ends
 updates for every existing install; it is not a manual recovery (see
 "`SURequireSignedFeed` also requires ..." below).
 
