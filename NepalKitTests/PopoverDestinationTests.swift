@@ -30,4 +30,12 @@ struct PopoverDestinationTests {
             #expect(!destination.title.isEmpty)
         }
     }
+
+    @Test func everyDestinationHasItsOwnSymbol() {
+        #expect(PopoverDestination.today.symbol == Symbols.today)
+        #expect(PopoverDestination.convert.symbol == Symbols.converter)
+        let symbols = PopoverDestination.allCases.map(\.symbol)
+        #expect(Set(symbols).count == symbols.count)
+        #expect(symbols.allSatisfy(Symbols.all.contains))
+    }
 }

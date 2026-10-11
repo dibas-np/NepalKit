@@ -6,7 +6,7 @@ import NepalKitCore
 
 /// Which of the popover's two destinations is showing.
 ///
-/// Today and Convert are peers, so they are named as a segmented control rather
+/// Today and Convert are peers, so they are named as tabs rather
 /// than as one screen with a section stapled to the bottom. The alternative made
 /// the popover a single long scroll in which the converter was always expanded,
 /// so opening it to read the date also presented three pickers and a result the
@@ -19,6 +19,13 @@ enum PopoverDestination: String, CaseIterable {
         switch self {
         case .today: Strings.todayLabel
         case .convert: Strings.converterLabel
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .today: Symbols.today
+        case .convert: Symbols.converter
         }
     }
 }
@@ -64,18 +71,7 @@ struct PopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             HeaderBar(clock: clock, settings: settings.settings)
 
-            Picker("", selection: $destination) {
-                ForEach(PopoverDestination.allCases, id: \.self) { option in
-                    Text(option.title).tag(option)
-                }
-            }
-            .pickerStyle(.segmented)
-            // The control is untitled and the label hidden, but that is not the
-            // same as unlabelled: without this the two segments announce only
-            // "Today" and "Convert" with no indication that they are a choice
-            // between views. `AXRadioGroup` is what a segmented control is.
-            .accessibilityLabel(Strings.popoverDestinationsLabel)
-            .accessibilityElement(children: .contain)
+            DestinationTabs(selection: $destination)
 
             // Both destinations stay laid out, one over the other, and the
             // swap cross-fades between them. The stack is as tall as the
