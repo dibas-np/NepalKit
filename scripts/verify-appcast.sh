@@ -59,15 +59,18 @@ if [[ "${SPARKLE_BIN_UNPINNED:-}" != "1" ]]; then
     PINNED_SPARKLE="$(python3 - "$ROOT/NepalKit.xcodeproj/project.pbxproj" <<'PY'
 import pathlib, re, sys
 text = pathlib.Path(sys.argv[1]).read_text()
+# Only Sparkle's own block, so a later package's requirement is never read as it.
 block = re.search(
-    r'XCRemoteSwiftPackageReference "Sparkle".*?'
-    r'kind = (?P<kind>\w+);\s*version = (?P<version>[\d.]+);',
+    r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
+    r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
     text, re.S)
-if block is None:
+kind = block and re.search(r'kind = (\w+);', block.group(1))
+if not kind:
     raise SystemExit("no Sparkle package requirement found in project.pbxproj")
-if block.group("kind") != "exactVersion":
-    raise SystemExit("Sparkle is pinned as %s, not exactVersion" % block.group("kind"))
-print(block.group("version"))
+version = re.search(r'version = ([\d.]+);', block.group(1))
+if kind.group(1) != "exactVersion" or not version:
+    raise SystemExit("Sparkle is pinned as %s, not exactVersion" % kind.group(1))
+print(version.group(1))
 PY
 )"
     SPARKLE_CHECKOUT="$(dirname "$GENERATE_APPCAST")/../../../../checkouts/Sparkle"

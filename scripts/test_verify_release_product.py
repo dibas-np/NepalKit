@@ -151,6 +151,19 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("upToNextMajorVersion", out)
 
+    def test_a_later_package_pin_is_not_read_as_sparkles(self):
+        branch_pinned = (
+            '/* XCRemoteSwiftPackageReference "Sparkle" */ = {\n'
+            "\tisa = XCRemoteSwiftPackageReference;\n"
+            "\trequirement = {\n\t\tkind = branch;\n\t\tbranch = 2.x;\n\t};\n};\n"
+            '/* XCRemoteSwiftPackageReference "Other" */ = {\n'
+            "\tisa = XCRemoteSwiftPackageReference;\n"
+            "\trequirement = {\n\t\tkind = exactVersion;\n\t\tversion = 2.10.0;\n\t};\n};\n"
+        )
+        code, out = self.run_case(pin=branch_pinned)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Sparkle pin kind is branch", out)
+
     def test_bundle_identifier_token_is_expanded(self):
         code, out = self.run_case(expected=FILE_ENTITLEMENTS)
         self.assertEqual(code, 0, out)

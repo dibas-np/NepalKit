@@ -103,23 +103,28 @@ def check_sparkle_keys(info):
 
 
 def check_sparkle_version(app, pbxproj_text):
+    # Only Sparkle's own block: it ends at the next package reference or the end
+    # of the section, so a later package's requirement can never be read as
+    # Sparkle's.
     block = re.search(
-        r'XCRemoteSwiftPackageReference "Sparkle".*?'
-        r'kind = (?P<kind>\w+);\s*version = (?P<version>[\d.]+);',
+        r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
+        r'(?P<body>(?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
         pbxproj_text, re.S)
-    if not block:
-        return [("FAIL", "no Sparkle exactVersion-style requirement found in the project")]
+    kind = block and re.search(r'kind = (\w+);', block["body"])
+    if not kind:
+        return [("FAIL", "no Sparkle package requirement found in the project")]
+    version = re.search(r'version = ([\d.]+);', block["body"])
     results = []
-    if block["kind"] != "exactVersion":
-        results.append(("FAIL", f"Sparkle pin kind is {block['kind']}, expected exactVersion"))
+    if kind[1] != "exactVersion" or not version:
+        return [("FAIL", f"Sparkle pin kind is {kind[1]}, expected exactVersion")]
     plist_path = app / SPARKLE_FRAMEWORK_PLIST
     try:
         with open(plist_path, "rb") as fh:  # NOSONAR
             embedded = plistlib.load(fh).get("CFBundleShortVersionString")
     except OSError as exc:
         return results + [("FAIL", f"embedded Sparkle framework plist unreadable: {exc}")]
-    if embedded != block["version"]:
-        results.append(("FAIL", f"embedded Sparkle is {embedded}, project pins {block['version']}"))
+    if embedded != version[1]:
+        results.append(("FAIL", f"embedded Sparkle is {embedded}, project pins {version[1]}"))
     elif not results:
         results.append(("ok", f"embedded Sparkle {embedded} matches the exactVersion pin"))
     return results
