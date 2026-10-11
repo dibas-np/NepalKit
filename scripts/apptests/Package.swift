@@ -47,7 +47,16 @@ let package = Package(
                 // seam it implements is Sparkle-free and fully covered here.
                 "SparkleUpdateService.swift",
             ],
-            swiftSettings: [.defaultIsolation(MainActor.self)]
+            swiftSettings: [
+                .defaultIsolation(MainActor.self),
+                // Mirrors the Xcode app target `NepalKit`: what
+                // SWIFT_APPROACHABLE_CONCURRENCY = YES enables in Swift 6 mode, plus
+                // SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES. The two
+                // compilers over the same sources must agree (CONTRIBUTING.md).
+                .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+                .enableUpcomingFeature("InferIsolatedConformances"),
+                .enableUpcomingFeature("MemberImportVisibility"),
+            ]
         ),
         .testTarget(
             name: "NepalKitTests",
@@ -55,7 +64,15 @@ let package = Package(
                 "NepalKit",
                 .product(name: "NepalKitCore", package: "NepalKitCore"),
             ],
-            swiftSettings: [.defaultIsolation(MainActor.self)]
+            swiftSettings: [
+                .defaultIsolation(MainActor.self),
+                // Mirrors the Xcode test target `NepalKitTests`, which sets
+                // SWIFT_APPROACHABLE_CONCURRENCY = YES but NOT member import
+                // visibility, so it is deliberately absent here: the tests would
+                // otherwise need imports the Xcode build does not require.
+                .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+                .enableUpcomingFeature("InferIsolatedConformances"),
+            ]
         ),
     ]
 )
