@@ -37,10 +37,7 @@ struct MonthGridView: View {
         }
         // The model outlives the popover, so today is re-read on every
         // appearance, and the follower moves it while the grid stays open.
-        .onAppear {
-            model.refreshToday(now: clock.now)
-            isFocused = true
-        }
+        .onAppear { model.refreshToday(now: clock.now) }
         .background { TodayFollower(clock: clock, model: model) }
         // Paging without aiming at the chevrons: the arrow keys, and
         // scrolling over the grid. Both page through the model, so they stop
@@ -53,6 +50,11 @@ struct MonthGridView: View {
         .focusable(interactions: .edit)
         .focusEffectDisabled()
         .focused($isFocused)
+        // Initial focus through `defaultFocus`, not by setting `isFocused` in
+        // `onAppear`: that made the grid first responder in the middle of the
+        // popover's layout pass, which AppKit logs as layout recursion and
+        // "transaction during CA commit", once per appearance.
+        .defaultFocus($isFocused, true)
         .onKeyPress(.leftArrow) {
             model.page(by: -1)
             return .handled
