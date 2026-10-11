@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import AppKit
 import Foundation
 import Observation
 import NepalKitCore
@@ -15,6 +16,11 @@ import NepalKitCore
 /// The 30s poll keeps the label fresh cheaply; a one-shot midnight timer
 /// fires just after the next Nepal Time midnight so the Bikram Sambat date
 /// flips within ~1s (User Story 6), then reschedules itself.
+///
+/// Timer intervals do not advance while the Mac sleeps, and a system clock
+/// change moves the wall clock under them, so both are observed: either one
+/// re-reads the clock and reschedules the midnight fire, rather than leaving
+/// yesterday's date up until the next poll.
 @MainActor
 @Observable
 final class MenuBarModel {
@@ -22,22 +28,75 @@ final class MenuBarModel {
 
     private var timer: Timer?
     private var midnightTimer: Timer?
+    private let schedulesMidnightFire: Bool
+    /// Wake and clock-change observations, paired with the center each was
+    /// added to, so `deinit` can remove exactly what `init` added.
+    private var clockObservers: [(center: NotificationCenter, token: any NSObjectProtocol)] = []
 
-    /// - Parameter refreshes: whether to schedule the timer that advances `now`
-    ///   from the system clock. Production keeps the default; a caller that only
-    ///   needs a fixed instant passes `false`. Nothing invalidates either timer —
-    ///   the run loop retains them and a weak capture only lets this model go —
-    ///   so both would otherwise outlive the caller.
+    /// - Parameter refreshes: whether to advance `now` from the system clock —
+    ///   the poll, and the wake and clock-change observers. Production keeps the
+    ///   default; a caller that only needs a fixed instant passes `false`.
     /// - Parameter schedulesMidnightFire: production keeps the default; tests
     ///   that do not exercise the midnight flip pass `false` so they do not
     ///   leave real one-shot timers behind.
-    init(now: Date = .now, refreshInterval: TimeInterval = 30, refreshes: Bool = true, schedulesMidnightFire: Bool = true) {
+    /// - Parameter workspaceNotifications: where wake is posted; defaults to
+    ///   `NSWorkspace.shared.notificationCenter`. Injected so a test can post a
+    ///   wake without sleeping the Mac.
+    /// - Parameter systemNotifications: where a system clock change is posted;
+    ///   defaults to `NotificationCenter.default`.
+    ///
+    /// Both centers default in the body rather than the signature, for the same
+    /// reason as `LoginItemModel`: a default argument is evaluated in a
+    /// nonisolated context.
+    init(
+        now: Date = .now,
+        refreshInterval: TimeInterval = 30,
+        refreshes: Bool = true,
+        schedulesMidnightFire: Bool = true,
+        workspaceNotifications: NotificationCenter? = nil,
+        systemNotifications: NotificationCenter? = nil
+    ) {
         self.now = now
+        self.schedulesMidnightFire = schedulesMidnightFire
         if refreshes {
             timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
                 self?.now = .now
             }
+            observeClockDiscontinuity(
+                NSWorkspace.didWakeNotification,
+                on: workspaceNotifications ?? NSWorkspace.shared.notificationCenter
+            )
+            observeClockDiscontinuity(.NSSystemClockDidChange, on: systemNotifications ?? .default)
         }
+        if schedulesMidnightFire {
+            scheduleMidnightFire()
+        }
+    }
+
+    /// The run loop retains a scheduled timer and a center retains its block, so
+    /// neither goes away with the model unless it is let go of here.
+    isolated deinit {
+        timer?.invalidate()
+        midnightTimer?.invalidate()
+        for observer in clockObservers {
+            observer.center.removeObserver(observer.token)
+        }
+    }
+
+    private func observeClockDiscontinuity(_ name: Notification.Name, on center: NotificationCenter) {
+        let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.refreshAfterClockDiscontinuity()
+            }
+        }
+        clockObservers.append((center, token))
+    }
+
+    /// Re-reads the clock after the Mac wakes or the system clock is changed.
+    /// The midnight fire is rescheduled because its interval was measured
+    /// against a clock that has since jumped.
+    func refreshAfterClockDiscontinuity() {
+        now = .now
         if schedulesMidnightFire {
             scheduleMidnightFire()
         }
