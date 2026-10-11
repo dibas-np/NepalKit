@@ -15,12 +15,16 @@ name: publish appcast
 
 on:
   push:
-    # Only when the feed or the landing page changes. A README fix must not
-    # redeploy. A site change redeploys the same feed, re-verified first.
+    # Only when the feed, the landing page or one of its screenshots changes.
+    # A README text fix does not redeploy; a change to one of the three
+    # screenshots the page shows does. Either way the same feed is
+    # re-verified first.
     paths:
       - appcast.xml
       - site/**
-      - docs/img/**
+      - docs/img/popover.png
+      - docs/img/watch-today.png
+      - docs/img/watch-complications.png
     branches: [main]
   # Re-run the check on demand, without publishing. Useful after changing the
   # verifier itself.
@@ -136,7 +140,8 @@ jobs:
           set -euo pipefail
           mkdir -p _site/img
           cp -R site/. _site/
-          cp docs/img/*.png _site/img/
+          # Only the screenshots the page shows, not every image in docs/img.
+          cp docs/img/popover.png docs/img/watch-today.png docs/img/watch-complications.png _site/img/
           # Copied last so nothing in site/ can shadow the verified feed.
           cp appcast.xml _site/
           ls -la _site
