@@ -170,6 +170,11 @@ private struct MonthGridDays: View {
     /// The day whose popover is open. One for the grid rather than a flag per
     /// cell, so opening a day closes any other.
     @State private var selected: MonthGridDay?
+    /// The day to open in the converter once its popover has finished closing.
+    /// Switching destination while the popover is still closing tears down the
+    /// cell it is anchored to mid-layout: AppKit logs layout recursion and the
+    /// menu-bar popover jumps to the cell's frame before settling back.
+    @State private var pendingConverterDay: BSDay?
 
     var body: some View {
         let headers = model.weekdayHeaders(settings: settings)
@@ -231,10 +236,15 @@ private struct MonthGridDays: View {
                     selected = nil
                 },
                 openInConverter: {
+                    pendingConverterDay = day.bikramSambat
                     selected = nil
-                    openInConverter(day.bikramSambat)
                 }
             )
+            .onDisappear {
+                guard let pending = pendingConverterDay else { return }
+                pendingConverterDay = nil
+                openInConverter(pending)
+            }
         }
     }
 
