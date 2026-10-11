@@ -39,8 +39,11 @@ put a mark on almost every day and stop meaning anything.
    - **National days** of Nepal that the Panchanga prints, such as Ganatantra
      Diwas and Sambidhan Diwas.
    It excludes observances that recur every fortnight or month (Ekadashi,
-   Pradosh, Purnima and Aunsi fasts, monthly Sankranti), local jatras, the
-   international days, and the timing notes. The selected list is in the
+   Pradosh, the monthly Purnima and Aunsi fasts, monthly Sankranti), local
+   jatras, the international days, and the timing notes. A once-a-year
+   festival that happens to fall on a Purnima or an Aunsi is still a yearly
+   festival and is included: Kojagrat Purnima, Mata Tirtha Aunsi (Mother's
+   Day) and Kushe Aunsi (Father's Day). The selected list is in the
    year's data file; each entry falls under one of the two bullets above.
 
 3. **Typed by hand, checked twice.** The Panchanga is an image-only PDF. Each

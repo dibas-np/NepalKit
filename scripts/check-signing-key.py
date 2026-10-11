@@ -12,8 +12,11 @@ is not yet a backup (ADR-0012).
     scripts/check-signing-key.py                      # the keychain key
     scripts/check-signing-key.py --key-file PATH      # a backup copy
 
-Run it on the release machine. It reads the private key, prints only ok or
-FAIL, and writes nothing outside a temporary directory.
+Run it on the release machine. It reads the private key and prints ok or
+FAIL; a FAIL carries the reason, which can include sign_update's own message
+and the key file's path, never key material. It writes nothing outside a
+temporary directory. SPARKLE_BIN overrides where sign_update is found, as it
+does for scripts/verify-appcast.sh.
 """
 
 from __future__ import annotations
@@ -29,7 +32,11 @@ from pathlib import Path
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
-SIGN_UPDATE = ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"
+# This checkout's own build of the pinned Sparkle, as verify-appcast.sh uses,
+# unless SPARKLE_BIN points at a directory holding the tools: sign_update
+# reaches the private key, so it is never whichever DerivedData matches a glob.
+SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
+               else ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update")
 
 _spec = importlib.util.spec_from_file_location("verify_appcast", ROOT / "scripts" / "verify-appcast.py")
 _va = importlib.util.module_from_spec(_spec)

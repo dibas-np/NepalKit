@@ -50,6 +50,10 @@ appropriate to the date or range change. Refresh signed artifacts and physical
 Watch validation when those deliverables are in scope; a source comparison does
 not substitute for them.
 
+The release notes of any release that changes calendar data must say that the
+Watch app gets the correction only when it is rebuilt from source (ADR-0015):
+Sparkle updates the Mac app, and nothing updates a Watch install.
+
 The current last supported Gregorian day is 2028-04-12. An extension should
 ship before that boundary. This procedure does not set a publication date or
 schedule automatic checks of a third-party website.

@@ -90,3 +90,29 @@ class Check(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SparkleBin(unittest.TestCase):
+    def _load(self, env: dict[str, str]):
+        import os
+        saved = os.environ.copy()
+        os.environ.pop("SPARKLE_BIN", None)
+        os.environ.update(env)
+        try:
+            spec = importlib.util.spec_from_file_location("csk_env", _SCRIPT)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+
+    def test_sparkle_bin_overrides_where_sign_update_is_found(self):
+        """As verify-appcast.sh does: SPARKLE_BIN names the tools' directory."""
+        module = self._load({"SPARKLE_BIN": "/opt/sparkle/bin"})
+        self.assertEqual(module.SIGN_UPDATE, Path("/opt/sparkle/bin/sign_update"))
+
+    def test_without_it_the_checkouts_own_build_is_used(self):
+        module = self._load({})
+        self.assertTrue(str(module.SIGN_UPDATE).endswith("DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"))
+        self.assertTrue(module.SIGN_UPDATE.is_relative_to(module.ROOT))
