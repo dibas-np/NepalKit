@@ -208,6 +208,13 @@ struct TodayIntentTests {
             "Convert a Bikram Sambat date to Gregorian with ${applicationName}",
             "Use ${applicationName} to convert from Bikram Sambat",
             "Today's Nepali date",
+            // The parameterless tomorrow and yesterday answers.
+            "What is tomorrow's Nepali date with ${applicationName}",
+            "What is tomorrow in Bikram Sambat with ${applicationName}",
+            "What was yesterday's Nepali date with ${applicationName}",
+            "Yesterday's Bikram Sambat date in ${applicationName}",
+            "Tomorrow's Nepali date",
+            "Yesterday's Nepali date",
         ] {
             #expect(strings?[key] != nil, "catalog is missing \(key)")
         }

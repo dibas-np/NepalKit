@@ -2,7 +2,9 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// NepalKit's App Shortcuts — ticket 02's seven phrases, verbatim. Every
+/// NepalKit's App Shortcuts — ticket 02's seven phrases, verbatim, plus the
+/// parameterless tomorrow and yesterday answers (five of the ten-shortcut
+/// cap). Every
 /// phrase carries the application-name token; conversions take parameterless
 /// phrases and let Siri gather the date conversationally, because a `Date`
 /// can never ride in a phrase and a month enum in one would spawn generated
@@ -18,6 +20,24 @@ struct NepalKitShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Today's Nepali date",
             systemImageName: "calendar"
+        )
+        AppShortcut(
+            intent: TomorrowInBikramSambatIntent(),
+            phrases: [
+                "What is tomorrow's Nepali date with \(.applicationName)",
+                "What is tomorrow in Bikram Sambat with \(.applicationName)",
+            ],
+            shortTitle: "Tomorrow's Nepali date",
+            systemImageName: "calendar.badge.plus"
+        )
+        AppShortcut(
+            intent: YesterdayInBikramSambatIntent(),
+            phrases: [
+                "What was yesterday's Nepali date with \(.applicationName)",
+                "Yesterday's Bikram Sambat date in \(.applicationName)",
+            ],
+            shortTitle: "Yesterday's Nepali date",
+            systemImageName: "calendar.badge.minus"
         )
         AppShortcut(
             intent: GregorianToBikramSambatIntent(),

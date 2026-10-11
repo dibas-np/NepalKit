@@ -199,9 +199,9 @@ struct ConversionIntentTests {
         }
     }
 
-    @Test("Provider carries all three shortcuts; catalog carries all ten keys")
+    @Test("Provider carries all five shortcuts; catalog carries all sixteen keys")
     func providerAndCatalogAreWhole() throws {
-        #expect(NepalKitShortcuts.appShortcuts.count == 3)
+        #expect(NepalKitShortcuts.appShortcuts.count == 5)
 
         var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         var catalogURL = directory.appending(path: "NepalKit/AppShortcuts.xcstrings")

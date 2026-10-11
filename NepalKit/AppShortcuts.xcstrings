@@ -56,6 +56,17 @@
         }
       }
     },
+    "Tomorrow's Nepali date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow's Nepali date"
+          }
+        }
+      }
+    },
     "Use ${applicationName} to convert from Bikram Sambat": {
       "extractionState": "manual",
       "localizations": {
@@ -107,6 +118,61 @@
           "stringUnit": {
             "state": "translated",
             "value": "What is today's Nepali date with ${applicationName}"
+          }
+        }
+      }
+    },
+    "What is tomorrow in Bikram Sambat with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is tomorrow in Bikram Sambat with ${applicationName}"
+          }
+        }
+      }
+    },
+    "What is tomorrow's Nepali date with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is tomorrow's Nepali date with ${applicationName}"
+          }
+        }
+      }
+    },
+    "What was yesterday's Nepali date with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What was yesterday's Nepali date with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Yesterday's Bikram Sambat date in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's Bikram Sambat date in ${applicationName}"
+          }
+        }
+      }
+    },
+    "Yesterday's Nepali date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's Nepali date"
           }
         }
       }
