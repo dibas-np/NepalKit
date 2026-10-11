@@ -57,7 +57,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=14
+total=15
 ran=0
 summary=""
 current=""
@@ -132,6 +132,9 @@ gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
 # throwaway bundles in this session's LaunchServices database.
 gate "LaunchServices unregistration suite" python3 "$repo_root/scripts/test_unregister_launchservices.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
+# The release product verifier runs only inside package-release.sh, so its suite
+# is the only thing that exercises it on an ordinary run.
+gate "release product verifier suite" python3 "$repo_root/scripts/test_verify_release_product.py"
 # The badge entry is a machine-read input to a third party, so a typo in it is a
 # silently dropped answer rather than a visible failure. This gate runs the
 # verifier's own suite first, for the reason the floor gate does: nothing else in
