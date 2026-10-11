@@ -114,7 +114,7 @@ Named because an assurance case that lists only what it has is hiding the rest.
 | --- | --- |
 | Independent security review | The whole case is self-authored. Findings F3, F5 and F8 exist because of this |
 | Dynamic analysis or fuzzing | The conversion path is argued from tests, not from adversarial input |
-| 80% statement coverage | Measured 39.39%; see [docs/coverage.md](coverage.md) |
+| 80% statement coverage | Measured 40.32%; see [docs/coverage.md](coverage.md) |
 | A second maintainer | No second reviewer for any claim here |
 | Pen test of the updater | The highest-consequence path is argued from code and notarization, never attacked |
 
