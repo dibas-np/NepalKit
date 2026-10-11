@@ -349,14 +349,17 @@ read the skip as coverage.
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 
-Four environment variables are read by those scripts, and none of them is
+Five environment variables are read by those scripts, and none of them is
 secret. `.env.example` is the place they are described, with each one's actual
 default:
 
 - `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
-  `generate_appcast`. Unset, it searches DerivedData. `sign_update` lives in the
-  same directory, and is what signs the feed itself; `generate_appcast` only
-  writes items and signs archives.
+  `generate_appcast`. It overrides discovery. Unset, the script uses only the
+  tools this checkout built into `DerivedData/` and checks they belong to the
+  pinned Sparkle version. `sign_update` lives in the same directory, and is what
+  signs the feed itself; `generate_appcast` only writes items and signs archives.
+- `SPARKLE_BIN_UNPINNED` — `1` skips that pin check, for a CI image whose tools
+  are installed elsewhere; never on the release machine. Unset, the check runs.
 - `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched
   provenance tables. Unset, it uses `~/.cache/nepalkit-data-sources`; it caches
   in both cases, so this is not a switch for caching off.
