@@ -47,8 +47,8 @@ FLOOR_FILE = REPO_ROOT / "scripts" / "coverage-floor.json"
 # which silently matched nothing in a worktree or a CI checkout at a different
 # path - and a coverage script that reports on zero files is worse than none,
 # because it looks like it ran.
-def subject_files(stdout: str) -> list[str]:
-    """Return the report rows whose file is product source, not test source."""
+def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
+    """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
     # llvm-cov prints report paths with the leading "/" stripped, so both sides
     # are normalised before comparing. Comparing raw strings silently matches
@@ -59,11 +59,64 @@ def subject_files(stdout: str) -> list[str]:
         if len(parts) != 13 or not parts[0].startswith(root):
             continue
         relative = parts[0][len(root):]
-        if relative.startswith("NepalKitCore/Sources/NepalKitCore/"):
-            keep.append(line)
-        elif relative.startswith("NepalKit/"):
+        if any(relative.startswith(prefix) for prefix in prefixes):
             keep.append(line)
     return keep
+
+
+def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
+    """Total the raw counts of the subject rows in an llvm-cov report."""
+    # llvm-cov's row is: filename, then (count, missed, percent) four times over -
+    # regions, functions, lines, branches. Thirteen fields, and the filename is
+    # unquoted, so a path with spaces would shift the columns. Assert the shape
+    # rather than trusting it: a wrong column silently reports a wrong number,
+    # which is the exact failure this script is here to prevent.
+    counts = {
+        "regions": 0, "regions_hit": 0,
+        "functions": 0, "functions_hit": 0,
+        "lines": 0, "lines_hit": 0,
+        "files": 0,
+    }
+    for line in subject_files(report_text, prefixes):
+        parts = line.split()
+
+        # Positional, because the "-" that stands in for "no data" must not be
+        # filtered out: dropping it shifts every later column and yields a
+        # confidently wrong number rather than an error.
+        def count(index: int) -> int:
+            try:
+                return int(parts[index])
+            except (IndexError, ValueError):
+                return 0
+
+        counts["regions"] += count(1)
+        counts["regions_hit"] += count(1) - count(2)
+        counts["functions"] += count(4)
+        counts["functions_hit"] += count(4) - count(5)
+        counts["lines"] += count(7)
+        counts["lines_hit"] += count(7) - count(8)
+        counts["files"] += 1
+    return counts
+
+
+def percentages(counts: dict[str, int]) -> dict[str, float]:
+    """Turn raw counts into the percentages the floor file records."""
+    return {
+        "lines": round(100 * counts["lines_hit"] / counts["lines"], 2) if counts["lines"] else 0.0,
+        # llvm-cov's Regions column, which for Swift is region coverage. It is
+        # NOT branch coverage: Swift emits no branch data, so llvm-cov reports
+        # zero for its Branches column and calling that 0% would be a false
+        # reading rather than a true one. Named "regions" so nobody can quote it
+        # as branch coverage.
+        "regions": round(100 * counts["regions_hit"] / counts["regions"], 2)
+        if counts["regions"] else 0.0,
+        "functions": round(100 * counts["functions_hit"] / counts["functions"], 2)
+        if counts["functions"] else 0.0,
+        "files": counts["files"],
+    }
+
+
+_BOTH_PREFIXES = ("NepalKitCore/Sources/NepalKitCore/", "NepalKit/")
 
 SUITES = (
     # (label, package path, profdata glob root, binary glob, doc root)
@@ -98,46 +151,10 @@ def measure(label: str, package: str, build_dir: Path) -> dict[str, float]:
     report = run(
         ["xcrun", "llvm-cov", "report", "--instr-profile", str(profiles[0]), str(binaries[0])]
     )
-    # llvm-cov's row is: filename, then (count, missed, percent) four times over -
-    # regions, functions, lines, branches. Thirteen fields, and the filename is
-    # unquoted, so a path with spaces would shift the columns. Assert the shape
-    # rather than trusting it: a wrong column silently reports a wrong number,
-    # which is the exact failure this script is here to prevent.
-    regions_hit = regions = functions_hit = functions = lines_hit = lines = 0
-    files = 0
-    for line in subject_files(report.stdout):
-        parts = line.split()
-        # Positional, because the "-" that stands in for "no data" must not be
-        # filtered out: dropping it shifts every later column and yields a
-        # confidently wrong number rather than an error.
-        def count(index: int) -> int:
-            try:
-                return int(parts[index])
-            except (IndexError, ValueError):
-                return 0
-
-        regions += count(1)
-        regions_hit += count(1) - count(2)
-        functions += count(4)
-        functions_hit += count(4) - count(5)
-        lines += count(7)
-        lines_hit += count(7) - count(8)
-        files += 1
-
-    if lines == 0:
+    counts = summarise(report.stdout, _BOTH_PREFIXES)
+    if counts["lines"] == 0:
         raise SystemExit(f"{label}: no subject lines found; the path filter is wrong")
-
-    return {
-        "lines": round(100 * lines_hit / lines, 2),
-        # llvm-cov's Regions column, which for Swift is region coverage. It is
-        # NOT branch coverage: Swift emits no branch data, so llvm-cov reports
-        # zero for its Branches column and calling that 0% would be a false
-        # reading rather than a true one. Named "regions" so nobody can quote it
-        # as branch coverage.
-        "regions": round(100 * regions_hit / regions, 2) if regions else 0.0,
-        "functions": round(100 * functions_hit / functions, 2) if functions else 0.0,
-        "files": files,
-    }
+    return percentages(counts)
 
 
 def main() -> int:

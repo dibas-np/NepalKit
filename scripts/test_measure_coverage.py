@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Dibas Sigdel
+"""Characterisation suite for the coverage parser in `measure-coverage.py`.
+
+That script decides the number the project publishes, including the OpenSSF
+badge answers, and `docs/coverage.md` records three earlier bugs in it that each
+produced a confident wrong answer. Until now nothing exercised it, so the only
+way to find a fourth was to publish it. These tests feed it a recorded llvm-cov
+report table and pin what it counts, what it ignores and how it combines suites.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import unittest
+from pathlib import Path
+
+_SCRIPT = Path(__file__).resolve().parent / "measure-coverage.py"
+_spec = importlib.util.spec_from_file_location("measure_coverage", _SCRIPT)
+mc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mc)
+
+CORE = "NepalKitCore/Sources/NepalKitCore/"
+APP = "NepalKit/"
+
+# llvm-cov prints the repository path with its leading "/" stripped.
+ROOT = str(mc.REPO_ROOT).lstrip("/") + "/"
+
+
+def row(path: str, lines: int, missed: int, functions: str = "4 1 75.00%") -> str:
+    """One 13-field llvm-cov row: name, then regions, functions, lines, branches."""
+    pct = f"{100 * (lines - missed) / lines:.2f}%" if lines else "-"
+    return f"{ROOT}{path} 10 2 80.00% {functions} {lines} {missed} {pct} 0 0 -"
+
+
+FIXTURE = "\n".join(
+    [
+        "Filename Regions Missed Regions Cover Functions Missed Functions "
+        "Executed Lines Missed Lines Cover Branches Missed Branches Cover",
+        "-" * 60,
+        row(CORE + "A.swift", 100, 10),
+        row(CORE + "B.swift", 50, 50),
+        row(APP + "C.swift", 200, 140),
+        row(APP + "D.swift", 300, 300),
+        row("NepalKitTests/T.swift", 999, 0),
+        "-" * 60,
+        "TOTAL 10 2 80.00% 4 1 75.00% 1649 500 69.00% 0 0 -",
+    ]
+)
+
+CORE_ONLY = (CORE,)
+APP_ONLY = (APP,)
+
+
+class SummariseTests(unittest.TestCase):
+    def test_only_rows_under_the_given_prefixes_count(self):
+        """The app prefix keeps app rows and drops core, test, header and TOTAL rows."""
+        counts = mc.summarise(FIXTURE, APP_ONLY)
+        self.assertEqual(counts["files"], 2)
+        self.assertEqual(counts["lines"], 500)
+        self.assertEqual(counts["lines_hit"], 60)
+
+    def test_core_prefix_selects_core_rows(self):
+        counts = mc.summarise(FIXTURE, CORE_ONLY)
+        self.assertEqual(counts["files"], 2)
+        self.assertEqual(counts["lines"], 150)
+        self.assertEqual(counts["lines_hit"], 90)
+
+    def test_both_prefixes_reproduce_todays_double_count(self):
+        """Pins the function, not the gate: it is prefix-driven, so both prefixes
+        select all four product rows. The gate must not pass both to one suite."""
+        counts = mc.summarise(FIXTURE, CORE_ONLY + APP_ONLY)
+        self.assertEqual(counts["files"], 4)
+
+    def test_a_dash_column_is_positional_not_dropped(self):
+        """A "-" stands in for no data. Dropping it would shift every later
+        column and report the lines column as the functions column."""
+        report = row(APP + "E.swift", 20, 5, functions="- - -")
+        counts = mc.summarise(report, APP_ONLY)
+        self.assertEqual(counts["functions"], 0)
+        self.assertEqual(counts["functions_hit"], 0)
+        self.assertEqual(counts["lines"], 20)
+        self.assertEqual(counts["lines_hit"], 15)
+        self.assertEqual(counts["regions"], 10)
+        self.assertEqual(counts["regions_hit"], 8)
+
+    def test_an_empty_report_is_all_zeros(self):
+        counts = mc.summarise("", APP_ONLY)
+        self.assertEqual(set(counts.values()), {0})
+
+
+class PercentageTests(unittest.TestCase):
+    def test_percentages_round_to_two_places(self):
+        result = mc.percentages(
+            {"regions": 3, "regions_hit": 1, "functions": 7, "functions_hit": 2,
+             "lines": 3, "lines_hit": 2, "files": 5}
+        )
+        self.assertEqual(result["lines"], 66.67)
+        self.assertEqual(result["regions"], 33.33)
+        self.assertEqual(result["functions"], 28.57)
+        self.assertEqual(result["files"], 5)
+
+    def test_zero_denominators_are_zero_not_an_error(self):
+        result = mc.percentages(mc.summarise("", APP_ONLY))
+        self.assertEqual(result["lines"], 0.0)
+        self.assertEqual(result["files"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
