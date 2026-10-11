@@ -84,9 +84,11 @@ from the human-facing short version.
 ## Consequence for the signing key
 
 Sparkle's EdDSA private key is the one unrecoverable artifact in this release
-plan: lose it and no installed copy ever updates again. It is generated, backed
-up in at least two independent places, and the backup is verified to restore
-before the first distributed build. It is never committed. The pinned version
+plan: lose it and no installed copy ever updates again. The plan was to back it
+up in at least two independent places and verify a restore before the first
+distributed build. That requirement is not yet met: "Custody as actually
+configured" below records one off-machine copy that may share a failure domain
+with the keychain, and no restore performed. It is never committed. The pinned version
 above does not change that dependency — it is the same key contract in 2.9.6 as
 in any other 2.x release.
 
