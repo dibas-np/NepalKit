@@ -48,10 +48,27 @@ struct BikramSambatToGregorianIntent: AppIntent {
         guard let ad = bsToAD(BSDay(year: year, month: month.rawValue, day: day), in: dataset) else {
             throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
         }
-        guard let instant = noonUTC(for: ad) else {
+        guard let instant = Self.noonInUserCalendar(for: ad) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
         return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad)))
+    }
+
+    /// Noon of the converted day in the calendar the reverse intent reads
+    /// dates with, so the answer chains into "Convert to Bikram Sambat" as the
+    /// same day. Noon UTC is the next local day from UTC+12 to UTC+14 (New
+    /// Zealand, Fiji, Tonga, Kiribati). Noon rather than midnight keeps the
+    /// instant clear of daylight-saving transitions, which happen at night.
+    static func noonInUserCalendar(
+        for ad: GADay,
+        calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()
+    ) -> Date? {
+        let components = DateComponents(year: ad.year, month: ad.month, day: ad.day, hour: 12)
+        // `Calendar` normalizes impossible components, so the day must read back.
+        guard let instant = calendar.date(from: components),
+              GregorianToBikramSambatIntent.namedDay(for: instant, calendar: calendar) == ad
+        else { return nil }
+        return instant
     }
 
     /// The full boundary — both calendars — because neither side of an

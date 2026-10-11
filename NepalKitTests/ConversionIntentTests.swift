@@ -94,27 +94,50 @@ struct ConversionIntentTests {
         #expect(GregorianToBikramSambatIntent.invalidDayDialog(GADay(year: 2025, month: 3, day: 15)) == nil)
     }
 
-    @Test("Oracle: 15 Ashar 2082 converts to 29 June 2025 at noon UTC")
+    @Test("Oracle: 15 Ashar 2082 converts to 29 June 2025 at noon in the user's zone")
     func bikramSambatToGregorianOracle() async throws {
         let converted = try #require(bsToAD(BSDay(year: 2082, month: 3, day: 15), in: dataset))
         #expect(converted == GADay(year: 2025, month: 6, day: 29))
 
-        let instant = try #require(noonUTC(for: converted))
-        var gmt = Calendar(identifier: .gregorian)
-        gmt.timeZone = .gmt
-        let parts = gmt.dateComponents([.year, .month, .day, .hour, .minute], from: instant)
-        #expect(parts.year == 2025 && parts.month == 6 && parts.day == 29)
-        #expect(parts.hour == 12 && parts.minute == 0)
-
+        // The reverse intent's reader, so a chained conversion lands on the same day.
+        let calendar = GregorianToBikramSambatIntent.userGregorian()
         let intent = BikramSambatToGregorianIntent()
         intent.day = 15
         intent.month = .ashar
         intent.year = 2082
         let result = try await intent.perform()
-        #expect(result.value == instant)
+        let instant = try #require(result.value)
+        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: instant)
+        #expect(parts.year == 2025 && parts.month == 6 && parts.day == 29)
+        #expect(parts.hour == 12 && parts.minute == 0)
         let expectedDialog = SettingsStore().settings.monthNames == .nepali
             ? "आइत, 29 June 2025." : "Sunday, 29 June 2025."
         #expect(String(localized: BikramSambatToGregorianIntent.successDialog(converted)) == expectedDialog)
+    }
+
+    @Test(
+        "The converted instant names the converted day in the user's zone",
+        arguments: ["Pacific/Auckland", "Pacific/Kiritimati", "America/Los_Angeles"]
+    )
+    func bikramSambatToGregorianNamesTheSameDayInEveryZone(zone: String) throws {
+        // Auckland is UTC+12 on 29 June 2025 (NZST) and Kiritimati is UTC+14,
+        // so noon UTC is already 30 June there; Los Angeles is UTC-7 (PDT).
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: zone))
+        let converted = try #require(bsToAD(BSDay(year: 2082, month: 3, day: 15), in: dataset))
+
+        let instant = try #require(BikramSambatToGregorianIntent.noonInUserCalendar(for: converted, calendar: calendar))
+
+        let parts = calendar.dateComponents([.year, .month, .day], from: instant)
+        #expect(parts.year == 2025 && parts.month == 6 && parts.day == 29)
+        let roundTrip = try #require(GregorianToBikramSambatIntent.namedDay(for: instant, calendar: calendar))
+        #expect(roundTrip == converted)
+        #expect(adToBS(roundTrip, in: dataset) == BSDay(year: 2082, month: 3, day: 15))
+    }
+
+    @Test("A Gregorian day the calendar would normalize builds no instant")
+    func noonInUserCalendarRejectsAnImpossibleDay() {
+        #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GADay(year: 2025, month: 2, day: 30), calendar: Self.utcCalendar()) == nil)
     }
 
     @Test("Round trip through the entity returns the starting civil day")
