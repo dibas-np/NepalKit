@@ -17,20 +17,12 @@ standalone Apple Watch app with four complication styles. See
 
 ## Planned
 
-### App Store distribution for the Watch app
+### App Store distribution for the Watch app — deferred
 
-The Watch app is currently built from source and runs on a development-signed
-destination. Distribution means a signing identity, a store record, a privacy
-manifest, and a review cycle.
-
-*Blocked on:* the decision proposed in
-[ADR-0015](adr/0015-watch-app-distribution.md), which recommends the store for the
-Watch app only, with the Mac app staying Developer ID. It has a date: current
-Watch installs are development-signed, and their certificate expires on
-2027-09-27.
-
-*Would change:* ADR-0008 (distribution is a notarized disk image, not the
-store) only if the Mac app ships through the store as well.
+The Watch app stays source-built and development-signed until users ask for a
+store release ([ADR-0015](adr/0015-watch-app-distribution.md)). A GitHub issue
+asking for it reopens this item; the ADR records the store option's costs and
+the timing that would suit it.
 
 ### Reducing the supported calendar range
 

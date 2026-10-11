@@ -89,7 +89,7 @@ Today refreshes when the app becomes active and schedules a refresh for the next
 
 Large-text layouts preserve the primary date information, and VoiceOver announces dates using Latin digits and transliterated names. Dates outside the supported range show an unavailable state with support context; calculation failures have a separate error state.
 
-To install the Watch app from source, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. The Mac DMG installs only the macOS app.
+The Watch app is a developer preview, built from source; it is not on the App Store ([ADR-0015](docs/adr/0015-watch-app-distribution.md)). To install it, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. A development-signed install stops launching when its provisioning profile expires; build and run it from Xcode again to renew it. Calendar data updates reach the watch only when you rebuild. The Mac DMG installs only the macOS app.
 
 ## Supported dates and calendar data
 

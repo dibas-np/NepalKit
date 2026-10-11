@@ -1,7 +1,7 @@
 # How the Watch app reaches users
 
 Date: 2026-10-11
-Status: **proposed** — awaiting the maintainer's decision
+Status: accepted — option C, until users ask for store distribution
 
 ## Context
 
@@ -45,19 +45,20 @@ after every data release, each Watch user rebuilds and re-signs from Xcode.
 Lowest cost to the project; in practice the Watch app is then a developer
 preview, and README should say so.
 
-## Recommendation
+## Decision
 
-**A**, timed after the Samiti's 2084 determination: submit once the 2084 row is
-attested or corrected (expected February to March 2027), so the first store
-build ships data the store requirement accepts, and well before the 2027-09-27
-certificate expiry and the 2028-04-12 dataset boundary. The Mac app's
-distribution, and ADR-0008's "a notarized disk image, not the store", are
-unchanged by A.
+**C.** The Watch app stays source-built until users ask for a store release.
+Store distribution (A) is the first move when they do; nothing here rules it
+out, and its costs and timing are recorded above.
 
-## What accepting A changes
+## Consequences
 
-- The roadmap item "App Store distribution for the Watch app" is unblocked.
-- A Watch store release process joins the Mac one: signing identity, archive,
-  upload, review. The Mac release runbook does not cover it.
-- `README.md` and `CHANGELOG.md` stop describing the Watch app as
-  "installs from Xcode for now" once it is live.
+- The Watch app is a developer preview. README says it is built from source, and
+  that a development-signed install stops launching when its provisioning
+  profile expires; rebuilding from Xcode renews it.
+- A calendar data correction reaches Watch users only when they rebuild. A data
+  release's notes say so.
+- The maintainer's own install needs a rebuild before its certificate expires on
+  2027-09-27 (profiles 2027-10-02).
+- The roadmap lists Watch store distribution as deferred, reopened by a user
+  request (a GitHub issue asking for it is enough).
