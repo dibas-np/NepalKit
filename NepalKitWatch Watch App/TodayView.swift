@@ -61,15 +61,27 @@ struct TodayScreen: View {
         }
         .task { model.activate() }
         .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .active:
+            if shouldStayActive(in: phase) {
                 model.activate()
-            case .background, .inactive:
-                model.deactivate()
-            @unknown default:
+            } else {
                 model.deactivate()
             }
         }
+    }
+}
+
+/// Whether Today keeps its midnight refresh and clock-change observation in
+/// `phase`. `.inactive` stays active: an Always On screen is dimmed but still
+/// visible, and deactivating there would leave yesterday's date on it past
+/// Nepal midnight.
+func shouldStayActive(in phase: ScenePhase) -> Bool {
+    switch phase {
+    case .active, .inactive:
+        true
+    case .background:
+        false
+    @unknown default:
+        false
     }
 }
 

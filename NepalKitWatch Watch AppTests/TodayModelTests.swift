@@ -3,6 +3,7 @@
 import Foundation
 import Testing
 import NepalKitCore
+import SwiftUI
 @testable import NepalKitWatchApp
 
 /// The Today lifecycle contract, tested through supplied state: launch and
@@ -240,6 +241,34 @@ struct TodayModelTests {
         try await Task.sleep(for: .milliseconds(300))
 
         #expect(clock.reads == 1)
+    }
+
+    // MARK: Scene phase
+
+    @Test func onlyTheBackgroundPhaseDeactivates() {
+        #expect(shouldStayActive(in: .active))
+        #expect(shouldStayActive(in: .inactive))
+        #expect(!shouldStayActive(in: .background))
+    }
+
+    @Test func inactivePhaseKeepsTheMidnightRefresh() async throws {
+        // Always On: a dimmed screen is still visible, so midnight must still
+        // land while the scene is inactive.
+        let clock = MutableClock(try anchoredInstant())
+        let signals = SignalFixture()
+        let model = makeModel(
+            clock: clock,
+            signals: signals,
+            nextMidnight: { $0.addingTimeInterval(0.05) }
+        )
+        model.activate()
+        if !shouldStayActive(in: .inactive) {
+            model.deactivate()
+        }
+
+        try await waitUntil(timeout: .seconds(5)) { clock.reads >= 2 }
+
+        model.deactivate()
     }
 
     // MARK: Inactive resume
