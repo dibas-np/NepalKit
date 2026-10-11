@@ -13,7 +13,7 @@
 # library target cannot own @main and the harness links only NepalKitCore - and
 # run-app-tests.sh discovers a built product rather than making one. So without a
 # build ahead of it, InfoPlistKeysTests has nothing to read and skips, and a
-# skipped test still reports as passing. Five gates that guard the release keys
+# skipped test still reports as passing. Seven tests that guard the release keys
 # would be dark on every run that had not just built.
 #
 # That exclusion is also how SWIFT_VERSION = 6.0 shipped a file the app target
