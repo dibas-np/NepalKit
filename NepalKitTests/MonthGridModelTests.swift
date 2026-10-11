@@ -191,7 +191,31 @@ struct MonthGridModelTests {
         #expect(SpokenDate.today(bs, gregorian: nil, weekday: nil, monthNames: .transliterated) == "1 Kartik 2083")
     }
 
-    @Test func theMonthLivesInTodayNotItsOwnTab() {
+    @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
+
+        // Read from the source, as WatchPresentationWiringTests does: the
+        // harness renders no views, so the composition is checked where it is
+        // written. The Today branch must build the grid; Convert must not.
+        let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
+        let body = try #require(source.range(of: "switch destination {"))
+        let today = try #require(source.range(of: "case .today:", range: body.upperBound ..< source.endIndex))
+        let convert = try #require(source.range(of: "case .convert:", range: today.upperBound ..< source.endIndex))
+        let todayBranch = source[today.upperBound ..< convert.lowerBound]
+        #expect(todayBranch.contains("MonthGridView("))
+        #expect(source.components(separatedBy: "MonthGridView(").count == 2, "built once, in Today")
+    }
+
+    /// Searched upward, because `#filePath` is the harness's symlinked path at
+    /// run time (see WatchPresentationWiringTests.repositoryRoot).
+    private static var repositoryRoot: URL {
+        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
+            var dir = base.deletingLastPathComponent()
+            while dir.path != "/" {
+                if FileManager.default.fileExists(atPath: dir.appending(path: "NepalKit.xcodeproj").path) { return dir }
+                dir = dir.deletingLastPathComponent()
+            }
+        }
+        return URL(fileURLWithPath: #filePath)
     }
 }
