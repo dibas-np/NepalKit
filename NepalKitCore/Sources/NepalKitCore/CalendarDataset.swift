@@ -32,10 +32,17 @@ public struct CalendarDataset: Sendable {
     /// Explicitly declared supported range (ADR-0002), not derived.
     public let supportedRange: ClosedRange<Int>
 
+    /// Supported-range years whose rows are a projection rather than an
+    /// attested Nepali Patro (SOURCES.md, ADR-0014). Declared by the dataset,
+    /// so attesting a row means editing this set and nothing else: every
+    /// surface that names the caveat reads it from here.
+    public let provisionalYears: Set<Int>
+
     /// Absolute day index of each supported year's first day (lookup cache).
     let yearStartIndices: [Int: Int]
 
-    public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>) {
+    public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>, provisionalYears: Set<Int> = []) {
+        self.provisionalYears = provisionalYears
         self.version = version
         self.years = years
         self.anchorBS = anchorBS
@@ -59,6 +66,12 @@ public struct CalendarDataset: Sendable {
 
     public func monthLengths(for bsYear: Int) -> [Int]? {
         years[bsYear]
+    }
+
+    /// Whether the Bikram Sambat year's row is a provisional projection.
+    /// False for every attested year and for any year outside the table.
+    public func isProvisional(_ year: Int) -> Bool {
+        provisionalYears.contains(year)
     }
 
     /// The first day the table can express, as a Gregorian civil day: the
@@ -203,6 +216,9 @@ public struct CalendarDataset: Sendable {
         ],
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
         anchorAD: GADay(year: 2025, month: 4, day: 14),
-        supportedRange: 1975 ... 2084
+        supportedRange: 1975 ... 2084,
+        // The maintainer's own 2084 row (SOURCES.md). Remove it from this set
+        // when the official Nepali Patro attests the row.
+        provisionalYears: [2084]
     )
 }
