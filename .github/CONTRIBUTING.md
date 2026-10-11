@@ -97,7 +97,8 @@ python3 scripts/test_swiftlint.py          # 2. the bootstrap's own suite, then 
 ./scripts/swiftlint.sh lint --strict
 
 swift test --package-path NepalKitCore      # 3. the calendar: 96 tests
-./scripts/run-app-tests.sh                  # 4. the app: 227 tests
+swift test --package-path NepalKitCore      # 3. the calendar: 96 tests
+./scripts/run-app-tests.sh                  # 4. the app: 233 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
@@ -113,7 +114,7 @@ python3 scripts/verify-deployment-floor.py  # 15. the floor is one number everyw
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications: 54 tests
+    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications: 57 tests
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
