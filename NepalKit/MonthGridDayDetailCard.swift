@@ -10,6 +10,8 @@ struct MonthGridDayDetailCard: View {
     let detail: MonthGridDayDetail
     let copy: () -> Void
     let addToCalendar: () -> Void
+    /// The last Add to Calendar did not reach a calendar app.
+    var addToCalendarFailed = false
     let close: () -> Void
 
     var body: some View {
@@ -59,6 +61,12 @@ struct MonthGridDayDetailCard: View {
                     .accessibilityHint(Strings.copyDateHelp)
                 Button(Strings.addToCalendarLabel, action: addToCalendar)
                     .accessibilityHint(Strings.addToCalendarHelp)
+            }
+            if addToCalendarFailed {
+                Text(Strings.addToCalendarFailed)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

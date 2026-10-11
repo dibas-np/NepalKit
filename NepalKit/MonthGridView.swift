@@ -18,6 +18,9 @@ struct MonthGridView: View {
 
     /// The day whose details are showing, if any.
     @State private var selected: MonthGridDay?
+    /// Whether the last Add to Calendar for the selected day failed; cleared
+    /// when the selection changes, so the message belongs to one day.
+    @State private var calendarFailed = false
 
     /// Focus is what lets the arrow keys reach the grid. Taken on appearance
     /// so they work as soon as the popover opens, without a click first.
@@ -49,13 +52,15 @@ struct MonthGridView: View {
                 MonthGridDayDetailCard(
                     detail: detail,
                     copy: { model.copy(detail) },
-                    addToCalendar: { try? model.calendarEvent(for: day, settings: settings).open() },
+                    addToCalendar: { calendarFailed = !model.calendarEvent(for: day, settings: settings).open() },
+                    addToCalendarFailed: calendarFailed,
                     close: { selected = nil }
                 )
             }
         }
         // Paging away leaves the selected day off the grid, so its details go.
         .onChange(of: model.shown) { selected = nil }
+        .onChange(of: selected) { calendarFailed = false }
         // The model outlives the popover, so today is re-read on every
         // appearance, and the follower moves it while the grid stays open.
         .onAppear { model.refreshToday(now: clock.now) }

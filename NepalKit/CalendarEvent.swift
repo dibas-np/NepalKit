@@ -45,13 +45,21 @@ struct CalendarEvent: Equatable {
         return lines.map(Self.fold).joined(separator: "\r\n") + "\r\n"
     }
 
-    /// Writes the file into the app's temporary directory and opens it with
-    /// the default calendar app.
-    func open(stamp: Date = .now, workspace: NSWorkspace = .shared) throws {
-        let url = FileManager.default.temporaryDirectory
-            .appending(path: "NepalKit \(Self.basic(date)).ics")
-        try ics(stamp: stamp).write(to: url, atomically: true, encoding: .utf8)
-        workspace.open(url)
+    /// Writes the file into `directory` and hands it to the default calendar
+    /// app. False when the file could not be written or nothing opened it,
+    /// so the card can say so rather than leave the click unanswered.
+    func open(
+        stamp: Date = .now,
+        in directory: URL = FileManager.default.temporaryDirectory,
+        opener: (URL) -> Bool = { NSWorkspace.shared.open($0) }
+    ) -> Bool {
+        let url = directory.appending(path: "NepalKit \(Self.basic(date)).ics")
+        do {
+            try ics(stamp: stamp).write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            return false
+        }
+        return opener(url)
     }
 
     // MARK: - Format

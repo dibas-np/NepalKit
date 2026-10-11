@@ -72,4 +72,29 @@ struct CalendarEventTests {
         // Unfolding restores the line exactly: no character was split.
         #expect(folded.replacingOccurrences(of: "\r\n ", with: "") == line)
     }
+
+    @Test func openingWritesTheFileAndHandsItToTheCalendarApp() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        var opened: URL?
+        #expect(event.open(in: directory) { opened = $0; return true })
+        let url = try #require(opened)
+        #expect(url.lastPathComponent == "NepalKit 20261021.ics")
+        #expect(try String(contentsOf: url, encoding: .utf8).contains("DTSTART;VALUE=DATE:20261021"))
+    }
+
+    @Test func nothingOpeningItIsAFailure() throws {
+        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        #expect(!event.open { _ in false })
+    }
+
+    @Test func aFileThatCannotBeWrittenIsAFailureAndOpensNothing() {
+        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        var called = false
+        let missing = URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")
+        #expect(!event.open(in: missing) { _ in called = true; return true })
+        #expect(!called)
+    }
 }
