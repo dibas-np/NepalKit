@@ -550,23 +550,74 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertLess(seed, generate, "the feed must be seeded before generate_appcast runs")
         self.assertIn('"$ARCHIVES_DIR/appcast.xml"', script)
 
-    def test_the_seeded_feed_is_made_writable_before_generation(self) -> None:
-        # package-release.sh hands out the signed feed read-only and `cp` keeps
-        # the mode, so a read-only feed in the repository would otherwise make
-        # generate_appcast fail to rewrite its staging copy.
+    # The two permission rules are tested by running the scripts' own lines on
+    # scratch files, each with a negative control: the same lines minus the
+    # chmod must leave the opposite permission, or the test could pass while
+    # the chmod never ran. The lines are plain shell, so bash runs them here,
+    # which the Linux CI runner has.
+    @staticmethod
+    def _seed_block(drop_chmod: bool = False) -> str:
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
-        seed = script.index('cp "$ROOT/appcast.xml"')
-        writable = script.index('chmod u+w "$ARCHIVES_DIR/appcast.xml"')
-        generate = script.index('"$GENERATE_APPCAST" \\')
-        self.assertLess(seed, writable)
-        self.assertLess(writable, generate)
+        start = script.index('if [[ -f "$ROOT/appcast.xml" ]]; then')
+        block = script[start:script.index("\nfi\n", start) + 4]
+        self_check = 'chmod u+w "$ARCHIVES_DIR/appcast.xml"'
+        assert self_check in block
+        return block.replace(self_check, ":") if drop_chmod else block
+
+    def _run_seed(self, block: str) -> Path:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        tmp = Path(scratch.name)
+        (tmp / "root").mkdir()
+        (tmp / "archives").mkdir()
+        feed = tmp / "root" / "appcast.xml"
+        feed.write_text("<rss><channel><item></item></channel></rss>")
+        feed.chmod(0o444)
+        subprocess.run(["bash", "-c", block], check=True, capture_output=True,
+                       env={**os.environ, "ROOT": str(tmp / "root"), "ARCHIVES_DIR": str(tmp / "archives")})
+        return tmp / "archives" / "appcast.xml"
+
+    def test_a_read_only_committed_feed_is_seeded_writable(self) -> None:
+        # package-release.sh hands out the signed feed read-only and `cp` keeps
+        # the mode; generate_appcast rewrites the staging copy in place.
+        self.assertTrue(os.access(self._run_seed(self._seed_block()), os.W_OK))
+
+    def test_without_the_chmod_the_seeded_feed_stays_read_only(self) -> None:
+        self.assertFalse(os.access(self._run_seed(self._seed_block(drop_chmod=True)), os.W_OK))
+
+    @staticmethod
+    def _output_block(drop_chmod: bool = False) -> str:
+        script = (Path(__file__).resolve().parent / "package-release.sh").read_text()
+        start = script.index('OUT_DIR="$(mktemp -d')
+        end = script.index('chmod 0444 "$OUT_DIR"/*', start) + len('chmod 0444 "$OUT_DIR"/*')
+        block = script[start:end] + '\necho "$OUT_DIR"\n'
+        return block.replace('chmod 0444 "$OUT_DIR"/*', ":") if drop_chmod else block
+
+    def _run_outputs(self, block: str) -> list[Path]:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        tmp = Path(scratch.name)
+        for name in ("NepalKit.dmg", "NepalKit-9.9.9.zip"):
+            (tmp / name).write_bytes(b"x")
+        (tmp / "appcast").mkdir()
+        (tmp / "appcast" / "appcast.xml").write_text("<rss/>")
+        out = subprocess.run(["bash", "-c", block], check=True, capture_output=True, text=True,
+                             env={**os.environ, "TMPDIR": str(tmp), "DMG": str(tmp / "NepalKit.dmg"),
+                                  "DIST_ZIP": str(tmp / "NepalKit-9.9.9.zip"),
+                                  "APPCAST_DIR": str(tmp / "appcast")}).stdout.strip()
+        return sorted(Path(out).iterdir())
 
     def test_the_release_outputs_are_handed_out_read_only(self) -> None:
         # The signature covers every byte of the feed; an editor's autosave must
         # not be able to change it after signing.
-        script = (Path(__file__).resolve().parent / "package-release.sh").read_text()
-        copy = script.index('"$APPCAST_DIR/appcast.xml" "$OUT_DIR/"')
-        self.assertLess(copy, script.index('chmod 0444 "$OUT_DIR"/*'))
+        outputs = self._run_outputs(self._output_block())
+        self.assertEqual(len(outputs), 3)
+        for path in outputs:
+            self.assertFalse(os.access(path, os.W_OK), path.name)
+
+    def test_without_the_chmod_the_release_outputs_stay_writable(self) -> None:
+        for path in self._run_outputs(self._output_block(drop_chmod=True)):
+            self.assertTrue(os.access(path, os.W_OK), path.name)
 
     def test_the_committed_feed_carries_more_than_one_release(self) -> None:
         # The consequence, stated on the repository's own feed: a feed that has
