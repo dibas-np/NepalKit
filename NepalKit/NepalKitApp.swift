@@ -110,7 +110,7 @@ struct NepalKitApp: App {
                 loginItem: loginItemModel,
                 updates: updateCheckModel,
                 menuBar: menuBarModel,
-                metadata: metadataCache.value,
+                metadataCache: metadataCache,
                 dataset: AppData.dataset
             )
         }

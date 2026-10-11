@@ -14,10 +14,11 @@ import AppKit
 /// sessions never show. Holding the cache and touching `value` from a view's body
 /// moves the cost to the first time the window is actually presented.
 ///
-/// Verified rather than assumed: with a print in `SettingsView.body` and a
-/// positive control in the menu-bar label's own body, a launch with no window
-/// opened fires the control and not the body. The body is not evaluated at
-/// launch, which is the property this type depends on.
+/// So `SettingsView` is handed this cache, never its value, and reads `value`
+/// only in its body. The scene builder still constructs `SettingsView` at
+/// launch, but that no longer touches the cache. That `SettingsView.body` is not
+/// evaluated at launch was observed once, with a print in that body and a
+/// positive control in the menu-bar label; no test guards it.
 @MainActor
 final class DeferredAppMetadata {
     private var cached: AppMetadata?

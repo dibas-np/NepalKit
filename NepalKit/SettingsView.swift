@@ -33,9 +33,10 @@ struct SettingsView: View {
     /// menu-bar label. Deliberately not `@Bindable`: the preview shows the label,
     /// it does not drive it, and a binding would invite writing to it here.
     let menuBar: MenuBarModel
-    /// Read once, lazily, and cached — see `DeferredAppMetadata` for why the
-    /// bundled LICENSE is not read at launch.
-    let metadata: AppMetadata
+    /// The cache, not its value: this initialiser runs at launch inside the
+    /// `Settings` scene builder, so `value` is read only from `body`, which runs
+    /// once the window is shown. See `DeferredAppMetadata`.
+    let metadataCache: DeferredAppMetadata
     /// Injected so the calendar facts are the same dataset the rest of the app
     /// converts with, and so a test can control them.
     let dataset: CalendarDataset
@@ -83,7 +84,7 @@ struct SettingsView: View {
             // TabView does not reach the scroll views the system hosts for the
             // tab contents. As a sibling it reserves its height in the window's
             // own layout, so no tab's content can pass under it.
-            SettingsIdentityStrip(metadata: metadata)
+            SettingsIdentityStrip(metadata: metadataCache.value)
         }
         // Wide enough for the longest detail (About's Devanagari range line) beside
         // the sidebar without clipping, and tall enough that the General form's
@@ -119,7 +120,7 @@ struct SettingsView: View {
         case .about:
             AboutSettingsView(
                 updates: updates,
-                metadata: metadata,
+                metadata: metadataCache.value,
                 dataset: dataset
             )
         }
@@ -248,7 +249,7 @@ private struct SourceLink: View {
         loginItem: LoginItemModel(service: PreviewLoginService()),
         updates: UpdateCheckModel(service: PreviewUpdateService()),
         menuBar: MenuBarModel(now: AppData.previewInstant, refreshes: false),
-        metadata: .current(),
+        metadataCache: DeferredAppMetadata(),
         dataset: AppData.dataset
     )
     .frame(width: 700, height: 460)
