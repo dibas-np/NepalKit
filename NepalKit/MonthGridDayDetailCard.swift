@@ -9,7 +9,6 @@ import NepalKitCore
 struct MonthGridDayDetailCard: View {
     let detail: MonthGridDayDetail
     let copy: () -> Void
-    let openInConverter: () -> Void
     let close: () -> Void
 
     var body: some View {
@@ -54,12 +53,8 @@ struct MonthGridDayDetailCard: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                Button(Strings.copyDateLabel, action: copy)
-                    .accessibilityHint(Strings.copyDateHelp)
-                Button(Strings.openInConverterLabel, action: openInConverter)
-                    .accessibilityHint(Strings.openInConverterHelp)
-            }
+            Button(Strings.copyDateLabel, action: copy)
+                .accessibilityHint(Strings.copyDateHelp)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
@@ -82,7 +77,7 @@ struct MonthGridDayDetailCard: View {
     let model = MonthGridModel(now: AppData.previewInstant)
     let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
     if let today = model.weeks.joined().compactMap({ $0 }).first(where: \.isToday) {
-        MonthGridDayDetailCard(detail: model.detail(for: today, settings: settings), copy: {}, openInConverter: {}, close: {})
+        MonthGridDayDetailCard(detail: model.detail(for: today, settings: settings), copy: {}, close: {})
             .padding()
             .frame(width: 340)
     }

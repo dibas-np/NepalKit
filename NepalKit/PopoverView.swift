@@ -93,10 +93,6 @@ struct PopoverView: View {
                     // falls in the month are one glance, not two.
                     MonthGridView(
                         model: monthGrid, settings: settings.settings, clock: clock,
-                        openInConverter: { day in
-                            converter.show(bikramSambat: day)
-                            destination = .convert
-                        },
                         isActive: destination == .today
                     )
                     ClocksSection(clock: clock, settings: settings.settings)

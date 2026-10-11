@@ -11,9 +11,6 @@ struct MonthGridView: View {
     let model: MonthGridModel
     let settings: DisplaySettings
     let clock: ClockModel
-    /// "Open in Converter" from a day's details. A callback, because the
-    /// destination it switches belongs to `PopoverView`, not to the grid.
-    let openInConverter: (BSDay) -> Void
     /// False while another destination is showing. The grid stays laid out
     /// underneath it (see `PopoverView`), so it must stop taking the arrow
     /// keys and scrolling that are meant for what is on top.
@@ -52,10 +49,6 @@ struct MonthGridView: View {
                 MonthGridDayDetailCard(
                     detail: detail,
                     copy: { model.copy(detail) },
-                    openInConverter: {
-                        selected = nil
-                        openInConverter(day.bikramSambat)
-                    },
                     close: { selected = nil }
                 )
             }
@@ -337,7 +330,6 @@ private struct MonthGridCell: View {
         model: MonthGridModel(now: AppData.previewInstant),
         settings: DisplaySettings(digits: .latin, monthNames: .transliterated),
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
-        openInConverter: { _ in }
     )
     .padding()
     .frame(width: 340)

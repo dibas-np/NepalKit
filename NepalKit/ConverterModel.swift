@@ -234,15 +234,6 @@ final class ConverterModel {
         }
     }
 
-    /// Opens the converter on a Bikram Sambat date, converting to Gregorian:
-    /// the month grid's "Open in Converter". Clamped like every other write,
-    /// so a date outside the table lands on the nearest one the pickers allow.
-    func show(bikramSambat bs: BSDay) {
-        direction = .bsToAD
-        bsDate = bs
-        clampBSDay()
-    }
-
     /// Sets the direction, carrying the converted date across. No-op when
     /// the direction is unchanged, so re-tapping the active segment is safe.
     func setDirection(_ newDirection: ConverterDirection) {

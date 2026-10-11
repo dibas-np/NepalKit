@@ -258,27 +258,6 @@ struct ConverterModelTests {
         #expect(Strings.provisionalYearsNote(AppData.dataset.provisionalYears) != nil)
     }
 
-    @Test func showingABikramSambatDateOpensBSToADOnIt() {
-        let model = ConverterModel(
-            direction: .adToBS,
-            bsYear: 2083, bsMonth: 6, bsDay: 11,
-            adYear: 2026, adMonth: 9, adDay: 27
-        )
-        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
-        model.show(bikramSambat: BSDay(year: 2082, month: 1, day: 1))
-        #expect(model.direction == .bsToAD)
-        #expect(model.bsDate == BSDay(year: 2082, month: 1, day: 1))
-        #expect(model.convertedText(settings: settings) == "14 April 2025 · Monday")
-    }
-
-    @Test func showingADateOutsideTheTableClampsIt() {
-        let model = bsModel()
-        model.show(bikramSambat: BSDay(year: 2200, month: 12, day: 40))
-        #expect(model.bsDate.year == AppData.dataset.supportedRange.upperBound)
-        #expect(model.bsDate.month == 12)
-        #expect(model.bsDate.day == model.daysInBSMonth(year: model.bsDate.year, month: 12))
-    }
-
     @Test func theDirectionPickerBindingCarriesTheDateAcross() {
         let model = bsModel()
         #expect(model.directionSelection == .bsToAD)
