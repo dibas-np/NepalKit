@@ -86,14 +86,16 @@ final class ConverterModel {
     ) {
         self.dataset = dataset
         self.direction = direction
-        let todayBSDate = todayBS(now: now, in: dataset)
-        // todayBS is nil past the supported range (and only then); the picker
-        // defaults to the range's first day rather than a literal date.
         let todayADDate = todayAD(now: now) ?? dataset.anchorAD
+        // Both pickers default to the same day: today, clamped into the
+        // convertible span, so past the supported range they open on its last
+        // day rather than the Bikram Sambat side jumping to the range's first.
+        // Inside the span this is exactly `todayBS(now:in:)`.
+        let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { adToBS($0, in: dataset) }
         self.bsDate = BSDay(
-            year: bsYear ?? todayBSDate?.year ?? dataset.supportedRange.lowerBound,
-            month: bsMonth ?? todayBSDate?.month ?? 1,
-            day: bsDay ?? todayBSDate?.day ?? 1
+            year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,
+            month: bsMonth ?? defaultBSDate?.month ?? 1,
+            day: bsDay ?? defaultBSDate?.day ?? 1
         )
         // todayAD cannot fail for a real instant; if it ever did, the dataset's
         // anchor day is an in-range fallback rather than an invented year.
@@ -104,6 +106,16 @@ final class ConverterModel {
         )
         clampBSDay()
         clampADDate()
+    }
+
+    /// The convertible Gregorian day closest to `day`: `day` itself inside the
+    /// supported range, else the range's first or last day. Nil only if the
+    /// dataset cannot convert its own first day.
+    private static func convertibleDay(nearest day: GADay, in dataset: CalendarDataset) -> GADay? {
+        guard let first = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset),
+              let last = dataset.gregorianEnd
+        else { return nil }
+        return min(max(day, first), last)
     }
 
     var bsYears: [Int] { Array(dataset.supportedRange) }

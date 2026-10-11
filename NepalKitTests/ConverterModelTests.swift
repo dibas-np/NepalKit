@@ -189,4 +189,34 @@ struct ConverterModelTests {
         #expect(model.adMonths(year: 1943) == Array(4 ... 12))
         #expect(model.adMonths(year: 1944) == Array(1 ... 4))
     }
+
+    // The supported range is 1975-2084 BS, 13 April 1918 through 12 April 2028
+    // (CONTEXT.md); 30 Chaitra 2084 is its last day (RoundTripTests).
+    @Test("Past the supported range, both pickers open on its last day")
+    func defaultsPastTheRangeNameTheLastSupportedDay() throws {
+        // 06:00 UTC is 11:45 Nepal Time on 13 April 2028, the day after the range.
+        for now in [try TestDates.utc(2028, 4, 13, 6, 0), try TestDates.utc(2030, 5, 12, 6, 0)] {
+            let model = ConverterModel(now: now)
+            #expect(model.adDate == GADay(year: 2028, month: 4, day: 12))
+            #expect(model.bsDate == BSDay(year: 2084, month: 12, day: 30))
+            #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+        }
+    }
+
+    @Test("Before the supported range, both pickers open on its first day")
+    func defaultsBeforeTheRangeNameTheFirstSupportedDay() throws {
+        let model = ConverterModel(now: try TestDates.utc(1900, 1, 1, 6, 0))
+        #expect(model.adDate == GADay(year: 1918, month: 4, day: 13))
+        #expect(model.bsDate == BSDay(year: 1975, month: 1, day: 1))
+        #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+    }
+
+    @Test("Inside the supported range, both pickers open on today in Nepal Time")
+    func defaultsInsideTheRangeNameToday() throws {
+        // 27 September 2026 is 11 Ashoj 2083 (see `bsToADKnownDateWithWeekday`).
+        let model = ConverterModel(now: try TestDates.utc(2026, 9, 27, 12, 0))
+        #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
+        #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 11))
+        #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+    }
 }
