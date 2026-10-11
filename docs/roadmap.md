@@ -10,7 +10,7 @@ committed to is the condition that would let it be built.
 
 ## Where the project is
 
-v1.6.0 ships a menu-bar date, a converter, Siri and Shortcuts support, and a
+v1.6.1 ships a menu-bar date, a converter, Siri and Shortcuts support, and a
 standalone Apple Watch app with four complication styles. See
 [CHANGELOG.md](../CHANGELOG.md) for what has actually changed and
 [docs/achievements.md](achievements.md) for what it added up to.
