@@ -266,6 +266,9 @@ private struct MonthGridCell: View {
     let settings: DisplaySettings
     var isSelected = false
 
+    /// Small enough to sit under the Gregorian digits, large enough to spot.
+    private static let festivalMarkSize: CGFloat = 4
+
     /// The large number's colour. Red for the holiday column, as on a wall
     /// calendar, and still red on today: the tint behind it is light enough
     /// that the number stays legible, and dropping the red there would hide
@@ -289,6 +292,15 @@ private struct MonthGridCell: View {
             Text(model.gregorianDayText(day, settings: settings))
                 .font(.caption2)
                 .foregroundStyle(gregorianStyle)
+            // The festival mark. Every cell draws the dot and only a festival
+            // day shows it, so the rows keep one height and a mark appearing
+            // never moves the numbers. Festivals and national days share the
+            // one mark: the details below the grid name which it is.
+            Circle()
+                .fill(.tint)
+                .frame(width: Self.festivalMarkSize, height: Self.festivalMarkSize)
+                .padding(.top, 1)
+                .opacity(day.showsFestivalMark ? 1 : 0)
         }
         .monospacedDigit()
         .padding(.vertical, 2)
@@ -341,6 +353,16 @@ private struct MonthGridDayDetailCard: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .accessibilityLabel(detail.spokenRelative ?? relative)
+                }
+                // One line per name, so a day with three reads as three, and
+                // in the tint, which ties them to the dot on the day's cell.
+                ForEach(Array(zip(detail.festivals, detail.spokenFestivals).enumerated()), id: \.offset) { _, names in
+                    let (shown, spoken) = names
+                    Text(shown)
+                        .font(.callout)
+                        .foregroundStyle(.tint)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(spoken)
                 }
             }
 

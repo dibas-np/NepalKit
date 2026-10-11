@@ -35,6 +35,9 @@ struct MonthGridDay: Hashable {
     /// False for the neighbouring months' days that fill the first and last
     /// weeks. The view dims them and leaves them out of VoiceOver and taps.
     let isInShownMonth: Bool
+    /// The festivals and national days on this day, in the Panchanga's order;
+    /// empty for a year whose Panchanga has not been read (ADR-0016).
+    let festivals: [Festival]
 
     /// Saturday (शनिबार) is Nepal's weekly public holiday, and Nepali wall
     /// calendars print its column in red; the grid follows them so the week
@@ -43,6 +46,11 @@ struct MonthGridDay: Hashable {
 
     /// Whether this day falls in the holiday column.
     var isWeeklyHoliday: Bool { weekday == Self.weeklyHolidayWeekday }
+
+    /// Whether the cell carries the festival mark. Only inside the shown
+    /// month, for the same reason today is: a neighbouring month's day is
+    /// context, and a mark on it would read as this month's.
+    var showsFestivalMark: Bool { isInShownMonth && !festivals.isEmpty }
 }
 
 /// What the popover opened from a day shows, on both channels. Built by the
@@ -60,6 +68,10 @@ struct MonthGridDayDetail: Hashable {
     let spokenBikramSambat: String
     let spokenGregorian: String
     let spokenRelative: String?
+    /// The day's festivals and national days by name, in the month-name
+    /// setting; empty when there are none.
+    let festivals: [String]
+    let spokenFestivals: [String]
 }
 
 /// Owns the month grid's state: which Bikram Sambat month is shown, the bounded
@@ -91,14 +103,18 @@ final class MonthGridModel {
     private(set) var isTodayPastSupportedRange: Bool
 
     private let dataset: CalendarDataset
+    private let festivalCalendar: FestivalCalendar
 
     /// Gesture state for scroll paging. Not observed: it never draws.
     @ObservationIgnored private var scrollPager = MonthScrollPager()
 
-    /// - Parameter now: the instant today is read from. Injected so a test or a
-    ///   preview does not depend on the day it runs.
-    init(dataset: CalendarDataset = AppData.dataset, now: Date = .now) {
+    /// - Parameters:
+    ///   - festivals: the days' festivals; injected so a test can mark its own.
+    ///   - now: the instant today is read from. Injected so a test or a
+    ///     preview does not depend on the day it runs.
+    init(dataset: CalendarDataset = AppData.dataset, festivals: FestivalCalendar = .panchanga, now: Date = .now) {
         self.dataset = dataset
+        self.festivalCalendar = festivals
         let state = Self.todayState(now: now, in: dataset)
         self.today = state.today
         self.todayGregorian = state.todayAD
@@ -227,7 +243,8 @@ final class MonthGridModel {
             let inShownMonth = (1 ... length).contains(offset)
             return MonthGridDay(
                 bikramSambat: bs, gregorian: ad, weekday: index % 7 + 1,
-                isToday: inShownMonth && bs == today, isInShownMonth: inShownMonth
+                isToday: inShownMonth && bs == today, isInShownMonth: inShownMonth,
+                festivals: festivalCalendar.festivals(on: bs)
             )
         }
         return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0 ..< $0 + 7]) }
@@ -329,14 +346,15 @@ final class MonthGridModel {
     }
 
     /// The cell's spoken label: the whole Bikram Sambat date, the weekday and
-    /// the Gregorian date, so a cell read out of context still names its day.
+    /// the Gregorian date, so a cell read out of context still names its day,
+    /// then its festivals by name, which is what the cell's mark stands for.
     func spokenLabel(for day: MonthGridDay, settings: DisplaySettings) -> String {
         let parts = [
             day.isToday ? Strings.todayLabel : nil,
             SpokenDate.bs(day.bikramSambat, monthNames: settings.monthNames),
             weekdayName(for: day.weekday, style: settings.monthNames),
             SpokenDate.ad(day.gregorian),
-        ]
+        ] + day.festivals.map { SpokenDate.festival($0, monthNames: settings.monthNames) }
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
 
@@ -364,7 +382,9 @@ final class MonthGridModel {
             relative: distance.map { Strings.relativeDays($0, digits: settings.digits) },
             spokenBikramSambat: SpokenDate.bs(day.bikramSambat, monthNames: settings.monthNames),
             spokenGregorian: SpokenDate.gregorianAnnouncement(date: day.gregorian, weekday: weekday),
-            spokenRelative: distance.map { Strings.relativeDays($0, digits: .latin) }
+            spokenRelative: distance.map { Strings.relativeDays($0, digits: .latin) },
+            festivals: day.festivals.map { $0.name(style: settings.monthNames) },
+            spokenFestivals: day.festivals.map { SpokenDate.festival($0, monthNames: settings.monthNames) }
         )
     }
 

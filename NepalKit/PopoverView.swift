@@ -214,6 +214,8 @@ private struct TodaySection: View {
     let clock: ClockModel
     let settings: DisplaySettings
     let dataset: CalendarDataset
+    /// Today's festivals come from here; the month grid marks the same table.
+    var festivals: FestivalCalendar = .panchanga
 
     /// Last Bikram Sambat year the bundled dataset can convert. Named in the
     /// range boundary state so a user past it can tell a data limit from a bug.
@@ -251,23 +253,36 @@ private struct TodaySection: View {
                 // a long weekday wraps on its own rather than breaking the date;
                 // one `Text` at the hero's size did not fit "Wednesday" on the
                 // row.
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(formatBS(todayBS, settings: settings))
-                        .font(.largeTitle.weight(.semibold))
-                    if let weekday = clock.weekdayString(style: settings.monthNames) {
-                        Text("\(Strings.weekdaySeparator) \(weekday)")
-                            .font(.title3)
+                let todaysFestivals = festivals.festivals(on: todayBS)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(formatBS(todayBS, settings: settings))
+                            .font(.largeTitle.weight(.semibold))
+                        if let weekday = clock.weekdayString(style: settings.monthNames) {
+                            Text("\(Strings.weekdaySeparator) \(weekday)")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Today's festivals and national days, a step below the
+                    // date, and only on a day that has them: an empty line on
+                    // every other day would be space spent saying nothing.
+                    if !todaysFestivals.isEmpty {
+                        Text(Strings.festivalNames(todaysFestivals.map { $0.name(style: settings.monthNames) }))
+                            .font(.callout)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                // Combined so the row is one element, and relabelled: the
+                // Combined so the hero is one element, and relabelled: the
                 // Gregorian date is no longer a line of its own (the grid shows
                 // it under today), so the announcement carries it - one
                 // sentence with both calendars and the weekday, which it
-                // already names, so the shown weekday is not said twice.
+                // already names, so the shown weekday is not said twice - and
+                // then today's festivals.
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(heroAnnouncement(todayBS))
+                .accessibilityLabel(heroAnnouncement(todayBS, festivals: todaysFestivals))
             } else {
                 // Range boundary state: the bundled data has ended. Say so in
                 // words rather than showing a blank, and keep the Gregorian date
@@ -319,10 +334,11 @@ private struct TodaySection: View {
 }
 
 extension TodaySection {
-    fileprivate func heroAnnouncement(_ todayBS: BSDay) -> String {
+    fileprivate func heroAnnouncement(_ todayBS: BSDay, festivals: [Festival]) -> String {
         SpokenDate.today(
             todayBS, gregorian: clock.todayADDate(),
-            weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames
+            weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames,
+            festivals: festivals
         )
     }
 }

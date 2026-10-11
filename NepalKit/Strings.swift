@@ -118,8 +118,7 @@ nonisolated enum Strings {
     static let nextMonthLabel = "Next Month"
     /// Returns the grid to today's month. The visible title is `todayLabel`.
     static let showTodayHelp = "Shows the month containing today"
-    /// Names the weekday header and the grid for VoiceOver.
-    static let monthGridDaysLabel = "Days"
+    static let monthGridDaysLabel = "Days" // names the weekday header and the grid for VoiceOver
     /// The day popover's distance from today. Today reuses `todayLabel`.
     static let tomorrowLabel = "Tomorrow"
     static let yesterdayLabel = "Yesterday"
@@ -140,8 +139,9 @@ nonisolated enum Strings {
     static let openInConverterLabel = "Open in Converter"
     static let openInConverterHelp = "Shows this date in the converter"
     static let closeDayDetailsLabel = "Close Day Details" // the details card under the grid
-    /// Hint on a grid day, which is a button that opens its popover.
-    static let monthGridDayHelp = "Shows this day's details"
+    static let monthGridDayHelp = "Shows this day's details" // a grid day is a button that shows them
+    /// A day's festivals as one line; a comma, not a middle dot, so shown and spoken share it.
+    static func festivalNames(_ names: [String]) -> String { names.joined(separator: ", ") }
     /// Range boundary state on the month grid: today is past the supported
     /// range, so the grid shows the last supported month instead.
     static func monthGridPastRange(_ bsYear: Int, digits: DigitScript) -> String {
