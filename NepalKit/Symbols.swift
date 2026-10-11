@@ -61,8 +61,12 @@ enum Symbols {
     static let previousMonth = "chevron.left"
     static let nextMonth = "chevron.right"
 
+    /// Closes the day details under the month grid: the system's dismiss
+    /// glyph, drawn small in the card's corner.
+    static let closeDetails = "xmark.circle.fill"
+
     static let all: [String] = [
         launchAtLogin, settings, about, menuBar, general, repository, update,
-        previousMonth, nextMonth
+        previousMonth, nextMonth, closeDetails
     ]
 }

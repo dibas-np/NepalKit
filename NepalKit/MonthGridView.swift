@@ -11,9 +11,16 @@ struct MonthGridView: View {
     let model: MonthGridModel
     let settings: DisplaySettings
     let clock: ClockModel
-    /// "Open in Converter" from a day's popover. A callback, because the
+    /// "Open in Converter" from a day's details. A callback, because the
     /// destination it switches belongs to `PopoverView`, not to the grid.
     let openInConverter: (BSDay) -> Void
+    /// False while another destination is showing. The grid stays laid out
+    /// underneath it (see `PopoverView`), so it must stop taking the arrow
+    /// keys and scrolling that are meant for what is on top.
+    var isActive = true
+
+    /// The day whose details are showing, if any.
+    @State private var selected: MonthGridDay?
 
     /// Focus is what lets the arrow keys reach the grid. Taken on appearance
     /// so they work as soon as the popover opens, without a click first.
@@ -33,8 +40,28 @@ struct MonthGridView: View {
                     .accessibilityLabel(Strings.monthGridPastRange(model.lastSupportedBSYear, digits: .latin))
             }
 
-            MonthGridDays(model: model, settings: settings, openInConverter: openInConverter)
+            MonthGridDays(model: model, settings: settings, selected: $selected)
+
+            // Details sit under the grid rather than in a popover of their
+            // own: a popover anchored to a cell inside the menu-bar popover
+            // was torn down mid-layout whenever its action switched
+            // destination, which AppKit logged as layout recursion and
+            // "transaction during CA commit".
+            if let day = selected {
+                let detail = model.detail(for: day, settings: settings)
+                MonthGridDayDetailCard(
+                    detail: detail,
+                    copy: { model.copy(detail) },
+                    openInConverter: {
+                        selected = nil
+                        openInConverter(day.bikramSambat)
+                    },
+                    close: { selected = nil }
+                )
+            }
         }
+        // Paging away leaves the selected day off the grid, so its details go.
+        .onChange(of: model.shown) { selected = nil }
         // The model outlives the popover, so today is re-read on every
         // appearance, and the follower moves it while the grid stays open.
         .onAppear { model.refreshToday(now: clock.now) }
@@ -47,7 +74,7 @@ struct MonthGridView: View {
         // focusable only with Full Keyboard Access turned on; the arrow keys
         // should not depend on that setting. No focus ring: the grid is not a
         // control to tab to, and the ring would frame the whole month.
-        .focusable(interactions: .edit)
+        .focusable(isActive, interactions: .edit)
         .focusEffectDisabled()
         .focused($isFocused)
         // Initial focus through `defaultFocus`, not by setting `isFocused` in
@@ -63,7 +90,7 @@ struct MonthGridView: View {
             model.page(by: 1)
             return .handled
         }
-        .modifier(ScrollPaging(model: model))
+        .modifier(ScrollPaging(model: model, isActive: isActive))
     }
 }
 
@@ -74,6 +101,7 @@ struct MonthGridView: View {
 /// How many events make a page is `MonthScrollPager`'s decision.
 private struct ScrollPaging: ViewModifier {
     let model: MonthGridModel
+    let isActive: Bool
     @State private var isHovering = false
     @State private var monitor: Any?
 
@@ -86,7 +114,7 @@ private struct ScrollPaging: ViewModifier {
             .onAppear {
                 guard monitor == nil else { return }
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
-                    guard isHovering else { return event }
+                    guard isActive, isHovering else { return event }
                     model.scroll(
                         deltaY: event.scrollingDeltaY,
                         phase: MonthScrollPager.Phase(phase: event.phase, momentumPhase: event.momentumPhase)
@@ -167,11 +195,9 @@ private struct MonthGridHeader: View {
 private struct MonthGridDays: View {
     let model: MonthGridModel
     let settings: DisplaySettings
-    let openInConverter: (BSDay) -> Void
-
-    /// The day whose popover is open. One for the grid rather than a flag per
-    /// cell, so opening a day closes any other.
-    @State private var selected: MonthGridDay?
+    /// The day whose details are showing, owned by the grid view so the
+    /// details card below the grid can read it.
+    @Binding var selected: MonthGridDay?
     /// The day to open in the converter once its popover has finished closing.
     /// Switching destination while the popover is still closing tears down the
     /// cell it is anchored to mid-layout: AppKit logs layout recursion and the
@@ -213,48 +239,23 @@ private struct MonthGridDays: View {
         .accessibilityLabel(Strings.monthGridDaysLabel)
     }
 
-    /// A day of the shown month as a button that opens its popover. A button,
-    /// not a tap gesture, so VoiceOver announces it as one and it can be
-    /// pressed from the keyboard.
+    /// A day of the shown month as a button that shows its details. A
+    /// button, not a tap gesture, so VoiceOver announces it as one and it can
+    /// be pressed from the keyboard. Pressing the selected day again hides
+    /// them.
     private func dayButton(_ day: MonthGridDay) -> some View {
         Button {
-            selected = day
+            selected = selected == day ? nil : day
         } label: {
-            MonthGridCell(day: day, model: model, settings: settings)
+            MonthGridCell(day: day, model: model, settings: settings, isSelected: selected == day)
                 // The whole cell is the target, not only the digits' glyphs.
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
         // Restated on the button, which is the element VoiceOver lands on.
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
-        .accessibilityAddTraits(day.isToday ? .isSelected : [])
+        .accessibilityAddTraits(day.isToday || selected == day ? .isSelected : [])
         .accessibilityHint(Strings.monthGridDayHelp)
-        .popover(isPresented: isPresented(day), arrowEdge: .bottom) {
-            let detail = model.detail(for: day, settings: settings)
-            MonthGridDayPopover(
-                detail: detail,
-                copy: {
-                    model.copy(detail)
-                    selected = nil
-                },
-                openInConverter: {
-                    pendingConverterDay = day.bikramSambat
-                    selected = nil
-                }
-            )
-            .onDisappear {
-                guard let pending = pendingConverterDay else { return }
-                pendingConverterDay = nil
-                openInConverter(pending)
-            }
-        }
-    }
-
-    private func isPresented(_ day: MonthGridDay) -> Binding<Bool> {
-        Binding(
-            get: { selected == day },
-            set: { if !$0, selected == day { selected = nil } }
-        )
     }
 }
 
@@ -263,6 +264,7 @@ private struct MonthGridCell: View {
     let day: MonthGridDay
     let model: MonthGridModel
     let settings: DisplaySettings
+    var isSelected = false
 
     /// The large number's colour. Red for the holiday column, as on a wall
     /// calendar, and still red on today: the tint behind it is light enough
@@ -299,6 +301,13 @@ private struct MonthGridCell: View {
                     .fill(.tint.opacity(0.25))
             }
         }
+        .overlay {
+            // Selection is an outline, so it reads over today's fill too.
+            if isSelected {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(.tint, lineWidth: 1.5)
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
         .accessibilityAddTraits(day.isToday ? .isSelected : [])
@@ -309,12 +318,14 @@ private struct MonthGridCell: View {
     }
 }
 
-/// A day's popover: the day in both calendars, how far it is from today, and
-/// what can be done with it. Layout only; every string is the model's.
-private struct MonthGridDayPopover: View {
+/// A day's details under the grid: the day in both calendars, how far it is
+/// from today, and what can be done with it. Layout only; every string is the
+/// model's.
+private struct MonthGridDayDetailCard: View {
     let detail: MonthGridDayDetail
     let copy: () -> Void
     let openInConverter: () -> Void
+    let close: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -340,8 +351,16 @@ private struct MonthGridDayPopover: View {
                     .accessibilityHint(Strings.openInConverterHelp)
             }
         }
-        .padding()
-        .fixedSize()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 8))
+        .overlay(alignment: .topTrailing) {
+            Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails, action: close)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .padding(6)
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 

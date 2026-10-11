@@ -257,12 +257,11 @@ struct MonthGridModelTests {
 
         // Read from the source, as WatchPresentationWiringTests does: the
         // harness renders no views, so the composition is checked where it is
-        // written. The Today branch must build the grid; Convert must not.
+        // written. The Today layer must build the grid; Convert must not.
         let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
-        let body = try #require(source.range(of: "switch destination {"))
-        let today = try #require(source.range(of: "case .today:", range: body.upperBound ..< source.endIndex))
-        let convert = try #require(source.range(of: "case .convert:", range: today.upperBound ..< source.endIndex))
-        let todayBranch = source[today.upperBound ..< convert.lowerBound]
+        let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
+        let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))
+        let todayBranch = source[stack.upperBound ..< todayEnd.lowerBound]
         #expect(todayBranch.contains("MonthGridView("))
         #expect(source.components(separatedBy: "MonthGridView(").count == 2, "built once, in Today")
     }

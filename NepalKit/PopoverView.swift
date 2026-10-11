@@ -53,8 +53,6 @@ struct PopoverView: View {
     /// back onto Today after a conversion, with no predictability. Today is the
     /// resting state because it is what the menu-bar item just showed.
     @State private var destination: PopoverDestination = .today
-    /// The tallest the destination area has been since the popover opened.
-    @State private var contentHeight: CGFloat = 0
 
     /// One width for every destination, so switching tabs does not resize the
     /// popover under the pointer. Fixed rather than a minimum because the
@@ -79,46 +77,35 @@ struct PopoverView: View {
             .accessibilityLabel(Strings.popoverDestinationsLabel)
             .accessibilityElement(children: .contain)
 
-            // The swap cross-fades: the destinations are states of one
-            // surface, not replacements. Scoped to the switch rather than
-            // the outer stack so the segmented control, which also reads
-            // `destination`, updates plainly.
-            Group {
-                switch destination {
-                case .today:
-                    VStack(alignment: .leading, spacing: 8) {
-                        TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
-                        Divider()
-                        // The month sits with today's date rather than behind a
-                        // tab of its own: reading the date and seeing where it
-                        // falls in the month are one glance, not two.
-                        MonthGridView(
-                            model: monthGrid, settings: settings.settings, clock: clock,
-                            openInConverter: { day in
-                                converter.show(bikramSambat: day)
-                                // A run-loop hop: this arrives from the day
-                                // popover's disappearance, inside AppKit's
-                                // commit, which must not start a new one.
-                                Task { @MainActor in destination = .convert }
-                            }
-                        )
-                        ClocksSection(clock: clock, settings: settings.settings)
-                    }
-                case .convert:
-                    ConverterView(model: converter, settings: settings.settings)
+            // Both destinations stay laid out, one over the other, and the
+            // swap cross-fades between them. The stack is as tall as the
+            // taller one (Today, with its month grid), so switching never
+            // resizes the menu-bar window. Swapping views in a `switch` did:
+            // the window shrank and grew on every switch, animated inside
+            // SwiftUI's commit, which AppKit rejects (layout recursion,
+            // "transaction during CA commit") and which made the popover jump.
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
+                    Divider()
+                    // The month sits with today's date rather than behind a
+                    // tab of its own: reading the date and seeing where it
+                    // falls in the month are one glance, not two.
+                    MonthGridView(
+                        model: monthGrid, settings: settings.settings, clock: clock,
+                        openInConverter: { day in
+                            converter.show(bikramSambat: day)
+                            destination = .convert
+                        },
+                        isActive: destination == .today
+                    )
+                    ClocksSection(clock: clock, settings: settings.settings)
                 }
+                .destinationLayer(isShowing: destination == .today)
+
+                ConverterView(model: converter, settings: settings.settings)
+                    .destinationLayer(isShowing: destination == .convert)
             }
-            // Never shorter than the tallest destination seen. Today, with
-            // its month grid, is far taller than Convert; letting the
-            // menu-bar window shrink and grow on every switch animated a
-            // window resize inside SwiftUI's commit, which AppKit rejects
-            // (layout recursion, "transaction during CA commit") and which
-            // made the popover visibly jump. The popover always opens on
-            // Today, so the first layout already records the tall height.
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                if height > contentHeight { contentHeight = height }
-            }
-            .frame(minHeight: contentHeight, alignment: .top)
             .animation(.default, value: destination)
         }
         .padding()
@@ -141,6 +128,17 @@ struct PopoverView: View {
         PopoverFooter(openSettings: { openSettings() }, updates: updates)
     }
 
+}
+
+extension View {
+    /// One destination in the popover's stack: drawn, hit-testable, focusable
+    /// and read out only while it is the one showing.
+    fileprivate func destinationLayer(isShowing: Bool) -> some View {
+        opacity(isShowing ? 1 : 0)
+            .allowsHitTesting(isShowing)
+            .disabled(!isShowing)
+            .accessibilityHidden(!isShowing)
+    }
 }
 
 #if DEBUG

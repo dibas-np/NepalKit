@@ -139,6 +139,7 @@ nonisolated enum Strings {
     static let copyDateHelp = "Copies the Bikram Sambat date"
     static let openInConverterLabel = "Open in Converter"
     static let openInConverterHelp = "Shows this date in the converter"
+    static let closeDayDetailsLabel = "Close Day Details" // the details card under the grid
     /// Hint on a grid day, which is a button that opens its popover.
     static let monthGridDayHelp = "Shows this day's details"
     /// Range boundary state on the month grid: today is past the supported
