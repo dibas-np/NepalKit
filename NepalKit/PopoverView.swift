@@ -4,9 +4,9 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// Which of the popover's three destinations is showing.
+/// Which of the popover's two destinations is showing.
 ///
-/// Today, Convert and Month are peers, so they are named as a segmented control rather
+/// Today and Convert are peers, so they are named as a segmented control rather
 /// than as one screen with a section stapled to the bottom. The alternative made
 /// the popover a single long scroll in which the converter was always expanded,
 /// so opening it to read the date also presented three pickers and a result the
@@ -14,18 +14,16 @@ import NepalKitCore
 enum PopoverDestination: String, CaseIterable {
     case today
     case convert
-    case month
 
     var title: String {
         switch self {
         case .today: Strings.todayLabel
         case .convert: Strings.converterLabel
-        case .month: Strings.monthGridLabel
         }
     }
 }
 
-/// Popover: today's date, the converter, and routes into Settings and About.
+/// Popover: today's date and month, the converter, and routes into Settings and About.
 ///
 /// Iconography (per ADR-0004): SF Symbols throughout, monochrome for small
 /// inline icons so they keep contrast beside text. The menu-bar extra itself
@@ -89,12 +87,15 @@ struct PopoverView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
                         Divider()
+                        // The month sits with today's date rather than behind a
+                        // tab of its own: reading the date and seeing where it
+                        // falls in the month are one glance, not two.
+                        MonthGridView(model: monthGrid, settings: settings.settings, clock: clock)
+                        Divider()
                         ClocksSection(clock: clock, settings: settings.settings)
                     }
                 case .convert:
                     ConverterView(model: converter, settings: settings.settings)
-                case .month:
-                    MonthGridView(model: monthGrid, settings: settings.settings, clock: clock)
                 }
             }
             .animation(.default, value: destination)

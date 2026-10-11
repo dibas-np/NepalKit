@@ -167,8 +167,7 @@ struct MonthGridModelTests {
         #expect(model.spokenWeekdayHeaders(settings: latin) == englishWeekdayNames)
     }
 
-    @Test func monthIsAPopoverDestination() {
-        #expect(PopoverDestination.allCases == [.today, .convert, .month])
-        #expect(PopoverDestination.month.title == "Month")
+    @Test func theMonthLivesInTodayNotItsOwnTab() {
+        #expect(PopoverDestination.allCases == [.today, .convert])
     }
 }

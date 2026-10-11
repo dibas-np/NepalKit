@@ -48,7 +48,7 @@ If you still use version 1.0, install a newer release once to enable automatic u
 
 ## Usage
 
-Click the menu-bar date to open the popover. **Today** shows the dates and clocks. **Convert** lets you convert a date in either direction. **Month** shows a Bikram Sambat month as a grid, with each day's Gregorian date beneath it.
+Click the menu-bar date to open the popover. **Today** shows the dates, the Bikram Sambat month as a grid with each day's Gregorian date beneath it, and the clocks. **Convert** lets you convert a date in either direction.
 
 Open **Settings** with **⌘,** to change the menu-bar display, digit script, month and weekday names, or launch-at-login preference.
 

@@ -111,8 +111,6 @@ nonisolated enum Strings {
     /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
     /// year: the result line above already shows it.
     static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
-    /// The popover's third destination: one Bikram Sambat month as a grid.
-    static let monthGridLabel = "Month"
     /// The month grid's navigation. Previous and next are drawn as chevrons
     /// alone, so these are their announced names.
     static let previousMonthLabel = "Previous Month"
