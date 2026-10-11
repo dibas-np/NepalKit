@@ -64,6 +64,14 @@ final class TodayModel {
         }
     }
 
+    /// The display for an arbitrary instant, without reading the clock or
+    /// touching the lifecycle. Always On renders through this with its
+    /// timeline's date: a dimmed scene is not re-rendered for ordinary state
+    /// changes, so the midnight refresh above may never reach the screen.
+    func display(at instant: Date) -> WatchDayDisplay {
+        displayFor(instant)
+    }
+
     /// Launch or foreground activation. Repeated activation while already
     /// active does nothing — the observation task is the marker of an active
     /// lifecycle, so recomputation, scheduling and subscription cannot

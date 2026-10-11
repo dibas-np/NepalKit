@@ -348,3 +348,28 @@ struct TodayModelTests {
         #expect(condition(), "Condition was not met within \(timeout)")
     }
 }
+
+// MARK: Always On
+
+extension TodayModelTests {
+    @Test func displayAtAnInstantPastNepalMidnightIsTheNewDay() throws {
+        // Always On renders through `display(at:)` with the timeline's date,
+        // so it alone must cross midnight (18:15 UTC) — no activation, no
+        // clock read.
+        let clock = MutableClock(try anchoredInstant())
+        let model = makeModel(clock: clock, signals: SignalFixture())
+
+        let before = model.display(at: try UTCWatchFixture.utc(2026, 9, 26, 18, 14))
+        let after = model.display(at: try UTCWatchFixture.utc(2026, 9, 26, 18, 16))
+
+        guard case .supported(let old) = before, case .supported(let new) = after else {
+            Issue.record("Expected supported displays")
+            return
+        }
+        #expect(old.bikramSambatDay == "१०")
+        #expect(new.bikramSambatDay == "११")
+        #expect(new.bikramSambatMonthName == "असोज")
+        #expect(clock.reads == 0)
+        #expect(model.display == nil)
+    }
+}

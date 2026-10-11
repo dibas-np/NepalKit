@@ -43,21 +43,15 @@ struct TodayView: View {
 struct TodayScreen: View {
     let model: TodayModel
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
     var body: some View {
-        Group {
-            switch model.display {
-            case nil:
-                // Launch window only: the first activation resolves Today
-                // immediately, so there is nothing to promise here yet.
-                Text("NepalKit")
-            case .some(.supported(let components)):
-                TodaySupportedView(components: components)
-            case .some(.rangeBoundary(let boundary)):
-                TodayBoundaryView(boundary: boundary)
-            case .some(.calculationError(let components)):
-                TodayErrorView(components: components)
-            }
+        // Always On does not re-render ordinary content, so the dimmed screen
+        // derives its day from the timeline's date instead of the model's
+        // stored display; a minute schedule lands within a minute of Nepal
+        // midnight. Awake, the stored display stays the single source.
+        TimelineView(.everyMinute) { context in
+            content(for: isLuminanceReduced ? model.display(at: context.date) : model.display)
         }
         .task { model.activate() }
         .onChange(of: scenePhase) { _, phase in
@@ -66,6 +60,22 @@ struct TodayScreen: View {
             } else {
                 model.deactivate()
             }
+        }
+    }
+
+    @ViewBuilder
+    private func content(for display: WatchDayDisplay?) -> some View {
+        switch display {
+        case nil:
+            // Launch window only: the first activation resolves Today
+            // immediately, so there is nothing to promise here yet.
+            Text("NepalKit")
+        case .some(.supported(let components)):
+            TodaySupportedView(components: components)
+        case .some(.rangeBoundary(let boundary)):
+            TodayBoundaryView(boundary: boundary)
+        case .some(.calculationError(let components)):
+            TodayErrorView(components: components)
         }
     }
 }
