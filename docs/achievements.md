@@ -15,7 +15,7 @@ Last counted: 2026-10-11, at v1.6.1.
 | Commits | 405 |
 | Swift files | 121 |
 | Test files | 54 (23 core, 24 app, 7 Watch) |
-| Architecture decision records | 14 |
+| Architecture decision records | 15 |
 | Stars | 4 |
 | People with commit access | 1 |
 

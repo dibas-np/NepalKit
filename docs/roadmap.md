@@ -23,12 +23,14 @@ The Watch app is currently built from source and runs on a development-signed
 destination. Distribution means a signing identity, a store record, a privacy
 manifest, and a review cycle.
 
-*Blocked on:* a decision about whether the Mac app stays Developer-ID-only. The
-two channels have different update models — Sparkle versus the store — and
-supporting both is a permanent tax, not a one-time cost.
+*Blocked on:* the decision proposed in
+[ADR-0015](adr/0015-watch-app-distribution.md), which recommends the store for the
+Watch app only, with the Mac app staying Developer ID. It has a date: current
+Watch installs are development-signed, and their certificate expires on
+2027-09-27.
 
 *Would change:* ADR-0008 (distribution is a notarized disk image, not the
-store) if the answer is that both ship.
+store) only if the Mac app ships through the store as well.
 
 ### Reducing the supported calendar range
 
