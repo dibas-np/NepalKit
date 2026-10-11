@@ -2,13 +2,13 @@
 
 The number, what it means, and why it is not a target yet.
 
-**Measured 2026-10-11 at `f351561`, by `scripts/measure-coverage.py`.**
+**Measured 2026-10-11 at `046f965`, by `scripts/measure-coverage.py`.**
 
 | Suite | Files | Lines | Regions | Functions |
 | --- | --- | --- | --- | --- |
 | `NepalKitCore` — the calendar engine | 9 | **85.62%** | 78.30% | 81.43% |
-| `NepalKit` — the app layer | 34 | **30.66%** | 56.82% | 52.84% |
-| **Combined** | **43** | **38.91%** | **62.32%** | **57.58%** |
+| `NepalKit` — the app layer | 36 | **32.25%** | 57.68% | 54.07% |
+| **Combined** | **45** | **39.19%** | **62.26%** | **57.99%** |
 
 Core's files are counted once, in their own row: the app row holds `NepalKit/`
 only, although the app-test harness links `NepalKitCore`. The combined row is
@@ -28,10 +28,10 @@ point:
 - The calendar engine — conversion, month lengths, formatting, spoken dates — is
   **85.62%** covered, because it is pure logic with an exhaustive round-trip
   suite. This is the part where a bug is a wrong date.
-- The app layer is **30.66%** covered, because most of it is SwiftUI.
+- The app layer is **32.25%** covered, because most of it is SwiftUI.
 
-The app layer holds 85% of the executable lines the two suites instrument —
-2,560 of 3,012 — and returns 30.66% line coverage where the calendar engine
+The app layer holds 87% of the executable lines the two suites instrument —
+3,023 of 3,475 — and returns 32.25% line coverage where the calendar engine
 returns 85.62%. A single combined percentage hides that the part which is easy
 to get wrong is well covered and the part which is mostly declarative layout is
 not.
@@ -39,17 +39,18 @@ not.
 ## Why there is no target
 
 The OpenSSF badge asks for 80% and 90% statement coverage and 80% branch
-coverage. This project is at 38.91% lines / 62.32% regions / 57.58% functions. Those answers are `Unmet`
+coverage. This project is at 39.19% lines / 62.26% regions / 57.99% functions. Those answers are `Unmet`
 and writing a target above the truth would be a gate that fails every day.
 
-**The gap is not a chore; it is a refactor.** The six files below hold 1,198
-lines — 47% of the app layer's 2,560 executable lines — and every one of them is
+**The gap is not a chore; it is a refactor.** The seven files below hold 1,467
+lines — 49% of the app layer's 3,023 executable lines — and every one of them is
 at exactly 0%:
 
 | File | Lines |
 | --- | --- |
-| `GeneralSettingsView.swift` | 316 |
+| `GeneralSettingsView.swift` | 355 |
 | `SettingsView.swift` | 247 |
+| `MonthGridView.swift` | 230 |
 | `ConverterView.swift` | 221 |
 | `AboutSettingsView.swift` | 170 |
 | `PopoverFooter.swift` | 137 |
@@ -66,7 +67,7 @@ is a test-writing exercise:
    suite is a SwiftPM harness that symlinks the sources — which works for logic
    and cannot instantiate a view.
 2. **A view-logic extraction.** `CODING_STANDARDS.md` already requires view logic
-   to live in a view model so it can be tested. Applying that to the six files
+   to live in a view model so it can be tested. Applying that to the seven files
    above would move their logic into testable types and leave the views thin. It
    is the better answer and it is a real piece of work — roughly the size of the
    Settings rewrite in 1.4.1.
