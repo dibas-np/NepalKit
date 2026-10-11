@@ -3,7 +3,7 @@
 import Foundation
 import NepalKitCore
 
-/// Persists the two display axes in UserDefaults. The store stays
+/// Persists the two display axes and the menu-bar format in UserDefaults. The store stays
 /// dumb and injectable so persistence is testable without the app running.
 ///
 /// `nonisolated` because the Siri intents read it from `perform()`, which
@@ -13,6 +13,11 @@ import NepalKitCore
 nonisolated struct SettingsStore {
     static let digitScriptKey = "digitScript"
     static let monthNameStyleKey = "monthNameStyle"
+    static let menuBarShowsWeekdayKey = "menuBarShowsWeekday"
+    static let menuBarShowsYearKey = "menuBarShowsYear"
+    static let menuBarShowsTimeKey = "menuBarShowsTime"
+    static let menuBarUsesTwentyFourHourClockKey = "menuBarUsesTwentyFourHourClock"
+    static let menuBarShowsSecondsKey = "menuBarShowsSeconds"
 
     private let defaults: UserDefaults
 
@@ -35,5 +40,27 @@ nonisolated struct SettingsStore {
     func save(_ settings: DisplaySettings) {
         defaults.set(settings.digits.rawValue, forKey: Self.digitScriptKey)
         defaults.set(settings.monthNames.rawValue, forKey: Self.monthNameStyleKey)
+    }
+
+    /// Each option is its own Boolean key rather than one encoded blob, so
+    /// adding an option later cannot make an older stored value undecodable.
+    /// A missing key reads as `false`, which is every option's default, so a
+    /// user who has never touched the Menu Bar tab gets `.standard`.
+    var menuBarFormat: MenuBarFormat {
+        MenuBarFormat(
+            showsWeekday: defaults.bool(forKey: Self.menuBarShowsWeekdayKey),
+            showsYear: defaults.bool(forKey: Self.menuBarShowsYearKey),
+            showsTime: defaults.bool(forKey: Self.menuBarShowsTimeKey),
+            usesTwentyFourHourClock: defaults.bool(forKey: Self.menuBarUsesTwentyFourHourClockKey),
+            showsSeconds: defaults.bool(forKey: Self.menuBarShowsSecondsKey)
+        )
+    }
+
+    func save(_ format: MenuBarFormat) {
+        defaults.set(format.showsWeekday, forKey: Self.menuBarShowsWeekdayKey)
+        defaults.set(format.showsYear, forKey: Self.menuBarShowsYearKey)
+        defaults.set(format.showsTime, forKey: Self.menuBarShowsTimeKey)
+        defaults.set(format.usesTwentyFourHourClock, forKey: Self.menuBarUsesTwentyFourHourClockKey)
+        defaults.set(format.showsSeconds, forKey: Self.menuBarShowsSecondsKey)
     }
 }

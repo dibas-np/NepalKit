@@ -49,6 +49,36 @@ struct SettingsStoreTests {
 
         #expect(store.settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
     }
+    @Test func menuBarFormatDefaultsToStandard() throws {
+        let (store, _) = try freshStore()
+
+        #expect(store.menuBarFormat == .standard)
+    }
+
+    @Test(arguments: [
+        MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true, usesTwentyFourHourClock: true, showsSeconds: true),
+        MenuBarFormat(showsYear: true, showsTime: true),
+        MenuBarFormat(showsWeekday: true, usesTwentyFourHourClock: true),
+        .standard,
+    ])
+    func menuBarFormatRoundTrip(format: MenuBarFormat) throws {
+        let (store, defaults) = try freshStore()
+        store.save(MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true, usesTwentyFourHourClock: true, showsSeconds: true))
+
+        store.save(format)
+
+        #expect(SettingsStore(defaults: defaults).menuBarFormat == format)
+    }
+
+    @Test func menuBarFormatIsIndependentOfDisplaySettings() throws {
+        let (store, _) = try freshStore()
+        store.save(MenuBarFormat(showsTime: true))
+
+        store.save(DisplaySettings(digits: .devanagari, monthNames: .nepali))
+
+        #expect(store.menuBarFormat == MenuBarFormat(showsTime: true))
+    }
+
     // Ticket 12's question — do settings survive an in-place update? — is
     // answered by `SettingsStore.init`'s contract rather than by a test. The
     // property it needed to be asked (`persistenceIsVersionIndependent`)

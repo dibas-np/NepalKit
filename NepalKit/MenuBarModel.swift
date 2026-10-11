@@ -17,18 +17,32 @@ import NepalKitCore
 /// fires just after the next Nepal Time midnight so the Bikram Sambat date
 /// flips within ~1s (User Story 6), then reschedules itself.
 ///
+/// When the title shows the time, a third timer ticks at each Nepal Time
+/// minute boundary (each second with seconds shown), aligned to the boundary
+/// rather than started on an arbitrary phase, so the clock changes when the
+/// minute does and not up to a minute late. It exists only while the time is
+/// shown: a menu-bar app that redraws every second for a date that changes
+/// once a day would be spending the user's battery on nothing.
+///
 /// Timer intervals do not advance while the Mac sleeps, and a system clock
 /// change moves the wall clock under them, so both are observed: either one
-/// re-reads the clock and reschedules the midnight fire, rather than leaving
+/// re-reads the clock and reschedules the midnight fire and the time tick, rather than leaving
 /// yesterday's date up until the next poll.
 @MainActor
 @Observable
 final class MenuBarModel {
     private(set) var now = Date.now
+    /// The menu-bar title's optional parts. Owned here rather than beside the
+    /// display settings because it is the one setting that changes how this
+    /// model schedules its timers.
+    private(set) var format: MenuBarFormat
 
     private var timer: Timer?
     private var midnightTimer: Timer?
+    private var timeTickTimer: Timer?
+    private let refreshes: Bool
     private let schedulesMidnightFire: Bool
+    private let store: SettingsStore?
     /// Wake and clock-change observations, paired with the center each was
     /// added to, so `deinit` can remove exactly what `init` added.
     private var clockObservers: [(center: NotificationCenter, token: any NSObjectProtocol)] = []
@@ -39,6 +53,12 @@ final class MenuBarModel {
     /// - Parameter schedulesMidnightFire: production keeps the default; tests
     ///   that do not exercise the midnight flip pass `false` so they do not
     ///   leave real one-shot timers behind.
+    /// - Parameter store: where the menu-bar format is read from and saved to.
+    ///   Nil keeps the format in memory only, starting at `.standard`. Unlike
+    ///   `DisplaySettingsModel`, nil does not mean `SettingsStore()`: this model
+    ///   is built by many tests that assert the standard title, and reading the
+    ///   developer's own preferences there would make them pass or fail by
+    ///   whatever the Menu Bar tab was last set to. The app passes the store.
     /// - Parameter workspaceNotifications: where wake is posted; defaults to
     ///   `NSWorkspace.shared.notificationCenter`. Injected so a test can post a
     ///   wake without sleeping the Mac.
@@ -53,11 +73,15 @@ final class MenuBarModel {
         refreshInterval: TimeInterval = 30,
         refreshes: Bool = true,
         schedulesMidnightFire: Bool = true,
+        store: SettingsStore? = nil,
         workspaceNotifications: NotificationCenter? = nil,
         systemNotifications: NotificationCenter? = nil
     ) {
         self.now = now
+        self.format = store?.menuBarFormat ?? .standard
+        self.refreshes = refreshes
         self.schedulesMidnightFire = schedulesMidnightFire
+        self.store = store
         if refreshes {
             timer = scheduledMainActorTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] in
                 self?.now = .now
@@ -71,6 +95,7 @@ final class MenuBarModel {
         if schedulesMidnightFire {
             scheduleMidnightFire()
         }
+        scheduleTimeTick()
     }
 
     /// The run loop retains a scheduled timer and a center retains its block, so
@@ -78,6 +103,7 @@ final class MenuBarModel {
     isolated deinit {
         timer?.invalidate()
         midnightTimer?.invalidate()
+        timeTickTimer?.invalidate()
         for observer in clockObservers {
             observer.center.removeObserver(observer.token)
         }
@@ -93,13 +119,35 @@ final class MenuBarModel {
     }
 
     /// Re-reads the clock after the Mac wakes or the system clock is changed.
-    /// The midnight fire is rescheduled because its interval was measured
-    /// against a clock that has since jumped.
+    /// The midnight fire and the time tick are rescheduled because their
+    /// intervals were measured against a clock that has since jumped.
     func refreshAfterClockDiscontinuity() {
         now = .now
         if schedulesMidnightFire {
             scheduleMidnightFire()
         }
+        scheduleTimeTick()
+    }
+
+    /// Persists a new menu-bar format and applies it at once: the label reads
+    /// `format`, so it redraws on this assignment rather than at the next poll.
+    ///
+    /// The clock is re-read first when this model refreshes, because `now` can
+    /// be up to a poll interval old and switching the time on would otherwise
+    /// show a minute that has already passed until the first tick.
+    func save(_ format: MenuBarFormat) {
+        store?.save(format)
+        if refreshes {
+            now = .now
+        }
+        self.format = format
+        scheduleTimeTick()
+    }
+
+    /// Whether the minute or second tick is running. Read by tests; the timer
+    /// itself stays private.
+    var isTickingForTime: Bool {
+        timeTickTimer != nil
     }
 
     /// Seconds from `date` until just after the next NPT midnight (+1s so the
@@ -110,6 +158,38 @@ final class MenuBarModel {
         return max(1, nextMidnight.timeIntervalSince(date) + 1)
     }
 
+    /// Seconds from `date` to the next Nepal Time minute boundary, or second
+    /// boundary when seconds are shown; a full period when `date` is exactly on
+    /// one. Internal and pure, like `midnightFireInterval`, so the alignment is
+    /// assertable without real timers.
+    ///
+    /// No guard second is added, unlike the midnight fire: the tick reschedules
+    /// from the clock it reads on firing, so a fire that lands a hair early is
+    /// followed at once by one that lands after the boundary, whereas a
+    /// one-second guard would put the clock a second late every minute.
+    static nonisolated func timeTickInterval(after date: Date, showsSeconds: Bool) -> TimeInterval {
+        let period: TimeInterval = showsSeconds ? 1 : 60
+        // Nepal Time's +5:45 is a whole number of minutes, so the offset does
+        // not move a boundary today; it is applied so the alignment is stated
+        // in Nepal Time rather than relying on that.
+        let nepalSeconds = date.timeIntervalSinceReferenceDate + TimeInterval(nepalTimeZone.secondsFromGMT(for: date))
+        let remainder = nepalSeconds.truncatingRemainder(dividingBy: period)
+        let elapsed = remainder < 0 ? remainder + period : remainder
+        return period - elapsed
+    }
+
+    /// Starts, restarts or stops the time tick to match `format`.
+    private func scheduleTimeTick() {
+        timeTickTimer?.invalidate()
+        timeTickTimer = nil
+        guard refreshes, format.showsTime else { return }
+        let interval = Self.timeTickInterval(after: now, showsSeconds: format.showsSeconds)
+        timeTickTimer = scheduledMainActorTimer(withTimeInterval: interval, repeats: false) { [weak self] in
+            self?.now = .now
+            self?.scheduleTimeTick()
+        }
+    }
+
     private func scheduleMidnightFire() {
         midnightTimer?.invalidate()
         guard let interval = Self.midnightFireInterval(after: now) else { return }
@@ -117,55 +197,5 @@ final class MenuBarModel {
             self?.now = .now
             self?.scheduleMidnightFire()
         }
-    }
-
-    /// Short Bikram Sambat date for the menu-bar extra, honoring the given display settings.
-    ///
-    /// Past the dataset's supported range this returns a compact boundary marker
-    /// rather than a bare "—". That marker is a statement of fact, not a warning:
-    /// the menu bar has no room to explain itself, so its job is only to stop the
-    /// absence reading as a bug; the popover is where the boundary is stated in
-    /// words.
-    ///
-    /// - Parameter updateAvailable: prefixes a warning marker, which is a
-    ///   different thing from the boundary marker above — this one asks the user
-    ///   to do something. The date is kept rather than replaced, because showing
-    ///   today's date is the reason the item is in the menu bar at all, and an
-    ///   update alert raised by a windowless app is easy to never notice.
-    func title(
-        settings: DisplaySettings,
-        in dataset: CalendarDataset = AppData.dataset,
-        updateAvailable: Bool = false
-    ) -> String {
-        guard let today = todayBS(now: now, in: dataset) else {
-            return Strings.menuBarBeyondRange
-        }
-        let date = formatBSShort(today, settings: settings)
-        return updateAvailable ? Strings.menuBarUpdateMarker + date : date
-    }
-
-    /// What VoiceOver announces for the menu-bar extra.
-    ///
-    /// Separate from `title` because the two answer different questions. The
-    /// title is the menu bar's few pixels of space and carries the bare date; the
-    /// announcement is a sentence, so it can name the app and say the date in a
-    /// form a voice can actually pronounce. Splitting them is what keeps the
-    /// menu bar from being made worse for everybody in order to help someone
-    /// using speech — the visual stays exactly as short as it was.
-    ///
-    /// The update is announced as words rather than as the marker glyph, for the
-    /// same reason the date is: a voice cannot read "!", and the marker is the
-    /// one thing on this surface that changes what the user should do.
-    func spokenTitle(
-        settings: DisplaySettings,
-        in dataset: CalendarDataset = AppData.dataset,
-        updateAvailable: Bool = false
-    ) -> String {
-        SpokenDate.menuBar(
-            today: todayBS(now: now, in: dataset),
-            monthNames: settings.monthNames,
-            dataset: dataset,
-            updateAvailable: updateAvailable
-        )
     }
 }

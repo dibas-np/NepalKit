@@ -29,9 +29,10 @@ struct SettingsView: View {
     /// tab always has a model to read; its outcome state comes from the same
     /// instance the background check reports into.
     @Bindable var updates: UpdateCheckModel
-    /// Read by the Menu Bar preview so that tab cannot disagree with the real
-    /// menu-bar label. Deliberately not `@Bindable`: the preview shows the label,
-    /// it does not drive it, and a binding would invite writing to it here.
+    /// The model behind the real menu-bar label, so the Menu Bar tab's preview
+    /// cannot disagree with it and its format toggles change the label itself.
+    /// Not `@Bindable` here: only `MenuBarSettingsView` writes to it, and it
+    /// declares the binding where the toggles are.
     let menuBar: MenuBarModel
     /// The cache, not its value: this initialiser runs at launch inside the
     /// `Settings` scene builder, so `value` is read only from `body`, which runs

@@ -3,22 +3,22 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "Menu Bar" tab: what the menu-bar item currently shows.
+/// The "Menu Bar" tab: what the menu-bar item currently shows, and the format
+/// options that belong to it alone — weekday, year and Nepal Time clock, after
+/// the macOS menu-bar clock's options.
 ///
-/// A preview rather than a control, and the honest reason is that nothing about
-/// the menu bar is separately configurable yet. The two settings that shape it —
-/// digit script and month names — also shape the popover, so they stay in General
-/// where a user looking for "how do I change my numbers" will find them. Moving
-/// them here would narrow the tab's name to a promise its own controls cannot
-/// keep.
+/// Digit script and month names also shape the menu bar, but they shape the
+/// popover too, so they stay in General where a user looking for "how do I
+/// change my numbers" will find them.
 ///
-/// What this buys is the thing a preview uniquely gives: the marker and the
+/// The preview is kept above the options: it is where a toggle's effect is
+/// seen, and it is also the thing a preview uniquely gives: the marker and the
 /// beyond-range fallback are branches of `MenuBarModel.title` that are otherwise
 /// unreachable until the day they matter, and a user who has never seen either
 /// has no way to know what the menu bar will do. `MenuBarModelTests` covers the
 /// logic; this shows the consequence.
 struct MenuBarSettingsView: View {
-    let menuBar: MenuBarModel
+    @Bindable var menuBar: MenuBarModel
     let settings: DisplaySettings
     /// The same flag the real menu-bar label reads, so the preview cannot disagree
     /// with the menu bar about whether an update is pending.
@@ -51,6 +51,27 @@ struct MenuBarSettingsView: View {
                 // Names what the spoken form is, since the value alone
                 // ("12 Ashoj 2083") gives no clue it is a menu bar.
                 Text(spokenPreview)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Toggle(Strings.menuBarShowsWeekday, isOn: $menuBar.showsWeekday)
+                Toggle(Strings.menuBarShowsYear, isOn: $menuBar.showsYear)
+                Toggle(Strings.menuBarShowsTime, isOn: $menuBar.showsTime)
+                // The clock's own options stay visible but disabled while the
+                // time is off, as the system clock's settings do, so a user can
+                // see they exist; indented to read as belonging to the toggle
+                // above.
+                Group {
+                    Toggle(Strings.menuBarUsesTwentyFourHourClock, isOn: $menuBar.usesTwentyFourHourClock)
+                    Toggle(Strings.menuBarShowsSeconds, isOn: $menuBar.showsSeconds)
+                }
+                .padding(.leading)
+                .disabled(!menuBar.showsTime)
+            } header: {
+                Text(Strings.menuBarFormatSection)
+            } footer: {
+                Text(Strings.menuBarTimeFootnote)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

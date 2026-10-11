@@ -8,7 +8,9 @@ import SwiftUI
 @main
 struct NepalKitApp: App {
     @State private var settingsModel = DisplaySettingsModel()
-    @State private var menuBarModel = MenuBarModel()
+    /// Given the real store explicitly: the model's own default keeps the
+    /// format in memory, so tests never read the developer's preferences.
+    @State private var menuBarModel = MenuBarModel(store: SettingsStore())
     @State private var clockModel = ClockModel()
     @State private var converterModel = ConverterModel()
     @State private var monthGridModel = MonthGridModel()
@@ -63,8 +65,8 @@ struct NepalKitApp: App {
                 updates: updateCheckModel
             )
         } label: {
-            // The shown label stays the short date, prefixed only while an update
-            // is unattended; the announcement is a sentence that names the app
+            // The shown label is the date in the user's menu-bar format, prefixed
+            // only while an update is unattended; the announcement is a sentence that names the app
             // and pronounces the date. Merging them would put "NepalKit," in the
             // menu bar itself.
             Text(menuBarModel.title(

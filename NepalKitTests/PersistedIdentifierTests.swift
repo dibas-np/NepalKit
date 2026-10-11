@@ -39,6 +39,31 @@ struct PersistedIdentifierTests {
         #expect(defaults.string(forKey: "monthNameStyle") == "nepali")
     }
 
+    @Test func storedMenuBarFormatReadsThroughTheLiteralKeys() throws {
+        let defaults = try freshDefaults()
+        defaults.set(true, forKey: "menuBarShowsWeekday")
+        defaults.set(true, forKey: "menuBarShowsYear")
+        defaults.set(true, forKey: "menuBarShowsTime")
+        defaults.set(true, forKey: "menuBarUsesTwentyFourHourClock")
+        defaults.set(true, forKey: "menuBarShowsSeconds")
+
+        #expect(SettingsStore(defaults: defaults).menuBarFormat == MenuBarFormat(
+            showsWeekday: true, showsYear: true, showsTime: true, usesTwentyFourHourClock: true, showsSeconds: true
+        ))
+    }
+
+    @Test func savedMenuBarFormatUsesTheLiteralKeys() throws {
+        let defaults = try freshDefaults()
+
+        SettingsStore(defaults: defaults).save(MenuBarFormat(showsWeekday: true, showsTime: true, showsSeconds: true))
+
+        #expect(defaults.object(forKey: "menuBarShowsWeekday") as? Bool == true)
+        #expect(defaults.object(forKey: "menuBarShowsYear") as? Bool == false)
+        #expect(defaults.object(forKey: "menuBarShowsTime") as? Bool == true)
+        #expect(defaults.object(forKey: "menuBarUsesTwentyFourHourClock") as? Bool == false)
+        #expect(defaults.object(forKey: "menuBarShowsSeconds") as? Bool == true)
+    }
+
     @Test func loginItemConfiguredFlagUsesTheLiteralKey() throws {
         // A configured user must not be re-registered after they turned it off.
         let defaults = try freshDefaults()
