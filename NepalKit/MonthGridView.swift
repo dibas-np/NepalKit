@@ -9,6 +9,7 @@ import NepalKitCore
 struct MonthGridView: View {
     let model: MonthGridModel
     let settings: DisplaySettings
+    let clock: ClockModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -27,9 +28,22 @@ struct MonthGridView: View {
             MonthGridDays(model: model, settings: settings)
         }
         // The model outlives the popover, so today is re-read on every
-        // appearance; a grid left open across Nepal Time midnight would
-        // otherwise keep marking yesterday.
+        // appearance, and the follower moves it while the grid stays open.
         .onAppear { model.refreshToday(now: .now) }
+        .background { TodayFollower(clock: clock, model: model) }
+    }
+}
+
+/// Moves today's highlight when the visible clock crosses Nepal Time midnight.
+/// A separate view so the clock's per-second tick re-evaluates only this empty
+/// body, not the grid; `refreshToday` writes nothing until the day changes.
+private struct TodayFollower: View {
+    let clock: ClockModel
+    let model: MonthGridModel
+
+    var body: some View {
+        Color.clear
+            .onChange(of: clock.now) { _, now in model.refreshToday(now: now) }
     }
 }
 
@@ -137,7 +151,8 @@ private struct MonthGridCell: View {
 #Preview("Month grid") {
     MonthGridView(
         model: MonthGridModel(now: AppData.previewInstant),
-        settings: DisplaySettings(digits: .latin, monthNames: .transliterated)
+        settings: DisplaySettings(digits: .latin, monthNames: .transliterated),
+        clock: ClockModel(now: AppData.previewInstant, refreshes: false)
     )
     .padding()
     .frame(width: 340)

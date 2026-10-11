@@ -94,7 +94,7 @@ struct PopoverView: View {
                 case .convert:
                     ConverterView(model: converter, settings: settings.settings)
                 case .month:
-                    MonthGridView(model: monthGrid, settings: settings.settings)
+                    MonthGridView(model: monthGrid, settings: settings.settings, clock: clock)
                 }
             }
             .animation(.default, value: destination)
