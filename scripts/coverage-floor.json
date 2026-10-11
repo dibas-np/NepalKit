@@ -1,22 +1,22 @@
 {
   "totals": {
-    "lines": 38.91,
-    "regions": 62.32,
-    "functions": 57.58,
-    "files": 43
+    "lines": 39.39,
+    "regions": 62.47,
+    "functions": 58.12,
+    "files": 45
   },
   "suites": {
     "NepalKitCore": {
-      "lines": 85.62,
-      "regions": 78.3,
-      "functions": 81.43,
+      "lines": 85.84,
+      "regions": 78.5,
+      "functions": 81.94,
       "files": 9
     },
     "NepalKit app": {
-      "lines": 30.66,
-      "regions": 56.82,
-      "functions": 52.84,
-      "files": 34
+      "lines": 32.52,
+      "regions": 58.08,
+      "functions": 54.1,
+      "files": 36
     }
   }
 }

@@ -93,6 +93,6 @@ Stated so the omissions are decisions.
 | --- | --- |
 | A second maintainer | See [GOVERNANCE.md](../.github/GOVERNANCE.md) and finding F3 in [docs/security-assessment.md](security-assessment.md) |
 | An independent security review | The assessment in `docs/security-assessment.md` was written by the maintainer, which is the limitation it names about itself |
-| 80% statement coverage | Measured at 38.91%; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
+| 80% statement coverage | Measured at 39.39%; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
 | Attested 2084 BS | Pending comparison with the approved Nepali Patro |
 | App Store distribution | See [docs/roadmap.md](roadmap.md) |
