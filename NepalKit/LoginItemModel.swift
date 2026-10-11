@@ -55,9 +55,9 @@ struct LiveLoginItemService: LoginItemServicing {
 /// The cases name the operation, not the cause. The errors are opaque
 /// `SMAppService` Cocoa errors with nothing in them to classify, so the
 /// operation is the only distinction the system actually offers, and the
-/// wording is better shown than paraphrased. If a cause ever does need naming —
-/// a registration held for approval in System Settings, say — it earns its own
-/// case and the view's wording follows from it.
+/// wording is better shown than paraphrased. A registration held for approval
+/// in System Settings is not a failure: `register()` succeeded, so it is the
+/// model's `requiresApproval` state rather than a case here.
 enum LoginItemFailure: Equatable {
     /// `register()` was refused, so the login item could not be turned on.
     case registration(String)
