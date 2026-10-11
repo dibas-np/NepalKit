@@ -11,7 +11,4 @@ nonisolated extension Strings {
     static let menuBarShowsTime = "Show time"
     static let menuBarUsesTwentyFourHourClock = "Use a 24-hour clock"
     static let menuBarShowsSeconds = "Show seconds"
-    /// Says which clock the time is, because a time in the menu bar beside the
-    /// system's own clock invites the reading that it is the same one.
-    static let menuBarTimeFootnote = "The time is Nepal Time, whatever your Mac's time zone."
 }

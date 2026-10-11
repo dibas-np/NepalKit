@@ -7,13 +7,15 @@ import SwiftUI
 
 @main
 struct NepalKitApp: App {
-    @State private var settingsModel = DisplaySettingsModel()
-    /// Given the real store explicitly: the model's own default keeps the
-    /// format in memory, so tests never read the developer's preferences.
-    @State private var menuBarModel = MenuBarModel(store: SettingsStore())
-    @State private var clockModel = ClockModel()
-    @State private var converterModel = ConverterModel()
-    @State private var monthGridModel = MonthGridModel()
+    /// These five are built in `init`, not by property initializers, because
+    /// the four that read today must start in the time reference the settings
+    /// model loaded, and must be registered to follow it when it changes
+    /// (ADR-0017). A property initializer cannot see another property.
+    @State private var settingsModel: DisplaySettingsModel
+    @State private var menuBarModel: MenuBarModel
+    @State private var clockModel: ClockModel
+    @State private var converterModel: ConverterModel
+    @State private var monthGridModel: MonthGridModel
     /// No default initializer: the default-on registration below must run
     /// before the model is ever read, and a property initializer would run
     /// first, constructing a second model that is immediately discarded.
@@ -38,6 +40,27 @@ struct NepalKitApp: App {
         // findings, and the reason it lives in init: every launch re-asserts
         // the registration, cold or warm.
         NepalKitShortcuts.updateAppShortcutParameters()
+        let settings = DisplaySettingsModel()
+        let reference = settings.timeReference
+        // Given the real store explicitly: the model's own default keeps the
+        // format in memory, so tests never read the developer's preferences.
+        let menuBar = MenuBarModel(store: SettingsStore(), timeZone: reference.timeZone)
+        let clock = ClockModel(timeReference: reference)
+        let monthGrid = MonthGridModel(timeZone: reference.timeZone)
+        // The converter only reads today for the day its pickers start on. A
+        // later change of reference leaves the user's pickers where they are.
+        _converterModel = State(initialValue: ConverterModel(timeZone: reference.timeZone))
+        // Weak, so registering does not make the settings model the owner of
+        // the models it notifies; the scene owns all five.
+        settings.observeTimeReference { [weak menuBar, weak clock, weak monthGrid] reference in
+            menuBar?.setTimeZone(reference.timeZone)
+            clock?.setTimeReference(reference)
+            monthGrid?.setTimeZone(reference.timeZone, now: .now)
+        }
+        _settingsModel = State(initialValue: settings)
+        _menuBarModel = State(initialValue: menuBar)
+        _clockModel = State(initialValue: clock)
+        _monthGridModel = State(initialValue: monthGrid)
         // Default on: the date is in the menu bar from the moment of sign-in.
         // Configured through a local so init never touches wrapper storage.
         let login = LoginItemModel()

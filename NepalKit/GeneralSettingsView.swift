@@ -3,7 +3,8 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "General" tab: what the app shows, and whether it starts at login.
+/// The "General" tab: what the app shows, which clock today follows, and
+/// whether it starts at login.
 ///
 /// Split out of `SettingsView` because that type is now the window — a system
 /// `TabView` sidebar over three destinations — and these sections are one
@@ -44,7 +45,9 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                if let preview = DisplayPreview.todayText(now: .now, in: dataset, settings: settings.settings) {
+                if let preview = DisplayPreview.todayText(
+                    now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
+                ) {
                     // The example is the section's payoff: both pickers above
                     // change every date the app renders, and this row is one of
                     // those dates, re-rendered as the pickers flip so the choice
@@ -56,6 +59,19 @@ struct GeneralSettingsView: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+            }
+
+            Section {
+                Picker(Strings.timeZoneLabel, selection: $settings.timeReferenceSelection) {
+                    Text(Strings.timeZoneNepal).tag(TimeReference.nepal)
+                    Text(Strings.timeZoneLocal(zoneName: TimeReference.localZoneName())).tag(TimeReference.local)
+                }
+            } header: {
+                Text(Strings.timeZoneSection)
+            } footer: {
+                Text(Strings.timeZoneFootnote)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section(Strings.startupSection) {

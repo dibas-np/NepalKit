@@ -58,10 +58,12 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         self.weekdayValue = IntentAnswers.weekdayNameString(NepalKitCore.weekday(of: gregorian), monthNames: monthNames)
     }
 
-    /// Today's date, anchored to Nepal Time. Nil once the current date passes
-    /// the supported range — the caller speaks the boundary statement then.
+    /// Today's date, in the zone the user's time reference names (ADR-0017).
+    /// Nil once the current date passes the supported range — the caller
+    /// speaks the boundary statement then.
     static func today() -> BikramSambatDateEntity? {
-        guard let bs = todayBS(now: Date(), in: AppData.dataset) else { return nil }
+        let timeZone = SettingsStore().timeReference.timeZone
+        guard let bs = todayBS(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
         return BikramSambatDateEntity(bsDay: bs)
     }
 

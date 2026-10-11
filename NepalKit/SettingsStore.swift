@@ -3,7 +3,7 @@
 import Foundation
 import NepalKitCore
 
-/// Persists the two display axes and the menu-bar format in UserDefaults. The store stays
+/// Persists the two display axes, the time reference and the menu-bar format in UserDefaults. The store stays
 /// dumb and injectable so persistence is testable without the app running.
 ///
 /// `nonisolated` because the Siri intents read it from `perform()`, which
@@ -18,6 +18,7 @@ nonisolated struct SettingsStore {
     static let menuBarShowsTimeKey = "menuBarShowsTime"
     static let menuBarUsesTwentyFourHourClockKey = "menuBarUsesTwentyFourHourClock"
     static let menuBarShowsSecondsKey = "menuBarShowsSeconds"
+    static let timeReferenceKey = "timeReference"
 
     private let defaults: UserDefaults
 
@@ -40,6 +41,16 @@ nonisolated struct SettingsStore {
     func save(_ settings: DisplaySettings) {
         defaults.set(settings.digits.rawValue, forKey: Self.digitScriptKey)
         defaults.set(settings.monthNames.rawValue, forKey: Self.monthNameStyleKey)
+    }
+
+    /// Nepal Time when nothing is stored, or something this version does not
+    /// know, so every existing user keeps the behaviour they had (ADR-0017).
+    var timeReference: TimeReference {
+        TimeReference(rawValue: defaults.string(forKey: Self.timeReferenceKey) ?? "") ?? .nepal
+    }
+
+    func save(_ reference: TimeReference) {
+        defaults.set(reference.rawValue, forKey: Self.timeReferenceKey)
     }
 
     /// Each option is its own Boolean key rather than one encoded blob, so

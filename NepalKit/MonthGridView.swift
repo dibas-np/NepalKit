@@ -134,7 +134,7 @@ private struct ScrollPaging: ViewModifier {
     }
 }
 
-/// Moves today's highlight when the visible clock crosses Nepal Time midnight.
+/// Moves today's highlight when the visible clock crosses midnight.
 /// A separate view so the clock's per-second tick re-evaluates only this empty
 /// body, not the grid; `refreshToday` writes nothing until the day changes.
 private struct TodayFollower: View {

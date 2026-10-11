@@ -70,9 +70,10 @@ struct MonthGridDay: Hashable {
 ///
 /// Session-scoped like `ConverterModel` and for the same reason: the popover's
 /// content closure captures it once. That makes today a value that can go stale
-/// across a Nepal Time midnight, so the view calls `refreshToday(now:)` each
-/// time it appears; that moves the today marking without moving the month the
-/// user navigated to.
+/// across a midnight, so the view calls `refreshToday(now:)` each time it
+/// appears; that moves the today marking without moving the month the user
+/// navigated to. Midnight is in `timeZone`, Nepal Time unless the user chose
+/// their own (ADR-0017).
 @MainActor
 @Observable
 final class MonthGridModel {
@@ -80,18 +81,21 @@ final class MonthGridModel {
     /// is always inside the supported range.
     private(set) var shown: MonthGridMonth
 
-    /// Today in Nepal Time as a Bikram Sambat date, or nil past the supported range.
+    /// Today in `timeZone` as a Bikram Sambat date, or nil past the supported range.
     private(set) var today: BSDay?
 
-    /// Today's Nepal Time Gregorian day, which a day's distance from today is
+    /// Today's Gregorian day, which a day's distance from today is
     /// counted from. Kept beside `today` because it survives the range
     /// boundary, where the Bikram Sambat side does not.
     private(set) var todayGregorian: GADay?
 
-    /// True when today's Nepal Time date is later than the last day the dataset
+    /// True when today's date is later than the last day the dataset
     /// covers. The range boundary state: today's month cannot be shown, so the
     /// grid opens on the last supported month and the view says why.
     private(set) var isTodayPastSupportedRange: Bool
+
+    /// The zone today is read in.
+    private(set) var timeZone: TimeZone
 
     private let dataset: CalendarDataset
     private let festivalCalendar: FestivalCalendar
@@ -105,12 +109,15 @@ final class MonthGridModel {
     ///   - holidays: the days' public holidays, injected for the same reason.
     ///   - now: the instant today is read from. Injected so a test or a
     ///     preview does not depend on the day it runs.
+    ///   - timeZone: the zone today is read in; the app passes the user's
+    ///     time reference and moves it with `setTimeZone(_:now:)`.
     init(dataset: CalendarDataset = AppData.dataset, festivals: FestivalCalendar = .panchanga,
-         holidays: PublicHolidayCalendar = .gazette, now: Date = .now) {
+         holidays: PublicHolidayCalendar = .gazette, now: Date = .now, timeZone: TimeZone = nepalTimeZone) {
         self.dataset = dataset
         self.festivalCalendar = festivals
         self.holidayCalendar = holidays
-        let state = Self.todayState(now: now, in: dataset)
+        self.timeZone = timeZone
+        let state = Self.todayState(now: now, timeZone: timeZone, in: dataset)
         self.today = state.today
         self.todayGregorian = state.todayAD
         self.isTodayPastSupportedRange = state.isPastRange
@@ -162,10 +169,17 @@ final class MonthGridModel {
     /// Re-reads today without moving the shown month, so the today marking and
     /// the range boundary state are current when the popover reopens.
     func refreshToday(now: Date) {
-        let state = Self.todayState(now: now, in: dataset)
+        let state = Self.todayState(now: now, timeZone: timeZone, in: dataset)
         if today != state.today { today = state.today }
         if todayGregorian != state.todayAD { todayGregorian = state.todayAD }
         if isTodayPastSupportedRange != state.isPastRange { isTodayPastSupportedRange = state.isPastRange }
+    }
+
+    /// Reads today in another zone. The shown month stays where the user put
+    /// it, as it does across a midnight; only the today marking moves.
+    func setTimeZone(_ timeZone: TimeZone, now: Date) {
+        self.timeZone = timeZone
+        refreshToday(now: now)
     }
 
     /// Today as the model reads it, in one value so `init` and
@@ -176,9 +190,9 @@ final class MonthGridModel {
         let isPastRange: Bool
     }
 
-    private static func todayState(now: Date, in dataset: CalendarDataset) -> TodayState {
-        let today = todayBS(now: now, in: dataset)
-        let todayGregorian = todayAD(now: now)
+    private static func todayState(now: Date, timeZone: TimeZone, in dataset: CalendarDataset) -> TodayState {
+        let today = todayBS(now: now, timeZone: timeZone, in: dataset)
+        let todayGregorian = todayAD(now: now, timeZone: timeZone)
         var isPastRange = false
         if today == nil, let todayGregorian, let end = dataset.gregorianEnd {
             isPastRange = todayGregorian > end

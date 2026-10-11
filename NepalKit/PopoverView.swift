@@ -166,7 +166,8 @@ extension View {
 
 // MARK: - Header Bar
 
-/// Identity on the left, the live Nepal Time on the right.
+/// Identity on the left, the live clock today follows on the right: Nepal Time,
+/// or the Mac's own time when the user chose it (ADR-0017).
 ///
 /// The reference this follows leads with a title bar carrying a name and a
 /// running value, and that is what makes it read as a surface with its own
@@ -188,12 +189,14 @@ private struct HeaderBar: View {
                 .font(.subheadline.weight(.medium))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Text(clock.nptTimeString(digits: settings.digits))
+            Text(clock.headerTimeString(digits: settings.digits))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+                // Named aloud because nothing on screen says which clock this
+                // is, and with the user's own zone chosen it is not Nepal's.
                 .accessibilityLabel(
-                    "\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: .latin))"
+                    "\(clock.headerClockLabel): \(clock.headerTimeString(digits: .latin))"
                 )
         }
     }
@@ -201,7 +204,8 @@ private struct HeaderBar: View {
 
 // MARK: - Clocks
 
-/// The local-time reference, which is the one clock the header cannot carry.
+/// The other clock, which is the one the header cannot carry: the Mac's local
+/// time beside Nepal Time, or Nepal Time beside the user's own zone (ADR-0017).
 ///
 /// Sits outside the Gregorian conditional because a clock is answerable
 /// regardless of calendar data, so it must survive the range boundary.
@@ -218,33 +222,33 @@ private struct ClocksSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Nepal Time is not repeated here. The header carries it, so a second
-            // copy one row below showed the same ticking value twice and made the
-            // popover read as though it had two clocks to offer.
+            // The header's clock is not repeated here. A second copy one row
+            // below showed the same ticking value twice and made the popover
+            // read as though it had two clocks to offer.
             //
-            // Only the local reference remains, which is the half the header
+            // Only the other reference remains, which is the half the header
             // cannot carry: the header is one value, and "what time is it here
             // compared to Nepal" is a comparison that needs both.
             //
-            // Omitted entirely when the local reading would repeat Nepal Time,
+            // Omitted entirely when the two readings would repeat each other,
             // which is the case for every user in Nepal. Two identical clocks
             // imply the second is somehow significant, and it is not — the
             // reference only earns its row by differing.
-            if !clock.localTimeIsRedundant {
+            if clock.showsSecondaryClock {
                 // The divider comes and goes with the row, so a reader in
                 // Nepal is not left with a rule above nothing.
                 Divider()
                 Label {
-                    Text(clock.localTimeString(digits: settings.digits))
+                    Text(clock.secondaryTimeString(digits: settings.digits))
                 } icon: {
-                    Text(Strings.localTimeLabel)
+                    Text(clock.secondaryClockLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                .accessibilityLabel("\(Strings.localTimeLabel): \(clock.localTimeString(digits: .latin))")
+                .accessibilityLabel("\(clock.secondaryClockLabel): \(clock.secondaryTimeString(digits: .latin))")
             }
         }
         .accessibilityElement(children: .contain)

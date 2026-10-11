@@ -64,6 +64,17 @@ struct PersistedIdentifierTests {
         #expect(defaults.object(forKey: "menuBarShowsSeconds") as? Bool == true)
     }
 
+    @Test func timeReferenceUsesTheLiteralKeyAndRawValues() throws {
+        let defaults = try freshDefaults()
+        defaults.set("local", forKey: "timeReference")
+        #expect(SettingsStore(defaults: defaults).timeReference == .local)
+        defaults.set("nepal", forKey: "timeReference")
+        #expect(SettingsStore(defaults: defaults).timeReference == .nepal)
+
+        SettingsStore(defaults: defaults).save(TimeReference.local)
+        #expect(defaults.string(forKey: "timeReference") == "local")
+    }
+
     @Test func loginItemConfiguredFlagUsesTheLiteralKey() throws {
         // A configured user must not be re-registered after they turned it off.
         let defaults = try freshDefaults()

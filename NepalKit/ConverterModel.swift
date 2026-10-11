@@ -77,20 +77,23 @@ final class ConverterModel {
     /// - Parameter now: the instant the pickers start from. Injected rather than
     ///   read from the wall clock so the initial selection is reproducible — a
     ///   preview or a test should not depend on the day it happens to run.
+    /// - Parameter timeZone: the zone "today" is read in for that starting day,
+    ///   the user's time reference in the app (ADR-0017).
     init(
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,
         adYear: Int? = nil, adMonth: Int? = nil, adDay: Int? = nil,
         dataset: CalendarDataset = AppData.dataset,
-        now: Date = .now
+        now: Date = .now,
+        timeZone: TimeZone = nepalTimeZone
     ) {
         self.dataset = dataset
         self.direction = direction
-        let todayADDate = todayAD(now: now) ?? dataset.anchorAD
+        let todayADDate = todayAD(now: now, timeZone: timeZone) ?? dataset.anchorAD
         // Both pickers default to the same day: today, clamped into the
         // convertible span, so past the supported range they open on its last
         // day rather than the Bikram Sambat side jumping to the range's first.
-        // Inside the span this is exactly `todayBS(now:in:)`.
+        // Inside the span this is exactly `todayBS(now:timeZone:in:)`.
         let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { adToBS($0, in: dataset) }
         self.bsDate = BSDay(
             year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,

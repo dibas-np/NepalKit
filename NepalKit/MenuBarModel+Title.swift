@@ -8,7 +8,7 @@ import NepalKitCore
 /// clock and its timers.
 extension MenuBarModel {
     /// The menu-bar title: the Bikram Sambat date, with the weekday, year and
-    /// Nepal Time clock that `format` asks for, honoring the display settings.
+    /// clock that `format` asks for, all read in `timeZone`, honoring the display settings.
     ///
     /// Past the dataset's supported range this returns a compact boundary marker
     /// rather than a bare "—". That marker is a statement of fact, not a warning:
@@ -27,7 +27,7 @@ extension MenuBarModel {
         in dataset: CalendarDataset = AppData.dataset,
         updateAvailable: Bool = false
     ) -> String {
-        guard let date = formatMenuBarTitle(now: now, format: format, settings: settings, in: dataset) else {
+        guard let date = formatMenuBarTitle(now: now, timeZone: timeZone, format: format, settings: settings, in: dataset) else {
             return Strings.menuBarBeyondRange
         }
         return updateAvailable ? Strings.menuBarUpdateMarker + date : date
@@ -51,7 +51,7 @@ extension MenuBarModel {
         updateAvailable: Bool = false
     ) -> String {
         SpokenDate.menuBar(
-            spokenDate: SpokenDate.menuBarDate(now: now, format: format, monthNames: settings.monthNames, in: dataset),
+            spokenDate: SpokenDate.menuBarDate(now: now, timeZone: timeZone, format: format, monthNames: settings.monthNames, in: dataset),
             dataset: dataset,
             updateAvailable: updateAvailable
         )

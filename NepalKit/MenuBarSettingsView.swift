@@ -4,7 +4,7 @@ import NepalKitCore
 import SwiftUI
 
 /// The "Menu Bar" tab: what the menu-bar item currently shows, and the format
-/// options that belong to it alone — weekday, year and Nepal Time clock, after
+/// options that belong to it alone — weekday, year and clock, after
 /// the macOS menu-bar clock's options.
 ///
 /// Digit script and month names also shape the menu bar, but they shape the
@@ -20,6 +20,8 @@ import SwiftUI
 struct MenuBarSettingsView: View {
     @Bindable var menuBar: MenuBarModel
     let settings: DisplaySettings
+    /// Which clock the time option shows, so the footnote can name it.
+    let timeReference: TimeReference
     /// The same flag the real menu-bar label reads, so the preview cannot disagree
     /// with the menu bar about whether an update is pending.
     let updateAvailable: Bool
@@ -71,7 +73,7 @@ struct MenuBarSettingsView: View {
             } header: {
                 Text(Strings.menuBarFormatSection)
             } footer: {
-                Text(Strings.menuBarTimeFootnote)
+                Text(Strings.menuBarTimeFootnote(timeReference))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -107,6 +109,7 @@ struct MenuBarSettingsView: View {
     MenuBarSettingsView(
         menuBar: MenuBarModel(now: AppData.previewInstant, refreshes: false),
         settings: DisplaySettings(digits: .latin, monthNames: .transliterated),
+        timeReference: .nepal,
         updateAvailable: false
     )
     .frame(width: 460)

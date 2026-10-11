@@ -110,6 +110,7 @@ struct SettingsView: View {
             MenuBarSettingsView(
                 menuBar: menuBar,
                 settings: settings.settings,
+                timeReference: settings.timeReference,
                 updateAvailable: updates.isShowingReminder
             )
         case .general:

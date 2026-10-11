@@ -95,6 +95,21 @@ struct ClockDiscontinuityTests {
         #expect(model.now > stale)
     }
 
+    @Test func systemTimeZoneChangeRereadsTheClock() throws {
+        let stale = try Self.stale()
+        let system = RecordingCenter()
+        let model = MenuBarModel(
+            now: stale,
+            schedulesMidnightFire: false,
+            workspaceNotifications: RecordingCenter(),
+            systemNotifications: system
+        )
+
+        system.post(name: .NSSystemTimeZoneDidChange, object: nil)
+
+        #expect(model.now > stale)
+    }
+
     @Test func aModelThatDoesNotRefreshAddsNoObservers() throws {
         let stale = try Self.stale()
         let workspace = RecordingCenter()
@@ -125,7 +140,8 @@ struct ClockDiscontinuityTests {
                 systemNotifications: system
             )
             released = model
-            #expect(workspace.added == 1 && system.added == 1)
+            // Wake on the workspace; clock and time zone changes on the system center.
+            #expect(workspace.added == 1 && system.added == 2)
         }
 
         #expect(released == nil)

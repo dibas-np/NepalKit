@@ -3,8 +3,9 @@
 import AppIntents
 import NepalKitCore
 
-/// Answers today's date in Bikram Sambat. Anchored to Nepal Time: "today"
-/// means Nepal's current calendar date (CONTEXT.md's Today entry, ticket 02).
+/// Answers today's date in Bikram Sambat. "Today" is the current calendar date
+/// in the zone the user's time reference names: Nepal Time unless they chose
+/// their own (CONTEXT.md's Today entry, ticket 02, ADR-0017).
 struct TodayInBikramSambatIntent: AppIntent {
     static let title: LocalizedStringResource = "What is today's Nepali date"
 
@@ -17,16 +18,26 @@ struct TodayInBikramSambatIntent: AppIntent {
     static var parameterSummary: some ParameterSummary { Summary() }
 
     func perform() async throws -> some IntentResult & ReturnsValue<BikramSambatDateEntity> & ProvidesDialog {
-        let dataset = AppData.dataset
-        let now = Date()
-        guard let bs = todayBS(now: now, in: dataset) else {
-            throw SiriIntentError(dialog: Self.beyondRangeDialog(now: now, in: dataset))
+        let answer = try Self.answer(now: Date(), in: AppData.dataset)
+        return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
+    }
+
+    /// Today's entity and dialog for `now`, read in the user's time reference
+    /// like the month names are read from their setting. Extracted so a test
+    /// can pass the instant and the zone instead of the wall clock and the
+    /// developer's own preferences.
+    static func answer(
+        now: Date,
+        in dataset: CalendarDataset,
+        timeZone: TimeZone = SettingsStore().timeReference.timeZone
+    ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
+        guard let bs = todayBS(now: now, timeZone: timeZone, in: dataset) else {
+            throw SiriIntentError(dialog: beyondRangeDialog(now: now, timeZone: timeZone, in: dataset))
         }
-        let bsWeekday = weekday(of: bs, in: dataset)
         guard let entity = BikramSambatDateEntity(bsDay: bs) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: bsWeekday, in: dataset)))
+        return (entity, successDialog(bs, weekday: weekday(of: bs, in: dataset), in: dataset))
     }
 
     /// The spoken answer for today — extracted so the wording, including the
@@ -43,8 +54,12 @@ struct TodayInBikramSambatIntent: AppIntent {
     /// supported year from the dataset, and Gregorian today stays
     /// answerable (ticket 03, failure shape 1). Every number comes from the
     /// dataset; none is hard-coded.
-    static func beyondRangeDialog(now: Date, in dataset: CalendarDataset) -> LocalizedStringResource {
-        let gregorianToday = todayAD(now: now)
+    static func beyondRangeDialog(
+        now: Date,
+        timeZone: TimeZone = nepalTimeZone,
+        in dataset: CalendarDataset
+    ) -> LocalizedStringResource {
+        let gregorianToday = todayAD(now: now, timeZone: timeZone)
         let prefix = IntentAnswers.weekdayPrefix(gregorianToday.flatMap { weekday(of: $0) })
         let spokenToday = gregorianToday.map { IntentAnswers.spoken($0) } ?? ""
         // Years interpolate as strings: a bare Int formats with locale
