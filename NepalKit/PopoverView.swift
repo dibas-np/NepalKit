@@ -79,8 +79,8 @@ struct PopoverView: View {
 
             // The swap cross-fades: the destinations are states of one
             // surface, not replacements. Scoped to the switch rather than
-            // the outer stack so the segmented control and the footer's
-            // position label, which also read `destination`, update plainly.
+            // the outer stack so the segmented control, which also reads
+            // `destination`, updates plainly.
             Group {
                 switch destination {
                 case .today:
@@ -112,11 +112,11 @@ struct PopoverView: View {
         // not a step in navigating the destinations, and burying them in one tab
         // would hide them from the other.
         //
-        // `destination`, `openSettings` and the update state are all this hands
-        // over, so a per-second clock tick never re-evaluates the footer - the
-        // same reasoning that made the header, Today and Clocks their own view
+        // `openSettings` and the update state are all this hands over, so a
+        // per-second clock tick never re-evaluates the footer - the same
+        // reasoning that made the header, Today and Clocks their own view
         // types.
-        PopoverFooter(destination: destination, openSettings: { openSettings() }, updates: updates)
+        PopoverFooter(openSettings: { openSettings() }, updates: updates)
     }
 
 }
