@@ -238,7 +238,13 @@ jobs:
 
       # Signing is disabled: the project sets a development team target-wide, and
       # a pull-request job must need no credentials and be unable to reach any.
-      - name: Build the application
+      #
+      # `build` does not compile NepalKitTests (the scheme marks it
+      # buildForRunning = NO), so a test target whose Swift mode or isolation
+      # drifts from the app's would compile nowhere in CI; ADR-0005 records that
+      # this once hid a Swift 5/6 mismatch. The for-testing build action is what
+      # gate 1 of check-all.sh runs locally.
+      - name: Build the application and the hosted test bundle
         run: |
           set -euo pipefail
           xcodebuild \
@@ -248,8 +254,14 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/NepalKitDerivedData" \
             -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build-for-testing
           echo "NEPAKIT_BUILT_PLIST=$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/Info.plist" >> "$GITHUB_ENV"
+
+      - name: The built product exists where the suites will look
+        run: |
+          set -euo pipefail
+          test -f "$NEPAKIT_BUILT_PLIST" || { echo "::error::no Info.plist at $NEPAKIT_BUILT_PLIST; the plist tests would skip silently"; exit 1; }
+          test -x "$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/MacOS/NepalKit"
 
       # Runs after the build so the checker inherits NEPAKIT_BUILT_PLIST and the
       # built product joins the floor comparison; Pages' run has no build, so it
