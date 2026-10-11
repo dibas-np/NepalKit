@@ -51,11 +51,11 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                // Redrawn at the next midnight in the chosen zone: nothing else
-                // this preview reads changes at midnight, so left open across it
-                // the row would keep showing yesterday. One wake a day, not a
+                // Redrawn at every midnight in the chosen zone: nothing else this
+                // preview reads changes at midnight, so left open across one the
+                // row would keep showing yesterday. One wake a day, not a
                 // per-second clock.
-                TimelineView(.explicit(nextMidnight(after: .now, in: settings.timeZone).map { [$0] } ?? [])) { _ in
+                TimelineView(MidnightSchedule(timeZone: settings.timeZone)) { _ in
                     if let preview = DisplayPreview.todayText(
                         now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
                     ) {
