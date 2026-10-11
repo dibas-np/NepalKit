@@ -112,4 +112,15 @@ struct RelativeDayIntentTests {
         #expect(tomorrows.contains(tomorrow.value?.bsDay))
         #expect(yesterdays.contains(yesterday.value?.bsDay))
     }
+
+    @Test("Tomorrow into a provisional year carries the projection clause; an attested one does not")
+    func provisionalYearClause() throws {
+        // 30 Chaitra 2083 is 13 April 2027; tomorrow is 1 Baisakh 2084, a
+        // provisional year. Today itself (2083) is attested.
+        let lastDayOf2083 = try TestDates.utc(2027, 4, 13, 6, 0)
+        let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
+        #expect(tomorrow.contains("provisional projection"))
+        let yesterday = String(localized: try YesterdayInBikramSambatIntent.answer(now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
+        #expect(!yesterday.contains("provisional"))
+    }
 }
