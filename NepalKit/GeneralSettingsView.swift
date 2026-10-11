@@ -19,6 +19,12 @@ struct GeneralSettingsView: View {
     /// The same dataset the rest of the app converts with (ADR-0010), so the
     /// Display section's live preview renders the calendar the app actually uses.
     let dataset: CalendarDataset
+    /// The Mac's own zone and locale, from the environment rather than
+    /// `.current`: SwiftUI redraws the "My time zone" label when either changes
+    /// (a Mac moved to a new zone while Settings is open), and previews can
+    /// override them.
+    @Environment(\.timeZone) private var timeZone
+    @Environment(\.locale) private var locale
 
     var body: some View {
         Form {
@@ -45,26 +51,33 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                if let preview = DisplayPreview.todayText(
-                    now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
-                ) {
-                    // The example is the section's payoff: both pickers above
-                    // change every date the app renders, and this row is one of
-                    // those dates, re-rendered as the pickers flip so the choice
-                    // lands where it is made rather than only in the menu bar.
-                    // Re-reads `settings.settings` in `body`, so the preview is
-                    // live without any explicit wiring.
-                    LabeledContent(Strings.displayPreviewLabel) {
-                        Text(preview)
+                // Redrawn at the next midnight in the chosen zone: nothing else
+                // this preview reads changes at midnight, so left open across it
+                // the row would keep showing yesterday. One wake a day, not a
+                // per-second clock.
+                TimelineView(.explicit(nextMidnight(after: .now, in: settings.timeZone).map { [$0] } ?? [])) { _ in
+                    if let preview = DisplayPreview.todayText(
+                        now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
+                    ) {
+                        // The example is the section's payoff: both pickers above
+                        // change every date the app renders, and this row is one of
+                        // those dates, re-rendered as the pickers flip so the choice
+                        // lands where it is made rather than only in the menu bar.
+                        // Re-reads `settings.settings` in `body`, so the preview is
+                        // live without any explicit wiring.
+                        LabeledContent(Strings.displayPreviewLabel) {
+                            Text(preview)
+                        }
+                        .accessibilityElement(children: .combine)
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
 
             Section {
                 Picker(Strings.timeZoneLabel, selection: $settings.timeReferenceSelection) {
                     Text(Strings.timeZoneNepal).tag(TimeReference.nepal)
-                    Text(Strings.timeZoneLocal(zoneName: TimeReference.localZoneName())).tag(TimeReference.local)
+                    Text(Strings.timeZoneLocal(zoneName: TimeReference.localZoneName(timeZone, locale: locale)))
+                        .tag(TimeReference.local)
                 }
             } header: {
                 Text(Strings.timeZoneSection)

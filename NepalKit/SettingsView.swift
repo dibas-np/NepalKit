@@ -27,8 +27,9 @@ struct SettingsView: View {
     @Bindable var loginItem: LoginItemModel
     /// The updater is constructed and started at launch (NepalKitApp), so the About
     /// tab always has a model to read; its outcome state comes from the same
-    /// instance the background check reports into.
-    @Bindable var updates: UpdateCheckModel
+    /// instance the background check reports into. Not `@Bindable` here: only
+    /// `AboutSettingsView` binds to it.
+    let updates: UpdateCheckModel
     /// The model behind the real menu-bar label, so the Menu Bar tab's preview
     /// cannot disagree with it and its format toggles change the label itself.
     /// Not `@Bindable` here: only `MenuBarSettingsView` writes to it, and it

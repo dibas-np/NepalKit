@@ -88,18 +88,11 @@ struct NepalKitApp: App {
                 updates: updateCheckModel
             )
         } label: {
-            // The shown label is the date in the user's menu-bar format, prefixed
-            // only while an update is unattended; the announcement is a sentence that names the app
-            // and pronounces the date. Merging them would put "NepalKit," in the
-            // menu bar itself.
-            Text(menuBarModel.title(
-                settings: settingsModel.settings,
-                updateAvailable: updateCheckModel.isShowingReminder
-            ))
-                .accessibilityLabel(menuBarModel.spokenTitle(
-                    settings: settingsModel.settings,
-                    updateAvailable: updateCheckModel.isShowingReminder
-                ))
+            // A view of its own, not a `Text` built here: the title reads the
+            // menu-bar clock, which ticks every minute (every second with seconds
+            // shown), and a read in this body re-evaluated the whole App body, both
+            // scenes, on every tick. Inside `MenuBarLabel` it redraws only the label.
+            MenuBarLabel(menuBar: menuBarModel, settings: settingsModel, updates: updateCheckModel)
         }
         .menuBarExtraStyle(.window)
         // A menu-bar-only app has no Dock icon and no Cmd-Tab presence, so this

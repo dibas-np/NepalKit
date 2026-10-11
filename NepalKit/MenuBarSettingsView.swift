@@ -28,34 +28,11 @@ struct MenuBarSettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                // Glass on the value itself, not on the form.
-                //
-                // Liquid Glass is only visible where nothing paints over it, and a
-                // `Form(.grouped)` section paints its own background across the
-                // full width. An earlier attempt put `.glassEffect` on the whole
-                // window instead, where it was invisible for the same reason and
-                // then swallowed clicks. The rule worth keeping: the material goes
-                // on the control, never behind the chrome.
-                Text(preview)
-                    .font(.body.monospacedDigit())
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                    // The value is the point of the row, so it is not decoration.
-                    .accessibilityLabel(Strings.menuBarPreviewCaption)
-                    .accessibilityValue(preview)
-            } header: {
-                Text(Strings.menuBarPreviewCaption)
-            } footer: {
-                // Names what the spoken form is, since the value alone
-                // ("12 Ashoj 2083") gives no clue it is a menu bar.
-                Text(spokenPreview)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            // Its own view: the preview reads the model's clock, which ticks every
+            // minute, or every second with seconds shown. In this body that tick
+            // re-evaluated the whole form, toggles and all; there it re-evaluates
+            // only the preview.
+            MenuBarPreview(menuBar: menuBar, settings: settings, updateAvailable: updateAvailable)
             Section {
                 Toggle(Strings.menuBarShowsWeekday, isOn: $menuBar.showsWeekday)
                 Toggle(Strings.menuBarShowsYear, isOn: $menuBar.showsYear)
@@ -79,6 +56,45 @@ struct MenuBarSettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// The preview section of the Menu Bar tab: what the menu-bar item shows, and
+/// how it is announced. Separate so the clock's tick redraws only this.
+private struct MenuBarPreview: View {
+    let menuBar: MenuBarModel
+    let settings: DisplaySettings
+    let updateAvailable: Bool
+
+    var body: some View {
+        Section {
+            // Glass on the value itself, not on the form.
+            //
+            // Liquid Glass is only visible where nothing paints over it, and a
+            // `Form(.grouped)` section paints its own background across the
+            // full width. An earlier attempt put `.glassEffect` on the whole
+            // window instead, where it was invisible for the same reason and
+            // then swallowed clicks. The rule worth keeping: the material goes
+            // on the control, never behind the chrome.
+            Text(preview)
+                .font(.body.monospacedDigit())
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                // The value is the point of the row, so it is not decoration.
+                .accessibilityLabel(Strings.menuBarPreviewCaption)
+                .accessibilityValue(preview)
+        } header: {
+            Text(Strings.menuBarPreviewCaption)
+        } footer: {
+            // Names what the spoken form is, since the value alone
+            // ("12 Ashoj 2083") gives no clue it is a menu bar.
+            Text(spokenPreview)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
     }
 
     /// The literal menu-bar string, through the same call the app makes.

@@ -96,6 +96,14 @@ final class UpdateCheckModel {
     /// `setAutomaticallyChecks`, and refreshed whenever the date is.
     private(set) var automaticallyChecks: Bool
 
+    /// The toggle's binding: reads the stored copy and writes through
+    /// `setAutomaticallyChecks`, so a view binds with `$model.automaticChecksSetting`
+    /// rather than a closure `Binding` while the stored value stays `private(set)`.
+    var automaticChecksSetting: Bool {
+        get { automaticallyChecks }
+        set { setAutomaticallyChecks(newValue) }
+    }
+
     /// The toggle's write: through to the service, then read back, so what
     /// the toggle shows is what the service kept.
     func setAutomaticallyChecks(_ enabled: Bool) {
