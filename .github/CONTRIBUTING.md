@@ -96,8 +96,8 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
 python3 scripts/test_swiftlint.py          # 2. the bootstrap's own suite, then all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
-swift test --package-path NepalKitCore      # 3. the calendar: 141 tests
-./scripts/run-app-tests.sh                  # 4. the app: 325 tests
+swift test --package-path NepalKitCore      # 3. the calendar: 147 tests
+./scripts/run-app-tests.sh                  # 4. the app: 352 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator

@@ -43,7 +43,7 @@ _Avoid_: BS weekday, AD weekday
 ## Calendar data
 
 **Today**:
-The current calendar date in Nepal Time — an event on Nepal's clock, and the only query anchored to an instant. A date a user *names* for conversion is a different thing: a calendar day as spoken, independent of Nepal Time; only its year, month, and day matter.
+The current calendar date in Nepal Time — an event on Nepal's clock, and the only query anchored to an instant. On the Mac, the user may choose their own time zone instead (ADR-0017); Nepal Time is the default, and the Watch always uses it. A date a user *names* for conversion is a different thing: a calendar day as spoken, independent of Nepal Time; only its year, month, and day matter.
 _Avoid_: current date, named-date conversion
 
 **Supported range**:

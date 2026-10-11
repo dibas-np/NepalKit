@@ -21,7 +21,7 @@
 
 - Today's Bikram Sambat date in the menu bar, without a Dock icon.
 - Full Bikram Sambat and Gregorian dates with the weekday.
-- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs.
+- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs. Choose **My time zone** in Settings and the two swap places.
 - Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
 - Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
 - Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
@@ -50,9 +50,9 @@ If you still use version 1.0, install a newer release once to enable automatic u
 
 Click the menu-bar date to open the popover. **Today** shows today's Bikram Sambat date and weekday above the month as a grid, with each day's Gregorian date beneath it and the Gregorian months it spans beside the title. Click a day to see it in both calendars and how far it is from today, copy it, or add it to your calendar as an all-day event. Scroll over the grid or press the left and right arrow keys to change months. Festivals and national days for 2083, from Nepal's national Panchanga (and two national days only the Home Ministry's Gazette notice lists), are marked with a dot in the grid, listed in a day's details, and named under today's date. Nationwide public holidays from the Home Ministry's Nepal Gazette notice are shown in red like Saturdays, and a day's details name holidays limited to a community, region or group. **Convert** lets you convert a date in either direction.
 
-Open **Settings** with **⌘,** to change the digit script, month and weekday names, or launch-at-login preference. **Settings → Menu Bar** previews the menu-bar date and can add the day of the week, the year, and the Nepal Time clock (12- or 24-hour, with or without seconds), like the macOS menu-bar clock.
+Open **Settings** with **⌘,** to change the digit script, month and weekday names, time zone, or launch-at-login preference. **Settings → Menu Bar** previews the menu-bar date and can add the day of the week, the year, and the clock (12- or 24-hour, with or without seconds), like the macOS menu-bar clock.
 
-Today's date follows Nepal Time, even when your Mac uses another time zone. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
+Today's date follows Nepal Time by default, even when your Mac uses another time zone. Set **Settings → General → Time zone** to **My time zone** and today, its midnight, the clocks and Siri's answers follow your Mac's time zone instead ([ADR-0017](docs/adr/0017-today-in-nepal-time-or-the-users-time-zone.md)). The Watch app always follows Nepal Time. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
 
 ## Siri and Shortcuts
 
