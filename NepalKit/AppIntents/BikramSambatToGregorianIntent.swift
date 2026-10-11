@@ -51,7 +51,7 @@ struct BikramSambatToGregorianIntent: AppIntent {
         guard let instant = Self.noonInUserCalendar(for: ad) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad)))
+        return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad, fromProvisionalYear: dataset.isProvisional(year))))
     }
 
     /// Noon of the converted day in the calendar the reverse intent reads
@@ -83,7 +83,12 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     /// The spoken answer for a successful conversion — extracted beside the
     /// failure dialogs so the wording is testable without running the intent.
-    static func successDialog(_ ad: GADay) -> LocalizedStringResource {
-        "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad))."
+    /// When the Bikram Sambat date asked about is in a provisional year, the
+    /// answer rests on the projection and says so.
+    static func successDialog(_ ad: GADay, fromProvisionalYear: Bool) -> LocalizedStringResource {
+        if fromProvisionalYear {
+            return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad)). That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."
+        }
+        return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad))."
     }
 }

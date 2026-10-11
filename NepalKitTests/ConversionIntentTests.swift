@@ -60,7 +60,7 @@ struct ConversionIntentTests {
         let expectedWeekday = monthNames == .nepali ? "शनि" : "Saturday"
         let expectedDialog = monthNames == .nepali ? "शनि, 2 चैत 2081." : "Saturday, 2 Chaitra 2081."
         #expect(result.value?.weekday == expectedWeekday)
-        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: weekday(of: named))) == expectedDialog)
+        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: weekday(of: named), in: dataset)) == expectedDialog)
     }
 
     @Test("Out of range both directions names the range and the exceeded boundary")
@@ -112,7 +112,7 @@ struct ConversionIntentTests {
         #expect(parts.hour == 12 && parts.minute == 0)
         let expectedDialog = SettingsStore().settings.monthNames == .nepali
             ? "आइत, 29 June 2025." : "Sunday, 29 June 2025."
-        #expect(String(localized: BikramSambatToGregorianIntent.successDialog(converted)) == expectedDialog)
+        #expect(String(localized: BikramSambatToGregorianIntent.successDialog(converted, fromProvisionalYear: false)) == expectedDialog)
     }
 
     @Test(
@@ -223,5 +223,30 @@ struct ConversionIntentTests {
         ] {
             #expect(strings[key] != nil, "catalog is missing \(key)")
         }
+    }
+
+    // 22 Bhadra 2084 is 8 September 2027 (Projected2084Tests); 2084 is the
+    // dataset's provisional row.
+    @Test("Gregorian to Bikram Sambat into 2084 adds the provisional clause; 2083 does not")
+    func gregorianToBikramSambatProvisionalClause() {
+        let provisional = String(localized: GregorianToBikramSambatIntent.successDialog(BSDay(year: 2084, month: 5, day: 22), weekday: 4, in: dataset))
+        // The month name follows the user's month-name setting, so only the year is pinned.
+        #expect(provisional.hasSuffix(" 2084. That year is a provisional projection, not yet in the official Nepali Patro."))
+        let attested = String(localized: GregorianToBikramSambatIntent.successDialog(BSDay(year: 2083, month: 6, day: 11), weekday: 1, in: dataset))
+        #expect(!attested.contains("provisional"))
+    }
+
+    @Test("Bikram Sambat 2084 to Gregorian adds the provisional clause; 2082 does not")
+    func bikramSambatToGregorianProvisionalClause() async throws {
+        let intent = BikramSambatToGregorianIntent()
+        intent.day = 22
+        intent.month = .bhadra
+        intent.year = 2084
+        _ = try await intent.perform()
+        #expect(dataset.isProvisional(2084))
+        let provisional = String(localized: BikramSambatToGregorianIntent.successDialog(GADay(year: 2027, month: 9, day: 8), fromProvisionalYear: dataset.isProvisional(2084)))
+        #expect(provisional.hasSuffix("8 September 2027. That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."))
+        let attested = String(localized: BikramSambatToGregorianIntent.successDialog(GADay(year: 2025, month: 6, day: 29), fromProvisionalYear: dataset.isProvisional(2082)))
+        #expect(!attested.contains("provisional"))
     }
 }

@@ -212,4 +212,16 @@ struct TodayIntentTests {
             #expect(strings?[key] != nil, "catalog is missing \(key)")
         }
     }
+
+    // 1 Baisakh 2084 is 14 April 2027 (Projected2084Tests), the first day of
+    // the dataset's provisional row; 1 Baisakh 2082 is the attested anchor.
+    @Test("Today in a provisional year adds the projection clause; an attested year does not")
+    func todayDialogNamesTheProjection() {
+        let provisional = String(localized: TodayInBikramSambatIntent.successDialog(BSDay(year: 2084, month: 1, day: 1), weekday: 4, in: dataset))
+        #expect(provisional.hasPrefix("Today is "))
+        #expect(provisional.hasSuffix("2084. This year is a provisional projection, not yet in the official Nepali Patro."))
+        let attested = String(localized: TodayInBikramSambatIntent.successDialog(BSDay(year: 2082, month: 1, day: 1), weekday: 2, in: dataset))
+        #expect(attested.hasSuffix("2082."))
+        #expect(!attested.contains("provisional"))
+    }
 }

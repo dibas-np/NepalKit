@@ -33,7 +33,7 @@ struct GregorianToBikramSambatIntent: AppIntent {
             guard let entity = BikramSambatDateEntity(bsDay: bs) else {
                 throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
             }
-            return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: weekday(of: ad))))
+            return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: weekday(of: ad), in: dataset)))
         }
         // No table row: either the day does not exist, or the date sits
         // outside the table. Both wordings speak dataset numbers only.
@@ -89,7 +89,12 @@ struct GregorianToBikramSambatIntent: AppIntent {
 
     /// The spoken answer for a successful conversion — extracted beside the
     /// failure dialogs so the wording is testable without running the intent.
-    static func successDialog(_ bs: BSDay, weekday: Int?) -> LocalizedStringResource {
-        "\(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs))."
+    /// A provisional year (the dataset's flag, never a literal) adds the
+    /// projection clause.
+    static func successDialog(_ bs: BSDay, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
+        if dataset.isProvisional(bs.year) {
+            return "\(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs)). That year is a provisional projection, not yet in the official Nepali Patro."
+        }
+        return "\(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs))."
     }
 }

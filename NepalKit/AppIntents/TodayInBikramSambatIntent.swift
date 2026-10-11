@@ -26,7 +26,17 @@ struct TodayInBikramSambatIntent: AppIntent {
         guard let entity = BikramSambatDateEntity(bsDay: bs) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        return .result(value: entity, dialog: "Today is \(IntentAnswers.weekdayPrefix(bsWeekday))\(IntentAnswers.spoken(bs)).")
+        return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: bsWeekday, in: dataset)))
+    }
+
+    /// The spoken answer for today — extracted so the wording, including the
+    /// provisional clause the dataset's flag adds, is testable without
+    /// running the intent against the wall clock.
+    static func successDialog(_ bs: BSDay, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
+        if dataset.isProvisional(bs.year) {
+            return "Today is \(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs)). This year is a provisional projection, not yet in the official Nepali Patro."
+        }
+        return "Today is \(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs))."
     }
 
     /// Past the supported range: the boundary statement names the last
