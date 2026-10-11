@@ -65,4 +65,15 @@ extension MonthGridModel {
         pasteboard.clearContents()
         pasteboard.setString(detail.bikramSambat, forType: .string)
     }
+
+    /// The day as an all-day calendar event. Titled by its festivals when it
+    /// has any, otherwise by its Bikram Sambat date; the notes carry both
+    /// calendars' dates and any holiday, so the event says which day it was
+    /// in Nepal's calendar however the calendar app shows it.
+    func calendarEvent(for day: MonthGridDay, settings: DisplaySettings) -> CalendarEvent {
+        let detail = detail(for: day, settings: settings)
+        let title = detail.festivals.isEmpty ? detail.bikramSambat : detail.festivals.joined(separator: ", ")
+        let notes = ([detail.bikramSambat + " · " + detail.gregorian] + detail.holidays).joined(separator: "\n")
+        return CalendarEvent(title: title, notes: notes, date: day.gregorian)
+    }
 }

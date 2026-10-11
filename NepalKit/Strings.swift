@@ -136,6 +136,8 @@ nonisolated enum Strings {
     /// The day popover's actions. Copy takes the Bikram Sambat date as shown.
     static let copyDateLabel = "Copy"
     static let copyDateHelp = "Copies the Bikram Sambat date"
+    static let addToCalendarLabel = "Add to Calendar"
+    static let addToCalendarHelp = "Opens this day as an all-day event in your calendar app"
     static let closeDayDetailsLabel = "Close Day Details" // the details card under the grid
     static let monthGridDayHelp = "Shows this day's details" // a grid day is a button that shows them
     /// A day's festivals as one line; a comma, not a middle dot, so shown and spoken share it.
