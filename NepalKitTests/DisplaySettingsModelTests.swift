@@ -143,6 +143,16 @@ struct DisplaySettingsModelTests {
     @Test func startsFromStoreDefaults() throws {
         #expect(try freshModel().settings == DisplaySettings(digits: .latin, monthNames: .transliterated))
     }
+
+    @Test("The Settings pickers' bindings save through the model")
+    func pickerBindingsSave() throws {
+        let model = try freshModel()
+        model.digits = .devanagari
+        model.monthNames = .nepali
+        #expect(model.digits == .devanagari)
+        #expect(model.monthNames == .nepali)
+        #expect(model.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
+    }
 }
 
 enum RoundTripFixtures {

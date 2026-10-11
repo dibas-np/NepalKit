@@ -231,4 +231,14 @@ struct TodayIntentTests {
         #expect(attested.hasSuffix("2082."))
         #expect(!attested.contains("provisional"))
     }
+
+    @Test("Running the intent answers the real today")
+    func performAnswersFromTheRealClock() async throws {
+        let before = Date()
+        let result = try await TodayInBikramSambatIntent().perform()
+        let after = Date()
+        // Either clock read may straddle Nepal Time midnight, so accept both.
+        let todays = [before, after].map { todayBS(now: $0, in: dataset) }
+        #expect(todays.contains(result.value?.bsDay))
+    }
 }

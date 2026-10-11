@@ -278,4 +278,14 @@ struct ConverterModelTests {
         #expect(model.bsDate.month == 12)
         #expect(model.bsDate.day == model.daysInBSMonth(year: model.bsDate.year, month: 12))
     }
+
+    @Test func theDirectionPickerBindingCarriesTheDateAcross() {
+        let model = bsModel()
+        #expect(model.directionSelection == .bsToAD)
+        model.directionSelection = .adToBS
+        #expect(model.direction == .adToBS)
+        #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
+        model.directionSelection = .adToBS
+        #expect(model.direction == .adToBS)
+    }
 }

@@ -249,4 +249,19 @@ struct ConversionIntentTests {
         let attested = String(localized: BikramSambatToGregorianIntent.successDialog(GADay(year: 2025, month: 6, day: 29), fromProvisionalYear: dataset.isProvisional(2082)))
         #expect(!attested.contains("provisional"))
     }
+
+    @Test("Running the Gregorian intent past the table throws the out-of-range answer")
+    func gregorianPerformOutOfRange() async throws {
+        let calendar = GregorianToBikramSambatIntent.userGregorian()
+        let date = try #require(calendar.date(from: DateComponents(year: 2030, month: 5, day: 12, hour: 12)))
+        let intent = GregorianToBikramSambatIntent()
+        intent.date = date
+        do {
+            _ = try await intent.perform()
+            Issue.record("12 May 2030 should throw: past the supported range")
+        } catch {
+            let expected = GregorianToBikramSambatIntent.outOfRangeDialog(GADay(year: 2030, month: 5, day: 12), in: dataset)
+            #expect(Self.dialog(of: error) == String(localized: expected))
+        }
+    }
 }
