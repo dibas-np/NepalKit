@@ -91,10 +91,16 @@ final class UpdateCheckModel {
     /// started.
     private(set) var lastCheckDate: Date?
 
-    /// Stored so the toggle redraws; every write goes through to the service,
-    /// which persists it.
-    var automaticallyChecks: Bool {
-        didSet { service.automaticallyChecksForUpdates = automaticallyChecks }
+    /// Stored so the toggle redraws, like `lastCheckDate`, and read back from
+    /// the service, which persists it and stays the authority: written only by
+    /// `setAutomaticallyChecks`, and refreshed whenever the date is.
+    private(set) var automaticallyChecks: Bool
+
+    /// The toggle's write: through to the service, then read back, so what
+    /// the toggle shows is what the service kept.
+    func setAutomaticallyChecks(_ enabled: Bool) {
+        service.automaticallyChecksForUpdates = enabled
+        automaticallyChecks = service.automaticallyChecksForUpdates
     }
 
     private let service: any UpdateServicing
@@ -130,6 +136,7 @@ final class UpdateCheckModel {
 
     private func refreshLastCheckDate() {
         lastCheckDate = service.lastCheckDate
+        automaticallyChecks = service.automaticallyChecksForUpdates
     }
 
     /// Called as the framework is about to present a scheduled update.

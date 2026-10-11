@@ -66,27 +66,31 @@ struct CalendarEvent: Equatable {
 
     /// "20261018".
     static func basic(_ day: GADay) -> String {
-        String(format: "%04d%02d%02d", day.year, day.month, day.day)
+        padded(day.year, 4) + padded(day.month, 2) + padded(day.day, 2)
     }
 
     /// "20261011T143000Z".
     static func utcStamp(_ date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        calendar.timeZone = .gmt
         let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
-        return String(
-            format: "%04d%02d%02dT%02d%02d%02dZ",
-            parts.year ?? 0, parts.month ?? 0, parts.day ?? 0,
-            parts.hour ?? 0, parts.minute ?? 0, parts.second ?? 0
-        )
+        return padded(parts.year ?? 0, 4) + padded(parts.month ?? 0, 2) + padded(parts.day ?? 0, 2)
+            + "T" + padded(parts.hour ?? 0, 2) + padded(parts.minute ?? 0, 2) + padded(parts.second ?? 0, 2) + "Z"
+    }
+
+    /// `value` with leading zeros to `width` digits, in ASCII whatever the
+    /// locale: the format's own digits, never a reader's.
+    private static func padded(_ value: Int, _ width: Int) -> String {
+        let digits = String(value)
+        return String(repeating: "0", count: max(0, width - digits.count)) + digits
     }
 
     /// RFC 5545 TEXT escaping: backslash, semicolon, comma and newline.
     static func escape(_ text: String) -> String {
-        text.replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: ";", with: "\\;")
-            .replacingOccurrences(of: ",", with: "\\,")
-            .replacingOccurrences(of: "\n", with: "\\n")
+        text.replacing("\\", with: "\\\\")
+            .replacing(";", with: "\\;")
+            .replacing(",", with: "\\,")
+            .replacing("\n", with: "\\n")
     }
 
     /// Folds a content line at 75 octets, never inside a character: the

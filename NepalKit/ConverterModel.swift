@@ -112,17 +112,13 @@ final class ConverterModel {
     /// supported range, else the range's first or last day. Nil only if the
     /// dataset cannot convert its own first day.
     private static func convertibleDay(nearest day: GADay, in dataset: CalendarDataset) -> GADay? {
-        guard let first = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset),
-              let last = dataset.gregorianEnd
-        else { return nil }
+        guard let first = dataset.gregorianStart, let last = dataset.gregorianEnd else { return nil }
         return min(max(day, first), last)
     }
 
     var bsYears: [Int] { Array(dataset.supportedRange) }
 
-    var minAD: GADay? {
-        bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset)
-    }
+    var minAD: GADay? { dataset.gregorianStart }
 
     var maxAD: GADay? {
         dataset.gregorianEnd

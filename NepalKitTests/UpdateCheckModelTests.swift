@@ -150,11 +150,11 @@ struct UpdateCheckModelTests {
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
-        model.automaticallyChecks = false
+        model.setAutomaticallyChecks(false)
         #expect(model.automaticallyChecks == false)
         #expect(service.automaticallyChecksForUpdates == false)
 
-        model.automaticallyChecks = true
+        model.setAutomaticallyChecks(true)
         #expect(service.automaticallyChecksForUpdates == true)
         #expect(service.automaticWrites == 2)
     }
@@ -379,5 +379,15 @@ struct UpdateCheckModelTests {
             .map { String($0.standardizedFileURL.path.dropFirst(prefix.count)) }
             .filter { $0.hasSuffix(".swift") && !$0.split(separator: "/").contains { $0 == "Assets.xcassets" } }
             .sorted()
+    }
+
+    @Test func automaticChecksFollowTheServiceWhenItChangesElsewhere() {
+        // Sparkle can change the setting itself (its first-launch prompt);
+        // the model reads it back rather than keeping a copy that drifts.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+        service.automaticallyChecksForUpdates = false
+        model.checkNow()
+        #expect(model.automaticallyChecks == false)
     }
 }
