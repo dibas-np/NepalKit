@@ -362,7 +362,7 @@
   "version_tags_status": "Met",
   "version_tags_justification": "Every release is a v* tag on main.",
   "version_tags_signed_status": "Met",
-  "version_tags_signed_justification": "Release tags are signed with the same SSH key the commits use. release-tag.yml documents `git tag -s` plus `gh release create --verify-tag`, and the flag is load-bearing: without it gh creates a lightweight tag, which carries no signature. docs/release-verification.md step 2 verifies a tag with `git tag -v`. Tags before v1.6.1 are lightweight and unsigned - `git cat-file -t v1.6.0` answers commit, not tag - which the document states rather than glossing.",
+  "version_tags_signed_justification": "Release tags are to be signed with the same SSH key the commits use. release-tag.yml documents `git tag -s` plus `gh release create --verify-tag`, and the flag is load-bearing: without it gh creates a lightweight tag, which carries no signature. docs/release-verification.md step 2 verifies a tag with `git tag -v`. No published tag is signed yet: the eight release tags that exist are lightweight - `git cat-file -t v1.6.0` answers commit, not tag - which the document states rather than glossing. The first signed tag will be the next release's.",
   "version_unique_status": "Met",
   "version_unique_justification": "The preflight refuses any tag that does not match the app's MARKETING_VERSION.",
   "vulnerabilities_critical_fixed_status": "Unmet",
