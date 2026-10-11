@@ -30,6 +30,16 @@ import subprocess
 import sys
 from pathlib import Path
 
+# --- On the NOSONAR markers in this file --------------------------------------
+# SonarCloud flags the four opens of a path that arrives as a CLI argument
+# ("path injection"). The reasoning is the one recorded at length in
+# scripts/verify-appcast.py and is unchanged here: package-release.sh runs this
+# against the exported app inside a private `mktemp -d` workspace outside the
+# repository, so confining the paths to a base directory would fail every real
+# release, to defend against a caller that already holds the filesystem access
+# the check would take away. Each marker sits on a line whose only content is
+# the flagged call, because NOSONAR is line-scoped and rule-blind.
+
 FEED_PREFIX = "https://dibas-np.github.io/NepalKit/"
 SPARKLE_FRAMEWORK_PLIST = "Contents/Frameworks/Sparkle.framework/Resources/Info.plist"
 
@@ -57,7 +67,7 @@ def _expand(value, bundle_id):
 
 def check_entitlements(app, info, entitlements_path, run):
     bundle_id = info.get("CFBundleIdentifier", "")
-    with open(entitlements_path, "rb") as fh:
+    with open(entitlements_path, "rb") as fh:  # NOSONAR
         expected = {k: _expand(v, bundle_id) for k, v in plistlib.load(fh).items()}
     try:
         actual = signed_entitlements(app, run)
@@ -111,7 +121,7 @@ def check_sparkle_version(app, pbxproj_text):
         results.append(("FAIL", f"Sparkle pin kind is {block['kind']}, expected exactVersion"))
     plist_path = app / SPARKLE_FRAMEWORK_PLIST
     try:
-        with open(plist_path, "rb") as fh:
+        with open(plist_path, "rb") as fh:  # NOSONAR
             embedded = plistlib.load(fh).get("CFBundleShortVersionString")
     except OSError as exc:
         return results + [("FAIL", f"embedded Sparkle framework plist unreadable: {exc}")]
@@ -124,12 +134,13 @@ def check_sparkle_version(app, pbxproj_text):
 
 def verify(app, project, entitlements, run=subprocess.run):
     app = Path(app)
-    with open(app / "Contents/Info.plist", "rb") as fh:
+    with open(app / "Contents/Info.plist", "rb") as fh:  # NOSONAR
         info = plistlib.load(fh)
     results = []
     results += check_entitlements(app, info, entitlements, run)
     results += check_sparkle_keys(info)
-    results += check_sparkle_version(app, Path(project).read_text())
+    project_text = Path(project).read_text()  # NOSONAR
+    results += check_sparkle_version(app, project_text)
     return results
 
 
