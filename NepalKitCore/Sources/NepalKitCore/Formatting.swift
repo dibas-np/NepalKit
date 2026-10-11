@@ -118,6 +118,17 @@ public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
     }
 }
 
+/// Short weekday name for 1 (Sunday) through 7 (Saturday), or nil outside
+/// 1–7. English names are cut to three letters ("Mon"); the Nepali names are
+/// already short forms, so they are returned whole.
+public func shortWeekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
+    guard let name = weekdayName(for: weekday, style: style) else { return nil }
+    switch style {
+    case .nepali: return name
+    case .transliterated: return String(name.prefix(3))
+    }
+}
+
 /// Formats a Bikram Sambat date as "day month year" honoring both display settings.
 public func formatBS(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
@@ -153,17 +164,17 @@ public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
     "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthName(ad.month)) \(formatNumber(ad.year, digits: settings.digits))"
 }
 
-private func twoDigits(_ value: Int, digits: DigitScript) -> String {
+func twoDigits(_ value: Int, digits: DigitScript) -> String {
     let padded = value < 10 ? "0\(value)" : String(value)
     return digits.render(latinDigits: padded)
 }
 
-/// `formatClock`'s calendars, one per time zone. Building a `Calendar` per call
-/// dominated the cost of formatting, and `formatClock` runs at clock-tick
-/// frequency. The zones a process formats are few, so entries never evict.
-/// Lock-guarded because the function is nonisolated and callers may not all be
-/// on one thread.
-private enum ClockCalendars {
+/// `formatClock`'s and `formatClockTime`'s calendars, one per time zone.
+/// Building a `Calendar` per call dominated the cost of formatting, and both
+/// run at clock-tick frequency. The zones a process formats are few, so entries
+/// never evict. Lock-guarded because the functions are nonisolated and callers
+/// may not all be on one thread.
+enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
 

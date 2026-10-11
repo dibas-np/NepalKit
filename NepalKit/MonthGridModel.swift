@@ -322,12 +322,10 @@ final class MonthGridModel {
         column + 1 == MonthGridDay.weeklyHolidayWeekday
     }
 
+    /// The menu bar's weekday uses the same short forms, so the cut lives in
+    /// core (`shortWeekdayName(for:style:)`) rather than here.
     static func shortWeekdayName(_ weekday: Int, style: MonthNameStyle) -> String {
-        guard let name = weekdayName(for: weekday, style: style) else { return "" }
-        switch style {
-        case .nepali: return name
-        case .transliterated: return String(name.prefix(3))
-        }
+        NepalKitCore.shortWeekdayName(for: weekday, style: style) ?? ""
     }
 
     /// The cell's large Bikram Sambat day number.
