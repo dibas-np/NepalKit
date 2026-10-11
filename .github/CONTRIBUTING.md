@@ -81,7 +81,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these fifteen, in this order:
+It runs these sixteen, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -100,13 +100,14 @@ python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
 python3 scripts/test_verify_release_product.py  # 10. the release product verifier
 python3 scripts/test_verify_bestpractices_json.py  # 11. the badge entry's own checks
 python3 scripts/verify-bestpractices-json.py # 12. the badge entry is well-formed
-python3 scripts/measure-coverage.py    # 13. coverage has not fallen below its floor
+python3 scripts/test_measure_coverage.py    # 13. the coverage parser's own checks
+python3 scripts/measure-coverage.py    # 14. coverage has not fallen below its floor
 python3 scripts/test_verify_deployment_floor.py
-python3 scripts/verify-deployment-floor.py  # 14. the floor is one number everywhere
+python3 scripts/verify-deployment-floor.py  # 15. the floor is one number everywhere
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 15. the Watch app and its complications
+    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -116,7 +117,7 @@ guards a failure that is invisible from the outside — a bundle registered unde
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice. Gate 14 runs the floor verifier's own suite before the verifier,
+practice. Gate 15 runs the floor verifier's own suite before the verifier,
 because `scripts/test_verify_deployment_floor.py` is run by no other gate
 here. CI runs both commands too: `.github/workflows/macos26-floor.yml` runs
 them on every pull request after its Mac build, so the checker compares the
@@ -133,7 +134,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those fifteen are the direct consequence of gates that once reported green
+Two of those sixteen are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -162,7 +163,7 @@ packaged artifacts and the published feed rather than over a checkout.
 Two `verify-*` scripts are in the list, and the exceptions are worth naming so
 the rule above does not read as broader than it is:
 `scripts/verify-bestpractices-json.py` is gate 12 because it needs nothing but the
-committed entry file, and `scripts/verify-deployment-floor.py` is gate 14 because
+committed entry file, and `scripts/verify-deployment-floor.py` is gate 15 because
 it needs only the built product. A structural check that only runs when someone
 remembers to run it is not a gate. Everything that needs the network, a
 credential, or a built artifact stays out.
@@ -173,10 +174,10 @@ is the failure mode this ladder exists to prevent. That claim was aspirational
 until that workflow existed: the two gates ran only when a human ran this
 script. Two further gates are deliberately local-only and say so in the same
 workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
-runner does not have, and the coverage floor (gate 13) needs the macOS
+runner does not have, and the coverage floor (gate 14) needs the macOS
 toolchain and about six minutes. Every other gate here runs in CI, in the
 workflow that owns it. This command is the local half and not a replacement:
-it is the only thing that runs all fifteen in one pass.
+it is the only thing that runs all sixteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
 the application.
@@ -244,7 +245,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 15 below and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 16 below and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
@@ -260,7 +261,7 @@ commands:
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** It is the same
-  fifteen gates CI runs, and a red local run is a faster red than a red one after
+  sixteen gates CI runs, and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome
