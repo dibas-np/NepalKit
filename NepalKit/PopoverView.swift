@@ -90,7 +90,13 @@ struct PopoverView: View {
                         // The month sits with today's date rather than behind a
                         // tab of its own: reading the date and seeing where it
                         // falls in the month are one glance, not two.
-                        MonthGridView(model: monthGrid, settings: settings.settings, clock: clock)
+                        MonthGridView(
+                            model: monthGrid, settings: settings.settings, clock: clock,
+                            openInConverter: { day in
+                                converter.show(bikramSambat: day)
+                                destination = .convert
+                            }
+                        )
                         ClocksSection(clock: clock, settings: settings.settings)
                     }
                 case .convert:

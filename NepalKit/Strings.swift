@@ -120,6 +120,27 @@ nonisolated enum Strings {
     static let showTodayHelp = "Shows the month containing today"
     /// Names the weekday header and the grid for VoiceOver.
     static let monthGridDaysLabel = "Days"
+    /// The day popover's distance from today. Today reuses `todayLabel`.
+    static let tomorrowLabel = "Tomorrow"
+    static let yesterdayLabel = "Yesterday"
+    /// "In 5 days", "3 days ago". The count honours the digit setting on
+    /// screen; the spoken channel passes `.latin`.
+    static func relativeDays(_ days: Int, digits: DigitScript) -> String {
+        switch days {
+        case 0: todayLabel
+        case 1: tomorrowLabel
+        case -1: yesterdayLabel
+        case 2...: "In \(formatNumber(days, digits: digits)) days"
+        default: "\(formatNumber(-days, digits: digits)) days ago"
+        }
+    }
+    /// The day popover's actions. Copy takes the Bikram Sambat date as shown.
+    static let copyDateLabel = "Copy"
+    static let copyDateHelp = "Copies the Bikram Sambat date"
+    static let openInConverterLabel = "Open in Converter"
+    static let openInConverterHelp = "Shows this date in the converter"
+    /// Hint on a grid day, which is a button that opens its popover.
+    static let monthGridDayHelp = "Shows this day's details"
     /// Range boundary state on the month grid: today is past the supported
     /// range, so the grid shows the last supported month instead.
     static func monthGridPastRange(_ bsYear: Int, digits: DigitScript) -> String {

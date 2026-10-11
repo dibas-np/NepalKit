@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
-import Foundation
+import AppKit
 import Observation
 import NepalKitCore
 
@@ -45,6 +45,23 @@ struct MonthGridDay: Hashable {
     var isWeeklyHoliday: Bool { weekday == Self.weeklyHolidayWeekday }
 }
 
+/// What the popover opened from a day shows, on both channels. Built by the
+/// model so the view only lays it out, and so the shown and spoken halves come
+/// from one date and cannot describe different days.
+struct MonthGridDayDetail: Hashable {
+    /// The full Bikram Sambat date as configured; also what Copy puts on the
+    /// pasteboard, so what is copied is exactly what was read.
+    let bikramSambat: String
+    /// The full Gregorian date with its weekday.
+    let gregorian: String
+    /// How far the day is from today: "Today", "In 5 days". Nil only if
+    /// today's Gregorian day could not be read.
+    let relative: String?
+    let spokenBikramSambat: String
+    let spokenGregorian: String
+    let spokenRelative: String?
+}
+
 /// Owns the month grid's state: which Bikram Sambat month is shown, the bounded
 /// navigation through the supported range, and the grid of weeks.
 ///
@@ -63,6 +80,11 @@ final class MonthGridModel {
     /// Today in Nepal Time as a Bikram Sambat date, or nil past the supported range.
     private(set) var today: BSDay?
 
+    /// Today's Nepal Time Gregorian day, which a day's distance from today is
+    /// counted from. Kept beside `today` because it survives the range
+    /// boundary, where the Bikram Sambat side does not.
+    private(set) var todayGregorian: GADay?
+
     /// True when today's Nepal Time date is later than the last day the dataset
     /// covers. The range boundary state: today's month cannot be shown, so the
     /// grid opens on the last supported month and the view says why.
@@ -76,6 +98,7 @@ final class MonthGridModel {
         self.dataset = dataset
         let state = Self.todayState(now: now, in: dataset)
         self.today = state.today
+        self.todayGregorian = state.todayAD
         self.isTodayPastSupportedRange = state.isPastRange
         self.shown = Self.month(containing: state.today, in: dataset, pastRange: state.isPastRange)
     }
@@ -114,16 +137,26 @@ final class MonthGridModel {
     func refreshToday(now: Date) {
         let state = Self.todayState(now: now, in: dataset)
         if today != state.today { today = state.today }
+        if todayGregorian != state.todayAD { todayGregorian = state.todayAD }
         if isTodayPastSupportedRange != state.isPastRange { isTodayPastSupportedRange = state.isPastRange }
     }
 
-    private static func todayState(now: Date, in dataset: CalendarDataset) -> (today: BSDay?, isPastRange: Bool) {
+    /// Today as the model reads it, in one value so `init` and
+    /// `refreshToday` cannot read it two different ways.
+    private struct TodayState {
+        let today: BSDay?
+        let todayAD: GADay?
+        let isPastRange: Bool
+    }
+
+    private static func todayState(now: Date, in dataset: CalendarDataset) -> TodayState {
         let today = todayBS(now: now, in: dataset)
+        let todayGregorian = todayAD(now: now)
         var isPastRange = false
-        if today == nil, let todayAD = todayAD(now: now), let end = dataset.gregorianEnd {
-            isPastRange = todayAD > end
+        if today == nil, let todayGregorian, let end = dataset.gregorianEnd {
+            isPastRange = todayGregorian > end
         }
-        return (today, isPastRange)
+        return TodayState(today: today, todayAD: todayGregorian, isPastRange: isPastRange)
     }
 
     /// Today's month, else the supported range's last month past it, else its
@@ -289,6 +322,41 @@ final class MonthGridModel {
             SpokenDate.ad(day.gregorian),
         ]
         return parts.compactMap { $0 }.joined(separator: ", ")
+    }
+
+    // MARK: - Day detail
+
+    /// Whole civil days from today to `day`: 0 for today, negative before it.
+    /// Nil only if today's Gregorian day is unknown.
+    func daysFromToday(_ day: MonthGridDay) -> Int? {
+        // Both instants are noon UTC on their civil day, so their difference is
+        // an exact multiple of a day; rounding only absorbs floating point.
+        guard let todayGregorian, let from = noonUTC(for: todayGregorian), let to = noonUTC(for: day.gregorian)
+        else { return nil }
+        return Int((to.timeIntervalSince(from) / 86_400).rounded())
+    }
+
+    /// The popover's content for a day, shown as configured and spoken with
+    /// Latin digits (`SpokenDate`'s rule).
+    func detail(for day: MonthGridDay, settings: DisplaySettings) -> MonthGridDayDetail {
+        let weekday = weekdayName(for: day.weekday, style: settings.monthNames)
+        let gregorian = formatAD(day.gregorian, settings: settings)
+        let distance = daysFromToday(day)
+        return MonthGridDayDetail(
+            bikramSambat: formatBS(day.bikramSambat, settings: settings),
+            gregorian: weekday.map { Strings.datedWithWeekday(gregorian, $0) } ?? gregorian,
+            relative: distance.map { Strings.relativeDays($0, digits: settings.digits) },
+            spokenBikramSambat: SpokenDate.bs(day.bikramSambat, monthNames: settings.monthNames),
+            spokenGregorian: SpokenDate.gregorianAnnouncement(date: day.gregorian, weekday: weekday),
+            spokenRelative: distance.map { Strings.relativeDays($0, digits: .latin) }
+        )
+    }
+
+    /// Copy: the Bikram Sambat date exactly as the popover shows it. The
+    /// pasteboard is a parameter so a test can use a private one.
+    func copy(_ detail: MonthGridDayDetail, to pasteboard: NSPasteboard = .general) {
+        pasteboard.clearContents()
+        pasteboard.setString(detail.bikramSambat, forType: .string)
     }
 
     /// Last supported Bikram Sambat year, named in the range boundary state.
