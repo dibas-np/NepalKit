@@ -111,6 +111,21 @@ nonisolated enum Strings {
     /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
     /// year: the result line above already shows it.
     static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
+    /// The popover's third destination: one Bikram Sambat month as a grid.
+    static let monthGridLabel = "Month"
+    /// The month grid's navigation. Previous and next are drawn as chevrons
+    /// alone, so these are their announced names.
+    static let previousMonthLabel = "Previous Month"
+    static let nextMonthLabel = "Next Month"
+    /// Returns the grid to today's month. The visible title is `todayLabel`.
+    static let showTodayHelp = "Shows the month containing today"
+    /// Names the weekday header and the grid for VoiceOver.
+    static let monthGridDaysLabel = "Days"
+    /// Range boundary state on the month grid: today is past the supported
+    /// range, so the grid shows the last supported month instead.
+    static func monthGridPastRange(_ bsYear: Int, digits: DigitScript) -> String {
+        "Today is past the supported range. \(supportedThrough(bsYear, digits: digits))."
+    }
     /// The menu command's title, in the app menu. Apple's convention there is the
     /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"

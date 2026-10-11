@@ -4,7 +4,7 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// Which of the popover's two destinations is showing.
+/// Which of the popover's three destinations is showing.
 ///
 /// Today and Convert are peers, so they are named as a segmented control rather
 /// than as one screen with a section stapled to the bottom. The alternative made
@@ -14,11 +14,13 @@ import NepalKitCore
 enum PopoverDestination: String, CaseIterable {
     case today
     case convert
+    case month
 
     var title: String {
         switch self {
         case .today: Strings.todayLabel
         case .convert: Strings.converterLabel
+        case .month: Strings.monthGridLabel
         }
     }
 }
@@ -37,6 +39,7 @@ struct PopoverView: View {
     let settings: DisplaySettingsModel
     let clock: ClockModel
     let converter: ConverterModel
+    let monthGrid: MonthGridModel
     /// Settings open through SwiftUI's own action rather than a hand-built
     /// window; the activation half is `WindowPresentation`'s (ADR-0011).
     @Environment(\.openSettings) private var openSettings
@@ -90,6 +93,8 @@ struct PopoverView: View {
                     }
                 case .convert:
                     ConverterView(model: converter, settings: settings.settings)
+                case .month:
+                    MonthGridView(model: monthGrid, settings: settings.settings)
                 }
             }
             .animation(.default, value: destination)
@@ -123,6 +128,7 @@ struct PopoverView: View {
         // Keep the preview clock fixed when the visibility task starts.
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
+        monthGrid: MonthGridModel(now: AppData.previewInstant),
         dataset: AppData.dataset,
         // The resting state: no update, so no update button in the footer.
         updates: UpdateCheckModel(service: PreviewUpdateService())
@@ -138,6 +144,7 @@ struct PopoverView: View {
         settings: .preview,
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
+        monthGrid: MonthGridModel(now: AppData.previewInstant),
         dataset: AppData.dataset,
         updates: UpdateCheckModel(service: PreviewUpdateService(reporting: .updateAvailable))
     )

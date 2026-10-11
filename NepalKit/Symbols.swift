@@ -55,7 +55,19 @@ enum Symbols {
     /// offer. Not `square.and.arrow.down`, which reads as saving a file to disk.
     static let update = "arrow.down.circle"
 
+    /// The month grid's "Today" button, which returns to today's month. The
+    /// calendar page is the grid itself, so the glyph says "back to where today
+    /// is in the calendar" and reads with the word beside it.
+    static let monthGridToday = "calendar"
+
+    /// The month grid's previous and next buttons: the conventional paging
+    /// chevrons, drawn without text because their direction is the meaning. The
+    /// titles stay on the buttons for VoiceOver.
+    static let previousMonth = "chevron.left"
+    static let nextMonth = "chevron.right"
+
     static let all: [String] = [
-        launchAtLogin, settings, about, menuBar, general, repository, update
+        launchAtLogin, settings, about, menuBar, general, repository, update,
+        monthGridToday, previousMonth, nextMonth
     ]
 }

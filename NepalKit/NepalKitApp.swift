@@ -11,6 +11,7 @@ struct NepalKitApp: App {
     @State private var menuBarModel = MenuBarModel()
     @State private var clockModel = ClockModel()
     @State private var converterModel = ConverterModel()
+    @State private var monthGridModel = MonthGridModel()
     /// No default initializer: the default-on registration below must run
     /// before the model is ever read, and a property initializer would run
     /// first, constructing a second model that is immediately discarded.
@@ -55,6 +56,7 @@ struct NepalKitApp: App {
                 settings: settingsModel,
                 clock: clockModel,
                 converter: converterModel,
+                monthGrid: monthGridModel,
                 dataset: AppData.dataset,
                 // The same instance Settings reads, so an update found while the
                 // popover is open puts the footer's button on screen immediately.
