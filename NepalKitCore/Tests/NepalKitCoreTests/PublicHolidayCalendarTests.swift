@@ -150,4 +150,34 @@ struct PublicHolidayCalendarTests {
         }
         #expect(missing.isEmpty, "\(missing)")
     }
+
+    @Test func aHolidayWithNoFestivalIsNamedByTheGazette() {
+        let holidays = PublicHolidayCalendar.gazette
+        let festivals = FestivalCalendar.panchanga
+        // Kartik 2, 5 and 6 are Dashain holidays with no festival of their own;
+        // Kartik 26 is the last day of the Tihar holiday.
+        for day in [2, 5, 6] {
+            let named = holidays.observances(on: BSDay(year: 2083, month: 7, day: day), festivals: festivals)
+            #expect(named.map(\.nepali) == ["दशैं बिदा"])
+            #expect(named.first?.english == "Dashain holiday")
+            #expect(named.first?.source == .gazette)
+        }
+        let tihar = holidays.observances(on: BSDay(year: 2083, month: 7, day: 26), festivals: festivals)
+        #expect(tihar.map(\.english) == ["Tihar holiday"])
+    }
+
+    @Test func aDayWithFestivalsKeepsThem() {
+        // Kartik 4, Vijaya Dashami: the festival names the day, not "Dashain holiday".
+        let day = BSDay(year: 2083, month: 7, day: 4)
+        let named = PublicHolidayCalendar.gazette.observances(on: day, festivals: .panchanga)
+        #expect(named == FestivalCalendar.panchanga.festivals(on: day))
+        #expect(!named.contains { $0.source == .gazette && $0.english == "Dashain holiday" })
+    }
+
+    @Test func everyNationwideHolidayHasAName() {
+        let holidays = PublicHolidayCalendar.gazette
+        for (day, rows) in holidays.allEntries where rows.contains(where: { $0.scope == .nationwide }) {
+            #expect(!holidays.observances(on: day, festivals: .panchanga).isEmpty, "\(day) is red with no name")
+        }
+    }
 }

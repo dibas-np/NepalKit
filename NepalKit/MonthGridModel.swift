@@ -239,7 +239,7 @@ final class MonthGridModel {
             return MonthGridDay(
                 bikramSambat: bs, gregorian: ad, weekday: index % 7 + 1,
                 isToday: inShownMonth && bs == today, isInShownMonth: inShownMonth,
-                festivals: festivalCalendar.festivals(on: bs), holidayScopes: holidayCalendar.scopes(on: bs)
+                festivals: holidayCalendar.observances(on: bs, festivals: festivalCalendar), holidayScopes: holidayCalendar.scopes(on: bs)
             )
         }
         return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0 ..< $0 + 7]) }

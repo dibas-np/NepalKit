@@ -30,9 +30,14 @@ struct MonthGridFestivalTests {
         let dashami = try shownDay(model, 4)
         #expect(dashami.festivals.map(\.english) == ["Vijaya Dashami (Dashain Tika)"])
         #expect(dashami.showsFestivalMark)
-        let plain = try shownDay(model, 2)
+        // 9 Kartik: no festival and no holiday. (2 Kartik is a Dashain holiday,
+        // named by the gazette, so it carries the mark.)
+        let plain = try shownDay(model, 9)
         #expect(plain.festivals.isEmpty)
         #expect(!plain.showsFestivalMark)
+        let dashainHoliday = try shownDay(model, 2)
+        #expect(dashainHoliday.festivals.map(\.english) == ["Dashain holiday"])
+        #expect(dashainHoliday.showsFestivalMark)
     }
 
     @Test func aNeighbouringMonthsFestivalIsNotMarked() throws {
@@ -79,7 +84,7 @@ struct MonthGridFestivalTests {
         #expect(english.festivals == ["Govardhan Puja", "Mha Puja", "Nepal Sambat New Year 1147"])
         #expect(english.spokenFestivals == english.festivals)
 
-        let plain = model.detail(for: try shownDay(model, 2), settings: latin)
+        let plain = model.detail(for: try shownDay(model, 9), settings: latin)
         #expect(plain.festivals.isEmpty && plain.spokenFestivals.isEmpty)
     }
 

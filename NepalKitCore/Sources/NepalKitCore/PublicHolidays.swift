@@ -29,10 +29,15 @@ public struct PublicHoliday: Hashable, Sendable {
     public let scope: Scope
     /// The gazette's own wording, in Devanagari.
     public let nepali: String
+    /// An English name, only where the holiday is shown by name: the days of
+    /// a holiday range (Dashain, Tihar) that have no festival of their own.
+    /// Elsewhere the day's festivals name it and this is nil.
+    public let english: String?
 
-    public init(scope: Scope, nepali: String) {
+    public init(scope: Scope, nepali: String, english: String? = nil) {
         self.scope = scope
         self.nepali = nepali
+        self.english = english
     }
 }
 
@@ -67,6 +72,19 @@ public struct PublicHolidayCalendar: Sendable {
     /// a community, region or group.
     public func isNationwideHoliday(_ day: BSDay) -> Bool {
         holidays(on: day).contains { $0.scope == .nationwide }
+    }
+
+    /// What to name `day` by: its festivals, or, on a holiday that has none
+    /// (the middle days of Dashain, the last of Tihar), the gazette's name for
+    /// the holiday, so a red day is never an unnamed one.
+    public func observances(on day: BSDay, festivals: FestivalCalendar) -> [Festival] {
+        let own = festivals.festivals(on: day)
+        guard own.isEmpty else { return own }
+        var seen: Set<String> = []
+        return holidays(on: day).compactMap { holiday in
+            guard let english = holiday.english, seen.insert(holiday.nepali).inserted else { return nil }
+            return Festival(nepali: holiday.nepali, english: english, source: .gazette)
+        }
     }
 
     /// Every entry, for checks that sweep the table.

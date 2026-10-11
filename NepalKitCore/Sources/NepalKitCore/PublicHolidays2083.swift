@@ -54,41 +54,41 @@ let publicHolidays2083: [BSDay: [PublicHoliday]] = [
         PublicHoliday(scope: .nationwide, nepali: "घटस्थापना"), // 2.1(ङ)
     ],
     BSDay(year: 2083, month: 6, day: 31): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 1): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 2): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 3): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 4): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 5): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 6): [
-        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा"), // 2.1(च)
+        PublicHoliday(scope: .nationwide, nepali: "दशैं बिदा", english: "Dashain holiday"), // 2.1(च)
     ],
     BSDay(year: 2083, month: 7, day: 22): [
-        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा"), // 2.1(छ)
+        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा", english: "Tihar holiday"), // 2.1(छ)
     ],
     BSDay(year: 2083, month: 7, day: 23): [
-        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा"), // 2.1(छ)
+        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा", english: "Tihar holiday"), // 2.1(छ)
     ],
     BSDay(year: 2083, month: 7, day: 24): [
-        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा"), // 2.1(छ)
+        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा", english: "Tihar holiday"), // 2.1(छ)
     ],
     BSDay(year: 2083, month: 7, day: 25): [
-        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा"), // 2.1(छ)
+        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा", english: "Tihar holiday"), // 2.1(छ)
         PublicHoliday(scope: .kiratCommunity, nepali: "फाल्गुनन्द जयन्ती"), // 7.2(क)
     ],
     BSDay(year: 2083, month: 7, day: 26): [
-        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा"), // 2.1(छ)
+        PublicHoliday(scope: .nationwide, nepali: "तिहार बिदा", english: "Tihar holiday"), // 2.1(छ)
     ],
     BSDay(year: 2083, month: 7, day: 29): [
         PublicHoliday(scope: .nationwide, nepali: "छठ पर्व"), // 2.1(ज)

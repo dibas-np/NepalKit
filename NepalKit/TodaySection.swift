@@ -11,7 +11,7 @@ struct TodayObservances {
     let isPublicHoliday: Bool
 
     init(_ day: BSDay, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
-        self.festivals = festivals.festivals(on: day)
+        self.festivals = holidays.observances(on: day, festivals: festivals)
         self.isPublicHoliday = holidays.isNationwideHoliday(day)
     }
 

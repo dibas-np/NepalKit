@@ -25,12 +25,13 @@ struct MonthGridHolidayTests {
 
     @Test func aNationwideHolidayIsRedWhateverItsWeekday() throws {
         let model = try kartik2083()
-        // 2 Kartik: a Monday of Dashain, with no festival of its own.
+        // 2 Kartik: a Monday of Dashain with no festival of its own, so the
+        // gazette's "Dashain holiday" names it and it carries the mark too.
         let day = try shownDay(model, 2)
         #expect(day.weekday == 2)
         #expect(day.holidayScopes == [.nationwide])
         #expect(day.isNationwideHoliday && day.isMarkedAsHoliday)
-        #expect(!day.showsFestivalMark)
+        #expect(day.showsFestivalMark)
         // 4 Kartik keeps its festival mark as well as turning red.
         let dashami = try shownDay(model, 4)
         #expect(dashami.isMarkedAsHoliday && dashami.showsFestivalMark)
@@ -75,7 +76,7 @@ struct MonthGridHolidayTests {
         #expect(model.spokenLabel(for: day, settings: devanagari) == "25 कात्तिक 2083, बुध, 11 November 2026, "
             + "भाइटीका, फाल्गुनन्दजयन्ती, सार्वजनिक बिदा, किराँत धर्मावलम्बीका लागि बिदा")
         #expect(model.spokenLabel(for: try shownDay(model, 2), settings: latin)
-            == "2 Kartik 2083, Monday, 19 October 2026, public holiday")
+            == "2 Kartik 2083, Monday, 19 October 2026, Dashain holiday, public holiday")
     }
 
     @Test func theDetailsHaveOneLinePerScope() throws {
@@ -142,8 +143,10 @@ struct MonthGridHolidayTests {
 
     @Test func todaysObservancesReadBothTables() {
         let dashainMonday = TodayObservances(BSDay(year: 2083, month: 7, day: 2), festivals: .panchanga, holidays: .gazette)
-        #expect(dashainMonday.festivals.isEmpty && dashainMonday.isPublicHoliday)
-        #expect(dashainMonday.line(monthNames: .transliterated) == "Public holiday")
+        // A Dashain holiday with no festival of its own is named by the gazette.
+        #expect(dashainMonday.festivals.map(\.english) == ["Dashain holiday"] && dashainMonday.isPublicHoliday)
+        #expect(dashainMonday.line(monthNames: .transliterated) == "Dashain holiday, Public holiday")
+        #expect(dashainMonday.line(monthNames: .nepali) == "दशैं बिदा, सार्वजनिक बिदा")
         let tika = TodayObservances(BSDay(year: 2083, month: 7, day: 4), festivals: .panchanga, holidays: .gazette)
         #expect(tika.line(monthNames: .nepali) == "विजयादशमी, सार्वजनिक बिदा")
         // Indra Jatra is a holiday only in the valley: named, not called one.
