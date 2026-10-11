@@ -38,7 +38,32 @@ match askbuddie exactly.
 | 1993 | Ashar, Shrawan | 31, 32 | 32, 31 | Dharan converter checked on 3 October 2026; boundaries below |
 | 2004 | Poush, Magh | 29, 30 | 30, 29 | Retained decision; previous arbitration rationale was not recoverable |
 | 2082 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Existing fixture: Magh 20 maps to 3 February 2026, attributed to Nepali Patro converter |
-| 2083 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Existing KMC grid check: Ashwin has 31 days |
+| 2083 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Official 2083 Panchanga, all twelve months (below); earlier KMC grid check: Ashwin has 31 days |
+
+### Official Panchanga check for 2083
+
+The government's national Panchanga for 2083 BS, published by the Nepal
+Panchanga Nirnayak Samiti under the Ministry of Culture, Tourism and Civil
+Aviation, confirms every 2083 month length. That includes the four corrected
+months above.
+
+- Page: [npns.gov.np, Panchanga of the year 2083](https://npns.gov.np/pages/panchanga-of-the-year-2083-5/).
+- File read: [`FORMAT-2083-A_7f75xmb.pdf`](https://giwmscdnone.gov.np/media/pages/files/FORMAT-2083-A_7f75xmb.pdf),
+  27 pages, image only (no text layer), SHA-256
+  `e7615a149018edd41e6239f7d0ed0c513f94e0566277dca7af41347c62713bde`.
+- Read by eye on 11 October 2026 from the day (गते) and weekday (वार) columns
+  at each month boundary on pages 3-27. No data was copied into NepalKit.
+
+| 2083 month | Baisakh | Jestha | Ashar | Shrawan | Bhadra | Ashwin | Kartik | Mangsir | Poush | Magh | Falgun | Chaitra |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Panchanga | 31 | 31 | 32 | 31 | 31 | 31 | 30 | 29 | 30 | 29 | 30 | 30 |
+| NepalKit | 31 | 31 | 32 | 31 | 31 | 31 | 30 | 29 | 30 | 29 | 30 | 30 |
+
+The weekdays agree with the Gregorian anchor. The Panchanga gives 1 Baisakh
+2083 as a Tuesday (14 April 2026), 1 Kartik as a Sunday (18 October 2026, the
+Gregorian date it also prints) and 1 Baisakh 2084 as a Wednesday (14 April 2027).
+This is the first source for 2083 that is both official and recorded. The 2084
+row stays a projection until the 2084 Panchanga is published.
 
 The 2082 and 2083 descriptions preserve earlier evidence; those sources were
 not freshly checked during this cleanup. A maintainer-supplied claim of
