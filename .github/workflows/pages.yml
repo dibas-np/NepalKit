@@ -1,4 +1,5 @@
-# Publish the Sparkle appcast as the update feed.
+# Publish the Sparkle appcast as the update feed, alongside the landing page
+# in site/ (with the README screenshots from docs/img).
 #
 # The feed is what every install polls for updates, so it is verified here
 # rather than deployed on trust. Verification uses the public key committed to
@@ -14,9 +15,12 @@ name: publish appcast
 
 on:
   push:
-    # Only when a feed actually changes. A README fix must not redeploy.
+    # Only when the feed or the landing page changes. A README fix must not
+    # redeploy. A site change redeploys the same feed, re-verified first.
     paths:
       - appcast.xml
+      - site/**
+      - docs/img/**
     branches: [main]
   # Re-run the check on demand, without publishing. Useful after changing the
   # verifier itself.
@@ -130,7 +134,10 @@ jobs:
         # "tar: appcast.xml: Cannot open: Not a directory".
         run: |
           set -euo pipefail
-          mkdir -p _site
+          mkdir -p _site/img
+          cp -R site/. _site/
+          cp docs/img/*.png _site/img/
+          # Copied last so nothing in site/ can shadow the verified feed.
           cp appcast.xml _site/
           ls -la _site
 
