@@ -4,31 +4,6 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Test double, same shape as the `LoginItemServicing` mock. The production
-/// service needs Sparkle and a live updater session, which the harness does not
-/// link, so this is how the model's own logic is covered.
-@MainActor
-final class FakeUpdateService: UpdateServicing {
-    private(set) var startCount = 0
-    private(set) var checkCount = 0
-    private(set) var automaticWrites = 0
-    var automaticallyChecksForUpdates = true {
-        didSet { automaticWrites += 1 }
-    }
-    var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
-    var onReminder: (@MainActor (Bool) -> Void)?
-    var lastCheckDate: Date?
-
-    func start() { startCount += 1 }
-    func checkForUpdates() { checkCount += 1 }
-
-    /// Simulate the framework reporting a result.
-    func report(_ outcome: UpdateOutcome) { onOutcome?(outcome) }
-
-    /// Simulate the framework raising or clearing the gentle reminder.
-    func remind(_ showing: Bool) { onReminder?(showing) }
-}
-
 @MainActor
 struct UpdateCheckModelTests {
     @Test func startingIsForwarded() {
@@ -79,6 +54,20 @@ struct UpdateCheckModelTests {
         service.report(.upToDate)
 
         #expect(model.lastCheckDate == when)
+    }
+
+    @Test func aFinishedCycleWithNoOutcomeRefreshesLastCheckDate() throws {
+        // A scheduled background check can finish without any outcome
+        // callback; the cycle-finished signal still moves the date.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+
+        let when = try TestDates.utc(2026, 10, 2, 9, 0)
+        service.lastCheckDate = when
+        service.finishCycle()
+
+        #expect(model.lastCheckDate == when)
+        #expect(model.outcome == nil)
     }
 
     @Test func automaticallyChecksIsReadFromTheServiceAtInit() {

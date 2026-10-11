@@ -47,6 +47,11 @@ protocol UpdateServicing: AnyObject {
     /// Called as the framework reports the outcome of a check.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? { get set }
 
+    /// Called as the framework finishes an update cycle, whatever its result.
+    /// A scheduled background check can end without any outcome callback, yet
+    /// it still moves `lastCheckDate`; this is the signal that it has.
+    var onCycleFinished: (@MainActor () -> Void)? { get set }
+
     /// Called with `true` as a scheduled update is presented, and `false` once
     /// the user has attended to it or the update session has finished.
     var onReminder: (@MainActor (Bool) -> Void)? { get set }
@@ -82,7 +87,8 @@ final class UpdateCheckModel {
 
     /// When the framework last completed a check, or nil before the first one.
     /// Stored so Observation can see it change; refreshed from the service,
-    /// which stays the authority, whenever a check reports or is started.
+    /// which stays the authority, whenever a check reports, finishes or is
+    /// started.
     private(set) var lastCheckDate: Date?
 
     /// Stored so the toggle redraws; every write goes through to the service,
@@ -99,6 +105,9 @@ final class UpdateCheckModel {
         self.automaticallyChecks = service.automaticallyChecksForUpdates
         self.service.onOutcome = { [weak self] outcome in
             self?.outcome = outcome
+            self?.refreshLastCheckDate()
+        }
+        self.service.onCycleFinished = { [weak self] in
             self?.refreshLastCheckDate()
         }
         self.service.onReminder = { [weak self] showing in

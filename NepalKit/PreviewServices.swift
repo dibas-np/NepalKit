@@ -18,6 +18,7 @@ final class PreviewUpdateService: UpdateServicing {
     var automaticallyChecksForUpdates = true
     var lastCheckDate: Date?
     var onReminder: (@MainActor (Bool) -> Void)?
+    var onCycleFinished: (@MainActor () -> Void)?
 
     /// Reports on assignment rather than in `init`, which runs before the model
     /// installs this closure, or in `start()`, which only `NepalKitApp` ever calls
