@@ -73,6 +73,23 @@ class LastChecked(unittest.TestCase):
             cpr.last_checked("last_checked: soon\n")
 
 
+class Main(unittest.TestCase):
+    def _procedure(self, text: str) -> str:
+        import tempfile
+        handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
+        handle.write(text)
+        handle.close()
+        self.addCleanup(Path(handle.name).unlink)
+        return handle.name
+
+    def test_a_missing_line_does_not_fail_before_the_checks_start(self):
+        self.assertEqual(cpr.main(["--today", "2026-12-01", "--procedure", self._procedure("no record")]), 0)
+
+    def test_a_missing_line_fails_once_a_check_is_due(self):
+        with self.assertRaises(SystemExit):
+            cpr.main(["--today", "2027-02-01", "--procedure", self._procedure("no record")])
+
+
 class TheCommittedProcedure(unittest.TestCase):
     def test_carries_a_readable_last_checked_line(self):
         cpr.last_checked(cpr.PROCEDURE.read_text(encoding="utf-8"))

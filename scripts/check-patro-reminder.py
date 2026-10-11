@@ -72,13 +72,19 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--today", type=datetime.date.fromisoformat, default=datetime.date.today())
+    parser.add_argument("--procedure", type=Path, default=PROCEDURE, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
     sys.path.insert(0, str(ROOT / "scripts"))
     from dataset_table import shipped_table
 
-    ok, message = verdict(args.today, last_checked(PROCEDURE.read_text(encoding="utf-8")),
-                          max(shipped_table()))
+    last_year = max(shipped_table())
+    # The record is read only when a check is due: before 2027 and after 2085
+    # ships the job stays quiet even if the line is gone. The pull-request suite
+    # still requires the committed line to be readable.
+    quiet = args.today < CHECKS_START or last_year >= EXTENDED_YEAR
+    checked = None if quiet else last_checked(args.procedure.read_text(encoding="utf-8"))
+    ok, message = verdict(args.today, checked, last_year)
     print(("  ok    " if ok else "  FAIL  ") + message)
     return 0 if ok else 1
 
