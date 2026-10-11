@@ -28,6 +28,7 @@ toolchain and nothing else.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -183,6 +184,17 @@ def measure(
 ) -> dict[str, int]:
     """Run one suite with coverage and total its subject files."""
     build_dir.mkdir(parents=True, exist_ok=True)
+    # Held until the report is read, so a concurrent run cannot delete this
+    # run's profiles between the test and the report.
+    with open(build_dir / ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return measure_locked(label, package, prefixes, build_dir)
+
+
+def measure_locked(
+    label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
+) -> dict[str, int]:
+    """measure() with the suite directory's lock held."""
     clear_profiles(build_dir)
     result = run(
         [
