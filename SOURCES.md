@@ -76,6 +76,28 @@ overflow in another day's row. The data is in
 [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
 No other source is used for festival dates.
 
+### Public holidays
+
+Which days are public holidays, and for whom, comes from the Ministry of Home
+Affairs notice for the year in the Nepal Gazette, under the ADR-0016
+amendment. For 2083 that is खण्ड ७५ संख्या ६७, भाग ५, dated 2082-11-18:
+
+- File read: [`२०८३_सालको_सार्वजनिक_विदा_(67_11_18).pdf`](https://moha.gov.np/upload/e66443e81e8cc9c4fa5c099a1fb1bb87/files/%E0%A5%A8%E0%A5%A6%E0%A5%AE%E0%A5%A9_%E0%A4%B8%E0%A4%BE%E0%A4%B2%E0%A4%95%E0%A5%8B_%E0%A4%B8%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%B5%E0%A4%9C%E0%A4%A8%E0%A4%BF%E0%A4%95_%E0%A4%B5%E0%A4%BF%E0%A4%A6%E0%A4%BE_(67_11_18).pdf),
+  12 pages, image only, SHA-256 `ffbabf83cad254b485504627f9e47fce6c1a7a28e2693a399ae88bf9c0279a29`.
+- Read by eye on 11 October 2026: 47 holiday rows on 41 days, each with its
+  gazette section and scope, plus three national days with offices open. A
+  second, independent read of the page images confirmed every date, section,
+  scope and printed weekday, the Dashain (Ashwin 31 to Kartik 6) and Tihar
+  (Kartik 22 to 26) ranges, and the 52 Saturdays of section 1.
+- Every dated holiday falls on the day the Panchanga gives, apart from two
+  national days the Panchanga does not print (ज्यापू दिवस, जेनजी सहिद दिवस),
+  recorded with the Gazette as their source. Holidays listed "on the day" with
+  no date (both Eids, Mohammad Jayanti, Siruwa Pawani, Bhoto Jatra) are left
+  out. Province-declared holidays are not in this notice.
+
+The data is in
+[`PublicHolidays2083.swift`](NepalKitCore/Sources/NepalKitCore/PublicHolidays2083.swift).
+
 The 2082 and 2083 descriptions preserve earlier evidence; those sources were
 not freshly checked during this cleanup. A maintainer-supplied claim of
 Parliamentary Portal or MOHA Gazette verification has no exact record or decree

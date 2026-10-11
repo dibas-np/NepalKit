@@ -63,3 +63,32 @@ put a mark on almost every day and stop meaning anything.
 - The app shows nothing for years before 2083. That is a gap, not an error.
 - Dates are facts from a government publication. No image or page layout is
   copied, only the day and the observance name.
+
+## Amendment: public holidays from the Nepal Gazette (2026-10-11)
+
+The Panchanga determines when observances fall; it does not say which days
+are public holidays. The Government of Nepal decides that each year and
+publishes it in the Nepal Gazette as a Ministry of Home Affairs notice
+(for 2083: खण्ड ७५ संख्या ६७, भाग ५, dated 2082-11-18, pinned in SOURCES.md).
+
+1. **Holiday status from the Gazette only.** A day is shown as a public
+   holiday, and with what scope (nationwide, a community, a region, the
+   Kathmandu Valley, women employees, educational institutions, employees
+   with disabilities), only as the Gazette notice states it. Decision 4's
+   "never public holiday" is replaced by this: the app says "public holiday"
+   exactly where the Gazette does.
+2. **Dates still from the Panchanga, with two exceptions.** Every holiday the
+   Gazette gives a date for matches the Panchanga, except two national days
+   the Panchanga does not print (ज्यापू दिवस and जेनजी सहिद दिवस). Those are
+   added with the Gazette as their recorded source. Guru Nanak Jayanti has no
+   Gazette date; its holiday sits on the day the Panchanga prints it.
+3. **Holiday days join the festival list.** Days the Gazette makes holidays
+   that decision 2's rule had left out (Labour Day, Women's Day, the
+   disability day, Falgunanda Jayanti, Dura Mhaipru Nakuma, Prithvi Jayanti)
+   and its national days with offices open are included, so a red day always
+   has a name.
+4. **Undated holidays are left out.** Eid ul-Fitr, Eid ul-Adha, Mohammad
+   Jayanti, Siruwa Pawani and the Bhoto Jatra are listed "on the day" with no
+   date, so there is no day to mark.
+5. **Only nationwide holidays are red** in the month grid, alongside the
+   weekly Saturday holiday. Limited holidays are named in the day's details.
