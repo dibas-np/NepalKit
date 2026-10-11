@@ -58,13 +58,14 @@ struct MonthGridFestivalTests {
     @Test func theCellSaysItsFestivalsAfterItsDate() throws {
         let model = try kartik2083()
         let dashami = try shownDay(model, 4)
+        // Dashami is a Dashain public holiday too, said last.
         #expect(model.spokenLabel(for: dashami, settings: latin)
-            == "4 Kartik 2083, Wednesday, 21 October 2026, Vijaya Dashami (Dashain Tika)")
+            == "4 Kartik 2083, Wednesday, 21 October 2026, Vijaya Dashami (Dashain Tika), public holiday")
         #expect(model.spokenLabel(for: dashami, settings: devanagari)
-            == "4 कात्तिक 2083, बुध, 21 October 2026, विजयादशमी")
-        // A day without festivals is said exactly as before.
-        #expect(model.spokenLabel(for: try shownDay(model, 2), settings: latin)
-            == "2 Kartik 2083, Monday, 19 October 2026")
+            == "4 कात्तिक 2083, बुध, 21 October 2026, विजयादशमी, सार्वजनिक बिदा")
+        // A working day without festivals is said exactly as before.
+        #expect(model.spokenLabel(for: try shownDay(model, 9), settings: latin)
+            == "9 Kartik 2083, Monday, 26 October 2026")
     }
 
     @Test func theDetailsNameTheFestivalsInBothChannels() throws {

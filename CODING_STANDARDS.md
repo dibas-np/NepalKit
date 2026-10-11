@@ -167,12 +167,14 @@ handled in one place (ADR-0011).
 ## User-facing strings
 
 All UI strings live in `enum Strings` in `Strings.swift`, which imports only
-`NepalKitCore`. It has its own file because both views and models need it — a
+`NepalKitCore`, or in an extension of it split out by topic
+(`Strings+Holidays.swift`) once one file would pass the length limit. It has its own file because both views and models need it — a
 model returning a user-facing marker reaches for `Strings`, and putting it in a
 view file would invert the models → views flow.
 
 This is not a localization system: v1 ships an English interface, and the
-month-name setting applies to Bikram Sambat month names and weekday names only.
+month-name setting applies to Bikram Sambat month names and weekday names, and
+to the festival names and public-holiday lines that sit beside them, only.
 Gregorian month names are always English (`gregorianMonthNames` in `Formatting.swift`) — don't route
 them through the setting.
 

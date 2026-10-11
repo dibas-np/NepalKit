@@ -269,14 +269,15 @@ private struct MonthGridCell: View {
     /// Small enough to sit under the Gregorian digits, large enough to spot.
     private static let festivalMarkSize: CGFloat = 4
 
-    /// The large number's colour. Red for the holiday column, as on a wall
-    /// calendar, and still red on today: the tint behind it is light enough
-    /// that the number stays legible, and dropping the red there would hide
-    /// that today is the holiday. A neighbouring month's day is tertiary
-    /// whatever its column, so the shown month stays the one that reads.
+    /// The large number's colour. Red for the holiday column and for a
+    /// nationwide public holiday, as on a wall calendar, and still red on
+    /// today: the tint behind it is light enough that the number stays
+    /// legible, and dropping the red there would hide that today is a
+    /// holiday. A neighbouring month's day is tertiary whatever its column,
+    /// so the shown month stays the one that reads.
     private var dayStyle: AnyShapeStyle {
         if !day.isInShownMonth { return AnyShapeStyle(.tertiary) }
-        return day.isWeeklyHoliday ? AnyShapeStyle(.red) : AnyShapeStyle(.primary)
+        return day.isMarkedAsHoliday ? AnyShapeStyle(.red) : AnyShapeStyle(.primary)
     }
 
     private var gregorianStyle: AnyShapeStyle {

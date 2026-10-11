@@ -42,6 +42,16 @@ struct MonthGridDayDetailCard: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(spoken)
                 }
+                // Who the day is a holiday for, under the names it is a
+                // holiday for. Secondary rather than red or tinted: the red
+                // is the cell's, and coloured text over Liquid Glass loses
+                // its contrast.
+                ForEach(detail.holidays, id: \.self) { holiday in
+                    Text(holiday)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             HStack(spacing: 8) {
@@ -65,8 +75,9 @@ struct MonthGridDayDetailCard: View {
 }
 
 #if DEBUG
-/// The card on the preview's today, 1 Kartik 2083, which is Maha Ashtami: the
-/// one state the grid preview cannot reach without a click.
+/// The card on the preview's today, 1 Kartik 2083, which is Maha Ashtami and a
+/// Dashain public holiday: the one state the grid preview cannot reach
+/// without a click.
 #Preview("Day details, festival") {
     let model = MonthGridModel(now: AppData.previewInstant)
     let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
