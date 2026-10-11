@@ -17,17 +17,17 @@ reported.
 Most reports of "the date is wrong" are answered by one question: **what does
 the official Nepali calendar say for that date?** The shipped table covers
 1975–2084 BS and its provenance is documented in [SOURCES.md](SOURCES.md), which
-also lists the months where the community sources disagree and which side was
-taken.
+also records the one base the shipped table follows and the retained local
+corrections to it (ADR-0014), and why each was kept.
 
 Including what the official Patro says, alongside what the app shows, turns a
 back-and-forth into a one-message resolution.
 
 ## What makes a good report
 
-- NepalKit's version — `About NepalKit` shows it, with the build number in
+- NepalKit's version — Settings → About shows it, with the build number in
   parentheses
-- Your macOS version
+- Your macOS version (or watchOS version, for a Watch problem)
 - What you expected, and what happened instead
 - Steps to reproduce, or the exact date you typed and what came back
 

@@ -37,4 +37,34 @@ enum UpdatePolicy {
         case .other: return .failed(reason: failureReason)
         }
     }
+
+    /// Whether a check should be refused: only a scheduled check on a transient
+    /// launch, where the self-update cannot succeed. A manual check is the user
+    /// asking a question, so it still runs.
+    static func vetoesCheck(isScheduled: Bool, installPath: String) -> Bool {
+        isScheduled && isTransientLaunch(installPath: installPath)
+    }
+
+    /// Classifies Sparkle's `SPUNoUpdateFoundReason` by raw value. The framework
+    /// stores an `NSNumber` under `SPUNoUpdateFoundReasonKey`, and an `NSNumber`
+    /// held in `Any` does not cast to an imported `NS_ENUM`: casting to the enum
+    /// classifies every "on the latest version" result as a failure.
+    static func noUpdateKind(rawReason: Int?) -> NoUpdateFoundKind {
+        switch rawReason {
+        case 1: .onLatestVersion            // SPUNoUpdateFoundReasonOnLatestVersion
+        case 2: .onNewerThanLatestVersion   // SPUNoUpdateFoundReasonOnNewerThanLatestVersion
+        default: .other                     // unknown (0), OS too old (3) / too new (4), no ARM64 (5), or absent
+        }
+    }
+
+    /// What an aborted update cycle means to the user. `nil` means "say
+    /// nothing": "no update" and user cancellation also arrive here and are
+    /// answered elsewhere. Any other abort is a check that did not complete.
+    static func outcome(forAbortedCheckDomain domain: String, code: Int, description: String) -> UpdateOutcome? {
+        if domain == "SUSparkleErrorDomain" && (code == 1001 || code == 4007) {
+            // SUNoUpdateError, SUInstallationCanceledError
+            return nil
+        }
+        return .failed(reason: description)
+    }
 }

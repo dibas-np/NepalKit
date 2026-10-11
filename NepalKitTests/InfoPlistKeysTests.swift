@@ -16,7 +16,7 @@ import Testing
 /// they are skipped with a stated reason, which is not the same as passing —
 /// a skipped test still counts as passed, and for a while that was the only
 /// thing that happened: nothing set `NEPAKIT_BUILT_PLIST`, every run skipped
-/// these five, and the release-critical keys they guard went unchecked while
+/// these tests, and the release-critical keys they guard went unchecked while
 /// the suite reported green. `run-app-tests.sh` now discovers a product and
 /// CI exports one, so the checks actually run.
 struct InfoPlistKeysTests {
@@ -37,7 +37,13 @@ struct InfoPlistKeysTests {
     /// would compare the app's release-critical keys against an unrelated
     /// bundle — failing on every key, or worse, passing on none of them. Only
     /// a plist that names the app counts as the app's.
-    nonisolated private static let builtPlist: URL? = {
+    nonisolated private static let builtPlist: URL? = resolvedPlist.url
+
+    /// True when `NEPAKIT_BUILT_PLIST` names no readable Info.plist for the app.
+    /// Computed in the same pass as `builtPlist` so the two cannot disagree.
+    nonisolated private static let overrideWasUnusable: Bool = resolvedPlist.overrideWasUnusable
+
+    nonisolated private static let resolvedPlist: (url: URL?, overrideWasUnusable: Bool) = {
         func usable(_ url: URL) -> URL? {
             guard let info = NSDictionary(contentsOf: url) as? [String: Any],
                   info["CFBundleIdentifier"] as? String == appBundleIdentifier
@@ -46,9 +52,10 @@ struct InfoPlistKeysTests {
         }
 
         if let override = ProcessInfo.processInfo.environment["NEPAKIT_BUILT_PLIST"], !override.isEmpty {
-            return usable(URL(fileURLWithPath: override))
+            let url = usable(URL(fileURLWithPath: override))
+            return (url, url == nil)
         }
-        return usable(Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))
+        return (usable(Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist")), false)
     }()
 
     nonisolated private static var builtInfo: [String: Any]? {
@@ -87,6 +94,14 @@ struct InfoPlistKeysTests {
     /// The trait's comment must be a compile-time literal, so the path cannot
     /// appear in it; the test name and the skip reason carry the meaning.
     nonisolated private static var hasBuiltProduct: Bool { builtInfo != nil }
+
+    @Test func anExplicitBuiltProductMustBeReadable() {
+        // Skipping is right when nothing was built, not when the caller named a
+        // product: CI exports a fixed path, and a layout change would turn seven
+        // release-key checks into silent skips on a green required check.
+        #expect(!Self.overrideWasUnusable,
+                "NEPAKIT_BUILT_PLIST is set but names no readable Info.plist for \(Self.appBundleIdentifier)")
+    }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func sparklePublicKeyReachesTheBuiltProduct() throws {

@@ -51,20 +51,18 @@ The first four cost coverage that nothing depends on. The fifth does not, and
 the reason is worth stating precisely rather than leaving to the exclusion
 list's own comment.
 
-`SparkleUpdateService.swift:131-135` maps Sparkle's `SPUNoUpdateFoundReason`
-onto `UpdatePolicy.NoUpdateFoundKind`, and that mapping is **outside** the test
-boundary. It is the boundary's real cost: a typo there reports a feed that
-could not be fetched or verified as "you are on the latest version", which is
-the one error a user cannot detect for themselves, and no test in this harness
-can catch it — the file cannot be compiled without the framework the harness
-deliberately does not link.
+`SparkleUpdateService.swift` once mapped Sparkle's `SPUNoUpdateFoundReason`
+onto `UpdatePolicy.NoUpdateFoundKind` itself, outside the test boundary. The
+cast there never succeeded, so "you are on the latest version" was reported as
+a failure, and no test in this harness could catch it: the file cannot be
+compiled without the framework the harness does not link.
 
-The `UpdatePolicy` half *is* covered, by the harness that does compile it:
-`NepalKitTests/UpdatePolicyTests.swift:21-26` asserts the classification for all
-three kinds, so the policy and its outcomes are tested even though the mapping
-into it is not. A test of the mapping would have to reach Sparkle's enum
-through a framework the harness does not link, so it is recorded here as known
-uncovered rather than left to look like an oversight.
+The mapping now lives in `UpdatePolicy.noUpdateKind(rawReason:)`.
+`UpdatePolicyTests.noUpdateKindIsReadFromTheFrameworksRawReason` pins it against
+Sparkle's raw reason numbers, and `UpdatePolicyTests.noUpdateFoundClassifiesByReason`
+pins the classification of each kind into an outcome. Only the adapter's
+one-line read of the `NSNumber` out of the error's `userInfo` stays uncovered,
+because it needs that framework; it is recorded here as known uncovered.
 
 ## Compile the hosted Xcode tests too
 

@@ -89,8 +89,8 @@ Every dependency that a test needs to control is a parameter with a sensible
 default, not a global lookup:
 
 ```swift
-init(now: Date = .now, localTimeZone: TimeZone = .current, refreshInterval: TimeInterval = 1)
-func bsToAD(_ bs: BSDay, in dataset: CalendarDataset = .v2) -> BSDay?
+init(now: Date = .now, localTimeZone: TimeZone? = nil, refreshInterval: TimeInterval = 1, ...)
+func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay?
 SettingsStore(defaults: UserDefaults = .standard)
 ```
 
@@ -148,8 +148,9 @@ Glass, not imposed globally: hierarchical for section headers, monochrome for
 small inline icons beside text (ADR-0004).
 
 Liquid Glass is requested where a control needs the affordance and inherited
-from the OS everywhere else. Today that is one place: the popover footer's two
-buttons, which use `.buttonStyle(.glass)` inside one `GlassEffectContainer`.
+from the OS everywhere else. Today that is one place: the popover footer's three
+buttons, inside one `GlassEffectContainer`: Update… (`.glassProminent`, shown only
+when an update is available), Settings and Quit (`.glass`).
 Glass cannot sample other glass, so adjacent glass controls must share a
 container or they render inconsistently against each other. Do not spread glass
 to every control to make a surface look uniform — a `Form` of glass buttons is
@@ -172,7 +173,7 @@ view file would invert the models → views flow.
 
 This is not a localization system: v1 ships an English interface, and the
 month-name setting applies to Bikram Sambat month names and weekday names only.
-Gregorian month names are always English (`Formatting.swift:105`) — don't route
+Gregorian month names are always English (`gregorianMonthNames` in `Formatting.swift`) — don't route
 them through the setting.
 
 **The Watch exception.** The Watch app and its complication extension both
@@ -340,23 +341,35 @@ read the skip as coverage.
 
 ## Commands
 
-- Everything: `scripts/check-all.sh`, the eleven local gates. That count is the
-  script's own `total`, and a green run prints `==> all 11 gates passed`, so the
+- Everything: `scripts/check-all.sh`, the sixteen local gates. That count is the
+  script's own `total`, and a green run prints `==> all 16 gates passed`, so the
   number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
-- App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
-  before connecting and is not the runner (see `README.md` and ADR-0005).
+- App-layer tests: `scripts/run-app-tests.sh`, the documented runner (see
+  `README.md`). It was introduced after the hosted runner hung before
+  connecting (ADR-0005).
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 
-Four environment variables are read by those scripts, and none of them is
+Seven environment variables are read by those scripts, and none of them is
 secret. `.env.example` is the place they are described, with each one's actual
 default:
 
 - `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
-  `generate_appcast`. Unset, it searches DerivedData. `sign_update` lives in the
-  same directory, and is what signs the feed itself; `generate_appcast` only
-  writes items and signs archives.
+  `generate_appcast`, overriding discovery. Unset, the script uses only the
+  tools this checkout built into `DerivedData/` and checks they belong to the
+  pinned Sparkle version. `sign_update` lives in the same directory and re-signs
+  the feed as the last step: Sparkle 2.10.0's `generate_appcast` signs it when an
+  archive sets `SURequireSignedFeed`, as NepalKit's does, but
+  `verify-appcast.sh` then embeds the release notes and invalidates that
+  signature (ADR-0012).
+- `SPARKLE_BIN_UNPINNED` — `1` skips that pin check, for a CI image whose tools
+  are installed elsewhere; never on the release machine. Unset, the check runs.
+- `TEAM_ID` — the Apple Developer team for Developer ID signing; public
+  (`CA89X9954L`), not a credential. Unset, `package-release.sh` exits, so a
+  release cannot be cut; every other script is unaffected.
+- `NOTARY_PROFILE` — the keychain profile `package-release.sh` hands to
+  `notarytool`. Unset, it uses `NepalKit-notary`.
 - `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched
   provenance tables. Unset, it uses `~/.cache/nepalkit-data-sources`; it caches
   in both cases, so this is not a switch for caching off.

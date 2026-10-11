@@ -111,8 +111,9 @@ tracked-file deletion in the working tree. A maintainer on Xcode 27 would
 otherwise be prompted to commit that deletion on an unrelated change. The pin
 that actually governs resolution is the `exactVersion` requirement above, which
 is why the freshness check in section 2 reads `project.pbxproj` and
-`package-release.sh` verifies the built product rather than trusting
-`Package.resolved`.
+`package-release.sh` runs `scripts/verify-release-product.py`, which compares the
+embedded `Sparkle.framework` version against the `exactVersion` pin in
+`project.pbxproj`, rather than trusting `Package.resolved`.
 
 The correctness of that arrangement was tested rather than assumed: resolving
 with the lockfile absent still produces 2.10.0.

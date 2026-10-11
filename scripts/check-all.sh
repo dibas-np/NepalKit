@@ -13,7 +13,7 @@
 # library target cannot own @main and the harness links only NepalKitCore - and
 # run-app-tests.sh discovers a built product rather than making one. So without a
 # build ahead of it, InfoPlistKeysTests has nothing to read and skips, and a
-# skipped test still reports as passing. Five gates that guard the release keys
+# skipped test still reports as passing. Seven tests that guard the release keys
 # would be dark on every run that had not just built.
 #
 # That exclusion is also how SWIFT_VERSION = 6.0 shipped a file the app target
@@ -48,8 +48,9 @@
 # half of that, so a contributor finds a broken app target here rather than in a
 # pull-request log.
 #
-# Both are run by CI (`data-sources.yml`, `pages.yml`) on every change that
-# touches them; this command is the local half, not a replacement.
+# The dataset parsers and the changelog suite are run by CI (`data-sources.yml`,
+# `pages.yml`) on every change that touches them; this command is the local half,
+# not a replacement.
 #
 # Usage: scripts/check-all.sh
 
@@ -57,7 +58,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=14
+total=16
 ran=0
 summary=""
 current=""
@@ -132,6 +133,9 @@ gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
 # throwaway bundles in this session's LaunchServices database.
 gate "LaunchServices unregistration suite" python3 "$repo_root/scripts/test_unregister_launchservices.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
+# The release product verifier runs only inside package-release.sh, so its suite
+# is the only thing that exercises it on an ordinary run.
+gate "release product verifier suite" python3 "$repo_root/scripts/test_verify_release_product.py"
 # The badge entry is a machine-read input to a third party, so a typo in it is a
 # silently dropped answer rather than a visible failure. This gate runs the
 # verifier's own suite first, for the reason the floor gate does: nothing else in
@@ -140,6 +144,9 @@ gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcas
 # whether a criterion name is real, because that needs the badge's criteria YAML.
 gate "badge entry suite" python3 "$repo_root/scripts/test_verify_bestpractices_json.py"
 gate "badge entry consistency" python3 "$repo_root/scripts/verify-bestpractices-json.py"
+# The coverage parser decides the number the next gate publishes;
+# docs/coverage.md records three bugs in it that each gave a wrong number.
+gate "coverage parser suite" python3 "$repo_root/scripts/test_measure_coverage.py"
 # Coverage has a floor and no target, which is the inversion docs/coverage.md
 # argues for: a ratchet that only rises is honest about a number that is
 # currently low, where a target above the truth fails every day and gets ignored.
@@ -152,8 +159,9 @@ gate "coverage floor" python3 "$repo_root/scripts/measure-coverage.py"
 # every other gate here agreed, because they all trusted a declared number
 # rather than comparing the sources to each other.
 # Runs the gate's own suite first, so the checks that decide *how* the floors are
-# read cannot themselves rot: CI runs that suite only when appcast.xml changes, so
-# without this every test of this gate is dark on an ordinary pull request.
+# read cannot themselves rot: macos26-floor.yml runs that suite on every pull request
+# and pages.yml when appcast.xml changes; this gate runs it locally, in the same
+# order, so a contributor sees a rotted check before review.
 gate "deployment floor consistency" bash -c '
     set -euo pipefail
     python3 "$1/scripts/test_verify_deployment_floor.py"

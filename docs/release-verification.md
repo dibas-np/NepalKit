@@ -22,7 +22,7 @@ Two separate questions, and they have different answers:
 
 | What | Expected value |
 | --- | --- |
-| Signing identity | `Developer ID Application: Dibas Sigdel (CA89X9954L)` |
+| Signing identity | `Developer ID Application: Finnove Technologies (CA89X9954L)` |
 | Team ID | `CA89X9954L` |
 | Gatekeeper verdict | `accepted` / `source=Notarized Developer ID` |
 | Update feed | `https://dibas-np.github.io/NepalKit/appcast.xml` |
@@ -64,19 +64,22 @@ are intact, not who published them.
 
 ```sh
 git fetch --tags
-git tag -v v1.6.1
+git tag -v v<version>
 ```
 
-Expect `Good "git" signature for dibas-np@github.com with ED25519 key` - the same
-key the commits are signed with, so `git log --show-signature` on the tagged
-commit should name the same fingerprint.
+For a release cut after 2026-10-10, expect `Good "git" signature for
+dibas-np@github.com with ED25519 key` - the same key the commits are signed with,
+so `git log --show-signature` on the tagged commit should name the same
+fingerprint. `git tag -v` is the only check here that verifies a signature.
 
-Tags before **v1.6.1** are lightweight and unsigned, and you can see which is
-which without trusting this document:
+No published tag is signed yet. The eight release tags that exist today
+(`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are lightweight, so `git tag -v`
+reports that they are not tag objects; for those releases, rely on the archive and code signatures
+in the steps below. To see whether a tag is annotated at all:
 
 ```sh
-git cat-file -t v1.6.0     # commit  -> unsigned
-git cat-file -t v1.6.1     # tag     -> signed
+git cat-file -t v<version>     # tag    -> annotated (may or may not be signed)
+                               # commit -> lightweight, carries no signature
 ```
 
 ### 3. Mount it, then check the archive signature
@@ -91,8 +94,9 @@ hdiutil attach ~/Downloads/NepalKit-*.dmg -nobrowse -readonly
 codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | head -20
 ```
 
-Expect `Authority=Developer ID Application: Dibas Sigdel (CA89X9954L)` and
-`TeamIdentifier=CA89X9954L`. **A different team here is a failure, not a
+Expect `TeamIdentifier=CA89X9954L`; that is the value to match. The Authority
+line names the organisation that holds the team: 1.6.0 prints
+`Authority=Developer ID Application: Finnove Technologies (CA89X9954L)`. **A different team here is a failure, not a
 warning** — stop and read [SECURITY.md](../SECURITY.md).
 
 The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it

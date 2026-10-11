@@ -1,5 +1,7 @@
 # Calendar trigger spike — recommendation
 
+> Historical spike (2026-10-01); line citations refer to the tree at that date.
+
 **The trigger, as an observable condition.** The dataset ends at 2084 BS =
 2028-04-12 (`CONTEXT.md:44`) and 2084 is *projected* (`README.md:52`). The Nepal
 Panchanga Nirnayak Samiti publishes an official determination for 2084 BS,

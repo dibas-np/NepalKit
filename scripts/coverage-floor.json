@@ -1,9 +1,9 @@
 {
   "totals": {
-    "lines": 43.96,
-    "regions": 57.48,
-    "functions": 57.82,
-    "files": 51
+    "lines": 38.91,
+    "regions": 62.32,
+    "functions": 57.58,
+    "files": 43
   },
   "suites": {
     "NepalKitCore": {
@@ -13,10 +13,10 @@
       "files": 9
     },
     "NepalKit app": {
-      "lines": 35.03,
-      "regions": 53.02,
-      "functions": 52.76,
-      "files": 42
+      "lines": 30.66,
+      "regions": 56.82,
+      "functions": 52.84,
+      "files": 34
     }
   }
 }

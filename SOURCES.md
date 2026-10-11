@@ -106,7 +106,7 @@ python3 scripts/verify-data-sources.py --baseline scripts/data-sources-baseline.
 python3 scripts/verify-data-sources.py --offline --baseline scripts/data-sources-baseline.json
 ```
 
-Only askbuddie is fetched. Across 110 supported years and 1,320 month values,
+Only askbuddie is fetched. Across the 110 years of the supported range and 1,320 month values,
 104 years match exactly; 18 months differ: the 14 retained historical values
 and four values in the local 2084 projection. The baseline records these
 exceptions. A green result means the recorded comparison holds, not that every

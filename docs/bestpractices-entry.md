@@ -66,13 +66,13 @@ worse description of the project.
 
 ## Current standing
 
-191 criteria across the two series: **145 Met, 7 N/A, 39 Unmet**.
+191 criteria across the two series: **149 Met, 7 N/A, 35 Unmet**.
 
 | Series | Criteria | Met | N/A | Unmet |
 | --- | --- | --- | --- | --- |
 | Baseline (OSPS) | 64 | 58 | 3 | 3 |
-| Metal | 127 | 87 | 4 | 36 |
-| **Total** | **191** | **145** | **7** | **39** |
+| Metal | 127 | 91 | 4 | 32 |
+| **Total** | **191** | **149** | **7** | **35** |
 
 The Metal series carries far more `Unmet`, and the reason is mostly age rather
 than substance: eleven of them need a *record* - a closed bug report, a fixed
@@ -125,7 +125,7 @@ Two details that cost a wrong answer when this file was written:
    python3 scripts/verify-bestpractices-json.py
    ```
 
-   It is gate 11 of `scripts/check-all.sh`, and gate 10 runs the verifier's own
+   It is gate 12 of `scripts/check-all.sh`, and gate 11 runs the verifier's own
    suite. It takes **no arguments**: it always checks the file above, which keeps
    a path-injection surface out of a script an agent may be asked to run.
 

@@ -168,21 +168,52 @@ struct BuildNumberTests {
         )
     }
 
+    // 1.3.0 and 1.4.0 both shipped as build 5 because `>=` let equality pass.
+    // Once the feed carries the current version, `>=` is right (HEAD is the
+    // shipped state); an unreleased version must be strictly higher or Sparkle
+    // offers it to nobody.
     @Test func buildNumberHasNotRegressedBelowTheLastReleased() throws {
         // The monotonic half of the invariant. If someone lowers
         // CURRENT_PROJECT_VERSION below the highest build the feed has already
         // offered, every installed copy stops being offered updates, silently.
         let current = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? 0
         let floor = try Self.lastReleasedBuildNumber
+        let short = Self.buildSetting("MARKETING_VERSION") ?? ""
+        let alreadyReleased = try Self.releasedVersions.contains(short)
 
         #expect(
             floor > 0,
             "no published build number could be read from appcast.xml, so this guard is inert"
         )
-        #expect(
-            current >= floor,
-            "build number \(current) is below the last released \(floor)"
-        )
+        if alreadyReleased {
+            #expect(
+                current >= floor,
+                "build number \(current) is below the last released \(floor)"
+            )
+        } else {
+            #expect(
+                current > floor,
+                "build number \(current) must be higher than the last released \(floor): \(short) is not in the feed yet, and Sparkle offers an update only on a higher build (ADR-0009)"
+            )
+        }
+    }
+
+    /// Every marketing version the committed feed already offers.
+    private static var releasedVersions: Set<String> {
+        get throws {
+            let appcast = checkoutFile("appcast.xml")
+            guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return [] }
+            let pattern = try? NSRegularExpression(
+                pattern: "<sparkle:shortVersionString>([0-9.]+)</sparkle:shortVersionString>"
+            )
+            let range = NSRange(text.startIndex..., in: text)
+            let versions = try pattern?.matches(in: text, range: range)
+                .map { match -> String in
+                    let range = try #require(Range(match.range(at: 1), in: text))
+                    return String(text[range])
+                } ?? []
+            return Set(versions)
+        }
     }
 
     /// The highest build number ever published.

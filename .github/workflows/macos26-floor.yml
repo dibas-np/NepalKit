@@ -96,9 +96,10 @@ concurrency:
   cancel-in-progress: true
 
 # Declared, and the alert below is why. This workflow checks out the code, runs
-# two test suites, builds and launches the result. It never writes back: no
-# commit, no comment, no release, no artifact upload beyond the build log. So it
-# gets `contents: read` and nothing more.
+# four test suites (core, cask, floor self-tests, app-layer), builds and
+# launches the result. It never writes back: no commit, no comment, no release,
+# no artifact upload beyond the build log. So it gets `contents: read` and
+# nothing more.
 #
 # Omitting the block does not mean "no permissions" — it means every step gets
 # the repository's *default* token, which for a public repository is usually
@@ -238,7 +239,12 @@ jobs:
 
       # Signing is disabled: the project sets a development team target-wide, and
       # a pull-request job must need no credentials and be unable to reach any.
-      - name: Build the application
+      #
+      # `build` skips NepalKitTests (the scheme marks it buildForRunning = NO),
+      # so a test target whose Swift mode or isolation drifted from the app's
+      # would compile nowhere in CI; ADR-0005 records a Swift 5/6 mismatch
+      # hidden that way. build-for-testing is also what check-all.sh's gate 1 runs.
+      - name: Build the application and the hosted test bundle
         run: |
           set -euo pipefail
           xcodebuild \
@@ -248,8 +254,14 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/NepalKitDerivedData" \
             -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build-for-testing
           echo "NEPAKIT_BUILT_PLIST=$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/Info.plist" >> "$GITHUB_ENV"
+
+      - name: The built product exists where the suites will look
+        run: |
+          set -euo pipefail
+          test -f "$NEPAKIT_BUILT_PLIST" || { echo "::error::no Info.plist at $NEPAKIT_BUILT_PLIST; the plist tests would skip silently"; exit 1; }
+          test -x "$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/MacOS/NepalKit"
 
       # Runs after the build so the checker inherits NEPAKIT_BUILT_PLIST and the
       # built product joins the floor comparison; Pages' run has no build, so it
@@ -264,10 +276,9 @@ jobs:
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
-      # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
-      # builds the app clean and then hangs before connecting, reproducibly and
-      # including with an empty test; it is a toolchain issue, not a reason to
-      # delete the app-layer tests. See ADR-0005.
+      # The committed SwiftPM harness, not `xcodebuild test`, which once hung on
+      # the hosted runner before connecting, even with an empty test. See
+      # ADR-0005.
       #
       # After the build, and with the product pointed at: `InfoPlistKeysTests`
       # checks the built Info.plist rather than the project, because a key the

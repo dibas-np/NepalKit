@@ -198,6 +198,15 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
     exit 1
 }
 
+# Check entitlements, Sparkle keys and the embedded Sparkle version on the
+# exported product: ENABLE_* build settings are merged into the entitlements at
+# signing (how 1.6.0 shipped an unrecorded file-access entitlement), and the
+# Sparkle pin is only as good as package resolution on this machine. This is the
+# check docs/dependencies.md refers to.
+python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
+    --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
+    --entitlements "$ROOT/$APP/$APP.entitlements"
+
 # Notarize the APP, not only the DMG.
 #
 # Sparkle never hands a user the DMG. It extracts the enclosure and copies the

@@ -113,18 +113,6 @@ struct GeneralSettingsView: View {
 }
 
 #if DEBUG
-/// Preview stand-in so the canvas renders without the login-item service or
-/// persistence side effects. Nothing else may use this: the production seam lives
-/// in NepalKitApp, and a mock that leaked past #if DEBUG would silently replace
-/// the real service. It stays nonisolated because `LoginItemServicing` is
-/// nonisolated, and a MainActor conformance only satisfies that protocol where
-/// default isolation agrees.
-private final class PreviewLoginService: LoginItemServicing {
-    var isRegistered = true
-    func register() throws {}
-    func unregister() throws {}
-}
-
 #Preview("General tab") {
     GeneralSettingsView(
         settings: .preview,

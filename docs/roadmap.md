@@ -10,7 +10,7 @@ committed to is the condition that would let it be built.
 
 ## Where the project is
 
-v1.6.0 ships a menu-bar date, a converter, Siri and Shortcuts support, and a
+v1.6.1 ships a menu-bar date, a converter, Siri and Shortcuts support, and a
 standalone Apple Watch app with four complication styles. See
 [CHANGELOG.md](../CHANGELOG.md) for what has actually changed and
 [docs/achievements.md](achievements.md) for what it added up to.
@@ -27,8 +27,8 @@ manifest, and a review cycle.
 two channels have different update models — Sparkle versus the store — and
 supporting both is a permanent tax, not a one-time cost.
 
-*Would change:* ADR-0011 (one product, one update channel) if the answer is that
-both ship.
+*Would change:* ADR-0008 (distribution is a notarized disk image, not the
+store) if the answer is that both ship.
 
 ### Reducing the supported calendar range
 
@@ -56,9 +56,10 @@ risk — a compromised single account — are closed by this and by nothing else
   [docs/coverage.md](coverage.md). Raising the floor is a separate decision from
   measuring it, and the honest reason not to rush it is that the SwiftUI layer
   cannot be covered without either UI tests or a view-logic refactor, and
-  [ADR-0005](adr/0005-app-layer-test-execution.md) records why hosted UI tests
-  are not available here.
-- **Signing release tags.** Implemented; see
+  [ADR-0005](adr/0005-app-layer-test-execution.md) records the harness decision
+  and the hosted-runner history.
+- **Signing release tags.** Documented; no published tag is signed yet. The first
+  signed tag will be the next release's. See
   [docs/release-verification.md](release-verification.md) for how to verify one.
 
 ## Not planned
@@ -69,7 +70,7 @@ Stated so that their absence is a decision rather than an oversight.
 |---|---|
 | Telemetry, analytics, crash reporting | Would be a second third-party dependency and the first with network egress of its own. See ADR-0012 for how the dependency budget is argued |
 | A website separate from the repository | The GitHub repository is the documentation. A second site would need its own security posture and this project has no capacity for two |
-| Hosting the app outside the Mac App Store for the Mac app | The Developer ID channel is signed, notarized and update-signed end to end today. Adding a store would mean maintaining two update models |
+| Mac App Store distribution for the Mac app | The Developer ID channel is signed, notarized and update-signed end to end today. Adding a store would mean maintaining two update models |
 | A public API or plugin interface | The surface would be a security commitment. Not one a solo maintainer should make |
 
 ## How this document goes stale

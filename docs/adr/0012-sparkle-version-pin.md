@@ -84,9 +84,11 @@ from the human-facing short version.
 ## Consequence for the signing key
 
 Sparkle's EdDSA private key is the one unrecoverable artifact in this release
-plan: lose it and no installed copy ever updates again. It is generated, backed
-up in at least two independent places, and the backup is verified to restore
-before the first distributed build. It is never committed. The pinned version
+plan: lose it and no installed copy ever updates again. It is never committed.
+The plan was to back it up in at least two independent places and verify a
+restore before the first distributed build. That is not yet met: "Custody as
+actually configured" below records one off-machine copy that may share a failure
+domain with the keychain, and no restore. The pinned version
 above does not change that dependency — it is the same key contract in 2.9.6 as
 in any other 2.x release.
 
@@ -99,7 +101,7 @@ the public key belongs in the repository.
 | Artifact | Needed to | Lives where |
 | --- | --- | --- |
 | Public key | build and ship the app | repository / build settings |
-| Private key | sign a release artifact, generate the appcast | release machine and CI secret store only |
+| Private key | sign a release artifact, generate the appcast | release machine only (never in CI — see docs/secrets-policy.md) |
 
 So the private key is required at exactly one moment — producing or verifying a
 signed update — and never during development, never in the app target, and never
@@ -195,6 +197,10 @@ The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
 
+*Note, 2026-10-11:* both boxes above are still unticked. A lost key ends
+updates for every existing install; it is not a manual recovery (see
+"`SURequireSignedFeed` also requires ..." below).
+
 The public half is not the risk and needs no custody: it is committed in
 `NepalKit/Info.plist`, pinned by `InfoPlistKeysTests`, and a lost private half is
 unrecoverable only because signing is asymmetric. A user who loses the key can
@@ -254,6 +260,13 @@ feed. This was read out of `SPUExtractSignedFeed.m` and then reproduced against
 real `sign_update` output, rather than reasoned about, because a verifier that
 guesses the canonical form rejects valid feeds and one that only tests its own
 signatures looks green while being wrong.
+
+*Correction, 2026-10-11:* the claim above that `generate_appcast` "has no option
+to sign the feed" held for 2.9.6, not for the pinned 2.10.0. Its `generate_appcast/ArchiveItem.swift` reads
+`SURequireSignedFeed` from each archive's `Info.plist` and, when it is set (as
+NepalKit's is), signs the feed it writes. `verify-appcast.sh` then embeds the
+release notes, which invalidates that signature, so `sign_update` still re-signs
+the feed as the last step. The ordering rule below is unchanged.
 
 It signs exact bytes, so it has to be the last step of a release: the notes
 injection in `verify-appcast.sh` rewrites the feed, and anything signed before it
@@ -321,9 +334,11 @@ Sparkle's documentation for both says to use them only if you are "not likely to
 lose access to your private EdDSA key". Verification this strict means a lost key
 costs updates outright. That is what the two unticked custody boxes above are
 about, and they remain unticked: enabling these keys does not settle custody, it
-raises the cost of not settling it. Recovery is possible — releases are also
-Apple Developer ID signed, so a rebuilt key can be pushed — but it is a manual
-recovery, not a non-event.
+raises the cost of not settling it. Existing installs cannot survive a lost
+key: with this key set, a feed signed by any other key is rejected before
+Sparkle reads an item, so the Apple code-signing fallback never runs, and users
+must reinstall by hand or through Homebrew. Custody of the private key is the
+only mitigation.
 
 ## Freshness of this pin
 
@@ -341,7 +356,8 @@ The check reads `project.pbxproj` rather than `Package.resolved` because Xcode
 deletes the lockfile: `-resolvePackageDependencies` resolves correctly and then
 relocates it out of `project.xcworkspace/xcshareddata/swiftpm/` entirely, leaving
 a tracked-file deletion in the working tree. Resolution is unaffected — resolving
-with the lockfile absent still yields 2.9.6, because this requirement is what
+with the lockfile absent still yields the pinned version (2.10.0 at the time of
+writing), because this requirement is what
 governs it — but a check that reads a file the toolchain deletes would eventually
 fail for a reason unrelated to Sparkle.
 

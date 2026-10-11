@@ -51,7 +51,15 @@ struct NepalKitApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverView(settings: settingsModel, clock: clockModel, converter: converterModel, dataset: AppData.dataset)
+            PopoverView(
+                settings: settingsModel,
+                clock: clockModel,
+                converter: converterModel,
+                dataset: AppData.dataset,
+                // The same instance Settings reads, so an update found while the
+                // popover is open puts the footer's button on screen immediately.
+                updates: updateCheckModel
+            )
         } label: {
             // The shown label stays the short date, prefixed only while an update
             // is unattended; the announcement is a sentence that names the app

@@ -4,6 +4,22 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.6.1 — unreleased
+
+### Install an update from the menu bar
+
+When NepalKit finds an update, an Update… button appears in the popover's footer. It stays after you close the update alert, so an update you put off is one click away.
+
+### Fixes
+
+- Checking for updates while you are on the latest version now says NepalKit is up to date. It previously reported that the check had failed.
+- When a check cannot finish, because there is no network or the update feed cannot be reached or verified, Settings now says so instead of showing the previous result.
+- NepalKit no longer asks for read-only access to files you choose. It never used that permission.
+
+### Verifiable releases
+
+This release's tag is signed with the same key as the project's commits. The repository's release verification guide shows how to check a download and its tag.
+
 ## 1.6.0 — 2026-10-04
 
 ### Today on your Apple Watch

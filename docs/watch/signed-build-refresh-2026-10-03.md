@@ -69,7 +69,7 @@ Release nondevelopment inspection used `strings` and `nm` on both executables. T
 - Device installation, VoiceOver rechecks, remaining native/family checks and the recorded ordinary-path midnight session remain pending.
 - Projected Bikram Sambat 2084 still independently blocks final feature acceptance pending ADR-0001 compliance.
 
-Related: [readiness evidence](readiness-evidence.md), [physical-validation checklist](physical-validation.md), and [execution/readiness review](../../.scratch/apple-watch-delivery/readiness-review.md).
+Related: [readiness evidence](readiness-evidence.md), [physical-validation checklist](physical-validation.md), and execution/readiness review (local working notes, not in the repository).
 
 ## Dataset 2.0.1 follow-up
 

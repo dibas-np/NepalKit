@@ -41,6 +41,11 @@ RSS_OPEN = (
 RSS_CLOSE = "</channel></rss>"
 
 
+# The default build is derived from the version so multi-item feeds get distinct
+# build numbers; the verifier rejects a newest build that is not the highest.
+_DERIVED = object()
+
+
 def make_item(
     url: str | None = "https://example.com/NepalKit-1.0.zip",
     length: str | None = "1234",
@@ -49,9 +54,15 @@ def make_item(
     version: str = "1.0",
     include_enclosure: bool = True,
     minimum_system_version: str | None = "26.6",
+    build: str | None | object = _DERIVED,
 ) -> str:
     parts = ["<item>", "<title>t</title>"]
     parts.append(f"<sparkle:shortVersionString>{version}</sparkle:shortVersionString>")
+    if build is _DERIVED:
+        major, minor, patch = (list(map(int, version.split("."))) + [0, 0])[:3]
+        build = str(major * 10000 + minor * 100 + patch)
+    if build is not None:
+        parts.append(f"<sparkle:version>{build}</sparkle:version>")
     if minimum_system_version is not None:
         parts.append(
             f"<sparkle:minimumSystemVersion>{minimum_system_version}"
@@ -337,6 +348,42 @@ class VerifyAppcastTest(unittest.TestCase):
             feed = write_feed(tmp_path, make_item(signature=None))
             output = run_verify(self, feed, write_plist(tmp_path))
         self.assertIn("no sparkle:edSignature", output)
+
+    def _build_feed_output(self, items: str) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, items)
+            return run_verify(self, feed, write_plist(tmp_path))
+
+    def test_newest_release_must_have_a_higher_build_than_every_earlier_one(self) -> None:
+        output = self._build_feed_output(
+            make_item(version="1.1", build="5") + make_item(version="1.0", build="5")
+        )
+        self.assertIn("not higher than build 5", output)
+
+    def test_newest_release_below_an_earlier_build_fails(self) -> None:
+        output = self._build_feed_output(
+            make_item(version="1.1", build="4") + make_item(version="1.0", build="5")
+        )
+        self.assertIn("not higher than build 5", output)
+
+    def test_historical_equal_builds_below_the_newest_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(
+                tmp_path,
+                make_item(version="1.2", build="6")
+                + make_item(version="1.1", build="5")
+                + make_item(version="1.0", build="5"),
+                priv,
+            )
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key))
+        self.assertIn("newest build 6 is higher", output)
+
+    def test_missing_build_number_fails(self) -> None:
+        output = self._build_feed_output(make_item(version="1.0", build=None))
+        self.assertIn("has no integer sparkle:version", output)
 
     def test_signature_not_base64_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -403,6 +403,25 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("cannot identify a unique newest release")
     current_item = items[release_versions.index(latest_version)]
 
+    # Sparkle offers an update only when its build number is higher than the
+    # installed copy's, so a release reusing the previous build ships to nobody
+    # (1.3.0 and 1.4.0 both published build 5). Only the newest item is checked:
+    # earlier items are published and signed, and not rewritten (ADR-0009).
+    builds = []
+    for item in items:
+        raw = item.findtext("sparkle:version", default="", namespaces=NS).strip()
+        if not re.fullmatch(r"[0-9]+", raw):
+            fail(f"item {item.findtext('sparkle:shortVersionString', default='?', namespaces=NS)} "
+                 f"has no integer sparkle:version (build number): {raw!r}")
+        builds.append(int(raw))
+    newest_build = builds[release_versions.index(latest_version)]
+    highest_other = max((b for i, b in enumerate(builds) if items[i] is not current_item), default=0)
+    if newest_build <= highest_other:
+        fail(f"newest release declares build {newest_build}, which is not higher than build "
+             f"{highest_other} already offered; Sparkle will offer this update to nobody. "
+             f"Bump CURRENT_PROJECT_VERSION (ADR-0009).")
+    ok(f"newest build {newest_build} is higher than every earlier build")
+
     if enclosure is not None:
         matches = [item for item in items
                    if item.find("enclosure") is not None

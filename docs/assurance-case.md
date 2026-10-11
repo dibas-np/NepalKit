@@ -71,9 +71,10 @@ Depends on:
   shipped table diverges from its recorded baseline.
 - **2b. 2084 BS is published as a projection.** *Evidence:* README, SOURCES.md,
   the About window, and CHANGELOG.md all say so.
-- **2c. Out-of-range and invalid input produces an error state, not a plausible
-  answer.** *Evidence:* `Conversion.swift` returns explicit unsupported and error
-  cases; `InvalidDateTests`, `Projected2084Tests`.
+- **2c. Out-of-range and invalid input never produces a plausible wrong answer.**
+  Out-of-range input produces the range boundary state, which is distinguishable
+  from an error; invalid input produces `nil`. *Evidence:*
+  `Conversion.swift` returns `nil` rather than a guess; `InvalidDateTests`, `Projected2084Tests`.
 
 **Inference.** A wrong date is possible — the dataset has documented
 disagreements — but it cannot be wrong *silently* in the sense of being
@@ -88,7 +89,8 @@ Depends on:
 
 - **3a. There is one network call and it is to one HTTPS host.** *Evidence:*
   `NepalKit/NepalKit.entitlements` grants exactly one network entitlement, for
-  the update check; no analytics SDK is depended on
+  the update check, and `scripts/verify-release-product.py` asserts the signed
+  product carries exactly that file's set; no analytics SDK is depended on
   ([docs/dependencies.md](dependencies.md)).
 - **3b. No credential or personal datum is stored.** *Evidence:* preferences in
   the app's own container; `no_leaked_credentials` on the badge entry.
@@ -112,7 +114,7 @@ Named because an assurance case that lists only what it has is hiding the rest.
 | --- | --- |
 | Independent security review | The whole case is self-authored. Findings F3, F5 and F8 exist because of this |
 | Dynamic analysis or fuzzing | The conversion path is argued from tests, not from adversarial input |
-| 80% statement coverage | Measured 62.78%; see [docs/coverage.md](coverage.md) |
+| 80% statement coverage | Measured 38.91%; see [docs/coverage.md](coverage.md) |
 | A second maintainer | No second reviewer for any claim here |
 | Pen test of the updater | The highest-consequence path is argued from code and notarization, never attacked |
 

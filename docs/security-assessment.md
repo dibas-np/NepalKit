@@ -158,8 +158,11 @@ date.
 **State: mitigated and tested.** Spoken output uses Latin digits and
 transliterated month names because Devanagari digits are not reliably
 pronounced; the spoken form is a separate code path from the visual one rather
-than a formatting flag; conversion returns an explicit unsupported or error state
-instead of a plausible wrong answer; accessibility labels are covered by tests.
+than a formatting flag; neither conversion path produces a plausible wrong
+answer: `bsToAD` and `adToBS` return `nil` for invalid or out-of-range input,
+and the Watch's `resolvedDay(...)` reports a range boundary as a result and
+throws `DayResolutionError` for invalid input or a calculation failure;
+accessibility labels are covered by tests.
 
 ### F8 — A CodeQL alert does not block a merge
 

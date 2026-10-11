@@ -29,7 +29,7 @@ provenance gap without supporting evidence. ADR-0014 governs the current policy.
 
 ## Getting set up
 
-The app's deployment floor is macOS 26, and `NepalKitCore` will not build
+The app's deployment floor is macOS 26.6, and `NepalKitCore` will not build
 against anything older.
 
 **The floor is macOS 26.6, and CI runs Xcode 27.** The floor gate
@@ -48,7 +48,8 @@ that does and does not mean:
   compile-time guarantee plus release evidence, not on CI.
 
 The move off `macos-26` was forced, not preferred. Xcode 26.6's SDK tops out at
-deployment target 26.5.99, so it could not even express a 26.6 floor, and Xcode
+deployment target 26.5.99, so it warned that it could not fully express a 26.6
+floor (the CodeQL build still compiles at `-target macos26.6`), and Xcode
 26 cannot open the object-version-110 project file that Xcode 27 writes — every
 build-settings edit prompted an upgrade that silently broke the gate. The header
 of `macos26-floor.yml` records the trade and the way out; ADR-0007 records the
@@ -66,6 +67,11 @@ The two are separate compilers over the same sources:
 excludes the two files most in need of strict checking, so if the modes drift
 apart the shipping configuration is left unchecked by any gate. Change one and
 change the other in the same commit.
+`scripts/apptests/Package.swift` must also mirror each Xcode target's upcoming
+features separately, not as one union: the app target's
+`NonisolatedNonsendingByDefault` and `InferIsolatedConformances` (from
+`SWIFT_APPROACHABLE_CONCURRENCY`) plus `MemberImportVisibility`, and the test
+target's first two only.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -81,31 +87,33 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these fourteen, in this order:
+It runs these sixteen, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
 xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
-python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swift files
+python3 scripts/test_swiftlint.py          # 2. the bootstrap's own suite, then all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
 swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
-./scripts/run-app-tests.sh                  # 4. the app: 179 tests
+./scripts/run-app-tests.sh                  # 4. the app: 188 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
 python3 scripts/test_unregister_launchservices.py  # 8. the release pipeline's LaunchServices hygiene
 python3 scripts/test_verify_appcast.py      # 9. the appcast verifier
-python3 scripts/test_verify_bestpractices_json.py  # 10. the badge entry's own checks
-python3 scripts/verify-bestpractices-json.py # 11. the badge entry is well-formed
-python3 scripts/measure-coverage.py    # 12. coverage has not fallen below its floor
+python3 scripts/test_verify_release_product.py  # 10. the release product verifier
+python3 scripts/test_verify_bestpractices_json.py  # 11. the badge entry's own checks
+python3 scripts/verify-bestpractices-json.py # 12. the badge entry is well-formed
+python3 scripts/test_measure_coverage.py    # 13. the coverage parser's own checks
+python3 scripts/measure-coverage.py    # 14. coverage has not fallen below its floor
 python3 scripts/test_verify_deployment_floor.py
-python3 scripts/verify-deployment-floor.py  # 13. the floor is one number everywhere
+python3 scripts/verify-deployment-floor.py  # 15. the floor is one number everywhere
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 14. the Watch app and its complications
+    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications: 54 tests
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -115,7 +123,7 @@ guards a failure that is invisible from the outside — a bundle registered unde
 temp path that is later deleted cannot be unregistered, so a release pipeline
 that cleans up without unregistering first leaves one stale entry per run
 forever. Ninety-plus of them for this bundle id is what it looked like in
-practice. Gate 13 runs the floor verifier's own suite before the verifier,
+practice. Gate 15 runs the floor verifier's own suite before the verifier,
 because `scripts/test_verify_deployment_floor.py` is run by no other gate
 here. CI runs both commands too: `.github/workflows/macos26-floor.yml` runs
 them on every pull request after its Mac build, so the checker compares the
@@ -132,7 +140,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those fourteen are the direct consequence of gates that once reported green
+Two of those sixteen are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -160,22 +168,24 @@ packaged artifacts and the published feed rather than over a checkout.
 
 Two `verify-*` scripts are in the list, and the exceptions are worth naming so
 the rule above does not read as broader than it is:
-`scripts/verify-bestpractices-json.py` is gate 11 because it needs nothing but the
-committed entry file, and `scripts/verify-deployment-floor.py` is gate 13 because
+`scripts/verify-bestpractices-json.py` is gate 12 because it needs nothing but the
+committed entry file, and `scripts/verify-deployment-floor.py` is gate 15 because
 it needs only the built product. A structural check that only runs when someone
 remembers to run it is not a gate. Everything that needs the network, a
 credential, or a built artifact stays out.
 
-CI runs both, in `badge-entry.yml`, and runs the checker's own suite before the
+CI runs the badge pair (gates 11 and 12) in `badge-entry.yml` and gate 15 in
+`macos26-floor.yml` and `pages.yml`, each with the checker's own suite before the
 checker — a validator that has quietly stopped validating reports green, which
 is the failure mode this ladder exists to prevent. That claim was aspirational
 until that workflow existed: the two gates ran only when a human ran this
 script. Two further gates are deliberately local-only and say so in the same
 workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
-runner does not have, and the coverage floor (gate 12) needs the macOS
-toolchain and about six minutes. Every other gate here runs in CI, in the
-workflow that owns it. This command is the local half and not a replacement:
-it is the only thing that runs all fourteen in one pass.
+runner does not have, and the coverage floor (gate 14) needs the macOS
+toolchain and about six minutes. CI runs every other gate in the workflow that
+owns it; gate 1 runs as `build-for-testing` in `macos26-floor.yml`, so the
+hosted test bundle compiles on every pull request. This command is the local half and not a replacement:
+it is the only thing that runs all sixteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
 the application.
@@ -200,11 +210,13 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
 ```
 
 Prefer that recipe to leaving it to discovery. A discovered product is used only
-when it is **newer than the source that builds it**; an older one is refused,
+when its executable is **newer than the source that builds it** (not its
+`Info.plist`, which Xcode rewrites only when its own inputs change); an older one is refused,
 because those tests exist to catch keys that reach the product — and a
-product from last week is not what this source produces. Either way the run
+product from last week is not what this source produces. An explicit
+`NEPAKIT_BUILT_PLIST` that cannot be read **fails** the run. Either way the run
 prints what it found and what it compared against. Without a usable product,
-the suite's tests **skip with a reason** rather than pass silently. That is deliberate:
+the seven built-product plist tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
 
 ## Tests: what has to come with a change
@@ -243,7 +255,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 14 below and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 16 above and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
@@ -254,12 +266,14 @@ list, in order, is above. Two conventions matter more than the individual
 commands:
 
 - **A skipped test is not a passing test.** The plist tests skip with a reason
-  when there is no built product to read, and the Watch suite skips with an
-  annotation when no usable watchOS runtime is installed. Both are deliberate: a
+  when there is no built product to read, and the Watch suite skips with a
+  warning annotation when no usable watchOS runtime is installed, but only in CI;
+  `check-all.sh` fails instead, so a local run never reports green for a gate it
+  did not run. Both are deliberate: a
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
-- **Run the suite locally before opening the pull request.** It is the same
-  fourteen gates CI runs, and a red local run is a faster red than a red one after
+- **Run the suite locally before opening the pull request.** CI runs every one
+  of these sixteen gates except the two local-only ones (8 and 14), and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome

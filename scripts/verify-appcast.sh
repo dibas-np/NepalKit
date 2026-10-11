@@ -38,23 +38,62 @@ if [[ ! -d "$ARCHIVES_DIR" ]]; then
     exit 1
 fi
 
-# Sparkle's tooling is not vendored, and its path contains a DerivedData hash
-# that changes per machine. Search for it rather than hardcoding. SPARKLE_BIN
-# overrides, which is what CI and a clean checkout use.
+# Sparkle's tooling is not vendored. SPARKLE_BIN overrides; otherwise only this
+# checkout's own build is used, because sign_update reaches the private key and
+# must not be whichever project's DerivedData happens to match a glob.
 if [[ -n "${SPARKLE_BIN:-}" ]]; then
     GENERATE_APPCAST="$SPARKLE_BIN/generate_appcast"
 else
-    GENERATE_APPCAST=""
-    for candidate in ${HOME}/Library/Developer/Xcode/DerivedData/*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast(N); do
-        GENERATE_APPCAST="$candidate"
-    done
+    GENERATE_APPCAST="$ROOT/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
 fi
-if [[ -z "$GENERATE_APPCAST" || ! -x "$GENERATE_APPCAST" ]]; then
-    echo "generate_appcast not found." >&2
-    echo "Set SPARKLE_BIN to the Sparkle bin directory, e.g." >&2
-    echo "  SPARKLE_BIN=\$(dirname \$(which generate_appcast)) scripts/verify-appcast.sh <dir>" >&2
+if [[ ! -x "$GENERATE_APPCAST" ]]; then
+    echo "generate_appcast not found at $GENERATE_APPCAST." >&2
+    echo "Run scripts/check-all.sh (gate 1 builds Sparkle into DerivedData/) or set SPARKLE_BIN" >&2
+    echo "to the Sparkle bin directory." >&2
     exit 1
 fi
+
+# The binaries have no version flag, so the pin is checked against the tag of the
+# source checkout beside them (artifacts/ and checkouts/ share SourcePackages/).
+if [[ "${SPARKLE_BIN_UNPINNED:-}" != "1" ]]; then
+    PINNED_SPARKLE="$(python3 - "$ROOT/NepalKit.xcodeproj/project.pbxproj" <<'PY'
+import pathlib, re, sys
+text = pathlib.Path(sys.argv[1]).read_text()
+# Only Sparkle's own block, so a later package's requirement is never read as it.
+block = re.search(
+    r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
+    r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
+    text, re.S)
+kind = block and re.search(r'kind = (\w+);', block.group(1))
+if not kind:
+    raise SystemExit("no Sparkle package requirement found in project.pbxproj")
+version = re.search(r'version = ([\d.]+);', block.group(1))
+if kind.group(1) != "exactVersion" or not version:
+    raise SystemExit("Sparkle is pinned as %s, not exactVersion" % kind.group(1))
+print(version.group(1))
+PY
+)"
+    SPARKLE_CHECKOUT="$(dirname "$GENERATE_APPCAST")/../../../../checkouts/Sparkle"
+    if [[ ! -d "$SPARKLE_CHECKOUT" ]]; then
+        echo "no Sparkle source checkout at $SPARKLE_CHECKOUT; cannot confirm the tools match the $PINNED_SPARKLE pin." >&2
+        echo "Set SPARKLE_BIN_UNPINNED=1 only for a CI image whose tools live elsewhere, never on the release machine." >&2
+        exit 1
+    fi
+    FOUND_SPARKLE="$(git -C "$SPARKLE_CHECKOUT" describe --tags --exact-match 2>/dev/null || true)"
+    if [[ "$FOUND_SPARKLE" != "$PINNED_SPARKLE" ]]; then
+        echo "Sparkle tools belong to '${FOUND_SPARKLE:-unknown}', but the pin is $PINNED_SPARKLE; refusing to use them." >&2
+        exit 1
+    fi
+fi
+# The pin check above vouches for this directory, and sign_update is run from
+# it later, so neither tool may resolve (through a symlink) to anywhere else.
+TOOL_DIR="${GENERATE_APPCAST:h:A}"
+for tool in "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"; do
+    if [[ -e "$tool" && "${tool:A:h}" != "$TOOL_DIR" ]]; then
+        echo "$tool resolves outside $TOOL_DIR; refusing to run a Sparkle tool the pin check did not cover." >&2
+        exit 1
+    fi
+done
 echo "using $GENERATE_APPCAST"
 
 if [[ -z "$URL_PREFIX" ]]; then
