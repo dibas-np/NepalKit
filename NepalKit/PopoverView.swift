@@ -230,9 +230,10 @@ private struct TodaySection: View {
                     // Label only: `children: .ignore` leaves a `Text` with no
                     // accessibility role at all. Replacing the label keeps its
                     // static-text role.
-                    .accessibilityLabel(
-                        SpokenDate.bs(todayBS, monthNames: settings.monthNames)
-                    )
+                    // The Gregorian date is no longer a line of its own (the
+                    // grid shows it under today), so the announcement carries
+                    // it: one sentence with both calendars and the weekday.
+                    .accessibilityLabel(heroAnnouncement(todayBS))
             } else {
                 // Range boundary state: the bundled data has ended. Say so in
                 // words rather than showing a blank, and keep the Gregorian date
@@ -259,7 +260,9 @@ private struct TodaySection: View {
                 )
             }
 
-            if let todayAD = clock.todayADDate() {
+            // Only past the supported range: the grid below shows today's
+            // Gregorian day and month, so in range this line repeated it.
+            if clock.todayBSDate(in: dataset) == nil, let todayAD = clock.todayADDate() {
                 // One date, two channels: the shown line as configured, the
                 // announcement with Latin digits and the weekday folded in, so
                 // the whole line is a single spoken sentence.
@@ -278,6 +281,15 @@ private struct TodaySection: View {
                 )
             }
         }
+    }
+}
+
+extension TodaySection {
+    fileprivate func heroAnnouncement(_ todayBS: BSDay) -> String {
+        SpokenDate.today(
+            todayBS, gregorian: clock.todayADDate(),
+            weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames
+        )
     }
 }
 

@@ -167,6 +167,30 @@ struct MonthGridModelTests {
         #expect(model.spokenWeekdayHeaders(settings: latin) == englishWeekdayNames)
     }
 
+    @Test func gregorianSpanNamesBothMonths() throws {
+        // Baisakh 2082 runs 14 April to 14 May 2025.
+        let model = try baisakh2082()
+        #expect(model.gregorianSpan(settings: latin) == "Apr–May 2025")
+        #expect(model.gregorianSpan(settings: devanagari) == "Apr–May २०२५")
+        #expect(model.spokenGregorianSpan() == "April to May 2025")
+    }
+
+    @Test func gregorianSpanCrossingTheYearNamesBothYears() throws {
+        // Poush 2082 starts in December 2025 and ends in January 2026.
+        let model = MonthGridModel(now: try TestDates.utc(2025, 12, 25, 6, 0))
+        #expect(model.title(settings: latin) == "Poush 2082")
+        #expect(model.gregorianSpan(settings: latin) == "Dec 2025 – Jan 2026")
+        #expect(model.spokenGregorianSpan() == "December 2025 to January 2026")
+    }
+
+    @Test func todaysAnnouncementCarriesBothCalendars() {
+        let bs = BSDay(year: 2083, month: 7, day: 1)
+        let ad = GADay(year: 2026, month: 10, day: 18)
+        #expect(SpokenDate.today(bs, gregorian: ad, weekday: "Sunday", monthNames: .transliterated)
+            == "1 Kartik 2083. 18 October 2026, Sunday")
+        #expect(SpokenDate.today(bs, gregorian: nil, weekday: nil, monthNames: .transliterated) == "1 Kartik 2083")
+    }
+
     @Test func theMonthLivesInTodayNotItsOwnTab() {
         #expect(PopoverDestination.allCases == [.today, .convert])
     }

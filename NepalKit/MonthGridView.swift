@@ -13,7 +13,7 @@ struct MonthGridView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            MonthGridHeader(model: model, settings: settings)
+            MonthGridHeader(model: model, settings: settings, clock: clock)
 
             if model.isTodayPastSupportedRange {
                 // Range boundary state, not an error: the dataset ended and the
@@ -51,20 +51,37 @@ private struct TodayFollower: View {
 private struct MonthGridHeader: View {
     let model: MonthGridModel
     let settings: DisplaySettings
+    let clock: ClockModel
 
     var body: some View {
         HStack(spacing: 4) {
-            Text(model.title(settings: settings))
-                .font(.headline)
-                .accessibilityLabel(model.spokenTitle(settings: settings))
-                .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(model.title(settings: settings))
+                    .font(.headline)
+                    .accessibilityLabel(model.spokenTitle(settings: settings))
+                    .accessibilityAddTraits(.isHeader)
+                // Which Gregorian months these days fall in, so the Gregorian
+                // digits under each day have a month to belong to.
+                if let span = model.gregorianSpan(settings: settings) {
+                    Text(span)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(model.spokenGregorianSpan() ?? span)
+                }
+            }
 
             Spacer(minLength: 4)
 
-            Button(Strings.todayLabel, systemImage: Symbols.monthGridToday) {
-                model.showToday(now: .now)
+            // Text alone: the tab above already says Today, and an icon
+            // beside it crowded the title off its row in Devanagari.
+            Button(Strings.todayLabel) {
+                model.showToday(now: clock.now)
             }
             .disabled(model.isShowingTodayMonth)
+            // Hidden rather than greyed while it would do nothing, which is
+            // most of the time; it keeps its width so the chevrons stay put.
+            .opacity(model.isShowingTodayMonth ? 0 : 1)
+            .accessibilityHidden(model.isShowingTodayMonth)
             .accessibilityHint(Strings.showTodayHelp)
 
             Button(Strings.previousMonthLabel, systemImage: Symbols.previousMonth, action: model.showPreviousMonth)

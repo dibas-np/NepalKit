@@ -152,6 +152,44 @@ final class MonthGridModel {
         "\(monthName(month: shown.month, style: settings.monthNames)) \(formatNumber(shown.year, digits: settings.digits))"
     }
 
+    /// The Gregorian months the shown month spans, beside its title:
+    /// "Oct–Nov 2026", or "Dec 2026 – Jan 2027" across a year end. Short
+    /// month names, because the header shares its row with three buttons.
+    /// Nil only if the table cannot place the month.
+    func gregorianSpan(settings: DisplaySettings) -> String? {
+        guard let (first, last) = gregorianBounds() else { return nil }
+        let short = { (month: Int) in String(gregorianMonthName(month).prefix(3)) }
+        let year = { (year: Int) in formatNumber(year, digits: settings.digits) }
+        if first.year != last.year {
+            return "\(short(first.month)) \(year(first.year)) – \(short(last.month)) \(year(last.year))"
+        }
+        if first.month != last.month {
+            return "\(short(first.month))–\(short(last.month)) \(year(first.year))"
+        }
+        return "\(short(first.month)) \(year(first.year))"
+    }
+
+    /// The span as spoken: full month names and Latin digits.
+    func spokenGregorianSpan() -> String? {
+        guard let (first, last) = gregorianBounds() else { return nil }
+        let name = gregorianMonthName
+        if first.year != last.year {
+            return "\(name(first.month)) \(first.year) to \(name(last.month)) \(last.year)"
+        }
+        if first.month != last.month {
+            return "\(name(first.month)) to \(name(last.month)) \(first.year)"
+        }
+        return "\(name(first.month)) \(first.year)"
+    }
+
+    private func gregorianBounds() -> (GADay, GADay)? {
+        guard let length = dataset.monthLengths(for: shown.year)?[shown.month - 1],
+              let first = bsToAD(BSDay(year: shown.year, month: shown.month, day: 1), in: dataset),
+              let last = bsToAD(BSDay(year: shown.year, month: shown.month, day: length), in: dataset)
+        else { return nil }
+        return (first, last)
+    }
+
     /// The title as spoken: the month name in the user's setting, the year in
     /// Latin digits (`SpokenDate`'s rule).
     func spokenTitle(settings: DisplaySettings) -> String {
