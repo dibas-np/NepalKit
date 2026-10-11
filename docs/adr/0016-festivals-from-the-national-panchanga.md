@@ -40,8 +40,8 @@ put a mark on almost every day and stop meaning anything.
      Diwas and Sambidhan Diwas.
    It excludes observances that recur every fortnight or month (Ekadashi,
    Pradosh, Purnima and Aunsi fasts, monthly Sankranti), local jatras, the
-   international days, and the timing notes. The selected list and the
-   reason for each entry are in the year's data file.
+   international days, and the timing notes. The selected list is in the
+   year's data file; each entry falls under one of the two bullets above.
 
 3. **Typed by hand, checked twice.** The Panchanga is an image-only PDF. Each
    year's entries are read from it and typed in, with the Panchanga's own
