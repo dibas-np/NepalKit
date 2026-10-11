@@ -41,6 +41,16 @@ class Verdict(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("overdue", message)
 
+    def test_a_future_check_date_fails(self):
+        ok, message = cpr.verdict(D(2027, 2, 1), D(2099, 1, 1), 2084)
+        self.assertFalse(ok)
+        self.assertIn("in the future", message)
+
+    def test_one_day_ahead_is_tolerated(self):
+        # A local date can be a day ahead of the runner's UTC date.
+        ok, _ = cpr.verdict(D(2027, 2, 1), D(2027, 2, 2), 2084)
+        self.assertTrue(ok)
+
     def test_silent_once_2085_ships(self):
         ok, message = cpr.verdict(D(2027, 6, 1), None, 2085)
         self.assertTrue(ok)

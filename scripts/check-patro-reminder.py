@@ -57,6 +57,11 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
                        "notices on npns.gov.np, then set `last_checked:` in "
                        "docs/release-evidence/dataset-extension-procedure.md")
     age = (today - checked).days
+    if age < -1:
+        # A future date would make the age negative and pass forever. One day of
+        # slack covers a local date ahead of the runner's UTC date.
+        return False, (f"`last_checked: {checked}` is in the future; record the date the "
+                       "check was actually made")
     if age > MAX_AGE_DAYS:
         return False, (f"the monthly Patro check is overdue: last recorded {checked}, {age} days ago. "
                        "Read the Samiti's notices on npns.gov.np, follow the procedure, and update "

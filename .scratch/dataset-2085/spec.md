@@ -40,7 +40,7 @@ around Magh 2083 BS (January–February 2027)**. The 2083 almanac was confirmed
 published in December 2025, following the same pattern as 2082.
 
 So the first decision comes in **January–February 2027**, roughly three months
-before 2084 BS begins on 13 April 2027. That three months is the entire budget
+before 2084 BS begins on 14 April 2027. That three months is the entire budget
 for a decision, a transcription, a baseline regeneration and a release.
 
 **Target the release months before 2028-04-12, not weeks.** The deadline is

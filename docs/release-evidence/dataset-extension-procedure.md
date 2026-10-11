@@ -58,7 +58,7 @@ schedule automatic checks of a third-party website.
 
 The Nepal Panchanga Nirnayak Samiti's determination of 2084 BS is expected
 around Magh 2083 BS (January to February 2027), about three months before 2084
-begins on 13 April 2027. Its published almanac is the only thing that can
+begins on 14 April 2027. Its published almanac is the only thing that can
 attest the provisional 2084 row or make 2085 shippable (ADR-0014). Once a
 month from 1 January 2027, until the dataset reaches 2085:
 
