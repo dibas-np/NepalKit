@@ -2,25 +2,39 @@
 // Copyright (C) 2026 Dibas Sigdel
 
 /// A festival or national day on a Bikram Sambat date, as the national
-/// Panchanga prints it (ADR-0016).
+/// Panchanga prints it (ADR-0016), or, for a gazetted day the Panchanga does
+/// not print, as the gazette names it.
 public struct Festival: Hashable, Sendable {
     public enum Kind: Hashable, Sendable {
         /// A festival or observance.
         case festival
         /// A national day of Nepal.
         case nationalDay
+        /// An international day Nepal observes, such as Labour Day.
+        case internationalDay
     }
 
-    /// The Panchanga's own wording, in Devanagari.
+    /// Where the entry was read. The Panchanga is the festival list's source
+    /// (ADR-0016); a gazetted holiday or national day it does not print is
+    /// taken from the gazette notice instead, and marked so it can be told
+    /// apart when the table is checked against either.
+    public enum Source: Hashable, Sendable {
+        case panchanga
+        case gazette
+    }
+
+    /// The source's own wording, in Devanagari.
     public let nepali: String
     /// The name in English, for the transliterated month-name setting.
     public let english: String
     public let kind: Kind
+    public let source: Source
 
-    public init(nepali: String, english: String, kind: Kind = .festival) {
+    public init(nepali: String, english: String, kind: Kind = .festival, source: Source = .panchanga) {
         self.nepali = nepali
         self.english = english
         self.kind = kind
+        self.source = source
     }
 
     /// The name in the reader's month-name setting: the Panchanga's own

@@ -6,6 +6,15 @@
 // names are the Panchanga's wording, with its outer brackets dropped for
 // display: "(जितियापर्व)" and "(योमरीपून्हि, थिंलापून्हि)" are printed in brackets.
 // Every entry was checked against its page by a second read.
+//
+// The selection also takes in every day the Home Ministry's gazette notice of
+// public holidays and national days names (PublicHolidays2083.swift), so a
+// holiday always has a name in the day's details. Where the Panchanga prints
+// that day, its wording is used even though the selection had left it out:
+// Labour Day, Caste Discrimination Day, Civil Service Day, Falgunanda
+// Jayanti, Disability Day, Dura Mhaipru Nakuma, Prithvi Jayanti and Women's
+// Day. Two the Panchanga does not print at all, Jyapu Diwas and GenZ Martyrs'
+// Day, are named as the gazette names them and marked `source: .gazette`.
 
 let festivals2083: [BSDay: [Festival]] = [
     BSDay(year: 2083, month: 1, day: 1): [
@@ -23,9 +32,13 @@ let festivals2083: [BSDay: [Festival]] = [
     BSDay(year: 2083, month: 1, day: 18): [
         Festival(nepali: "गौतमबुद्धजयन्ती", english: "Buddha Jayanti"),
         Festival(nepali: "उभौलीपर्व", english: "Ubhauli"),
+        Festival(nepali: "मजदूर दिवस", english: "Labour Day", kind: .internationalDay),
     ],
     BSDay(year: 2083, month: 2, day: 15): [
         Festival(nepali: "गणतन्त्र दिवस", english: "Ganatantra Diwas (Republic Day)", kind: .nationalDay),
+    ],
+    BSDay(year: 2083, month: 2, day: 21): [
+        Festival(nepali: "जातीय भेदभाव तथा छुवाछुत उन्मूलन राष्ट्रिय दिवस", english: "National Day against Caste Discrimination and Untouchability", kind: .nationalDay),
     ],
     BSDay(year: 2083, month: 3, day: 15): [
         Festival(nepali: "धानदिवस", english: "National Paddy Day", kind: .nationalDay),
@@ -52,6 +65,12 @@ let festivals2083: [BSDay: [Festival]] = [
     BSDay(year: 2083, month: 5, day: 19): [
         Festival(nepali: "श्रीकृष्णजन्माष्टमीव्रत", english: "Krishna Janmashtami"),
         Festival(nepali: "गौरापर्व", english: "Gaura Parva"),
+    ],
+    BSDay(year: 2083, month: 5, day: 22): [
+        Festival(nepali: "निजामती सेवादिवस", english: "Civil Service Day", kind: .nationalDay),
+    ],
+    BSDay(year: 2083, month: 5, day: 23): [
+        Festival(nepali: "जेनजी सहिद दिवस", english: "GenZ Martyrs' Day", kind: .nationalDay, source: .gazette),
     ],
     BSDay(year: 2083, month: 5, day: 26): [
         Festival(nepali: "बाबुको मुख हेर्नेदिन", english: "Father's Day (Kushe Aunsi)"),
@@ -106,6 +125,7 @@ let festivals2083: [BSDay: [Festival]] = [
     ],
     BSDay(year: 2083, month: 7, day: 25): [
         Festival(nepali: "भाइटीका", english: "Bhai Tika"),
+        Festival(nepali: "फाल्गुनन्दजयन्ती", english: "Falgunanda Jayanti"),
     ],
     BSDay(year: 2083, month: 7, day: 29): [
         Festival(nepali: "छठपर्व", english: "Chhath"),
@@ -113,23 +133,29 @@ let festivals2083: [BSDay: [Festival]] = [
     BSDay(year: 2083, month: 8, day: 8): [
         Festival(nepali: "गुरुनानकजयन्ती", english: "Guru Nanak Jayanti"),
     ],
+    BSDay(year: 2083, month: 8, day: 17): [
+        Festival(nepali: "विश्व अपाङ्ग दिवस", english: "International Day of Persons with Disabilities", kind: .internationalDay),
+    ],
     BSDay(year: 2083, month: 8, day: 28): [
         Festival(nepali: "विवाहपञ्चमी", english: "Bibaha Panchami"),
     ],
     BSDay(year: 2083, month: 9, day: 9): [
         Festival(nepali: "उधौलीपर्व", english: "Udhauli"),
         Festival(nepali: "योमरीपून्हि", english: "Yomari Punhi"),
+        Festival(nepali: "ज्यापू दिवस", english: "Jyapu Diwas", kind: .nationalDay, source: .gazette),
     ],
     BSDay(year: 2083, month: 9, day: 10): [
         Festival(nepali: "क्रिसमस डे", english: "Christmas"),
     ],
     BSDay(year: 2083, month: 9, day: 15): [
         Festival(nepali: "तमुल्होछार", english: "Tamu Lhosar"),
+        Festival(nepali: "दुरा म्हैप्रु नकुमा", english: "Dura Mhaipru Nakuma"),
     ],
     BSDay(year: 2083, month: 9, day: 24): [
         Festival(nepali: "तोल ल्होसार", english: "Tol Lhosar"),
     ],
     BSDay(year: 2083, month: 9, day: 27): [
+        Festival(nepali: "पृथ्वीजयन्ती", english: "Prithvi Jayanti"),
         Festival(nepali: "राष्ट्रिय एकता दिवस", english: "Rashtriya Ekata Diwas (National Unity Day)", kind: .nationalDay),
     ],
     BSDay(year: 2083, month: 10, day: 1): [
@@ -150,6 +176,9 @@ let festivals2083: [BSDay: [Festival]] = [
     ],
     BSDay(year: 2083, month: 11, day: 22): [
         Festival(nepali: "महाशिवरात्रिव्रत", english: "Maha Shivaratri"),
+    ],
+    BSDay(year: 2083, month: 11, day: 24): [
+        Festival(nepali: "अन्तर्राष्ट्रिय नारी दिवस", english: "International Women's Day", kind: .internationalDay),
     ],
     BSDay(year: 2083, month: 11, day: 25): [
         Festival(nepali: "ग्याल्पो ल्होसार", english: "Gyalpo Lhosar"),
