@@ -29,7 +29,7 @@ from pathlib import Path
 # to a base directory would break every release (see scripts/verify-appcast.py).
 # NOSONAR is line-scoped, so each marker sits on the flagged call alone.
 
-FEED_PREFIX = "https://dibas-np.github.io/NepalKit/"
+FEED_URL = "https://dibas-np.github.io/NepalKit/appcast.xml"
 SPARKLE_FRAMEWORK_PLIST = "Contents/Frameworks/Sparkle.framework/Resources/Info.plist"
 
 
@@ -94,11 +94,11 @@ def check_sparkle_keys(info):
     if length != 32:
         results.append(("FAIL", f"SUPublicEDKey is not base64 of 32 bytes (decoded length {length})"))
     feed = info.get("SUFeedURL")
-    if not (isinstance(feed, str) and feed.startswith(FEED_PREFIX)):
-        results.append(("FAIL", f"SUFeedURL is {feed!r}, expected prefix {FEED_PREFIX}"))
+    if feed != FEED_URL:
+        results.append(("FAIL", f"SUFeedURL is {feed!r}, expected {FEED_URL}"))
     if not results:
         results.append(("ok", "Sparkle keys present: signed feed, verify-before-extraction, "
-                              "installer launcher, 32-byte public key, https feed URL"))
+                              "installer launcher, 32-byte public key, pinned feed URL"))
     return results
 
 

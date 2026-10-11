@@ -82,6 +82,15 @@ PY
         exit 1
     fi
 fi
+# The pin check above vouches for this directory, and sign_update is run from
+# it later, so neither tool may resolve (through a symlink) to anywhere else.
+TOOL_DIR="${GENERATE_APPCAST:h:A}"
+for tool in "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"; do
+    if [[ -e "$tool" && "${tool:A:h}" != "$TOOL_DIR" ]]; then
+        echo "$tool resolves outside $TOOL_DIR; refusing to run a Sparkle tool the pin check did not cover." >&2
+        exit 1
+    fi
+done
 echo "using $GENERATE_APPCAST"
 
 if [[ -z "$URL_PREFIX" ]]; then

@@ -133,6 +133,13 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("SUFeedURL", out)
 
+    def test_another_feed_on_the_same_host_fails(self):
+        # The feed URL is pinned exactly: a different path on the Pages host is a
+        # different feed.
+        code, out = self.run_case(info={"SUFeedURL": "https://dibas-np.github.io/NepalKit/other.xml"})
+        self.assertEqual(code, 1)
+        self.assertIn("SUFeedURL", out)
+
     def test_sparkle_version_mismatch_names_both(self):
         code, out = self.run_case(sparkle="2.9.6")
         self.assertEqual(code, 1)
