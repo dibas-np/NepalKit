@@ -66,6 +66,11 @@ The two are separate compilers over the same sources:
 excludes the two files most in need of strict checking, so if the modes drift
 apart the shipping configuration is left unchecked by any gate. Change one and
 change the other in the same commit.
+`scripts/apptests/Package.swift` must also keep the upcoming features each Xcode
+target sets: the harness mirrors the app target's (`NonisolatedNonsendingByDefault`,
+`InferIsolatedConformances` from `SWIFT_APPROACHABLE_CONCURRENCY`, plus
+`MemberImportVisibility`) and the test target's (the first two only) separately,
+not as one union.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -91,7 +96,7 @@ python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swi
 ./scripts/swiftlint.sh lint --strict
 
 swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
-./scripts/run-app-tests.sh                  # 4. the app: 184 tests
+./scripts/run-app-tests.sh                  # 4. the app: 188 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
@@ -175,8 +180,10 @@ until that workflow existed: the two gates ran only when a human ran this
 script. Two further gates are deliberately local-only and say so in the same
 workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
 runner does not have, and the coverage floor (gate 14) needs the macOS
-toolchain and about six minutes. Every other gate here runs in CI, in the
-workflow that owns it. This command is the local half and not a replacement:
+toolchain and about six minutes. CI runs every gate except those two, in the
+workflow that owns each; gate 1 runs there as `build-for-testing` in
+`macos26-floor.yml`, so the hosted test bundle is compiled on every pull
+request. This command is the local half and not a replacement:
 it is the only thing that runs all sixteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
@@ -202,11 +209,13 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
 ```
 
 Prefer that recipe to leaving it to discovery. A discovered product is used only
-when it is **newer than the source that builds it**; an older one is refused,
+when its binary is **newer than the source that builds it** (the executable, not
+`Info.plist`, which Xcode rewrites only when its own inputs change); an older one is refused,
 because those tests exist to catch keys that reach the product — and a
-product from last week is not what this source produces. Either way the run
+product from last week is not what this source produces. An explicit
+`NEPAKIT_BUILT_PLIST` that cannot be read is the opposite case and **fails**. Either way the run
 prints what it found and what it compared against. Without a usable product,
-the suite's tests **skip with a reason** rather than pass silently. That is deliberate:
+the seven built-product plist tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
 
 ## Tests: what has to come with a change
@@ -260,8 +269,8 @@ commands:
   annotation when no usable watchOS runtime is installed. Both are deliberate: a
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
-- **Run the suite locally before opening the pull request.** It is the same
-  sixteen gates CI runs, and a red local run is a faster red than a red one after
+- **Run the suite locally before opening the pull request.** CI runs every one
+  of these sixteen gates except the two local-only ones (8 and 14), and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome
