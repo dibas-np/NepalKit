@@ -197,8 +197,10 @@ The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
 
-**Closing both boxes.** On the release machine, after `scripts/check-all.sh`
-has built the pinned Sparkle tools into `DerivedData/`:
+**Closing both boxes.** The offline copy is the one exception
+`docs/secrets-policy.md` rule 3 allows, under the rules listed there. On the
+release machine, after `scripts/check-all.sh` has built the pinned Sparkle
+tools into `DerivedData/`:
 
 1. `scripts/check-signing-key.py` confirms the keychain key signs what the
    shipped `SUPublicEDKey` verifies.
