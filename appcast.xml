@@ -1,10 +1,34 @@
 <?xml version="1.0" standalone="yes"?>
+<?xml version="1.0" standalone="yes"?>
 <!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
 -->
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>NepalKit</title>
+        <item>
+            <title>1.6.1</title>
+            <pubDate>Sun, 11 Oct 2026 11:40:59 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.6.1</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>Install an update from the menu bar</b>
+<p>When NepalKit finds an update, an Update… button appears in the popover's footer. It stays after you close the update alert, so an update you put off is one click away.</p>
+
+<b>Fixes</b>
+<ul>
+<li>Checking for updates while you are on the latest version now says NepalKit is up to date. It previously reported that the check had failed.</li>
+<li>When a check cannot finish, because there is no network or the update feed cannot be reached or verified, Settings now says so instead of showing the previous result.</li>
+<li>NepalKit no longer asks for read-only access to files you choose. It never used that permission.</li>
+</ul>
+
+<b>Verifiable releases</b>
+<p>This release's tag is signed with the same key as the project's commits. The repository's release verification guide shows how to check a download and its tag.</p>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.6.1/NepalKit-1.6.1.zip" length="3231180" type="application/octet-stream" sparkle:edSignature="s9fmkaBYHHKFHY3iG1ri21ckI65bfznTWH+mjFinPiv8IUf44IdO84s60gJc1K2bDG4AMQmZK3UTatwtvqPQCQ=="/>
+        </item>
         <item>
             <title>1.6.0</title>
             <pubDate>Sun, 04 Oct 2026 13:06:10 +0545</pubDate>
@@ -132,27 +156,9 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
 ]]></description>
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="/>
         </item>
-        <item>
-            <title>1.2</title>
-            <pubDate>Tue, 29 Sep 2026 18:35:47 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/1.2</link>
-            <sparkle:version>4</sparkle:version>
-            <sparkle:shortVersionString>1.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
-            <description><![CDATA[
-<b>Fixes:</b>
-<ul>
-<li>Launch at login now behaves. macOS can put the login item into “requires approval” and ask you to confirm it in System Settings; the app read that state as “not registered”, so the toggle sprang back to off the moment you returned, with nothing on screen to explain why. Turning it on when it was already on also raised a confusing “already registered” error. Both came from the same cause: the app was not tracking the real registration state, and it told the system to re-register items it already had.</li>
-<li>The Local clock now follows your system time zone while the app is running. It was read once, when the app launched, so if you changed zones — travelling, or macOS updating it on its own — Local kept showing the zone you were in at launch until you restarted the app. In the worst case the row disappeared: launch in Nepal, land somewhere else, and the app still believed your local time matched Nepal Time, so it hid Local as redundant and left you with no local reference at all.</li>
-<li>About no longer says the bundled calendar data is “licensed separately”. No such licence exists — the data carries no licence from this project, which is what SOURCES.md has said throughout. The corrected line ships in this version.</li>
-<li>The popover no longer draws a doubled rule above its footer. The date area and the footer bar each carried their own separator, and they ended up directly against each other, so every popover you opened showed two lines where there should have been one. Only the redundant one is gone; the line that separates the date from the actions below it is still there.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/1.2/NepalKit-1.2.zip" length="3100702" type="application/octet-stream" sparkle:edSignature="pHbsR0hLUsgPiKDBMW8nEY6Bhg5ZN7/ioWVd4Ayiv1IF+Kq9NIBgE86N3Es7/5YmI1Zl+3D/kNWG9grXKc4kBQ=="/>
-        </item>
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: KUOBloAfG7txLZ+/S3grI6Gp0khaZhfMKBFaka0/E96eH8pLLIm6sS0TXwjKZ9Vvz5d0dps7B8cPyvJcLb10AA==
-length: 12444
+edSignature: PvdovJya87doaZ1PYceBVg0A/s/zqWtGLxjKbsEXWjuqVUK/D53d+166KzRSa5WJcUBfhK1IEuc/uFFQm26WAA==
+length: 11664
 -->
