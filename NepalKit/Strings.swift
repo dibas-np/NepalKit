@@ -69,6 +69,11 @@ nonisolated enum Strings {
     static let localTimeLabel = "Local"
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
+    /// Shown while macOS holds the login item for approval: the toggle reads on,
+    /// because the registration was accepted, yet nothing launches until the user
+    /// allows it under General > Login Items in System Settings.
+    static let loginItemNeedsApproval = "NepalKit will not open at login until you allow it in System Settings, under Login Items."
+    static let openLoginItemsSettings = "Open Login Items Settings"
     static let converterLabel = "Converter"
     /// Names the direction toggle. Distinguishes it from the popover's own
     /// Today/Converter switcher, which is a different control directly above.

@@ -69,6 +69,18 @@ struct GeneralSettingsView: View {
                 // which is noise in front of the real name.
                 .accessibilityLabel(Strings.launchAtLoginLabel)
 
+                if loginItem.requiresApproval {
+                    // Approval is a state, not a failure: the toggle is
+                    // truthfully on, so this says what is still missing and
+                    // takes the user to where it is granted.
+                    Text(Strings.loginItemNeedsApproval)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Button(Strings.openLoginItemsSettings) {
+                        loginItem.openLoginItemsSettings()
+                    }
+                }
+
                 if let failure = loginItem.setupError {
                     // A failed register/unregister is invisible on the toggle:
                     // `isOn` follows the system, so it springs back without

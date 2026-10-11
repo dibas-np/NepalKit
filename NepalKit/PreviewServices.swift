@@ -45,7 +45,9 @@ final class PreviewUpdateService: UpdateServicing {
 /// conformance only satisfies that protocol where default isolation agrees.
 final class PreviewLoginService: LoginItemServicing {
     var isRegistered = true
+    var requiresApproval = false
     func register() throws {}
     func unregister() throws {}
+    func openLoginItemsSettings() {}
 }
 #endif
