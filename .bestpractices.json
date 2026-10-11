@@ -100,7 +100,7 @@
   "osps_do_03_01_status": "Met",
   "osps_do_03_01_justification": "docs/release-verification.md gives commands and expected output: shasum -a 256, codesign -dv, xcrun stapler validate (must pass offline), and spctl -a -t execute expecting source=Notarized Developer ID. All are automated in the release scripts.",
   "osps_do_03_02_status": "Met",
-  "osps_do_03_02_justification": "The same document states the expected identity, Developer ID Application: Dibas Sigdel (CA89X9954L), how to read it with codesign -dv, and that the document is not itself a trust anchor: Apple's notarization record is.",
+  "osps_do_03_02_justification": "The same document states the expected identity, Developer ID Application: Finnove Technologies (CA89X9954L), how to read it with codesign -dv, and that the document is not itself a trust anchor: Apple's notarization record is.",
   "osps_do_04_01_status": "Met",
   "osps_do_04_01_justification": "SUPPORT.md and SECURITY.md state scope and duration: fixes land on the latest release, there is no long-term-support branch, and backporting would cost more than it saves.",
   "osps_do_05_01_status": "Met",
