@@ -169,7 +169,7 @@ func twoDigits(_ value: Int, digits: DigitScript) -> String {
     return digits.render(latinDigits: padded)
 }
 
-/// `formatClock`'s and `formatClockTime`'s calendars, one per time zone.
+/// `formatClock`'s, `formatClockTime`'s and today's calendars, one per time zone.
 /// Building a `Calendar` per call dominated the cost of formatting, and both
 /// run at clock-tick frequency. The zones a process formats are few, so entries
 /// never evict. Lock-guarded because the functions are nonisolated and callers
@@ -183,7 +183,10 @@ enum ClockCalendars {
         defer { lock.unlock() }
         if let cached = calendars[timeZone.identifier] { return cached }
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
+        // A fixed zone for the identifier, not the zone passed in: an
+        // autoupdating zone cached under today's identifier would follow the
+        // Mac to its next zone and answer for it under the old key.
+        calendar.timeZone = TimeZone(identifier: timeZone.identifier) ?? timeZone
         calendars[timeZone.identifier] = calendar
         return calendar
     }

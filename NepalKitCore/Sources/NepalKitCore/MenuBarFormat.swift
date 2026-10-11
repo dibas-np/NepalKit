@@ -13,7 +13,7 @@ public struct MenuBarFormat: Sendable, Hashable {
     public var showsWeekday: Bool
     /// The Bikram Sambat year after the month ("25 Ashoj 2083").
     public var showsYear: Bool
-    /// The Nepal Time clock at the end of the title.
+    /// The clock at the end of the title, in the zone the title is read in.
     public var showsTime: Bool
     /// "22:57" rather than "10:57". Only meaningful with `showsTime`.
     public var usesTwentyFourHourClock: Bool
@@ -71,26 +71,28 @@ public func formatClockTime(
 /// The menu-bar title for the instant `now`: weekday, date, year, time, each
 /// part present only if the format asks for it, in that fixed order.
 ///
-/// Every part is read in Nepal Time from the one instant, so the weekday, the
-/// date and the clock cannot disagree with each other around midnight, and none
-/// of them follows the Mac's own time zone. Nil past the supported range, where
-/// there is no Bikram Sambat date to anchor the title.
+/// Every part is read in `timeZone` from the one instant, so the weekday, the
+/// date and the clock cannot disagree with each other around midnight. Nepal
+/// Time unless the caller passes the zone the user chose (ADR-0017). Nil past
+/// the supported range, where there is no Bikram Sambat date to anchor the
+/// title.
 public func formatMenuBarTitle(
     now: Date,
+    timeZone: TimeZone = nepalTimeZone,
     format: MenuBarFormat,
     settings: DisplaySettings,
     in dataset: CalendarDataset
 ) -> String? {
-    guard let today = todayBS(now: now, in: dataset) else { return nil }
+    guard let today = todayBS(now: now, timeZone: timeZone, in: dataset) else { return nil }
     var parts: [String] = []
-    if format.showsWeekday, let name = nepalTimeWeekday(now: now).flatMap({ shortWeekdayName(for: $0, style: settings.monthNames) }) {
+    if format.showsWeekday, let name = todayWeekday(now: now, timeZone: timeZone).flatMap({ shortWeekdayName(for: $0, style: settings.monthNames) }) {
         parts.append(name)
     }
     parts.append(format.showsYear ? formatBS(today, settings: settings) : formatBSShort(today, settings: settings))
     if format.showsTime {
         parts.append(formatClockTime(
             now,
-            timeZone: nepalTimeZone,
+            timeZone: timeZone,
             usesTwentyFourHourClock: format.usesTwentyFourHourClock,
             showsSeconds: format.showsSeconds,
             digits: settings.digits
@@ -99,9 +101,9 @@ public func formatMenuBarTitle(
     return parts.joined(separator: " ")
 }
 
-/// Today's weekday in Nepal Time, 1 (Sunday) through 7 (Saturday).
-private func nepalTimeWeekday(now: Date) -> Int? {
-    todayAD(now: now).flatMap { weekday(of: $0) }
+/// Today's weekday in `timeZone`, 1 (Sunday) through 7 (Saturday).
+private func todayWeekday(now: Date, timeZone: TimeZone) -> Int? {
+    todayAD(now: now, timeZone: timeZone).flatMap { weekday(of: $0) }
 }
 
 extension SpokenDate {
@@ -114,20 +116,21 @@ extension SpokenDate {
     /// and the visual reason for dropping it — menu-bar width — does not apply.
     public static func menuBarDate(
         now: Date,
+        timeZone: TimeZone = nepalTimeZone,
         format: MenuBarFormat,
         monthNames: MonthNameStyle,
         in dataset: CalendarDataset
     ) -> String? {
-        guard let today = todayBS(now: now, in: dataset) else { return nil }
+        guard let today = todayBS(now: now, timeZone: timeZone, in: dataset) else { return nil }
         var parts: [String] = []
-        if format.showsWeekday, let name = nepalTimeWeekday(now: now).flatMap({ weekdayName(for: $0, style: monthNames) }) {
+        if format.showsWeekday, let name = todayWeekday(now: now, timeZone: timeZone).flatMap({ weekdayName(for: $0, style: monthNames) }) {
             parts.append(name)
         }
         parts.append(bs(today, monthNames: monthNames))
         if format.showsTime {
             parts.append(formatClockTime(
                 now,
-                timeZone: nepalTimeZone,
+                timeZone: timeZone,
                 usesTwentyFourHourClock: format.usesTwentyFourHourClock,
                 showsSeconds: format.showsSeconds,
                 digits: .latin
