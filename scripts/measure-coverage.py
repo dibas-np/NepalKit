@@ -51,13 +51,21 @@ FLOOR_FILE = REPO_ROOT / "scripts" / "coverage-floor.json"
 def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
     """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
-    # llvm-cov prints report paths with the leading "/" stripped, so both sides
-    # are normalised before comparing. Comparing raw strings silently matches
-    # nothing, which looks identical to "no product source was compiled".
-    root = str(REPO_ROOT).lstrip("/") + "/"
+    # llvm-cov strips the directory prefix common to every file it reports.
+    # The build directory is outside the checkout, so that prefix is some
+    # leading part of the repository path ("Users/me/" when both sit under
+    # the home folder, just "/" otherwise), and a row's path starts with a
+    # tail of the root. Try every tail, longest first, cut at "/" boundaries.
+    # Comparing raw strings silently matches nothing, which looks identical to
+    # "no product source was compiled".
+    full = str(REPO_ROOT).lstrip("/") + "/"
+    tails = [full] + [full[i + 1:] for i, c in enumerate(full[:-1]) if c == "/"]
     for line in stdout.splitlines():
         parts = line.split()
-        if len(parts) != 13 or not parts[0].startswith(root):
+        if len(parts) != 13:
+            continue
+        root = next((tail for tail in tails if parts[0].startswith(tail)), None)
+        if root is None:
             continue
         relative = parts[0][len(root):]
         if any(relative.startswith(prefix) for prefix in prefixes):
