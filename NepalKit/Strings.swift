@@ -221,6 +221,8 @@ nonisolated enum Strings {
     /// they introduce rather than in the view, so a phrase and the sentence
     /// naming it are read together and one cannot move without the other.
     static let siriTodayCapability = "Today's date in Bikram Sambat"
+    static let siriTomorrowCapability = "Tomorrow's date in Bikram Sambat"
+    static let siriYesterdayCapability = "Yesterday's date in Bikram Sambat"
     static let siriConvertToBSCapability = "Convert a Gregorian date to Bikram Sambat"
     static let siriConvertToGregorianCapability = "Convert a Bikram Sambat date to Gregorian"
 
@@ -242,7 +244,7 @@ nonisolated enum Strings {
         var id: String { phrase }
     }
 
-    /// The three capabilities this build registers, in the order they appear in
+    /// The five capabilities this build registers, in the order they appear in
     /// Settings.
     ///
     /// Computed rather than stored, and that is a deliberate answer to the
@@ -250,11 +252,13 @@ nonisolated enum Strings {
     /// fails on any `static let` whose value it cannot read off one line. A
     /// stored array of `Capability` would be exactly that: an unreadable
     /// constant, needing an exemption that would then be a hole. Composed from
-    /// the six string constants above — every one of which the sweep reads and
+    /// the ten string constants above — every one of which the sweep reads and
     /// checks on its own — it holds no literal of its own to escape the check.
     static var siriShortcutCapabilities: [Capability] {
         [
             Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
+            Capability(title: siriTomorrowCapability, phrase: siriTomorrowPhrase),
+            Capability(title: siriYesterdayCapability, phrase: siriYesterdayPhrase),
         Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
             Capability(title: siriConvertToGregorianCapability, phrase: siriConvertToGregorianPhrase),
         ]
@@ -264,6 +268,8 @@ nonisolated enum Strings {
     /// token spelled out. The token is the framework's, not this app's: it
     /// resolves to whatever the app is called, which here is `appName`.
     static let siriTodayPhrase = "What is today's Nepali date with \(appName)"
+    static let siriTomorrowPhrase = "What is tomorrow's Nepali date with \(appName)"
+    static let siriYesterdayPhrase = "What was yesterday's Nepali date with \(appName)"
     static let siriConvertToBSPhrase = "Convert a date to Bikram Sambat with \(appName)"
     static let siriConvertToGregorianPhrase = "Convert a Bikram Sambat date to Gregorian with \(appName)"
     static let updatesSection = "Software Update"

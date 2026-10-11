@@ -62,9 +62,17 @@ Ask Siri:
 
 NepalKit answers with today's Bikram Sambat date and weekday using its bundled calendar data.
 
-The Shortcuts app includes three NepalKit actions:
+You can also ask for the days either side:
+
+> What is tomorrow's Nepali date with NepalKit
+>
+> What was yesterday's Nepali date with NepalKit
+
+The Shortcuts app includes five NepalKit actions:
 
 - Get today's Bikram Sambat date.
+- Get tomorrow's Bikram Sambat date.
+- Get yesterday's Bikram Sambat date.
 - Convert a Gregorian date to Bikram Sambat.
 - Convert a Bikram Sambat date to Gregorian.
 
