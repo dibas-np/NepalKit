@@ -330,62 +330,6 @@ private struct MonthGridCell: View {
     }
 }
 
-/// A day's details under the grid: the day in both calendars, how far it is
-/// from today, and what can be done with it. Layout only; every string is the
-/// model's.
-private struct MonthGridDayDetailCard: View {
-    let detail: MonthGridDayDetail
-    let copy: () -> Void
-    let openInConverter: () -> Void
-    let close: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(detail.bikramSambat)
-                    .font(.title3.weight(.semibold))
-                    .accessibilityLabel(detail.spokenBikramSambat)
-                Text(detail.gregorian)
-                    .font(.callout)
-                    .accessibilityLabel(detail.spokenGregorian)
-                if let relative = detail.relative {
-                    Text(relative)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(detail.spokenRelative ?? relative)
-                }
-                // One line per name, so a day with three reads as three, and
-                // in the tint, which ties them to the dot on the day's cell.
-                ForEach(Array(zip(detail.festivals, detail.spokenFestivals).enumerated()), id: \.offset) { _, names in
-                    let (shown, spoken) = names
-                    Text(shown)
-                        .font(.callout)
-                        .foregroundStyle(.tint)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel(spoken)
-                }
-            }
-
-            HStack(spacing: 8) {
-                Button(Strings.copyDateLabel, action: copy)
-                    .accessibilityHint(Strings.copyDateHelp)
-                Button(Strings.openInConverterLabel, action: openInConverter)
-                    .accessibilityHint(Strings.openInConverterHelp)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 8))
-        .overlay(alignment: .topTrailing) {
-            Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails, action: close)
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .padding(6)
-        }
-        .accessibilityElement(children: .contain)
-    }
-}
-
 #if DEBUG
 #Preview("Month grid") {
     MonthGridView(
