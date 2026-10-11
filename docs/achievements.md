@@ -4,19 +4,19 @@ A record of what shipped, in one place, because the changelog says what changed
 per release and this says what it added up to. Numbers here are counted from the
 repository, not from memory, and the command is given so a reader can check.
 
-Last counted: 2026-10-04, at v1.6.0.
+Last counted: 2026-10-11, at v1.6.1.
 
 ## The facts
 
 | | |
 | --- | --- |
 | First commit | 2026-09-27 |
-| Releases | 8 release tags (`1.0` to `v1.6.0`) plus 2 backup tags |
-| Commits | 338 |
-| Swift files | 120 |
+| Releases | 9 release tags (`1.0` to `v1.6.1`) plus 2 backup tags |
+| Commits | 405 |
+| Swift files | 121 |
 | Test files | 54 (23 core, 24 app, 7 Watch) |
 | Architecture decision records | 14 |
-| Stars | 3 |
+| Stars | 4 |
 | People with commit access | 1 |
 
 Count them yourself:

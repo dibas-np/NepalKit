@@ -58,8 +58,7 @@ risk — a compromised single account — are closed by this and by nothing else
   cannot be covered without either UI tests or a view-logic refactor, and
   [ADR-0005](adr/0005-app-layer-test-execution.md) records the harness decision
   and the hosted-runner history.
-- **Signing release tags.** Documented; no published tag is signed yet. The first
-  signed tag will be the next release's. See
+- **Signing release tags.** Implemented from `v1.6.1`, the first signed tag. See
   [docs/release-verification.md](release-verification.md) for how to verify one.
 
 ## Not planned

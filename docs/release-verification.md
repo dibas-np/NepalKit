@@ -67,15 +67,15 @@ git fetch --tags
 git tag -v v<version>
 ```
 
-For a release cut after 2026-10-10, expect `Good "git" signature for
-dibas-np@github.com with ED25519 key` - the same key the commits are signed with,
-so `git log --show-signature` on the tagged commit should name the same
+From `v1.6.1` on, expect `Good "git" signature for dibas-np@github.com with
+ED25519 key` - the same key the commits are signed with, so
+`git log --show-signature` on the tagged commit should name the same
 fingerprint. `git tag -v` is the only check here that verifies a signature.
 
-No published tag is signed yet. The eight release tags that exist today
-(`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are lightweight, so `git tag -v`
-reports that they are not tag objects; for those releases, rely on the archive and code signatures
-in the steps below. To see whether a tag is annotated at all:
+The eight earlier release tags (`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are
+lightweight, so `git tag -v` reports that they are not tag objects; for those
+releases, rely on the archive and code signatures in the steps below. To see
+whether a tag is annotated at all:
 
 ```sh
 git cat-file -t v<version>     # tag    -> annotated (may or may not be signed)
