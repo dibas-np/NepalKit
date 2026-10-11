@@ -99,7 +99,7 @@ the public key belongs in the repository.
 | Artifact | Needed to | Lives where |
 | --- | --- | --- |
 | Public key | build and ship the app | repository / build settings |
-| Private key | sign a release artifact, generate the appcast | release machine and CI secret store only |
+| Private key | sign a release artifact, generate the appcast | release machine only (never in CI — see docs/secrets-policy.md) |
 
 So the private key is required at exactly one moment — producing or verifying a
 signed update — and never during development, never in the app target, and never
@@ -194,6 +194,11 @@ Concretely outstanding:
 The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
+
+*Note, 2026-10-11:* both boxes above are still unticked. The cost of leaving
+them so is now stated accurately: a lost key ends updates for every existing
+install (see the correction under "`SURequireSignedFeed` also requires ..."
+below), rather than being a manual recovery.
 
 The public half is not the risk and needs no custody: it is committed in
 `NepalKit/Info.plist`, pinned by `InfoPlistKeysTests`, and a lost private half is
@@ -321,9 +326,11 @@ Sparkle's documentation for both says to use them only if you are "not likely to
 lose access to your private EdDSA key". Verification this strict means a lost key
 costs updates outright. That is what the two unticked custody boxes above are
 about, and they remain unticked: enabling these keys does not settle custody, it
-raises the cost of not settling it. Recovery is possible — releases are also
-Apple Developer ID signed, so a rebuilt key can be pushed — but it is a manual
-recovery, not a non-event.
+raises the cost of not settling it. Losing the key is NOT survivable for
+existing installs: with this key set, a feed signed by any other key is rejected
+before Sparkle reads an item, so the Apple code-signing fallback never runs.
+Users would have to reinstall by hand or through Homebrew. Custody of the
+private key is the whole mitigation.
 
 ## Freshness of this pin
 

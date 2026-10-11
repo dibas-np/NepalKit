@@ -100,7 +100,9 @@ in GitHub, in CI, or in the repository — see
 property in the project.
 
 **Residual:** an Ed25519 implementation failure, or a compromise of the release
-machine. Both are outside what this repository can control.
+machine. Both are outside what this repository can control. Loss of the private
+key is a denial of updates to every existing install, not merely an
+inconvenience; see secrets-policy §4.
 
 ### T3 — A hostile build reaches users through the Homebrew cask
 

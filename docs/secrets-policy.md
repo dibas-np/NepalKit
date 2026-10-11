@@ -72,6 +72,14 @@ An environment secret is not readable by any job that does not explicitly
 declare `environment: release`, so adding a new workflow cannot accidentally
 inherit the deploy key — the default is that it cannot see it.
 
+**Deployment protection on `release`.** The policy is that the `release`
+environment restricts deployments to tags matching `v*`, so a workflow on a
+branch cannot receive `HOMEBREW_TAP_DEPLOY_KEY` even if it declares the
+environment; a required reviewer is optional on top. As of 2026-10-10 the
+environment had no protection rules (`protection_rules: []`,
+`deployment_branch_policy: null`). This is applied in GitHub settings, not in a
+workflow file, so anyone changing it should update this paragraph.
+
 `release-tag.yml` enforces the identity half of this in the `if:` of each job
 rather than in a script inside one. GitHub evaluates `if:` before the job
 exists, so a job that should not run never receives the environment it guards;
@@ -83,7 +91,7 @@ mistake, and the `if:` rejects an *unauthorised* one, which is not.
 
 | Credential | Trigger | Procedure | Blast radius if it leaks |
 | --- | --- | --- | --- |
-| Sparkle EdDSA private key | Suspected compromise, or routine rotation | Generate a new keypair, replace `SUPublicEDKey` in `NepalKit/Info.plist`, rebuild, cut a release, and keep the old key valid until users have had a chance to update | Attacker can sign an update that every existing install accepts. **Full compromise of every installation.** |
+| Sparkle EdDSA private key | Suspected compromise, or routine rotation | A two-release transition, because an installed copy rejects any feed not signed by the `SUPublicEDKey` it carries: (1) generate the new keypair; (2) cut a release whose feed AND archives are signed with the OLD key and whose bundle carries the NEW `SUPublicEDKey`; (3) only after that release has been offered, sign subsequent feeds with the new key; (4) a key that is lost rather than rotated cannot follow this path, and existing installs must be told to reinstall | Attacker can sign an update that every existing install accepts. **Full compromise of every installation.** |
 | Apple Developer ID certificate | Apple's revocation, expiry, or suspected compromise | Revoke in the Apple Developer portal, issue a new one, re-sign and re-notarize, cut a release | Attacker can sign malware that Gatekeeper reports as Developer ID-signed. Mitigated by notarization: a self-signed binary is not notarized, and Gatekeeper refuses it |
 | `notarytool` profile | Apple's revocation, or the Apple ID's password changing | `xcrun notarytool delete-credentials NepalKit-notary`, then `store-credentials` again | Attacker can submit to the notary service under this project's identity. Does not by itself let them sign anything |
 | `HOMEBREW_TAP_DEPLOY_KEY` | Suspected compromise, or contributor turnover | Delete the key in `dibas-np/homebrew-tap` → Deploy keys; generate a new one; update the `release` environment secret | Attacker can push a cask to the tap. That is a **supply-chain compromise of the Homebrew install path** — the worst outcome in this table, and the reason the key is scoped to that one repository and nothing else |
