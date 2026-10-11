@@ -36,7 +36,7 @@ def last_checked(procedure_text: str) -> datetime.date | None:
     """The recorded check date, or None for `none`. Exits if the line is missing or malformed."""
     match = re.search(r"^last_checked:\s*(\S+)\s*$", procedure_text, re.M)
     if not match:
-        sys.exit(f"no `last_checked:` line in {PROCEDURE.relative_to(ROOT)}")
+        sys.exit(f"no `last_checked:` line in {PROCEDURE}")
     value = match.group(1)
     if value == "none":
         return None
