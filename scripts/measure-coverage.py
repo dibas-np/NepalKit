@@ -16,8 +16,8 @@ hand is coverage that rots. This records a floor and fails when the number drops
 below it, which is the part that stops silently.
 
 **This gate deliberately has no target.** The OpenSSF badge asks for 80% and 90%
-statement coverage; this project is at 62.78% combined and the gap is not a
-chore. See docs/coverage.md for why the SwiftUI layer is the blocker and what
+statement coverage; the combined figure is recorded in scripts/coverage-floor.json
+and the gap is not a chore. See docs/coverage.md for why the SwiftUI layer is the blocker and what
 closing it would actually require. A floor that ratchets upward as tests land
 is honest; a target set above the truth is a lie that fails every day.
 
@@ -116,12 +116,43 @@ def percentages(counts: dict[str, int]) -> dict[str, float]:
     }
 
 
-_BOTH_PREFIXES = ("NepalKitCore/Sources/NepalKitCore/", "NepalKit/")
+def combine(all_counts: list[dict[str, int]]) -> dict[str, int]:
+    """Sum raw counts across suites. The combined figure is sum(hit)/sum(lines),
+    so a 300-line file weighs 300 lines, not one file."""
+    return {key: sum(counts[key] for counts in all_counts) for key in all_counts[0]}
 
+
+def regressions(
+    totals: dict[str, float], suites: dict[str, dict[str, float]], floor: dict
+) -> list[str]:
+    """Compare the totals and every suite against the recorded floor."""
+    found = []
+    for metric in ("lines", "regions", "functions"):
+        if totals[metric] < floor["totals"][metric] - 0.005:
+            found.append(
+                f"combined {metric}: {totals[metric]:.2f}% is below the recorded "
+                f"floor {floor['totals'][metric]:.2f}%"
+            )
+    for label, recorded in floor.get("suites", {}).items():
+        for metric in ("lines", "regions", "functions"):
+            if label not in suites:
+                found.append(f"{label}: recorded in the floor but not measured")
+                break
+            if suites[label][metric] < recorded[metric] - 0.005:
+                found.append(
+                    f"{label} {metric}: {suites[label][metric]:.2f}% is below the "
+                    f"recorded floor {recorded[metric]:.2f}%"
+                )
+    return found
+
+
+# The app suite keeps only `NepalKit/`: its harness links `NepalKitCore`, so core
+# rows appear in its report too. Counting them there put core's 9 files in both
+# buckets and inflated the app figure (34.79% vs 30.12% at 0b50f7a).
 SUITES = (
-    # (label, package path, profdata glob root, binary glob, doc root)
-    ("NepalKitCore", "NepalKitCore", "NepalKitCore"),
-    ("NepalKit app", "scripts/apptests", "NepalKit"),
+    # (label, package path, subject prefixes relative to the repository root)
+    ("NepalKitCore", "NepalKitCore", ("NepalKitCore/Sources/NepalKitCore/",)),
+    ("NepalKit app", "scripts/apptests", ("NepalKit/",)),
 )
 
 
@@ -129,7 +160,9 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True)
 
 
-def measure(label: str, package: str, build_dir: Path) -> dict[str, float]:
+def measure(
+    label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
+) -> dict[str, int]:
     """Run one suite with coverage and total its subject files."""
     result = run(
         [
@@ -151,10 +184,10 @@ def measure(label: str, package: str, build_dir: Path) -> dict[str, float]:
     report = run(
         ["xcrun", "llvm-cov", "report", "--instr-profile", str(profiles[0]), str(binaries[0])]
     )
-    counts = summarise(report.stdout, _BOTH_PREFIXES)
+    counts = summarise(report.stdout, prefixes)
     if counts["lines"] == 0:
         raise SystemExit(f"{label}: no subject lines found; the path filter is wrong")
-    return percentages(counts)
+    return counts
 
 
 def main() -> int:
@@ -164,28 +197,26 @@ def main() -> int:
     )
     arguments = parser.parse_args()
 
-    totals = {"lines": 0.0, "regions": 0.0, "functions": 0.0, "files": 0}
+    raw_counts: dict[str, dict[str, int]] = {}
     raw: dict[str, dict[str, float]] = {}
     with tempfile.TemporaryDirectory() as directory:
-        for label, package, _ in SUITES:
-            result = measure(label, package, Path(directory) / label.replace(" ", "-"))
+        for label, package, prefixes in SUITES:
+            counts = measure(label, package, prefixes, Path(directory) / label.replace(" ", "-"))
+            raw_counts[label] = counts
+            result = percentages(counts)
             raw[label] = result
             print(f"  {label:<16} lines {result['lines']:6.2f}%  "
                   f"regions {result['regions']:6.2f}%  "
                   f"functions {result['functions']:6.2f}%  ({result['files']} files)")
 
-    # A plain mean of the two suites would let the well-covered calendar engine
-    # paper over the app layer. Weight by file count instead.
-    files = sum(r["files"] for r in raw.values())
-    for metric in ("lines", "regions", "functions"):
-        totals[metric] = round(
-            sum(r[metric] * r["files"] for r in raw.values()) / files, 2
-        )
-    totals["files"] = files
+    # The combined figure is sum(hit)/sum(lines) across both suites, so a 300-line
+    # file weighs 300 lines. A plain mean of the two percentages would let the
+    # well-covered calendar engine paper over the app layer.
+    totals = percentages(combine(list(raw_counts.values())))
 
     print(f"  {'combined':<16} lines {totals['lines']:6.2f}%  "
           f"regions {totals['regions']:6.2f}%  "
-          f"functions {totals['functions']:6.2f}%  ({files} files)")
+          f"functions {totals['functions']:6.2f}%  ({totals['files']} files)")
 
     if arguments.update:
         FLOOR_FILE.write_text(
@@ -198,14 +229,10 @@ def main() -> int:
         print(f"  FAIL  no floor recorded; run with --update", file=sys.stderr)
         return 1
 
-    floor = json.loads(FLOOR_FILE.read_text(encoding="utf-8"))["totals"]
-    regressions = [
-        f"{metric}: {totals[metric]:.2f}% is below the recorded floor {floor[metric]:.2f}%"
-        for metric in ("lines", "regions", "functions")
-        if totals[metric] < floor[metric] - 0.005
-    ]
-    if regressions:
-        for regression in regressions:
+    floor = json.loads(FLOOR_FILE.read_text(encoding="utf-8"))
+    found = regressions(totals, raw, floor)
+    if found:
+        for regression in found:
             print(f"  FAIL  {regression}", file=sys.stderr)
         print(
             "\n  Coverage fell. Add tests, or accept the lower number deliberately with\n"

@@ -107,5 +107,52 @@ class PercentageTests(unittest.TestCase):
         self.assertEqual(result["files"], 0)
 
 
+class CombinationTests(unittest.TestCase):
+    def test_combined_is_line_weighted(self):
+        """Core 150 lines/90 hit, app 500/60: 150 of 650 is 23.08%. The file-count
+        weighted mean of the two percentages (60%, 12%) would say 36%."""
+        core = mc.summarise(FIXTURE, CORE_ONLY)
+        app = mc.summarise(FIXTURE, APP_ONLY)
+        combined = mc.combine([core, app])
+        self.assertEqual(combined["lines"], 650)
+        self.assertEqual(combined["lines_hit"], 150)
+        self.assertEqual(mc.percentages(combined)["lines"], 23.08)
+
+
+class RegressionTests(unittest.TestCase):
+    FLOOR = {
+        "totals": {"lines": 40.0, "regions": 50.0, "functions": 50.0, "files": 4},
+        "suites": {
+            "core": {"lines": 80.0, "regions": 70.0, "functions": 70.0, "files": 2},
+            "app": {"lines": 30.0, "regions": 40.0, "functions": 40.0, "files": 2},
+        },
+    }
+
+    def test_no_regression_reports_nothing(self):
+        self.assertEqual(
+            mc.regressions(self.FLOOR["totals"], self.FLOOR["suites"], self.FLOOR), []
+        )
+
+    def test_per_suite_regressions_are_reported(self):
+        """An app drop must fail even when a core gain keeps the total level."""
+        suites = {
+            "core": {"lines": 90.0, "regions": 70.0, "functions": 70.0, "files": 2},
+            "app": {"lines": 20.0, "regions": 40.0, "functions": 40.0, "files": 2},
+        }
+        found = mc.regressions(self.FLOOR["totals"], suites, self.FLOOR)
+        self.assertEqual(len(found), 1)
+        self.assertTrue(found[0].startswith("app lines:"), found)
+
+    def test_total_regressions_are_reported(self):
+        totals = dict(self.FLOOR["totals"], regions=10.0)
+        found = mc.regressions(totals, self.FLOOR["suites"], self.FLOOR)
+        self.assertEqual(len(found), 1)
+        self.assertTrue(found[0].startswith("combined regions:"), found)
+
+    def test_the_half_hundredth_tolerance_holds(self):
+        totals = dict(self.FLOOR["totals"], lines=39.996)
+        self.assertEqual(mc.regressions(totals, self.FLOOR["suites"], self.FLOOR), [])
+
+
 if __name__ == "__main__":
     unittest.main()
