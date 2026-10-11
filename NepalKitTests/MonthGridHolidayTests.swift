@@ -145,8 +145,10 @@ struct MonthGridHolidayTests {
         let dashainMonday = TodayObservances(BSDay(year: 2083, month: 7, day: 2), festivals: .panchanga, holidays: .gazette)
         // A Dashain holiday with no festival of its own is named by the gazette.
         #expect(dashainMonday.festivals.map(\.english) == ["Dashain holiday"] && dashainMonday.isPublicHoliday)
-        #expect(dashainMonday.line(monthNames: .transliterated) == "Dashain holiday, Public holiday")
-        #expect(dashainMonday.line(monthNames: .nepali) == "दशैं बिदा, सार्वजनिक बिदा")
+        // The gazette's name already says it is a holiday, so it is not said twice.
+        #expect(!dashainMonday.saysPublicHoliday)
+        #expect(dashainMonday.line(monthNames: .transliterated) == "Dashain holiday")
+        #expect(dashainMonday.line(monthNames: .nepali) == "दशैं बिदा")
         let tika = TodayObservances(BSDay(year: 2083, month: 7, day: 4), festivals: .panchanga, holidays: .gazette)
         #expect(tika.line(monthNames: .nepali) == "विजयादशमी, सार्वजनिक बिदा")
         // Indra Jatra is a holiday only in the valley: named, not called one.

@@ -9,10 +9,16 @@ import NepalKitCore
 struct TodayObservances {
     let festivals: [Festival]
     let isPublicHoliday: Bool
+    /// Whether the line should add "Public holiday". Not when the day is named
+    /// only by the gazette's own holiday name ("Dashain holiday"), which
+    /// already says it: "Dashain holiday, Public holiday" says it twice.
+    let saysPublicHoliday: Bool
 
     init(_ day: BSDay, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
         self.festivals = holidays.observances(on: day, festivals: festivals)
         self.isPublicHoliday = holidays.isNationwideHoliday(day)
+        let namedOnlyByGazette = festivals.festivals(on: day).isEmpty && !self.festivals.isEmpty
+        self.saysPublicHoliday = isPublicHoliday && !namedOnlyByGazette
     }
 
     /// The line under the hero, or nil on a day with nothing to say: an empty
@@ -20,7 +26,7 @@ struct TodayObservances {
     func line(monthNames: MonthNameStyle) -> String? {
         guard !festivals.isEmpty || isPublicHoliday else { return nil }
         return Strings.todayFestivalLine(
-            festivals.map { $0.name(style: monthNames) }, isPublicHoliday: isPublicHoliday, monthNames: monthNames
+            festivals.map { $0.name(style: monthNames) }, isPublicHoliday: saysPublicHoliday, monthNames: monthNames
         )
     }
 }
@@ -157,7 +163,7 @@ extension TodaySection {
         SpokenDate.today(
             todayBS, gregorian: clock.todayADDate(),
             weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames,
-            festivals: observances.festivals, isPublicHoliday: observances.isPublicHoliday
+            festivals: observances.festivals, isPublicHoliday: observances.saysPublicHoliday
         )
     }
 }

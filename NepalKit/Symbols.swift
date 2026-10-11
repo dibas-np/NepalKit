@@ -62,7 +62,7 @@ enum Symbols {
     static let nextMonth = "chevron.right"
 
     /// Closes the day details under the month grid: the system's dismiss
-    /// glyph, drawn small in the card's corner.
+    /// glyph, at the end of the card's title row.
     static let closeDetails = "xmark.circle.fill"
 
     /// The popover's destination tabs: a calendar page for Today, which

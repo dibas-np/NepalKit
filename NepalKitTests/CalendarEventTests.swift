@@ -102,8 +102,11 @@ struct CalendarEventTests {
         let model = try kartik2083()
         let dashami = try day(model, 4)
         var handed: CalendarEvent?
-        #expect(model.addToCalendar(dashami, settings: latin) { handed = $0; return true })
+        var announced: [String] = []
+        #expect(model.addToCalendar(dashami, settings: latin, open: { handed = $0; return true }, announce: { announced.append($0) }))
         #expect(handed?.date == GADay(year: 2026, month: 10, day: 21))
-        #expect(!model.addToCalendar(dashami, settings: latin) { _ in false })
+        #expect(announced.isEmpty)
+        #expect(!model.addToCalendar(dashami, settings: latin, open: { _ in false }, announce: { announced.append($0) }))
+        #expect(announced == [Strings.addToCalendarFailed])
     }
 }

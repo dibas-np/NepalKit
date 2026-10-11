@@ -81,15 +81,15 @@ extension MonthGridModel {
     /// Adds `day` to the calendar app; false when it did not get there. On a
     /// failure it also announces it: the card's message appears below the
     /// buttons, where VoiceOver is not, so the press is not met with silence.
-    /// `open` is injected so a test can stand in for the calendar app.
+    /// `open` and `announce` are injected so a test can stand in for the
+    /// calendar app and hear the announcement instead of VoiceOver.
     func addToCalendar(
         _ day: MonthGridDay, settings: DisplaySettings,
-        open: (CalendarEvent) -> Bool = { $0.open() }
+        open: (CalendarEvent) -> Bool = { $0.open() },
+        announce: (String) -> Void = { AccessibilityNotification.Announcement($0).post() }
     ) -> Bool {
         let added = open(calendarEvent(for: day, settings: settings))
-        if !added {
-            AccessibilityNotification.Announcement(Strings.addToCalendarFailed).post()
-        }
+        if !added { announce(Strings.addToCalendarFailed) }
         return added
     }
 }
