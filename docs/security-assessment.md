@@ -158,8 +158,8 @@ date.
 **State: mitigated and tested.** Spoken output uses Latin digits and
 transliterated month names because Devanagari digits are not reliably
 pronounced; the spoken form is a separate code path from the visual one rather
-than a formatting flag; conversion returns an explicit unsupported or error state
-instead of a plausible wrong answer; accessibility labels are covered by tests.
+than a formatting flag; conversion returns the range boundary state for a date past the supported range,
+and `nil` for invalid input, instead of a plausible wrong answer; accessibility labels are covered by tests.
 
 ### F8 — A CodeQL alert does not block a merge
 

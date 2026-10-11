@@ -71,9 +71,10 @@ Depends on:
   shipped table diverges from its recorded baseline.
 - **2b. 2084 BS is published as a projection.** *Evidence:* README, SOURCES.md,
   the About window, and CHANGELOG.md all say so.
-- **2c. Out-of-range and invalid input produces an error state, not a plausible
-  answer.** *Evidence:* `Conversion.swift` returns explicit unsupported and error
-  cases; `InvalidDateTests`, `Projected2084Tests`.
+- **2c. Out-of-range and invalid input never produces a plausible wrong answer.**
+  Out-of-range input produces the range boundary state, an expected result kept
+  distinguishable from an error, and invalid input produces `nil`. *Evidence:*
+  `Conversion.swift` returns `nil` rather than a guess; `InvalidDateTests`, `Projected2084Tests`.
 
 **Inference.** A wrong date is possible — the dataset has documented
 disagreements — but it cannot be wrong *silently* in the sense of being

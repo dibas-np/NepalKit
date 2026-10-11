@@ -71,7 +71,7 @@ same number of days within the year, so:
 What it would break in the product: every Chaitra 2081 date shifts a day late,
 and 31 Chaitra 2081 — a real date, 13 April 2025 — is rejected as invalid.
 
-**The measured extent: 8 of the 110 supported years have any month-boundary
+**The measured extent: 8 of the 110 years in the supported range have any month-boundary
 assertion at all**, and 10 have any `BSDay` assertion anywhere in the core suite.
 The New Year sweep covers all 110 years but only at the year boundary, which is
 blind to redistribution *within* a year.

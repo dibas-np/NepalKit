@@ -190,8 +190,8 @@ for close reading; the data pipeline is compared against a recorded provenance
 baseline on every change (`data-sources.yml`); `SOURCES.md` records every
 retained correction and the evidence limit on 2084 BS, which is explicitly a
 projection rather than an attested calendar. Conversion is total-function —
-out-of-range and invalid dates produce an explicit unsupported/error state rather
-than a plausible wrong answer.
+a date past the supported range produces the range boundary state, and invalid
+input produces `nil`, rather than a plausible wrong answer.
 
 **Residual:** the 2084 projection is a deliberate inaccuracy, published as one.
 
