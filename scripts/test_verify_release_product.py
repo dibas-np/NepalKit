@@ -60,7 +60,7 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.root = Path(self._tmp.name)
 
-    def run_case(self, signed=None, info=None, sparkle="2.10.0", pin=None, expected=None):
+    def run_case(self, signed=None, info=None, sparkle="2.10.0", pin=None, expected=None, codesign_exit=0):
         app = self.root / "NepalKit.app"
         (app / "Contents/Frameworks/Sparkle.framework/Resources").mkdir(parents=True, exist_ok=True)
         with open(app / "Contents/Info.plist", "wb") as fh:
@@ -76,7 +76,7 @@ class VerifyReleaseProductTests(unittest.TestCase):
 
         def stub(cmd, **kwargs):
             self.assertEqual(cmd[:2], ["codesign", "-d"])
-            return SimpleNamespace(stdout=xml, returncode=0)
+            return SimpleNamespace(stdout=xml, stderr=b"codesign failed", returncode=codesign_exit)
 
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
@@ -88,6 +88,13 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(out.count("  ok "), 3, out)
         self.assertNotIn("FAIL", out)
+
+    def test_a_failed_codesign_run_is_a_failure_even_with_xml(self):
+        # The stub still prints a perfectly good entitlement plist; only the exit
+        # code says the read failed. Without the check this case reported ok.
+        code, out = self.run_case(codesign_exit=1)
+        self.assertEqual(code, 1, out)
+        self.assertIn("codesign exited 1", out)
 
     def test_extra_entitlement_in_product_fails(self):
         extra = {**GOOD_ENTITLEMENTS, "com.apple.security.files.user-selected.read-only": True}

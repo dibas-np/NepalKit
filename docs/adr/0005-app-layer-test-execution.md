@@ -61,12 +61,14 @@ deliberately does not link. The mapping now lives in
 what remains outside the boundary is only the one-line `NSNumber` read in the
 adapter.
 
-The `UpdatePolicy` half *is* covered, by the harness that does compile it:
-`NepalKitTests/UpdatePolicyTests.swift:21-26` asserts the classification for all
-three kinds, so the policy and its outcomes are tested even though the mapping
-into it is not. A test of the mapping would have to reach Sparkle's enum
-through a framework the harness does not link, so it is recorded here as known
-uncovered rather than left to look like an oversight.
+Both halves are now covered by the harness that compiles them:
+`UpdatePolicyTests.noUpdateKindIsReadFromTheFrameworksRawReason` pins the
+mapping from Sparkle's raw reason numbers, and
+`UpdatePolicyTests.noUpdateFoundClassifiesByReason` pins the classification of
+each kind into an outcome. What stays uncovered is only the adapter's one-line
+read of the `NSNumber` out of the error's `userInfo`, because that line needs the
+framework the harness does not link. It is recorded here as known uncovered
+rather than left to look like an oversight.
 
 ## Compile the hosted Xcode tests too
 

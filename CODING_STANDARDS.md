@@ -358,8 +358,11 @@ default:
 - `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
   `generate_appcast`. It overrides discovery. Unset, the script uses only the
   tools this checkout built into `DerivedData/` and checks they belong to the
-  pinned Sparkle version. `sign_update` lives in the same directory, and is what
-  signs the feed itself; `generate_appcast` only writes items and signs archives.
+  pinned Sparkle version. `sign_update` lives in the same directory. In Sparkle
+  2.10.0 `generate_appcast` also signs the feed when an archive's `Info.plist`
+  sets `SURequireSignedFeed`, as NepalKit's does; but `verify-appcast.sh` then
+  embeds the release notes, which invalidates that signature, so `sign_update`
+  re-signs the feed as the last step.
 - `SPARKLE_BIN_UNPINNED` — `1` skips that pin check, for a CI image whose tools
   are installed elsewhere; never on the release machine. Unset, the check runs.
 - `TEAM_ID` — the Apple Developer team, which `package-release.sh` requires for

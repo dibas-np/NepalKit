@@ -260,6 +260,15 @@ real `sign_update` output, rather than reasoned about, because a verifier that
 guesses the canonical form rejects valid feeds and one that only tests its own
 signatures looks green while being wrong.
 
+*Correction (2026-10-11):* the claim above that `generate_appcast` "has no option
+to sign the feed" held for 2.9.6 and is wrong for the pinned 2.10.0. Its
+`generate_appcast/ArchiveItem.swift` reads `SURequireSignedFeed` from each
+archive's `Info.plist`, and when it is set — as NepalKit's is — the tool signs the
+feed it writes. That signature does not survive this project's pipeline:
+`verify-appcast.sh` embeds the release notes afterwards, which rewrites signed
+bytes, so `sign_update` re-signs the feed as the last step. The ordering rule
+below is unchanged.
+
 It signs exact bytes, so it has to be the last step of a release: the notes
 injection in `verify-appcast.sh` rewrites the feed, and anything signed before it
 is invalidated.

@@ -94,7 +94,7 @@ Raising the floor is a deliberate act:
 The `--update` flag exists so that lowering the floor is a visible, argued act
 rather than something that happens by editing a number.
 
-## Three measurement details that are easy to get wrong
+## Measurement details that are easy to get wrong
 
 The first two were got wrong in the first version of this script, and all three
 produced a confident wrong answer rather than an error.
@@ -116,10 +116,11 @@ figure by about 4.7 points (34.79% against 30.12% for the app, 43.59% against
 The combined row is also weighted by executable lines: a mean of the two
 percentages weighted by file count counted a 6-line file like a 300-line one.
 
-There is a further, subtler one: an earlier version of the subject-file filter used
-an absolute path, so it silently counted 9 files instead of the app layer's, and
-reported 62.65% where the truth was 30.12% at the time. A coverage tool that measures the
-wrong files is worse than none, because the number looks real.
+**An absolute-path filter measured the wrong files.** An earlier version of the
+subject-file filter used an absolute path, so it silently counted 9 files instead
+of the app layer's and reported 62.65%, roughly double the app layer's real
+figure. A coverage tool that measures the wrong files is worse than none, because
+the number looks real.
 
 ## Branches are not measured
 

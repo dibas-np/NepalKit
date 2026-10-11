@@ -50,6 +50,11 @@ def signed_entitlements(app, run=subprocess.run):
         ["codesign", "-d", "--entitlements", "-", "--xml", str(app)],
         capture_output=True,
     )
+    # A non-zero exit is a failure even when XML came out: a gate must not
+    # report the entitlements it read off a codesign run that itself failed.
+    if result.returncode != 0:
+        detail = (getattr(result, "stderr", b"") or b"").decode("utf-8", "replace").strip()
+        raise ValueError(f"codesign exited {result.returncode}" + (f": {detail}" if detail else ""))
     out = result.stdout
     start = out.find(b"<?xml")
     if start < 0:
