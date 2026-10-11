@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
+import AppKit
 import SwiftUI
 import NepalKitCore
 
@@ -13,6 +14,10 @@ struct MonthGridView: View {
     /// "Open in Converter" from a day's popover. A callback, because the
     /// destination it switches belongs to `PopoverView`, not to the grid.
     let openInConverter: (BSDay) -> Void
+
+    /// Focus is what lets the arrow keys reach the grid. Taken on appearance
+    /// so they work as soon as the popover opens, without a click first.
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -32,8 +37,65 @@ struct MonthGridView: View {
         }
         // The model outlives the popover, so today is re-read on every
         // appearance, and the follower moves it while the grid stays open.
-        .onAppear { model.refreshToday(now: clock.now) }
+        .onAppear {
+            model.refreshToday(now: clock.now)
+            isFocused = true
+        }
         .background { TodayFollower(clock: clock, model: model) }
+        // Paging without aiming at the chevrons: the arrow keys, and
+        // scrolling over the grid. Both page through the model, so they stop
+        // at the supported range's ends exactly as the chevrons do.
+        //
+        // `.edit` rather than the default, which on macOS makes a view
+        // focusable only with Full Keyboard Access turned on; the arrow keys
+        // should not depend on that setting. No focus ring: the grid is not a
+        // control to tab to, and the ring would frame the whole month.
+        .focusable(interactions: .edit)
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(.leftArrow) {
+            model.page(by: -1)
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            model.page(by: 1)
+            return .handled
+        }
+        .modifier(ScrollPaging(model: model))
+    }
+}
+
+/// Pages the grid on scroll-wheel and trackpad scrolling while the pointer is
+/// over it. SwiftUI has no scroll-wheel event for a view that is not a scroll
+/// view, so this listens to the app's scroll events and takes only the ones
+/// that arrive while the pointer is inside the grid; the rest pass through.
+/// How many events make a page is `MonthScrollPager`'s decision.
+private struct ScrollPaging: ViewModifier {
+    let model: MonthGridModel
+    @State private var isHovering = false
+    @State private var monitor: Any?
+
+    func body(content: Content) -> some View {
+        content
+            // The whole frame, not only the drawn glyphs, so scrolling in the
+            // gaps between days still pages.
+            .contentShape(.rect)
+            .onHover { isHovering = $0 }
+            .onAppear {
+                guard monitor == nil else { return }
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+                    guard isHovering else { return event }
+                    model.scroll(
+                        deltaY: event.scrollingDeltaY,
+                        phase: MonthScrollPager.Phase(phase: event.phase, momentumPhase: event.momentumPhase)
+                    )
+                    return nil
+                }
+            }
+            .onDisappear {
+                if let monitor { NSEvent.removeMonitor(monitor) }
+                monitor = nil
+            }
     }
 }
 

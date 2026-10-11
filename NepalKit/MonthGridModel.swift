@@ -92,6 +92,9 @@ final class MonthGridModel {
 
     private let dataset: CalendarDataset
 
+    /// Gesture state for scroll paging. Not observed: it never draws.
+    @ObservationIgnored private var scrollPager = MonthScrollPager()
+
     /// - Parameter now: the instant today is read from. Injected so a test or a
     ///   preview does not depend on the day it runs.
     init(dataset: CalendarDataset = AppData.dataset, now: Date = .now) {
@@ -123,6 +126,19 @@ final class MonthGridModel {
     func showNextMonth() {
         guard canShowNextMonth else { return }
         shown = shown.next
+    }
+
+    /// Moves one month forward for a positive step and back for a negative
+    /// one, within the supported range. The arrow keys and scrolling page
+    /// through here, so they stop where the chevrons do.
+    func page(by step: Int) {
+        if step > 0 { showNextMonth() } else if step < 0 { showPreviousMonth() }
+    }
+
+    /// One scroll event over the grid; pages when the gesture has travelled
+    /// far enough (`MonthScrollPager`).
+    func scroll(deltaY: Double, phase: MonthScrollPager.Phase) {
+        page(by: scrollPager.step(deltaY: deltaY, phase: phase))
     }
 
     /// Re-reads today and returns to its month (the last supported month past

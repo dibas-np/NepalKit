@@ -48,7 +48,7 @@ If you still use version 1.0, install a newer release once to enable automatic u
 
 ## Usage
 
-Click the menu-bar date to open the popover. **Today** shows today's Bikram Sambat date and weekday above the month as a grid, with each day's Gregorian date beneath it and the Gregorian months it spans beside the title. Click a day to see it in both calendars and how far it is from today, copy it, or open it in the converter. **Convert** lets you convert a date in either direction.
+Click the menu-bar date to open the popover. **Today** shows today's Bikram Sambat date and weekday above the month as a grid, with each day's Gregorian date beneath it and the Gregorian months it spans beside the title. Click a day to see it in both calendars and how far it is from today, copy it, or open it in the converter. Scroll over the grid or press the left and right arrow keys to change months. **Convert** lets you convert a date in either direction.
 
 Open **Settings** with **⌘,** to change the menu-bar display, digit script, month and weekday names, or launch-at-login preference.
 
