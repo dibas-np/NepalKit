@@ -27,8 +27,9 @@ this table, it is not a credential — it is a bug in this table.
 
 Everything else the project reads is configuration, not credential, and is
 documented in [`.env.example`](../.env.example): `SPARKLE_BIN`,
-`NEPAKIT_DATA_CACHE`, `NEPAKIT_TAP_DIR`, `NEPAKIT_BUILT_PLIST`. All are
-optional, all have defaults, and none of them is sensitive.
+`SPARKLE_BIN_UNPINNED`, `NOTARY_PROFILE`, `NEPAKIT_DATA_CACHE`, `NEPAKIT_TAP_DIR`,
+`NEPAKIT_BUILT_PLIST`. All are optional, all have defaults, and none of them is
+sensitive (`TEAM_ID`, above, is the one a release requires).
 
 `.env` is git-ignored. It exists so a maintainer can keep local paths out of
 shell history, not to hold anything secret — the comment in `.env.example` says

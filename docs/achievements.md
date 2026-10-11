@@ -11,7 +11,7 @@ Last counted: 2026-10-04, at v1.6.0.
 | | |
 | --- | --- |
 | First commit | 2026-09-27 |
-| Releases | 10 tags, v1.0 through v1.6.0 |
+| Releases | 8 release tags (`1.0` to `v1.6.0`) plus 2 backup tags |
 | Commits | 338 |
 | Swift files | 120 |
 | Test files | 54 (23 core, 24 app, 7 Watch) |

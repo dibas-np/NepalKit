@@ -48,7 +48,8 @@ that does and does not mean:
   compile-time guarantee plus release evidence, not on CI.
 
 The move off `macos-26` was forced, not preferred. Xcode 26.6's SDK tops out at
-deployment target 26.5.99, so it could not even express a 26.6 floor, and Xcode
+deployment target 26.5.99, so it only warned that it could not fully express a
+26.6 floor (the CodeQL build still compiles at `-target macos26.6` and passes), and Xcode
 26 cannot open the object-version-110 project file that Xcode 27 writes — every
 build-settings edit prompted an upgrade that silently broke the gate. The header
 of `macos26-floor.yml` records the trade and the way out; ADR-0007 records the

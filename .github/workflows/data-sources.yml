@@ -55,7 +55,7 @@ jobs:
           # tracked-file deletion in the working tree. The build is unaffected,
           # because the pin that actually governs resolution is the exactVersion
           # requirement below - verified by resolving with the lockfile absent
-          # and still getting 2.9.6 - but a check that reads a file the
+          # and still getting the pinned version (2.10.0 at the time of writing) - but a check that reads a file the
           # toolchain deletes is a check waiting to fail for a reason that has
           # nothing to do with Sparkle.
           PINNED=$(python3 - <<'PY'

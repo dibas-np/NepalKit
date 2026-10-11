@@ -12,7 +12,7 @@ truthful privacy, calendar and support information and a reviewable archive.
 
 This document and its tickets are planning deliverables. They do not authorize
 implementation, publishing pages, uploads, submission or release operations.
-The [verified audit](audit.md) records evidence and corrections to the supplied
+The verified audit (local working notes, not in the repository) records evidence and corrections to the supplied
 report. Ticket statuses are draft because implementation choices and external
 evidence are still outstanding.
 

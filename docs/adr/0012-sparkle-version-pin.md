@@ -348,7 +348,8 @@ The check reads `project.pbxproj` rather than `Package.resolved` because Xcode
 deletes the lockfile: `-resolvePackageDependencies` resolves correctly and then
 relocates it out of `project.xcworkspace/xcshareddata/swiftpm/` entirely, leaving
 a tracked-file deletion in the working tree. Resolution is unaffected — resolving
-with the lockfile absent still yields 2.9.6, because this requirement is what
+with the lockfile absent still yields the pinned version (2.10.0 at the time of
+writing), because this requirement is what
 governs it — but a check that reads a file the toolchain deletes would eventually
 fail for a reason unrelated to Sparkle.
 

@@ -32,7 +32,7 @@ Date conversion and clocks work offline. NepalKit has no account, analytics, or 
 
 ## Install
 
-Requires macOS 26.6 or later on Apple Silicon.
+Requires macOS 26.6 or later on Apple silicon (the release is a universal build, but Intel Macs are untested).
 
 [Download the latest release](https://github.com/dibas-np/NepalKit/releases/latest), open the DMG, and drag NepalKit into **Applications**.
 
