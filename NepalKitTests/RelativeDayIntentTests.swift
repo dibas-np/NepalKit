@@ -99,4 +99,17 @@ struct RelativeDayIntentTests {
         let english = String(localized: try TomorrowInBikramSambatIntent.answer(now: now, in: dataset, monthNames: .transliterated).dialog)
         #expect(english.contains("Monday"))
     }
+
+    @Test("Running the intents answers the days either side of the real today")
+    func performAnswersFromTheRealClock() async throws {
+        let before = Date()
+        let tomorrow = try await TomorrowInBikramSambatIntent().perform()
+        let yesterday = try await YesterdayInBikramSambatIntent().perform()
+        let after = Date()
+        // Either clock read may straddle Nepal Time midnight, so accept both.
+        let tomorrows = [before, after].map { RelativeDay.bsDay(offset: 1, now: $0, in: dataset) }
+        let yesterdays = [before, after].map { RelativeDay.bsDay(offset: -1, now: $0, in: dataset) }
+        #expect(tomorrows.contains(tomorrow.value?.bsDay))
+        #expect(yesterdays.contains(yesterday.value?.bsDay))
+    }
 }
