@@ -52,4 +52,15 @@ public enum SpokenDate {
     public static func number(_ value: Int) -> String {
         formatNumber(value, digits: .latin)
     }
+
+    /// The spoken form of a festival's name: the name in the month-name
+    /// setting, with any Devanagari digits read as Latin ones. The Panchanga
+    /// writes some names with a number in them ("ने.सं.११४७ प्रारम्भ"), and
+    /// those digits are as unreliable aloud as a date's.
+    public static func festival(_ festival: Festival, monthNames: MonthNameStyle) -> String {
+        String(festival.name(style: monthNames).map { character in
+            guard ("०" ... "९").contains(character), let value = character.wholeNumberValue else { return character }
+            return Character(number(value))
+        })
+    }
 }
