@@ -48,8 +48,9 @@
 # half of that, so a contributor finds a broken app target here rather than in a
 # pull-request log.
 #
-# Both are run by CI (`data-sources.yml`, `pages.yml`) on every change that
-# touches them; this command is the local half, not a replacement.
+# The dataset parsers and the changelog suite are run by CI (`data-sources.yml`,
+# `pages.yml`) on every change that touches them; this command is the local half,
+# not a replacement.
 #
 # Usage: scripts/check-all.sh
 
@@ -158,8 +159,9 @@ gate "coverage floor" python3 "$repo_root/scripts/measure-coverage.py"
 # every other gate here agreed, because they all trusted a declared number
 # rather than comparing the sources to each other.
 # Runs the gate's own suite first, so the checks that decide *how* the floors are
-# read cannot themselves rot: CI runs that suite only when appcast.xml changes, so
-# without this every test of this gate is dark on an ordinary pull request.
+# read cannot themselves rot: macos26-floor.yml runs that suite on every pull request
+# and pages.yml when appcast.xml changes; this gate runs it locally, in the same
+# order, so a contributor sees a rotted check before review.
 gate "deployment floor consistency" bash -c '
     set -euo pipefail
     python3 "$1/scripts/test_verify_deployment_floor.py"

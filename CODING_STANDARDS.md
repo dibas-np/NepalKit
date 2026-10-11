@@ -344,8 +344,9 @@ read the skip as coverage.
   script's own `total`, and a green run prints `==> all 16 gates passed`, so the
   number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
-- App-layer tests: `scripts/run-app-tests.sh`. `xcodebuild test` currently hangs
-  before connecting and is not the runner (see `README.md` and ADR-0005).
+- App-layer tests: `scripts/run-app-tests.sh`. The hosted runner once hung
+  before connecting (ADR-0005); the harness remains the documented runner (see
+  `README.md`).
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 

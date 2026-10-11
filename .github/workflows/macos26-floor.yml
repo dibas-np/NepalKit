@@ -96,7 +96,7 @@ concurrency:
   cancel-in-progress: true
 
 # Declared, and the alert below is why. This workflow checks out the code, runs
-# two test suites, builds and launches the result. It never writes back: no
+# four test suites (core, cask, floor self-tests, app-layer), builds and launches the result. It never writes back: no
 # commit, no comment, no release, no artifact upload beyond the build log. So it
 # gets `contents: read` and nothing more.
 #
@@ -276,10 +276,10 @@ jobs:
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
-      # The committed SwiftPM harness, not `xcodebuild test`. `xcodebuild test`
-      # builds the app clean and then hangs before connecting, reproducibly and
-      # including with an empty test; it is a toolchain issue, not a reason to
-      # delete the app-layer tests. See ADR-0005.
+      # The committed SwiftPM harness, not `xcodebuild test`. The hosted runner once
+      # hung before connecting, including with an empty test; the harness remains
+      # the documented runner, and deleting the app-layer tests was never the
+      # answer. See ADR-0005.
       #
       # After the build, and with the product pointed at: `InfoPlistKeysTests`
       # checks the built Info.plist rather than the project, because a key the

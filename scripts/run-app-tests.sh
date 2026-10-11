@@ -5,9 +5,9 @@
 #
 # Runs the complete app-layer test suite.
 #
-# `xcodebuild test` builds NepalKit clean but the test runner hangs before
-# connecting in this environment, so the app-layer suite runs through a
-# SwiftPM harness instead. See docs/adr/0005-app-layer-test-execution.md.
+# The app-layer suite runs through a SwiftPM harness, introduced after the hosted
+# `xcodebuild test` runner once hung before connecting; the harness remains the
+# documented runner. See docs/adr/0005-app-layer-test-execution.md.
 #
 # Usage: scripts/run-app-tests.sh [extra swift test args]
 

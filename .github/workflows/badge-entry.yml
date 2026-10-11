@@ -11,7 +11,7 @@
 #
 # That is precisely the failure .github/CONTRIBUTING.md names: "a structural check that
 # only runs when someone remembers to run it is not a gate." A gate nobody runs
-# is a comment. This workflow is what makes the claim on line 163 of that file
+# is a comment. This workflow is what makes that claim
 # true rather than aspirational — the same reason dco.yml exists, for the same
 # reason: a rule that nothing enforces has quietly stopped being a rule.
 #

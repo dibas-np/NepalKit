@@ -29,7 +29,7 @@ provenance gap without supporting evidence. ADR-0014 governs the current policy.
 
 ## Getting set up
 
-The app's deployment floor is macOS 26, and `NepalKitCore` will not build
+The app's deployment floor is macOS 26.6, and `NepalKitCore` will not build
 against anything older.
 
 **The floor is macOS 26.6, and CI runs Xcode 27.** The floor gate
@@ -92,7 +92,7 @@ It runs these sixteen, in this order:
 # 1. compile and link the app and Xcode test bundle
 xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
     -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
-python3 scripts/test_swiftlint.py          # 2. bootstrap and all maintained Swift files
+python3 scripts/test_swiftlint.py          # 2. the bootstrap's own suite, then all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
 swift test --package-path NepalKitCore      # 3. the calendar: 93 tests
@@ -112,7 +112,7 @@ python3 scripts/verify-deployment-floor.py  # 15. the floor is one number everyw
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications
+    CODE_SIGNING_ALLOWED=NO                   # 16. the Watch app and its complications: 54 tests
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -173,7 +173,9 @@ it needs only the built product. A structural check that only runs when someone
 remembers to run it is not a gate. Everything that needs the network, a
 credential, or a built artifact stays out.
 
-CI runs both, in `badge-entry.yml`, and runs the checker's own suite before the
+CI runs the badge pair (gates 11 and 12) in `badge-entry.yml`, and the floor pair
+(gate 15 and its own suite) in `macos26-floor.yml` and `pages.yml`, as described
+above. Each runs the checker's own suite before the
 checker — a validator that has quietly stopped validating reports green, which
 is the failure mode this ladder exists to prevent. That claim was aspirational
 until that workflow existed: the two gates ran only when a human ran this
@@ -254,7 +256,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 16 below and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 16 above and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
@@ -265,8 +267,10 @@ list, in order, is above. Two conventions matter more than the individual
 commands:
 
 - **A skipped test is not a passing test.** The plist tests skip with a reason
-  when there is no built product to read, and the Watch suite skips with an
-  annotation when no usable watchOS runtime is installed. Both are deliberate: a
+  when there is no built product to read, and the Watch suite skips with a
+  warning annotation when no usable watchOS runtime is installed, but only in CI;
+  `check-all.sh` fails instead, because a local run that skipped it would report
+  green for a gate it never ran. Both are deliberate: a
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** CI runs every one
