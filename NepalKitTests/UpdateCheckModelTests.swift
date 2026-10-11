@@ -11,7 +11,10 @@ import Testing
 final class FakeUpdateService: UpdateServicing {
     private(set) var startCount = 0
     private(set) var checkCount = 0
-    var automaticallyChecksForUpdates = true
+    private(set) var automaticWrites = 0
+    var automaticallyChecksForUpdates = true {
+        didSet { automaticWrites += 1 }
+    }
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
     var onReminder: (@MainActor (Bool) -> Void)?
     var lastCheckDate: Date?
@@ -56,18 +59,37 @@ struct UpdateCheckModelTests {
         #expect(model.statusText != Strings.updateStatusUpToDate)
     }
 
-    @Test func lastCheckDateIsReadThroughFromTheService() throws {
-        // Read-through, not a mirror: the framework owns the fact, and the
-        // model's job is only to put it where Settings can show it. A copy
-        // here could silently disagree with the framework's own answer.
+    @Test func lastCheckDateIsReadFromTheServiceAtInit() throws {
+        let service = FakeUpdateService()
+        let when = try TestDates.utc(2026, 10, 1, 9, 0)
+        service.lastCheckDate = when
+
+        #expect(UpdateCheckModel(service: service).lastCheckDate == when)
+    }
+
+    @Test func aReportedOutcomeRefreshesLastCheckDate() throws {
+        // Stored so the About tab redraws; the outcome callback is when the
+        // framework's own date has moved.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
-
         #expect(model.lastCheckDate == nil)
 
         let when = try TestDates.utc(2026, 10, 1, 9, 0)
         service.lastCheckDate = when
+        service.report(.upToDate)
+
         #expect(model.lastCheckDate == when)
+    }
+
+    @Test func automaticallyChecksIsReadFromTheServiceAtInit() {
+        let service = FakeUpdateService()
+        service.automaticallyChecksForUpdates = false
+
+        let model = UpdateCheckModel(service: service)
+
+        #expect(model.automaticallyChecks == false)
+        // Reading at init must not write back.
+        #expect(service.automaticWrites == 1)
     }
 
     @Test func aFailedCheckIsNotReportedAsUpToDate() {
@@ -145,6 +167,7 @@ struct UpdateCheckModelTests {
 
         model.automaticallyChecks = true
         #expect(service.automaticallyChecksForUpdates == true)
+        #expect(service.automaticWrites == 2)
     }
 
     @Test func theReminderIsIndependentOfTheReportedOutcome() {

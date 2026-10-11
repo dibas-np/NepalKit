@@ -80,12 +80,26 @@ final class UpdateCheckModel {
     /// persists until the framework reports attention or the session ends.
     private(set) var isShowingReminder = false
 
+    /// When the framework last completed a check, or nil before the first one.
+    /// Stored so Observation can see it change; refreshed from the service,
+    /// which stays the authority, whenever a check reports or is started.
+    private(set) var lastCheckDate: Date?
+
+    /// Stored so the toggle redraws; every write goes through to the service,
+    /// which persists it.
+    var automaticallyChecks: Bool {
+        didSet { service.automaticallyChecksForUpdates = automaticallyChecks }
+    }
+
     private let service: any UpdateServicing
 
     init(service: any UpdateServicing) {
         self.service = service
+        self.lastCheckDate = service.lastCheckDate
+        self.automaticallyChecks = service.automaticallyChecksForUpdates
         self.service.onOutcome = { [weak self] outcome in
             self?.outcome = outcome
+            self?.refreshLastCheckDate()
         }
         self.service.onReminder = { [weak self] showing in
             if showing { self?.showReminder() } else { self?.dismissReminder() }
@@ -97,10 +111,16 @@ final class UpdateCheckModel {
     /// once; the framework ignores the repeat.
     func start() {
         service.start()
+        refreshLastCheckDate()
     }
 
     func checkNow() {
         service.checkForUpdates()
+        refreshLastCheckDate()
+    }
+
+    private func refreshLastCheckDate() {
+        lastCheckDate = service.lastCheckDate
     }
 
     /// Called as the framework is about to present a scheduled update.
@@ -113,17 +133,6 @@ final class UpdateCheckModel {
     func dismissReminder() {
         isShowingReminder = false
     }
-
-    var automaticallyChecks: Bool {
-        get { service.automaticallyChecksForUpdates }
-        set { service.automaticallyChecksForUpdates = newValue }
-    }
-
-    /// When the framework last completed a check, or nil before the first one.
-    /// A read-through, for the same reason the protocol property is: the
-    /// framework updates it on scheduled checks that produce no new outcome
-    /// here, and one authoritative value beats two that can disagree.
-    var lastCheckDate: Date? { service.lastCheckDate }
 
     /// Whether a check has found an update this build can install. Gates the
     /// popover footer's update button.
