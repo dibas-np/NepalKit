@@ -6,7 +6,7 @@ import NepalKitCore
 
 /// Which of the popover's three destinations is showing.
 ///
-/// Today and Convert are peers, so they are named as a segmented control rather
+/// Today, Convert and Month are peers, so they are named as a segmented control rather
 /// than as one screen with a section stapled to the bottom. The alternative made
 /// the popover a single long scroll in which the converter was always expanded,
 /// so opening it to read the date also presented three pickers and a result the
@@ -56,7 +56,7 @@ struct PopoverView: View {
     /// resting state because it is what the menu-bar item just showed.
     @State private var destination: PopoverDestination = .today
 
-    /// One width for both destinations, so switching tabs does not resize the
+    /// One width for every destination, so switching tabs does not resize the
     /// popover under the pointer. Fixed rather than a minimum because the
     /// converter's pickers are the widest content; a minimum would let the Today
     /// screen shrink narrower than they do.
@@ -79,8 +79,8 @@ struct PopoverView: View {
             .accessibilityLabel(Strings.popoverDestinationsLabel)
             .accessibilityElement(children: .contain)
 
-            // The swap cross-fades: Today and Convert are two states of one
-            // surface, not two replacements. Scoped to the switch rather than
+            // The swap cross-fades: the destinations are states of one
+            // surface, not replacements. Scoped to the switch rather than
             // the outer stack so the segmented control and the footer's
             // position label, which also read `destination`, update plainly.
             Group {
@@ -109,7 +109,7 @@ struct PopoverView: View {
 
         // Settings and Quit live below the content rather than inside either
         // destination. They open another window or end the process, so they are
-        // not a step in navigating Today and Convert, and burying them in one tab
+        // not a step in navigating the destinations, and burying them in one tab
         // would hide them from the other.
         //
         // `destination`, `openSettings` and the update state are all this hands
