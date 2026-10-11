@@ -9,6 +9,16 @@ import NepalKitCore
 struct MonthGridMonth: Hashable {
     let year: Int
     let month: Int
+
+    /// The month before, without bounds: the model checks the supported range.
+    var previous: MonthGridMonth {
+        month == 1 ? MonthGridMonth(year: year - 1, month: 12) : MonthGridMonth(year: year, month: month - 1)
+    }
+
+    /// The month after, without bounds.
+    var next: MonthGridMonth {
+        month == 12 ? MonthGridMonth(year: year + 1, month: 1) : MonthGridMonth(year: year, month: month + 1)
+    }
 }
 
 /// One filled cell of the month grid: a Bikram Sambat day, the Gregorian day it
@@ -19,7 +29,12 @@ struct MonthGridDay: Hashable {
     let gregorian: GADay
     /// 1 (Sunday) through 7 (Saturday), as the core reports it.
     let weekday: Int
+    /// Only ever true inside the shown month: today showing as a neighbouring
+    /// month's spill-over is context, not the month the reader is looking at.
     let isToday: Bool
+    /// False for the neighbouring months' days that fill the first and last
+    /// weeks. The view dims them and leaves them out of VoiceOver and taps.
+    let isInShownMonth: Bool
 
     /// Saturday (शनिबार) is Nepal's weekly public holiday, and Nepali wall
     /// calendars print its column in red; the grid follows them so the week
@@ -79,16 +94,12 @@ final class MonthGridModel {
 
     func showPreviousMonth() {
         guard canShowPreviousMonth else { return }
-        shown = shown.month == 1
-            ? MonthGridMonth(year: shown.year - 1, month: 12)
-            : MonthGridMonth(year: shown.year, month: shown.month - 1)
+        shown = shown.previous
     }
 
     func showNextMonth() {
         guard canShowNextMonth else { return }
-        shown = shown.month == 12
-            ? MonthGridMonth(year: shown.year + 1, month: 1)
-            : MonthGridMonth(year: shown.year, month: shown.month + 1)
+        shown = shown.next
     }
 
     /// Re-reads today and returns to its month (the last supported month past
@@ -127,30 +138,58 @@ final class MonthGridModel {
 
     // MARK: - Grid
 
-    /// The shown month as Sunday-first weeks of seven cells. A nil cell is a
-    /// blank before day 1 or after the last day. Nepali wall calendars start the
-    /// week on Sunday (आइतबार), which is also the core's weekday 1.
+    /// Weeks the grid always draws. Six is the most a month can need (a
+    /// 32-day month starting on Saturday), and drawing six for every month
+    /// keeps the popover's height still while the reader pages through months,
+    /// which matters now that a scroll can change the month under the pointer.
+    static let weekCount = 6
+
+    /// The shown month as `weekCount` Sunday-first weeks of seven cells. The
+    /// first and last weeks are filled with the neighbouring months' days
+    /// (`isInShownMonth` false), as a wall calendar fills them. A nil cell is a
+    /// day before the dataset's first or after its last, which has no Bikram
+    /// Sambat date to show. Nepali wall calendars start the week on Sunday
+    /// (आइतबार), which is also the core's weekday 1.
     var weeks: [[MonthGridDay?]] {
-        guard let lengths = dataset.monthLengths(for: shown.year) else {
-            preconditionFailure("Validated dataset is missing the month lengths for BS year \(shown.year)")
+        let length = monthLength(shown)
+        let firstBS = BSDay(year: shown.year, month: shown.month, day: 1)
+        // Every day of a supported month converts; the dataset's own init
+        // validates the table this walks.
+        guard let firstAD = bsToAD(firstBS, in: dataset), let firstWeekday = weekday(of: firstAD) else {
+            preconditionFailure("Supported BS day \(firstBS) did not convert")
         }
-        let length = lengths[shown.month - 1]
-        var cells: [MonthGridDay?] = []
-        for day in 1 ... length {
-            let bs = BSDay(year: shown.year, month: shown.month, day: day)
-            // Every day of a supported month converts; the dataset's own init
-            // validates the table this walks.
-            guard let ad = bsToAD(bs, in: dataset), let weekday = weekday(of: ad) else {
-                preconditionFailure("Supported BS day \(bs) did not convert")
+        let leading = firstWeekday - 1
+        let previous = canShowPreviousMonth ? shown.previous : nil
+        let next = canShowNextMonth ? shown.next : nil
+        let cells: [MonthGridDay?] = (0 ..< Self.weekCount * 7).map { index in
+            // Day of the shown month this cell would be, counting past both
+            // ends: 0 is the previous month's last day, length + 1 the next
+            // month's first.
+            let offset = index - leading + 1
+            let bs: BSDay?
+            if offset < 1 {
+                bs = previous.map { BSDay(year: $0.year, month: $0.month, day: monthLength($0) + offset) }
+            } else if offset > length {
+                bs = next.map { BSDay(year: $0.year, month: $0.month, day: offset - length) }
+            } else {
+                bs = BSDay(year: shown.year, month: shown.month, day: offset)
             }
-            if day == 1 {
-                cells.append(contentsOf: Array(repeating: nil, count: weekday - 1))
-            }
-            cells.append(MonthGridDay(bikramSambat: bs, gregorian: ad, weekday: weekday, isToday: bs == today))
+            guard let bs, let ad = firstAD.advanced(byDays: offset - 1) else { return nil }
+            let inShownMonth = (1 ... length).contains(offset)
+            return MonthGridDay(
+                bikramSambat: bs, gregorian: ad, weekday: index % 7 + 1,
+                isToday: inShownMonth && bs == today, isInShownMonth: inShownMonth
+            )
         }
-        let trailing = (7 - cells.count % 7) % 7
-        cells.append(contentsOf: Array(repeating: nil, count: trailing))
         return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0 ..< $0 + 7]) }
+    }
+
+    /// Days in a supported month. Callers pass only months inside the range.
+    private func monthLength(_ month: MonthGridMonth) -> Int {
+        guard let lengths = dataset.monthLengths(for: month.year) else {
+            preconditionFailure("Validated dataset is missing the month lengths for BS year \(month.year)")
+        }
+        return lengths[month.month - 1]
     }
 
     // MARK: - Text

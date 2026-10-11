@@ -32,23 +32,56 @@ struct MonthGridModelTests {
         #expect(model.today == BSDay(year: 2082, month: 1, day: 1))
     }
 
-    @Test func baisakh2082StartsOnMondayWithOneLeadingBlank() throws {
-        let weeks = try baisakh2082().weeks
-        // 31 days (1 Jestha 2082 = 15 May 2025) after one blank Sunday: 32
-        // cells, padded to five full weeks.
-        #expect(weeks.count == 5)
+    /// The shown month's own days, without the neighbours that fill the
+    /// first and last weeks.
+    private func shownDays(_ model: MonthGridModel) -> [MonthGridDay] {
+        model.weeks.flatMap { $0 }.compactMap { $0 }.filter(\.isInShownMonth)
+    }
+
+    @Test func baisakh2082StartsOnMondayAfterChaitrasLastDay() throws {
+        let model = try baisakh2082()
+        let weeks = model.weeks
+        // Always six full weeks, so paging months never changes the height.
+        #expect(weeks.count == MonthGridModel.weekCount)
         #expect(weeks.allSatisfy { $0.count == 7 })
-        #expect(weeks[0][0] == nil)
+        #expect(weeks.flatMap { $0 }.allSatisfy { $0 != nil })
         let first = try #require(weeks[0][1])
         #expect(first.bikramSambat == BSDay(year: 2082, month: 1, day: 1))
         #expect(first.gregorian == GADay(year: 2025, month: 4, day: 14))
         #expect(first.weekday == 2)
-        let days = weeks.flatMap { $0 }.compactMap { $0 }
+        #expect(first.isInShownMonth)
+        let days = shownDays(model)
         #expect(days.count == 31)
         #expect(days.last?.gregorian == GADay(year: 2025, month: 5, day: 14))
-        // 31 Baisakh falls on Wednesday; Thursday to Saturday are trailing blanks.
+        // 31 Baisakh falls on Wednesday.
         #expect(weeks[4][3]?.bikramSambat.day == 31)
-        #expect(weeks[4][4] == nil && weeks[4][5] == nil && weeks[4][6] == nil)
+    }
+
+    @Test func theNeighbouringMonthsFillTheFirstAndLastWeeks() throws {
+        let weeks = try baisakh2082().weeks
+        // The Sunday before 1 Baisakh is Chaitra 2081's last day, 13 April.
+        let leading = try #require(weeks[0][0])
+        #expect(!leading.isInShownMonth)
+        #expect(leading.bikramSambat.year == 2081 && leading.bikramSambat.month == 12)
+        #expect(leading.gregorian == GADay(year: 2025, month: 4, day: 13))
+        #expect(leading.weekday == 1)
+        // After 31 Baisakh (Wednesday) come 1 to 3 Jestha, then a full week
+        // of Jestha to make the sixth row.
+        let trailing = weeks[4][4 ... 6].compactMap { $0 } + weeks[5].compactMap { $0 }
+        #expect(trailing.map(\.bikramSambat) == (1 ... 10).map { BSDay(year: 2082, month: 2, day: $0) })
+        #expect(trailing.first?.gregorian == GADay(year: 2025, month: 5, day: 15))
+        #expect(trailing.allSatisfy { !$0.isInShownMonth && !$0.isToday })
+    }
+
+    @Test func todayInANeighbouringMonthsSpillOverIsNotMarked() throws {
+        // Chaitra 2081's last week spills into Baisakh 2082, today's month.
+        let model = try baisakh2082()
+        model.showPreviousMonth()
+        let cells = model.weeks.flatMap { $0 }.compactMap { $0 }
+        let spill = try #require(cells.first { $0.bikramSambat == BSDay(year: 2082, month: 1, day: 1) })
+        #expect(!spill.isInShownMonth)
+        #expect(!spill.isToday)
+        #expect(cells.allSatisfy { !$0.isToday })
     }
 
     @Test func everyCellSitsInItsWeekdayColumn() throws {
@@ -62,7 +95,7 @@ struct MonthGridModelTests {
     @Test func saturdayIsTheHolidayColumn() throws {
         let model = try baisakh2082()
         #expect((0 ..< 7).filter(model.isWeeklyHolidayColumn) == [6])
-        let days = model.weeks.flatMap { $0 }.compactMap { $0 }
+        let days = shownDays(model)
         // 6 Baisakh 2082 = 19 April 2025, a Saturday.
         #expect(days.filter(\.isWeeklyHoliday).map(\.bikramSambat.day) == [6, 13, 20, 27])
         #expect(days.filter(\.isWeeklyHoliday).allSatisfy { $0.weekday == 7 })
@@ -103,6 +136,9 @@ struct MonthGridModelTests {
         let first = try #require(model.weeks[0][6])
         #expect(first.bikramSambat == BSDay(year: 1975, month: 1, day: 1))
         #expect(first.gregorian == GADay(year: 1918, month: 4, day: 13))
+        // Nothing precedes the dataset's first day, so the cells before it
+        // stay empty rather than inventing a Chaitra 1974.
+        #expect(model.weeks[0][0 ..< 6].allSatisfy { $0 == nil })
     }
 
     @Test func nextStopsAtChaitra2084() throws {
@@ -112,12 +148,16 @@ struct MonthGridModelTests {
         #expect(!model.canShowNextMonth)
         model.showNextMonth()
         #expect(model.shown == MonthGridMonth(year: 2084, month: 12))
-        let days = model.weeks.flatMap { $0 }.compactMap { $0 }
-        // 1 Chaitra 2084 = 14 Mar 2028, a Tuesday: two leading blanks.
-        #expect(model.weeks[0][0] == nil && model.weeks[0][1] == nil)
+        let days = shownDays(model)
+        // 1 Chaitra 2084 = 14 Mar 2028, a Tuesday: Falgun's last two days lead.
+        #expect(model.weeks[0][0]?.bikramSambat.month == 11 && model.weeks[0][1]?.bikramSambat.month == 11)
         #expect(days.first?.gregorian == GADay(year: 2028, month: 3, day: 14))
         #expect(days.last?.bikramSambat == BSDay(year: 2084, month: 12, day: 30))
         #expect(days.last?.gregorian == GADay(year: 2028, month: 4, day: 12))
+        // Nothing follows the dataset's last day, so the cells after it are empty.
+        let cells = model.weeks.flatMap { $0 }
+        let lastIndex = try #require(cells.firstIndex { $0?.bikramSambat == BSDay(year: 2084, month: 12, day: 30) })
+        #expect(cells[(lastIndex + 1)...].allSatisfy { $0 == nil })
     }
 
     @Test func pastTheSupportedRangeOpensOnTheLastMonthAndSaysSo() throws {

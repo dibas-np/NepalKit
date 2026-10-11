@@ -139,18 +139,29 @@ private struct MonthGridCell: View {
     let model: MonthGridModel
     let settings: DisplaySettings
 
+    /// The large number's colour. Red for the holiday column, as on a wall
+    /// calendar, and still red on today: the tint behind it is light enough
+    /// that the number stays legible, and dropping the red there would hide
+    /// that today is the holiday. A neighbouring month's day is tertiary
+    /// whatever its column, so the shown month stays the one that reads.
+    private var dayStyle: AnyShapeStyle {
+        if !day.isInShownMonth { return AnyShapeStyle(.tertiary) }
+        return day.isWeeklyHoliday ? AnyShapeStyle(.red) : AnyShapeStyle(.primary)
+    }
+
+    private var gregorianStyle: AnyShapeStyle {
+        if !day.isInShownMonth { return AnyShapeStyle(.tertiary) }
+        return day.isToday ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Red for the holiday column, as on a wall calendar. Still red on
-            // today: the tint behind it is light enough that the number stays
-            // legible, and dropping the red there would hide that today is
-            // the holiday.
             Text(model.dayText(day, settings: settings))
                 .font(.body.weight(day.isToday ? .semibold : .regular))
-                .foregroundStyle(day.isWeeklyHoliday ? Color.red : Color.primary)
+                .foregroundStyle(dayStyle)
             Text(model.gregorianDayText(day, settings: settings))
                 .font(.caption2)
-                .foregroundStyle(day.isToday ? .primary : .secondary)
+                .foregroundStyle(gregorianStyle)
         }
         .monospacedDigit()
         .padding(.vertical, 2)
@@ -166,6 +177,10 @@ private struct MonthGridCell: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
         .accessibilityAddTraits(day.isToday ? .isSelected : [])
+        // The neighbouring months' days are a sighted reader's context for
+        // the first and last weeks. Read out, they would put another month's
+        // days inside this month's list; the chevrons are the way there.
+        .accessibilityHidden(!day.isInShownMonth)
     }
 }
 
