@@ -53,3 +53,25 @@ not substitute for them.
 The current last supported Gregorian day is 2028-04-12. An extension should
 ship before that boundary. This procedure does not set a publication date or
 schedule automatic checks of a third-party website.
+
+## Monthly Samiti check, from 1 January 2027
+
+The Nepal Panchanga Nirnayak Samiti's determination of 2084 BS is expected
+around Magh 2083 BS (January to February 2027), about three months before 2084
+begins on 13 April 2027. Its published almanac is the only thing that can
+attest the provisional 2084 row or make 2085 shippable (ADR-0014). Once a
+month from 1 January 2027, until the dataset reaches 2085:
+
+1. Read the Samiti's publication notices on `npns.gov.np`. A missing notice in
+   January is not evidence of delay: 2083 was confirmed in December 2025.
+2. If a year was published, read the almanac itself, then follow "Reconcile
+   provisional 2084 first" and "Consider a new supported year" above.
+3. Record the check by setting the date below, in the same commit as anything
+   it changed.
+
+If February 2027 passes with no publication, plan for less lead time rather
+than waiting. The `patro-reminder` job in `.github/workflows/data-sources.yml`
+runs monthly and fails when this date is more than 35 days old; it checks that
+a person looked, not what the website says.
+
+last_checked: none

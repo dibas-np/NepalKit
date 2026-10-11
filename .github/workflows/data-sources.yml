@@ -28,6 +28,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/test_dataset_parsers.py
+      - name: The Patro reminder's own suite
+        run: python3 scripts/test_check_patro_reminder.py
       - name: The changelog generator still fails loudly and rewrites nothing
         run: |
           set -euo pipefail
@@ -106,3 +108,17 @@ jobs:
             exit 1
           fi
           echo "Sparkle pin is current"
+
+  patro-reminder:
+    # The Samiti's 2084 determination is the one input this project cannot
+    # substitute for, and nothing machine-readable announces it. This fails
+    # when the monthly check recorded in the dataset extension procedure is
+    # more than 35 days old, from 2027-01-01 until the table reaches 2085.
+    name: monthly Nepali Patro check is recorded
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: The monthly check is not overdue
+        run: python3 scripts/check-patro-reminder.py
