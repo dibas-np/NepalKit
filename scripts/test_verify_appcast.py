@@ -550,6 +550,24 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertLess(seed, generate, "the feed must be seeded before generate_appcast runs")
         self.assertIn('"$ARCHIVES_DIR/appcast.xml"', script)
 
+    def test_the_seeded_feed_is_made_writable_before_generation(self) -> None:
+        # package-release.sh hands out the signed feed read-only and `cp` keeps
+        # the mode, so a read-only feed in the repository would otherwise make
+        # generate_appcast fail to rewrite its staging copy.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        seed = script.index('cp "$ROOT/appcast.xml"')
+        writable = script.index('chmod u+w "$ARCHIVES_DIR/appcast.xml"')
+        generate = script.index('"$GENERATE_APPCAST" \\')
+        self.assertLess(seed, writable)
+        self.assertLess(writable, generate)
+
+    def test_the_release_outputs_are_handed_out_read_only(self) -> None:
+        # The signature covers every byte of the feed; an editor's autosave must
+        # not be able to change it after signing.
+        script = (Path(__file__).resolve().parent / "package-release.sh").read_text()
+        copy = script.index('"$APPCAST_DIR/appcast.xml" "$OUT_DIR/"')
+        self.assertLess(copy, script.index('chmod 0444 "$OUT_DIR"/*'))
+
     def test_the_committed_feed_carries_more_than_one_release(self) -> None:
         # The consequence, stated on the repository's own feed: a feed that has
         # lost its history looks exactly like a successful release, so the

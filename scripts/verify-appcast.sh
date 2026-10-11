@@ -151,6 +151,10 @@ URL_PREFIX="${URL_PREFIX%/}/"
 # its history otherwise looks exactly like a successful run.
 if [[ -f "$ROOT/appcast.xml" ]]; then
     cp "$ROOT/appcast.xml" "$ARCHIVES_DIR/appcast.xml"
+    # package-release.sh hands out the signed feed read-only, and `cp` keeps the
+    # mode; generate_appcast rewrites this staging copy in place, so it must be
+    # writable.
+    chmod u+w "$ARCHIVES_DIR/appcast.xml"
     echo "carried forward $(grep -c '<item>' "$ROOT/appcast.xml") existing feed item(s)"
 else
     echo "no committed appcast.xml; this will be the first release in the feed"

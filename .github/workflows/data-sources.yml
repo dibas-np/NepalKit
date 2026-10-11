@@ -61,17 +61,21 @@ jobs:
           PINNED=$(python3 - <<'PY'
           import pathlib, re
           text = pathlib.Path("NepalKit.xcodeproj/project.pbxproj").read_text()
+          # Only Sparkle's own block, so a later package's requirement is never
+          # read as Sparkle's.
           block = re.search(
-              r'XCRemoteSwiftPackageReference "Sparkle".*?'
-              r'kind = (?P<kind>\w+);\s*version = (?P<version>[\d.]+);',
+              r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
+              r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
               text, re.S)
-          if block is None:
+          kind = block and re.search(r'kind = (\w+);', block.group(1))
+          if not kind:
               raise SystemExit("no Sparkle package requirement found in project.pbxproj")
-          if block.group("kind") != "exactVersion":
+          version = re.search(r'version = ([\d.]+);', block.group(1))
+          if kind.group(1) != "exactVersion" or not version:
               raise SystemExit(
-                  f"Sparkle is pinned as {block.group('kind')}, not exactVersion; "
+                  f"Sparkle is pinned as {kind.group(1)}, not exactVersion; "
                   "ADR-0012 requires an exact pin and this check assumes one")
-          print(block.group("version"))
+          print(version.group(1))
           PY
           )
           # Downloaded to a file, then read from it. Piping the response into an
