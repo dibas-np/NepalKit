@@ -72,7 +72,6 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--today", type=datetime.date.fromisoformat, default=datetime.date.today())
-    parser.add_argument("--procedure", type=Path, default=PROCEDURE, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -83,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     # ships the job stays quiet even if the line is gone. The pull-request suite
     # still requires the committed line to be readable.
     quiet = args.today < CHECKS_START or last_year >= EXTENDED_YEAR
-    checked = None if quiet else last_checked(args.procedure.read_text(encoding="utf-8"))
+    checked = None if quiet else last_checked(PROCEDURE.read_text(encoding="utf-8"))
     ok, message = verdict(args.today, checked, last_year)
     print(("  ok    " if ok else "  FAIL  ") + message)
     return 0 if ok else 1

@@ -74,20 +74,26 @@ class LastChecked(unittest.TestCase):
 
 
 class Main(unittest.TestCase):
-    def _procedure(self, text: str) -> str:
+    def _use_procedure(self, text: str) -> None:
+        # The script takes no path argument; the test points the module at a
+        # scratch procedure instead and restores it afterwards.
         import tempfile
         handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
         handle.write(text)
         handle.close()
         self.addCleanup(Path(handle.name).unlink)
-        return handle.name
+        original = cpr.PROCEDURE
+        cpr.PROCEDURE = Path(handle.name)
+        self.addCleanup(setattr, cpr, "PROCEDURE", original)
 
     def test_a_missing_line_does_not_fail_before_the_checks_start(self):
-        self.assertEqual(cpr.main(["--today", "2026-12-01", "--procedure", self._procedure("no record")]), 0)
+        self._use_procedure("no record")
+        self.assertEqual(cpr.main(["--today", "2026-12-01"]), 0)
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
+        self._use_procedure("no record")
         with self.assertRaises(SystemExit):
-            cpr.main(["--today", "2027-02-01", "--procedure", self._procedure("no record")])
+            cpr.main(["--today", "2027-02-01"])
 
 
 class TheCommittedProcedure(unittest.TestCase):
