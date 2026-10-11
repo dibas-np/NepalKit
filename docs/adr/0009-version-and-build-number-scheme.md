@@ -2,9 +2,9 @@
 
 NepalKit tracks three version numbers that move independently: the **application
 version** (`CFBundleShortVersionString`, human-facing, shown in About, currently
-`1.3.0`), the **build number** (`CFBundleVersion`, a monotonically increasing
-integer, currently `5`), and the **calendar dataset version** (currently
-`2.0.0`). Git tags follow the application version.
+`1.6.0`), the **build number** (`CFBundleVersion`, a monotonically increasing
+integer, currently `8`), and the **calendar dataset version** (currently
+`2.0.1`). Git tags follow the application version.
 
 The build number is not a display concern — it is load-bearing for updates.
 Sparkle's documentation requires an incrementing, properly formatted
@@ -103,3 +103,13 @@ tight — a link to any other tag still fails it.
 **Drop the patch component for releases that are not patches.** Rejected. The
 cost is a version string whose meaning depends on which release you are looking
 at, in exchange for saving two characters.
+
+## The build number collided once (2026-10-10 audit)
+
+1.3.0 and 1.4.0 both published build 5. Sparkle compares builds, so 1.3.0
+installs were never offered 1.4.0; they were offered 1.4.1 (build 6) instead.
+The feed is signed and its history is immutable, so it is not rewritten.
+Instead, `scripts/verify-appcast.py` now requires the newest item's build to be
+strictly higher than every earlier one, and `BuildNumberTests` requires a
+bump whenever `MARKETING_VERSION` is not yet in the feed. The historical
+build-5 pair, being below the newest item, is deliberately still allowed.
