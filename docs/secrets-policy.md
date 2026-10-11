@@ -18,7 +18,7 @@ this table, it is not a credential — it is a bug in this table.
 
 | Credential | What it can do | Where it lives | Reachable from a pull request? |
 | --- | --- | --- | --- |
-| Sparkle EdDSA **private** key | Sign the update feed, and sign update archives | The release machine's login keychain, plus one offline physical backup (rule 3). Never in the repository, never in CI, never in a synced folder | **No** |
+| Sparkle EdDSA **private** key | Sign the update feed, and sign update archives | The release machine's login keychain. Rule 3 allows one offline physical backup; as of 2026-10-11 it has not been made (ADR-0012's custody boxes). Never in the repository, never in CI, never in a synced folder | **No** |
 | Sparkle EdDSA **public** key | Verify updates — safe to disclose | `SUPublicEDKey` in `NepalKit/Info.plist`, committed | n/a |
 | Apple Developer ID Application certificate + private key | Code-sign a distributed `.app` | The release machine's keychain | **No** |
 | `notarytool` keychain profile (`NepalKit-notary`) | Submit to Apple's notary service | The release machine's keychain, created once with `xcrun notarytool store-credentials` | **No** |
