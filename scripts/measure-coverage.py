@@ -28,12 +28,12 @@ toolchain and nothing else.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -159,10 +159,31 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True)
 
 
+# A persistent build directory per suite, so a second run builds incrementally
+# instead of from scratch. Outside the repository on purpose: llvm-cov strips
+# the path prefix common to every file it reports, so with the build inside the
+# checkout the report's paths lose the repository prefix the subject filter
+# matches on. Keyed by checkout so two worktrees do not share builds. Profiles
+# from an earlier run are deleted first: the report reads whichever .profdata
+# it finds, and a stale one would report the previous run's numbers.
+COVERAGE_BUILD = (Path.home() / "Library" / "Caches" / "nepalkit-coverage"
+                  / hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12])
+
+
+def clear_profiles(build_dir: Path) -> int:
+    """Delete every .profraw and .profdata under build_dir; return how many."""
+    stale = [p for pattern in ("*.profraw", "*.profdata") for p in build_dir.rglob(pattern)]
+    for path in stale:
+        path.unlink()
+    return len(stale)
+
+
 def measure(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
     """Run one suite with coverage and total its subject files."""
+    build_dir.mkdir(parents=True, exist_ok=True)
+    clear_profiles(build_dir)
     result = run(
         [
             "swift", "test",
@@ -198,15 +219,14 @@ def main() -> int:
 
     raw_counts: dict[str, dict[str, int]] = {}
     raw: dict[str, dict[str, float]] = {}
-    with tempfile.TemporaryDirectory() as directory:
-        for label, package, prefixes in SUITES:
-            counts = measure(label, package, prefixes, Path(directory) / label.replace(" ", "-"))
-            raw_counts[label] = counts
-            result = percentages(counts)
-            raw[label] = result
-            print(f"  {label:<16} lines {result['lines']:6.2f}%  "
-                  f"regions {result['regions']:6.2f}%  "
-                  f"functions {result['functions']:6.2f}%  ({result['files']} files)")
+    for label, package, prefixes in SUITES:
+        counts = measure(label, package, prefixes, COVERAGE_BUILD / label.replace(" ", "-"))
+        raw_counts[label] = counts
+        result = percentages(counts)
+        raw[label] = result
+        print(f"  {label:<16} lines {result['lines']:6.2f}%  "
+              f"regions {result['regions']:6.2f}%  "
+              f"functions {result['functions']:6.2f}%  ({result['files']} files)")
 
     # The combined figure is sum(hit)/sum(lines) across both suites, so a 300-line
     # file weighs 300 lines. A plain mean of the two percentages would let the

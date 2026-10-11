@@ -151,5 +151,18 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(mc.regressions(totals, self.FLOOR["suites"], self.FLOOR), [])
 
 
+class ClearProfiles(unittest.TestCase):
+    def test_removes_stale_profiles_and_keeps_build_products(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a" / "b").mkdir(parents=True)
+            (root / "a" / "old.profraw").write_text("x")
+            (root / "a" / "b" / "merged.profdata").write_text("x")
+            (root / "a" / "b" / "Tests.xctest").write_text("keep")
+            self.assertEqual(mc.clear_profiles(root), 2)
+            self.assertEqual([p.name for p in root.rglob("*") if p.is_file()], ["Tests.xctest"])
+
+
 if __name__ == "__main__":
     unittest.main()

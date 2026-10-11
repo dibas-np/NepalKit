@@ -9,6 +9,10 @@ excluded:
   # This historical menu-bar experiment intentionally probes forced casts and
   # prints diagnostics; it is not part of the shipped app or maintained tooling.
   - scripts/menubar-spike.swift
+  # Local issue-tracker notes and scratch prototypes; only `.scratch/*/spec.md`
+  # is tracked, and CI never sees the rest, so linting it locally only turns the
+  # strict gate red on files no one ships.
+  - .scratch
 
 disabled_rules:
   # Domain abbreviations such as `bs` and `ad` are established project vocabulary.
