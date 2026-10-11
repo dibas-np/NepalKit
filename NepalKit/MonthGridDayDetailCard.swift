@@ -33,7 +33,7 @@ struct MonthGridDayDetailCard: View {
                 // on a dot, which ties each name to the dot on the day's cell.
                 ForEach(Array(zip(detail.festivals, detail.spokenFestivals).enumerated()), id: \.offset) { _, names in
                     let (shown, spoken) = names
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
                         Circle().fill(.tint).frame(width: 5, height: 5).accessibilityHidden(true)
                         Text(shown)
                             .font(.callout)
