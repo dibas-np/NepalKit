@@ -117,8 +117,7 @@ def percentages(counts: dict[str, int]) -> dict[str, float]:
 
 
 def combine(all_counts: list[dict[str, int]]) -> dict[str, int]:
-    """Sum raw counts across suites. The combined figure is sum(hit)/sum(lines),
-    so a 300-line file weighs 300 lines, not one file."""
+    """Sum raw counts across suites."""
     return {key: sum(counts[key] for counts in all_counts) for key in all_counts[0]}
 
 
@@ -147,8 +146,8 @@ def regressions(
 
 
 # The app suite keeps only `NepalKit/`: its harness links `NepalKitCore`, so core
-# rows appear in its report too. Counting them there put core's 9 files in both
-# buckets and inflated the app figure (34.79% vs 30.12% at 0b50f7a).
+# rows appear in its report too, and counting them would put core's 9 files in
+# both suites (app lines 34.79% instead of 30.12% at 0b50f7a).
 SUITES = (
     # (label, package path, subject prefixes relative to the repository root)
     ("NepalKitCore", "NepalKitCore", ("NepalKitCore/Sources/NepalKitCore/",)),

@@ -5,9 +5,9 @@
 #
 # Runs the complete app-layer test suite.
 #
-# The app-layer suite runs through a SwiftPM harness, introduced after the hosted
-# `xcodebuild test` runner once hung before connecting; the harness remains the
-# documented runner. See docs/adr/0005-app-layer-test-execution.md.
+# The app-layer suite runs through a SwiftPM harness, adopted when the
+# `xcodebuild test` runner hung before connecting. See
+# docs/adr/0005-app-layer-test-execution.md.
 #
 # Usage: scripts/run-app-tests.sh [extra swift test args]
 
@@ -64,11 +64,10 @@ done
 # than pass against a stale bundle. The comparison is printed either way, so a
 # reader can see it instead of inferring it.
 #
-# The clock is the product's executable, not its Info.plist. The linker rewrites
+# The clock is the product's executable, not its Info.plist: the linker rewrites
 # the executable on every rebuild, but Xcode rewrites the processed plist only
-# when the plist's own inputs change. Measured: a product whose plist was 27
-# minutes older than its binary was refused as stale after a Swift-only rebuild,
-# which skipped the release-key tests against a build that was current.
+# when its own inputs change, so a current build after a Swift-only rebuild had a
+# plist 27 minutes older than its binary and was refused as stale.
 #
 # Skipping rather than failing, deliberately. Failing here would break the plain
 # `./scripts/run-app-tests.sh` that README and CONTRIBUTING tell every
@@ -83,7 +82,8 @@ if [[ -z "${NEPAKIT_BUILT_PLIST:-}" ]]; then
     # target's sources and the plist, entitlements and assets it embeds; the
     # build settings that decide which INFOPLIST_KEY_* survive; and LICENSE,
     # which a resource phase copies into the bundle and one of the seven tests
-    # asserts on. .DS_Store is excluded: Finder writes it and it feeds nothing. The core package is deliberately not in this set - it does not
+    # asserts on. .DS_Store is excluded: Finder writes it and it feeds nothing.
+    # The core package is deliberately not in this set - it does not
     # feed the plist or the resources, so its mtime would skip checks that are
     # still perfectly meaningful.
     #
@@ -99,8 +99,8 @@ if [[ -z "${NEPAKIT_BUILT_PLIST:-}" ]]; then
     # `build/Products/Debug/…` even though current Xcode puts SYMROOT in
     # DerivedData and the path is dead on this machine: it costs one failed
     # test, and it is the shape a checkout with its own SYMROOT would use.
-    # `DerivedData/` in the checkout comes first: gate 1 of check-all.sh builds
-    # there, so it is the product the contributor just made.
+    # The checkout's `DerivedData/` is listed first because gate 1 of
+    # check-all.sh builds there.
     product=""
     product_mtime=0
     for candidate in "$repo_root"/DerivedData/Build/Products/Debug/NepalKit.app \

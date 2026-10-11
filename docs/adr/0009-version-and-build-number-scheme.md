@@ -104,12 +104,12 @@ tight — a link to any other tag still fails it.
 cost is a version string whose meaning depends on which release you are looking
 at, in exchange for saving two characters.
 
-## The build number collided once (2026-10-10 audit)
+## Amendment, 2026-10-10: the build number collided once
 
 1.3.0 and 1.4.0 both published build 5. Sparkle compares builds, so 1.3.0
 installs were never offered 1.4.0; they were offered 1.4.1 (build 6) instead.
-The feed is signed and its history is immutable, so it is not rewritten.
-Instead, `scripts/verify-appcast.py` now requires the newest item's build to be
-strictly higher than every earlier one, and `BuildNumberTests` requires a
-bump whenever `MARKETING_VERSION` is not yet in the feed. The historical
-build-5 pair, being below the newest item, is deliberately still allowed.
+The signed feed's history is not rewritten. `scripts/verify-appcast.py` now
+requires the newest item's build to be strictly higher than every earlier one,
+and `BuildNumberTests` requires a bump whenever `MARKETING_VERSION` is not yet
+in the feed. The historical build-5 pair is below the newest item, so it still
+passes.

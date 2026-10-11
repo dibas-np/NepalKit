@@ -168,10 +168,10 @@ struct BuildNumberTests {
         )
     }
 
-    // 1.3.0 and 1.4.0 both shipped as build 5, and `>=` is why nothing caught
-    // it: equality passed. Once the feed carries the current version `>=` is
-    // right (HEAD is the shipped state); an unreleased version must be strictly
-    // higher or Sparkle offers it to nobody.
+    // 1.3.0 and 1.4.0 both shipped as build 5 because `>=` let equality pass.
+    // Once the feed carries the current version, `>=` is right (HEAD is the
+    // shipped state); an unreleased version must be strictly higher or Sparkle
+    // offers it to nobody.
     @Test func buildNumberHasNotRegressedBelowTheLastReleased() throws {
         // The monotonic half of the invariant. If someone lowers
         // CURRENT_PROJECT_VERSION below the highest build the feed has already

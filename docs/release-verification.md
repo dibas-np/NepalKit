@@ -74,9 +74,8 @@ fingerprint. `git tag -v` is the only check here that verifies a signature.
 
 No published tag is signed yet. The eight release tags that exist today
 (`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are lightweight, so `git tag -v`
-reports that they are not tag objects and cannot verify them. For those
-releases, rely on the archive and code signatures in the steps below. You can
-see whether a tag is annotated at all with:
+reports that they are not tag objects; for those releases, rely on the archive and code signatures
+in the steps below. To see whether a tag is annotated at all:
 
 ```sh
 git cat-file -t v<version>     # tag    -> annotated (may or may not be signed)
@@ -95,10 +94,9 @@ hdiutil attach ~/Downloads/NepalKit-*.dmg -nobrowse -readonly
 codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | head -20
 ```
 
-Expect `TeamIdentifier=CA89X9954L`; that is the value to match. The shipped
-1.6.0 prints `Authority=Developer ID Application: Finnove Technologies
-(CA89X9954L)`, so the name in the Authority line is the organisation that holds
-the team, not a personal name. **A different team here is a failure, not a
+Expect `TeamIdentifier=CA89X9954L`; that is the value to match. The Authority
+line names the organisation that holds the team: 1.6.0 prints
+`Authority=Developer ID Application: Finnove Technologies (CA89X9954L)`. **A different team here is a failure, not a
 warning** — stop and read [SECURITY.md](../SECURITY.md).
 
 The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it

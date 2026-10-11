@@ -39,9 +39,8 @@ struct InfoPlistKeysTests {
     /// a plist that names the app counts as the app's.
     nonisolated private static let builtPlist: URL? = resolvedPlist.url
 
-    /// True when `NEPAKIT_BUILT_PLIST` named a path that is not a readable
-    /// Info.plist for the app. Computed beside `builtPlist`, in the same pass, so
-    /// the two cannot disagree about what the override was.
+    /// True when `NEPAKIT_BUILT_PLIST` names no readable Info.plist for the app.
+    /// Computed in the same pass as `builtPlist` so the two cannot disagree.
     nonisolated private static let overrideWasUnusable: Bool = resolvedPlist.overrideWasUnusable
 
     nonisolated private static let resolvedPlist: (url: URL?, overrideWasUnusable: Bool) = {
@@ -97,10 +96,9 @@ struct InfoPlistKeysTests {
     nonisolated private static var hasBuiltProduct: Bool { builtInfo != nil }
 
     @Test func anExplicitBuiltProductMustBeReadable() {
-        // Skipping is the right answer when nothing was built. It is the wrong
-        // answer when the caller said a product exists: CI exports a fixed path,
-        // and a layout change would turn seven release-key checks into silent
-        // skips on a green required check.
+        // Skipping is right when nothing was built, not when the caller named a
+        // product: CI exports a fixed path, and a layout change would turn seven
+        // release-key checks into silent skips on a green required check.
         #expect(!Self.overrideWasUnusable,
                 "NEPAKIT_BUILT_PLIST is set but names no readable Info.plist for \(Self.appBundleIdentifier)")
     }

@@ -32,9 +32,8 @@ distribution is a notarized disk image, not the store.
 ## Amendment, 2026-10-10
 
 1.6.0 shipped `com.apple.security.files.user-selected.read-only`, which no
-decision recorded. It came from the build setting
-`ENABLE_USER_SELECTED_FILES = readonly`, which Xcode merges into the signed
-entitlements; the entitlements file alone is therefore not the contract. The
-setting is removed. `scripts/verify-release-product.py` now reads the entitlement
-set off the exported app, compares it with `NepalKit/NepalKit.entitlements`, and
-fails the release on any difference.
+decision recorded. Xcode merged it into the signed entitlements from the build
+setting `ENABLE_USER_SELECTED_FILES = readonly`, so the entitlements file alone
+is not the contract. The setting is removed, and
+`scripts/verify-release-product.py` now fails the release if the exported app's
+entitlement set differs from `NepalKit/NepalKit.entitlements`.

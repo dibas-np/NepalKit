@@ -52,23 +52,17 @@ the reason is worth stating precisely rather than leaving to the exclusion
 list's own comment.
 
 `SparkleUpdateService.swift` once mapped Sparkle's `SPUNoUpdateFoundReason`
-onto `UpdatePolicy.NoUpdateFoundKind` itself, outside the test boundary, and
-that cost was real: the cast there never succeeded, so "you are on the latest
-version" was reported as a failure, and no test in this harness could catch it
-because the file cannot be compiled without the framework the harness
-deliberately does not link. The mapping now lives in
-`UpdatePolicy.noUpdateKind(rawReason:)` and is covered by `UpdatePolicyTests`;
-what remains outside the boundary is only the one-line `NSNumber` read in the
-adapter.
+onto `UpdatePolicy.NoUpdateFoundKind` itself, outside the test boundary. The
+cast there never succeeded, so "you are on the latest version" was reported as
+a failure, and no test in this harness could catch it: the file cannot be
+compiled without the framework the harness does not link.
 
-Both halves are now covered by the harness that compiles them:
-`UpdatePolicyTests.noUpdateKindIsReadFromTheFrameworksRawReason` pins the
-mapping from Sparkle's raw reason numbers, and
-`UpdatePolicyTests.noUpdateFoundClassifiesByReason` pins the classification of
-each kind into an outcome. What stays uncovered is only the adapter's one-line
-read of the `NSNumber` out of the error's `userInfo`, because that line needs the
-framework the harness does not link. It is recorded here as known uncovered
-rather than left to look like an oversight.
+The mapping now lives in `UpdatePolicy.noUpdateKind(rawReason:)`.
+`UpdatePolicyTests.noUpdateKindIsReadFromTheFrameworksRawReason` pins it against
+Sparkle's raw reason numbers, and `UpdatePolicyTests.noUpdateFoundClassifiesByReason`
+pins the classification of each kind into an outcome. Only the adapter's
+one-line read of the `NSNumber` out of the error's `userInfo` stays uncovered,
+because it needs that framework; it is recorded here as known uncovered.
 
 ## Compile the hosted Xcode tests too
 

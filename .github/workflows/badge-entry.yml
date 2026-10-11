@@ -18,12 +18,10 @@
 # ## Why these and not the rest of the ladder
 #
 # The badge scripts are pure Python over a committed JSON file. The other four
-# suites here (the appcast verifier, the SwiftLint bootstrap, the release
-# product verifier, the coverage parser) run on stubs and fixtures only: no
-# toolchain, no simulator, no built product, no macOS tool. Together they take
-# a few seconds, which is what makes them worth running on every pull request.
-# Until they were added here, test_verify_appcast.py ran only when a feed was
-# published, and the other three ran in no workflow at all.
+# suites here (appcast verifier, SwiftLint bootstrap, release product verifier,
+# coverage parser) run on stubs and fixtures only: no toolchain, simulator,
+# built product or macOS tool. Together they take a few seconds, cheap enough
+# for every pull request.
 #
 # The two local-only gates are absent for stated reasons, and this comment is
 # where those reasons live:
@@ -38,12 +36,13 @@
 #   slowly. It is enforced locally and the floor is committed, so a regression
 #   is caught by whoever runs the ladder.
 #
-# Every other gate runs in CI, in the workflow that owns it: this one runs the
-# pure-Python suites (gate 2's bootstrap suite and gates 9 to 13);
-# macos26-floor.yml builds the app and the hosted test bundle (gate 1, as
-# build-for-testing), runs the core, app and cask suites and the deployment
-# floor check; data-sources.yml runs the parser and changelog suites; codeql.yml
-# runs SwiftLint; the Watch job runs gate 16.
+# Every other gate runs in CI, in the workflow that owns it:
+# * this one: the pure-Python suites (gate 2's bootstrap suite, gates 9 to 13);
+# * macos26-floor.yml: gate 1 as build-for-testing (app plus hosted test
+#   bundle), the core, app and cask suites, and the deployment floor check;
+# * data-sources.yml: the parser and changelog suites;
+# * codeql.yml: SwiftLint;
+# * the Watch job: gate 16.
 # `check-all.sh` is a superset and is not invoked here on purpose: its first
 # gate builds the app, so running it would duplicate the macOS build rather than
 # add a check.

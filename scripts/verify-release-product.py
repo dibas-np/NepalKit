@@ -3,22 +3,16 @@
 # Copyright (C) 2026 Dibas Sigdel
 """The exported app's entitlements, Sparkle keys and Sparkle version, read off the product.
 
-Why this exists
----------------
-``NepalKit/NepalKit.entitlements`` is called a release-contract artifact, but it
-is not the whole contract: Xcode merges ``ENABLE_*`` build settings into the
-entitlements at signing. 1.6.0 shipped
-``com.apple.security.files.user-selected.read-only`` from
-``ENABLE_USER_SELECTED_FILES = readonly`` and nothing noticed, because nothing
-read the signed set. Likewise the Sparkle pin in the project is only as good as
-package resolution on the machine that builds, so the embedded framework's
-version is compared with the pin rather than trusted.
+``NepalKit/NepalKit.entitlements`` is not the whole contract: Xcode merges
+``ENABLE_*`` build settings into the entitlements at signing, which is how 1.6.0
+shipped ``com.apple.security.files.user-selected.read-only`` from
+``ENABLE_USER_SELECTED_FILES = readonly``. The embedded Sparkle version is
+compared with the project's pin because package resolution on the build machine
+can drift from it.
 
-This runs from ``package-release.sh`` on the exported app, before notarisation.
-Hardened runtime stays checked by that script and is not duplicated here.
-
-Every check runs and prints ``ok`` or ``FAIL``; any FAIL exits 1 at the end so
-every mismatch is reported at once.
+Run by ``package-release.sh`` on the exported app, before notarisation (which
+also checks hardened runtime). Every check prints ``ok`` or ``FAIL``; any FAIL
+exits 1 after all are reported.
 """
 
 import argparse
@@ -30,15 +24,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-# --- On the NOSONAR markers in this file --------------------------------------
-# SonarCloud flags the four opens of a path that arrives as a CLI argument
-# ("path injection"). The reasoning is the one recorded at length in
-# scripts/verify-appcast.py and is unchanged here: package-release.sh runs this
-# against the exported app inside a private `mktemp -d` workspace outside the
-# repository, so confining the paths to a base directory would fail every real
-# release, to defend against a caller that already holds the filesystem access
-# the check would take away. Each marker sits on a line whose only content is
-# the flagged call, because NOSONAR is line-scoped and rule-blind.
+# NOSONAR: the four opens below take CLI-argument paths. package-release.sh runs
+# this inside a private `mktemp -d` workspace outside the repo, so confining paths
+# to a base directory would break every release (see scripts/verify-appcast.py).
+# NOSONAR is line-scoped, so each marker sits on the flagged call alone.
 
 FEED_PREFIX = "https://dibas-np.github.io/NepalKit/"
 SPARKLE_FRAMEWORK_PLIST = "Contents/Frameworks/Sparkle.framework/Resources/Info.plist"
@@ -50,8 +39,7 @@ def signed_entitlements(app, run=subprocess.run):
         ["codesign", "-d", "--entitlements", "-", "--xml", str(app)],
         capture_output=True,
     )
-    # A non-zero exit is a failure even when XML came out: a gate must not
-    # report the entitlements it read off a codesign run that itself failed.
+    # A failed codesign run is a failure even if it printed XML.
     if result.returncode != 0:
         detail = (getattr(result, "stderr", b"") or b"").decode("utf-8", "replace").strip()
         raise ValueError(f"codesign exited {result.returncode}" + (f": {detail}" if detail else ""))

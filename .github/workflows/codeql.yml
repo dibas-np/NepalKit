@@ -35,8 +35,9 @@
 # ## Why this did not move to xcode-27 with macos26-floor.yml
 #
 # The floor gate moved to `xcode-27` because it had to: its Xcode warned that it
-# could not fully express a 26.6 deployment target (SDK ceiling 26.5.99) and could not open the
-# project. Those are properties of *building the app*, so they forced the move.
+# could not fully express a 26.6 deployment target (SDK ceiling 26.5.99) and
+# could not open the project. Those are properties of *building the app*, so
+# they forced the move.
 #
 # This workflow was moved too, on the reasoning that the two must not drift. That
 # reasoning was wrong, and the evidence is unambiguous:
@@ -51,13 +52,14 @@
 # the same image, untraced, succeeds - the failure needs CodeQL's build tracer.
 # Nothing about it is reported as a known issue on the image.
 #
-# Losing this leg is not an option - it is the only security analysis of the macOS
-# app and core Swift sources (the Watch app, the complications and NepalKitTests
-# are not built by the traced steps, so they are not analysed) - so this job stays on `macos-26` and downgrades the project format
-# in its own checkout to get past the one incompatibility that motivated the
-# move. macos26-floor.yml therefore runs on macOS 27 and this runs on macOS 26.
-# That divergence is intended and is why the "must not drift" claim above is
-# limited to the Xcode pin rather than the runner.
+# Losing this leg is not an option - it is the only security analysis of the
+# macOS app and core Swift sources (the traced steps do not build the Watch app,
+# the complications or NepalKitTests, so those are not analysed) - so this job
+# stays on `macos-26` and downgrades the project format in its own checkout to
+# get past the one incompatibility that motivated the move. macos26-floor.yml
+# therefore runs on macOS 27 and this runs on macOS 26. That divergence is
+# intended and is why the "must not drift" claim above is limited to the Xcode
+# pin rather than the runner.
 #
 # 4. NepalKitCore is built with its tests, separately.
 #    The app scheme does not compile the test target, so a single `xcodebuild`

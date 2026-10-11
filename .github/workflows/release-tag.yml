@@ -56,16 +56,15 @@
 # `--verify-tag` is load-bearing rather than decorative. Without it,
 # `gh release create` creates a *lightweight* tag when none exists, and a
 # lightweight tag carries no signature: `git cat-file -t v1.6.0` answers `commit`,
-# not `tag`, and `git tag -v` cannot verify it. Every release tag that exists
-# today is lightweight. This is not a defect in those releases - the archive signature is
+# not `tag`, and `git tag -v` cannot verify it. Every existing release tag is
+# lightweight. This is not a defect in those releases - the archive signature is
 # what protects users and has been present since 1.4.1 - but it means the tag
 # itself added nothing, so a publisher able to move a tag could change what a
 # release points at without the archive signature noticing.
 #
-# The tag is pushed before the release is created, because `gh release create
-# --verify-tag` checks that the tag exists on the *remote*, not locally. Pushing
-# a `v*` tag is also what triggers this workflow. The signing key is the same SSH key
-# the commits use; docs/release-verification.md has the verification commands.
+# The tag is pushed before the release is created, because `--verify-tag`
+# checks that it exists on the remote. Pushing a `v*` tag is also what triggers
+# this workflow. The signing key is the same SSH key the commits use; docs/release-verification.md has the verification commands.
 
 name: release tag
 

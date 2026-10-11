@@ -10,10 +10,9 @@ The number, what it means, and why it is not a target yet.
 | `NepalKit` — the app layer | 34 | **30.66%** | 56.82% | 52.84% |
 | **Combined** | **43** | **38.91%** | **62.32%** | **57.58%** |
 
-Core's files are counted once, in their own row, and the combined row is
-Σhit/Σlines across both suites rather than a mean of two percentages. The app
-row holds `NepalKit/` only, although the app-test harness links `NepalKitCore`:
-the core rows in that report belong to the first row.
+Core's files are counted once, in their own row: the app row holds `NepalKit/`
+only, although the app-test harness links `NepalKitCore`. The combined row is
+Σhit/Σlines across both suites, not a mean of two percentages.
 
 Reproduce it:
 
@@ -96,8 +95,8 @@ rather than something that happens by editing a number.
 
 ## Measurement details that are easy to get wrong
 
-The first two were got wrong in the first version of this script, and all three
-produced a confident wrong answer rather than an error.
+The first two were got wrong in the first version of this script, and each of
+these produced a confident wrong answer rather than an error.
 
 **llvm-cov strips the leading `/` from report paths.** Comparing them against an
 absolute repository prefix therefore matches *nothing* — which looks exactly like
@@ -109,12 +108,11 @@ column and reports a plausible number. This script parses positionally and
 asserts the field count.
 
 **The app harness links the core.** Core rows therefore appear in the app suite's
-llvm-cov report and must be filtered out per suite. Counting them in both suites
-put core's 9 files in two rows and inflated both the app figure and the combined
-figure by about 4.7 points (34.79% against 30.12% for the app, 43.59% against
-38.91% combined, at the commit where it was found and fixed).
-The combined row is also weighted by executable lines: a mean of the two
-percentages weighted by file count counted a 6-line file like a 300-line one.
+llvm-cov report and must be filtered out per suite. Counting core's 9 files in
+both suites inflated the app and combined figures by about 4.7 points (34.79%
+against 30.12% for the app, 43.59% against 38.91% combined, at the commit that
+fixed it). The combined row must also be weighted by executable lines: a mean
+weighted by file count counted a 6-line file like a 300-line one.
 
 **An absolute-path filter measured the wrong files.** An earlier version of the
 subject-file filter used an absolute path, so it silently counted 9 files instead

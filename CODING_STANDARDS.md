@@ -345,9 +345,9 @@ read the skip as coverage.
   script's own `total`, and a green run prints `==> all 16 gates passed`, so the
   number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
-- App-layer tests: `scripts/run-app-tests.sh`. The hosted runner once hung
-  before connecting (ADR-0005); the harness remains the documented runner (see
-  `README.md`).
+- App-layer tests: `scripts/run-app-tests.sh`, the documented runner (see
+  `README.md`). It was introduced after the hosted runner hung before
+  connecting (ADR-0005).
 - Release: `scripts/package-release.sh`.
 - Menu-bar rendering spike: `scripts/menubar-spike.swift`.
 
@@ -356,19 +356,18 @@ secret. `.env.example` is the place they are described, with each one's actual
 default:
 
 - `SPARKLE_BIN` — the Sparkle bin *directory*, so `verify-appcast.sh` can find
-  `generate_appcast`. It overrides discovery. Unset, the script uses only the
+  `generate_appcast`, overriding discovery. Unset, the script uses only the
   tools this checkout built into `DerivedData/` and checks they belong to the
-  pinned Sparkle version. `sign_update` lives in the same directory. In Sparkle
-  2.10.0 `generate_appcast` also signs the feed when an archive's `Info.plist`
-  sets `SURequireSignedFeed`, as NepalKit's does; but `verify-appcast.sh` then
-  embeds the release notes, which invalidates that signature, so `sign_update`
-  re-signs the feed as the last step.
+  pinned Sparkle version. `sign_update` lives in the same directory and re-signs
+  the feed as the last step: Sparkle 2.10.0's `generate_appcast` signs it when an
+  archive sets `SURequireSignedFeed`, as NepalKit's does, but
+  `verify-appcast.sh` then embeds the release notes and invalidates that
+  signature (ADR-0012).
 - `SPARKLE_BIN_UNPINNED` — `1` skips that pin check, for a CI image whose tools
   are installed elsewhere; never on the release machine. Unset, the check runs.
-- `TEAM_ID` — the Apple Developer team, which `package-release.sh` requires for
-  Developer ID signing and exits without. It is public (`CA89X9954L`), not a
-  credential. Unset, a release cannot be cut; every other script is
-  unaffected.
+- `TEAM_ID` — the Apple Developer team for Developer ID signing; public
+  (`CA89X9954L`), not a credential. Unset, `package-release.sh` exits, so a
+  release cannot be cut; every other script is unaffected.
 - `NOTARY_PROFILE` — the keychain profile `package-release.sh` hands to
   `notarytool`. Unset, it uses `NepalKit-notary`.
 - `NEPAKIT_DATA_CACHE` — where `verify-data-sources.py` caches fetched

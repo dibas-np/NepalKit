@@ -96,9 +96,10 @@ concurrency:
   cancel-in-progress: true
 
 # Declared, and the alert below is why. This workflow checks out the code, runs
-# four test suites (core, cask, floor self-tests, app-layer), builds and launches the result. It never writes back: no
-# commit, no comment, no release, no artifact upload beyond the build log. So it
-# gets `contents: read` and nothing more.
+# four test suites (core, cask, floor self-tests, app-layer), builds and
+# launches the result. It never writes back: no commit, no comment, no release,
+# no artifact upload beyond the build log. So it gets `contents: read` and
+# nothing more.
 #
 # Omitting the block does not mean "no permissions" — it means every step gets
 # the repository's *default* token, which for a public repository is usually
@@ -239,11 +240,10 @@ jobs:
       # Signing is disabled: the project sets a development team target-wide, and
       # a pull-request job must need no credentials and be unable to reach any.
       #
-      # `build` does not compile NepalKitTests (the scheme marks it
-      # buildForRunning = NO), so a test target whose Swift mode or isolation
-      # drifts from the app's would compile nowhere in CI; ADR-0005 records that
-      # this once hid a Swift 5/6 mismatch. The for-testing build action is what
-      # gate 1 of check-all.sh runs locally.
+      # `build` skips NepalKitTests (the scheme marks it buildForRunning = NO),
+      # so a test target whose Swift mode or isolation drifted from the app's
+      # would compile nowhere in CI; ADR-0005 records a Swift 5/6 mismatch
+      # hidden that way. build-for-testing is also what check-all.sh's gate 1 runs.
       - name: Build the application and the hosted test bundle
         run: |
           set -euo pipefail
@@ -276,10 +276,9 @@ jobs:
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
-      # The committed SwiftPM harness, not `xcodebuild test`. The hosted runner once
-      # hung before connecting, including with an empty test; the harness remains
-      # the documented runner, and deleting the app-layer tests was never the
-      # answer. See ADR-0005.
+      # The committed SwiftPM harness, not `xcodebuild test`, which once hung on
+      # the hosted runner before connecting, even with an empty test. See
+      # ADR-0005.
       #
       # After the build, and with the product pointed at: `InfoPlistKeysTests`
       # checks the built Info.plist rather than the project, because a key the

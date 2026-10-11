@@ -130,18 +130,18 @@ This spec is a planning deliverable. It defines future implementation and valida
 
 ## Further Notes
 
-The accepted detailed handoff remains supporting material (local working notes, not in the repository), including evidence classification, gate definitions and the complete physical-device checklist. The planning map (local working notes, not in the repository) is closed and every decision child is resolved. The review response (local working notes, not in the repository) records the accepted corrections. Human acceptance is not independent verification of mutable Apple/toolchain/account claims; recheck them during a future implementation effort.
+The documents named in this section are local working notes, not in the repository. The accepted detailed handoff remains supporting material, including evidence classification, gate definitions and the complete physical-device checklist. The planning map is closed and every decision child is resolved. The review response records the accepted corrections. Human acceptance is not independent verification of mutable Apple/toolchain/account claims; recheck them during a future implementation effort.
 
 Eight separate implementation tickets define the execution order and acceptance obligations:
 
-1. Watch targets, compatibility and development identity (local working notes, not in the repository)
-2. Shared resolved day and calendar presentation (local working notes, not in the repository)
-3. WidgetKit timeline provider and entry points (local working notes, not in the repository)
-4. Read-only Today and active-midnight refresh (local working notes, not in the repository)
-5. Four complication families and accessible presentation (local working notes, not in the repository)
-6. Isolated development boundary and failure harness (local working notes, not in the repository)
-7. Automated and native Watch readiness evidence (local working notes, not in the repository)
-8. Prepared signed build and physical-validation handoff (local working notes, not in the repository)
+1. Watch targets, compatibility and development identity
+2. Shared resolved day and calendar presentation
+3. WidgetKit timeline provider and entry points
+4. Read-only Today and active-midnight refresh
+5. Four complication families and accessible presentation
+6. Isolated development boundary and failure harness
+7. Automated and native Watch readiness evidence
+8. Prepared signed build and physical-validation handoff
 
 The final acceptance gates remain distinct. The host baseline permits implementation start. Automated/native checks plus a development-signed artifact establish readiness for physical validation. Physical evidence establishes device validation. Final feature acceptance additionally requires an ADR-0001-compliant shared dataset. Public distribution is a separate follow-on effort.
 

@@ -8,7 +8,7 @@ A macOS menu-bar utility giving quick access to Nepal-specific date, time, and c
 Nepal's official calendar system.
 _Avoid_: Nepali calendar, BS date
 
-_Accepted exception_: the Siri intent title and phrases say "Nepali date" (`TodayInBikramSambatIntent.swift`, `NepalKitShortcuts.swift`, `Strings.swift`) deliberately. It is the phrase a person says aloud, so it is accepted as voice vocabulary; everywhere else the terms above apply.
+_Accepted exception_: the Siri intent title and phrases say "Nepali date" (`TodayInBikramSambatIntent.swift`, `NepalKitShortcuts.swift`, `Strings.swift`), because that is what a person says aloud. Everywhere else the terms above apply.
 
 **Gregorian**:
 The internationally used civil calendar; NepalKit converts dates to and from it.

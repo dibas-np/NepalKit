@@ -132,8 +132,8 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     /// Sparkle reports "no valid update" for several genuinely different
     /// reasons, and the difference matters to a user: being on the latest version
     /// is a good answer, while a feed that could not be fetched or verified is
-    /// not. The reason is read as the raw number the framework stores, because
-    /// an imported `NS_ENUM` does not bridge from `NSNumber`.
+    /// not. The reason is read as a raw number; `UpdatePolicy.noUpdateKind`
+    /// says why.
     nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
         let rawReason = ((error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)?.intValue
         MainActor.assumeIsolated {
@@ -144,9 +144,8 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     }
 
     /// Fetch, parse and signature failures never reach `updaterDidNotFindUpdate`;
-    /// the framework reports them here. Without this the model kept its previous
-    /// outcome under a fresh "Last checked" time, which is the one answer an
-    /// updater must not give.
+    /// the framework reports them here. Without this the model would keep its
+    /// previous outcome under a fresh "Last checked" time.
     nonisolated func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
         let nsError = error as NSError
         let domain = nsError.domain

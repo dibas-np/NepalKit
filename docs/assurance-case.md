@@ -72,8 +72,8 @@ Depends on:
 - **2b. 2084 BS is published as a projection.** *Evidence:* README, SOURCES.md,
   the About window, and CHANGELOG.md all say so.
 - **2c. Out-of-range and invalid input never produces a plausible wrong answer.**
-  Out-of-range input produces the range boundary state, an expected result kept
-  distinguishable from an error, and invalid input produces `nil`. *Evidence:*
+  Out-of-range input produces the range boundary state, which is distinguishable
+  from an error; invalid input produces `nil`. *Evidence:*
   `Conversion.swift` returns `nil` rather than a guess; `InvalidDateTests`, `Projected2084Tests`.
 
 **Inference.** A wrong date is possible — the dataset has documented

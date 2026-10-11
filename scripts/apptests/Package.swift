@@ -49,10 +49,9 @@ let package = Package(
             ],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
-                // Mirrors the Xcode app target `NepalKit`: what
-                // SWIFT_APPROACHABLE_CONCURRENCY = YES enables in Swift 6 mode, plus
-                // SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES. The two
-                // compilers over the same sources must agree (CONTRIBUTING.md).
+                // Mirrors the Xcode app target `NepalKit` so both compilers agree
+                // (CONTRIBUTING.md): SWIFT_APPROACHABLE_CONCURRENCY = YES in Swift 6
+                // mode, plus SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES.
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
                 .enableUpcomingFeature("InferIsolatedConformances"),
                 .enableUpcomingFeature("MemberImportVisibility"),
@@ -66,10 +65,9 @@ let package = Package(
             ],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
-                // Mirrors the Xcode test target `NepalKitTests`, which sets
-                // SWIFT_APPROACHABLE_CONCURRENCY = YES but NOT member import
-                // visibility, so it is deliberately absent here: the tests would
-                // otherwise need imports the Xcode build does not require.
+                // Mirrors the Xcode test target `NepalKitTests`: approachable
+                // concurrency but not member import visibility, which would
+                // require imports the Xcode build does not.
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
                 .enableUpcomingFeature("InferIsolatedConformances"),
             ]

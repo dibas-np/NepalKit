@@ -38,23 +38,17 @@ enum UpdatePolicy {
         }
     }
 
-    /// Whether a check should be refused. Only a *scheduled* check is refused,
-    /// and only on a transient launch: a scheduled self-update from a build
-    /// directory or a mounted image cannot succeed, while a manual check is the
-    /// user asking a question that is still worth answering. The direction of
-    /// this rule was inverted in the adapter for a while, and no gate could see
-    /// it because the adapter is outside the harness; this function is what
-    /// makes the direction testable.
+    /// Whether a check should be refused: only a scheduled check on a transient
+    /// launch, where the self-update cannot succeed. A manual check is the user
+    /// asking a question, so it still runs.
     static func vetoesCheck(isScheduled: Bool, installPath: String) -> Bool {
         isScheduled && isTransientLaunch(installPath: installPath)
     }
 
-    /// The raw values of Sparkle's `SPUNoUpdateFoundReason`, as the framework
-    /// stores them: it puts an `NSNumber` under `SPUNoUpdateFoundReasonKey` and
-    /// reads it back with `integerValue`. The numbers are the contract, not the
-    /// imported enum: an `NSNumber` held in `Any` does not cast to an imported
-    /// `NS_ENUM`, which is how every "on the latest version" result was once
-    /// classified as a failure.
+    /// Classifies Sparkle's `SPUNoUpdateFoundReason` by raw value. The framework
+    /// stores an `NSNumber` under `SPUNoUpdateFoundReasonKey`, and an `NSNumber`
+    /// held in `Any` does not cast to an imported `NS_ENUM`: casting to the enum
+    /// classifies every "on the latest version" result as a failure.
     static func noUpdateKind(rawReason: Int?) -> NoUpdateFoundKind {
         switch rawReason {
         case 1: .onLatestVersion            // SPUNoUpdateFoundReasonOnLatestVersion
@@ -64,10 +58,8 @@ enum UpdatePolicy {
     }
 
     /// What an aborted update cycle means to the user. `nil` means "say
-    /// nothing": the framework reports "no update" and a user cancellation
-    /// through this path too, and both are already answered elsewhere. Every
-    /// other abort is a check that did not complete, which must never read as
-    /// "up to date".
+    /// nothing": "no update" and user cancellation also arrive here and are
+    /// answered elsewhere. Any other abort is a check that did not complete.
     static func outcome(forAbortedCheckDomain domain: String, code: Int, description: String) -> UpdateOutcome? {
         if domain == "SUSparkleErrorDomain" && (code == 1001 || code == 4007) {
             // SUNoUpdateError, SUInstallationCanceledError

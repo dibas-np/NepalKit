@@ -39,9 +39,8 @@ if [[ ! -d "$ARCHIVES_DIR" ]]; then
 fi
 
 # Sparkle's tooling is not vendored. SPARKLE_BIN overrides; otherwise only this
-# checkout's own build is trusted, because sign_update reaches the private key
-# and a tool picked by directory order from every project on the machine is not
-# a trusted tool.
+# checkout's own build is used, because sign_update reaches the private key and
+# must not be whichever project's DerivedData happens to match a glob.
 if [[ -n "${SPARKLE_BIN:-}" ]]; then
     GENERATE_APPCAST="$SPARKLE_BIN/generate_appcast"
 else
@@ -54,9 +53,8 @@ if [[ ! -x "$GENERATE_APPCAST" ]]; then
     exit 1
 fi
 
-# The binaries carry no version flag, so the pin is checked through the resolved
-# source checkout beside them: artifacts/ and checkouts/ are siblings under
-# SourcePackages/, and the checkout's tag must be the exact-version pin.
+# The binaries have no version flag, so the pin is checked against the tag of the
+# source checkout beside them (artifacts/ and checkouts/ share SourcePackages/).
 if [[ "${SPARKLE_BIN_UNPINNED:-}" != "1" ]]; then
     PINNED_SPARKLE="$(python3 - "$ROOT/NepalKit.xcodeproj/project.pbxproj" <<'PY'
 import pathlib, re, sys

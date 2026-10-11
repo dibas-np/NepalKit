@@ -116,11 +116,10 @@
 	  maintainer, not to this file: verification this strict means losing access
 	  to the EdDSA private key costs you updates, because every feed would then
 	  fail validation. That is what ADR-0012's two unticked key-custody boxes are
-	  about. Losing the key is NOT survivable for existing installs: with this key
-	  set, a feed signed by any other key is rejected before Sparkle reads an item,
-	  so the Apple code-signing fallback never runs. Users would have to reinstall
-	  by hand or through Homebrew. Custody of the private key is the whole
-	  mitigation (ADR-0012).
+	  about. Existing installs cannot survive losing the key: a feed signed by any
+	  other key is rejected before Sparkle reads an item, so the Apple
+	  code-signing fallback never runs and users must reinstall by hand or
+	  through Homebrew. Key custody is the only mitigation.
 	-->
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>

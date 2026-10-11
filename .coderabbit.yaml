@@ -21,7 +21,7 @@ reviews:
   review_status: true
   poem: false
   # SwiftLint is installed on the runner and this is a Swift project, so let
-  # CodeRabbit run it. the strict SwiftLint gate is at zero violations, so the
+  # CodeRabbit run it. The strict SwiftLint gate is at zero violations, so the
   # value here is the project's configuration rather than the default.
   tools:
     swiftlint:

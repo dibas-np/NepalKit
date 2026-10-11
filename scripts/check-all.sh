@@ -144,8 +144,8 @@ gate "release product verifier suite" python3 "$repo_root/scripts/test_verify_re
 # whether a criterion name is real, because that needs the badge's criteria YAML.
 gate "badge entry suite" python3 "$repo_root/scripts/test_verify_bestpractices_json.py"
 gate "badge entry consistency" python3 "$repo_root/scripts/verify-bestpractices-json.py"
-# The coverage parser decides the number the next gate publishes, and had no
-# tests of its own; docs/coverage.md records three confident-wrong-answer bugs in it.
+# The coverage parser decides the number the next gate publishes;
+# docs/coverage.md records three bugs in it that each gave a wrong number.
 gate "coverage parser suite" python3 "$repo_root/scripts/test_measure_coverage.py"
 # Coverage has a floor and no target, which is the inversion docs/coverage.md
 # argues for: a ratchet that only rises is honest about a number that is

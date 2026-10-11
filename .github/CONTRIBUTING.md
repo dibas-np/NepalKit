@@ -48,8 +48,8 @@ that does and does not mean:
   compile-time guarantee plus release evidence, not on CI.
 
 The move off `macos-26` was forced, not preferred. Xcode 26.6's SDK tops out at
-deployment target 26.5.99, so it only warned that it could not fully express a
-26.6 floor (the CodeQL build still compiles at `-target macos26.6` and passes), and Xcode
+deployment target 26.5.99, so it warned that it could not fully express a 26.6
+floor (the CodeQL build still compiles at `-target macos26.6`), and Xcode
 26 cannot open the object-version-110 project file that Xcode 27 writes — every
 build-settings edit prompted an upgrade that silently broke the gate. The header
 of `macos26-floor.yml` records the trade and the way out; ADR-0007 records the
@@ -67,11 +67,11 @@ The two are separate compilers over the same sources:
 excludes the two files most in need of strict checking, so if the modes drift
 apart the shipping configuration is left unchecked by any gate. Change one and
 change the other in the same commit.
-`scripts/apptests/Package.swift` must also keep the upcoming features each Xcode
-target sets: the harness mirrors the app target's (`NonisolatedNonsendingByDefault`,
-`InferIsolatedConformances` from `SWIFT_APPROACHABLE_CONCURRENCY`, plus
-`MemberImportVisibility`) and the test target's (the first two only) separately,
-not as one union.
+`scripts/apptests/Package.swift` must also mirror each Xcode target's upcoming
+features separately, not as one union: the app target's
+`NonisolatedNonsendingByDefault` and `InferIsolatedConformances` (from
+`SWIFT_APPROACHABLE_CONCURRENCY`) plus `MemberImportVisibility`, and the test
+target's first two only.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
@@ -174,19 +174,17 @@ it needs only the built product. A structural check that only runs when someone
 remembers to run it is not a gate. Everything that needs the network, a
 credential, or a built artifact stays out.
 
-CI runs the badge pair (gates 11 and 12) in `badge-entry.yml`, and the floor pair
-(gate 15 and its own suite) in `macos26-floor.yml` and `pages.yml`, as described
-above. Each runs the checker's own suite before the
+CI runs the badge pair (gates 11 and 12) in `badge-entry.yml` and gate 15 in
+`macos26-floor.yml` and `pages.yml`, each with the checker's own suite before the
 checker — a validator that has quietly stopped validating reports green, which
 is the failure mode this ladder exists to prevent. That claim was aspirational
 until that workflow existed: the two gates ran only when a human ran this
 script. Two further gates are deliberately local-only and say so in the same
 workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
 runner does not have, and the coverage floor (gate 14) needs the macOS
-toolchain and about six minutes. CI runs every gate except those two, in the
-workflow that owns each; gate 1 runs there as `build-for-testing` in
-`macos26-floor.yml`, so the hosted test bundle is compiled on every pull
-request. This command is the local half and not a replacement:
+toolchain and about six minutes. CI runs every other gate in the workflow that
+owns it; gate 1 runs as `build-for-testing` in `macos26-floor.yml`, so the
+hosted test bundle compiles on every pull request. This command is the local half and not a replacement:
 it is the only thing that runs all sixteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
@@ -212,11 +210,11 @@ NEPAKIT_BUILT_PLIST="$(xcodebuild -project NepalKit.xcodeproj -scheme NepalKit \
 ```
 
 Prefer that recipe to leaving it to discovery. A discovered product is used only
-when its binary is **newer than the source that builds it** (the executable, not
+when its executable is **newer than the source that builds it** (not its
 `Info.plist`, which Xcode rewrites only when its own inputs change); an older one is refused,
 because those tests exist to catch keys that reach the product — and a
 product from last week is not what this source produces. An explicit
-`NEPAKIT_BUILT_PLIST` that cannot be read is the opposite case and **fails**. Either way the run
+`NEPAKIT_BUILT_PLIST` that cannot be read **fails** the run. Either way the run
 prints what it found and what it compared against. Without a usable product,
 the seven built-product plist tests **skip with a reason** rather than pass silently. That is deliberate:
 a test that cannot check something must not report that it did.
@@ -270,8 +268,8 @@ commands:
 - **A skipped test is not a passing test.** The plist tests skip with a reason
   when there is no built product to read, and the Watch suite skips with a
   warning annotation when no usable watchOS runtime is installed, but only in CI;
-  `check-all.sh` fails instead, because a local run that skipped it would report
-  green for a gate it never ran. Both are deliberate: a
+  `check-all.sh` fails instead, so a local run never reports green for a gate it
+  did not run. Both are deliberate: a
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** CI runs every one

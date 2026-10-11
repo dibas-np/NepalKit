@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Characterisation suite for the coverage parser in `measure-coverage.py`.
+"""Tests for the coverage parser in `measure-coverage.py`.
 
-That script decides the number the project publishes, including the OpenSSF
-badge answers, and `docs/coverage.md` records three earlier bugs in it that each
-produced a confident wrong answer. Until now nothing exercised it, so the only
-way to find a fourth was to publish it. These tests feed it a recorded llvm-cov
-report table and pin what it counts, what it ignores and how it combines suites.
+That script produces the published coverage figures (including the OpenSSF badge
+answers); `docs/coverage.md` records three earlier bugs in it that each gave a
+wrong number. These tests feed it a recorded llvm-cov report table and pin what
+it counts, what it ignores and how it combines suites.
 """
 
 from __future__ import annotations
@@ -67,15 +66,13 @@ class SummariseTests(unittest.TestCase):
         self.assertEqual(counts["lines"], 150)
         self.assertEqual(counts["lines_hit"], 90)
 
-    def test_both_prefixes_reproduce_todays_double_count(self):
-        """Pins the function, not the gate: it is prefix-driven, so both prefixes
-        select all four product rows. The gate must not pass both to one suite."""
+    def test_both_prefixes_select_all_product_rows(self):
+        """Both prefixes select all four rows, so the gate must not give both to one suite."""
         counts = mc.summarise(FIXTURE, CORE_ONLY + APP_ONLY)
         self.assertEqual(counts["files"], 4)
 
     def test_a_dash_column_is_positional_not_dropped(self):
-        """A "-" stands in for no data. Dropping it would shift every later
-        column and report the lines column as the functions column."""
+        """A "-" (no data) must not be dropped, or every later column shifts."""
         report = row(APP + "E.swift", 20, 5, functions="- - -")
         counts = mc.summarise(report, APP_ONLY)
         self.assertEqual(counts["functions"], 0)
@@ -109,8 +106,8 @@ class PercentageTests(unittest.TestCase):
 
 class CombinationTests(unittest.TestCase):
     def test_combined_is_line_weighted(self):
-        """Core 150 lines/90 hit, app 500/60: 150 of 650 is 23.08%. The file-count
-        weighted mean of the two percentages (60%, 12%) would say 36%."""
+        """Core 90/150 and app 60/500 lines give 150/650 = 23.08%; a file-weighted
+        mean of 60% and 12% would say 36%."""
         core = mc.summarise(FIXTURE, CORE_ONLY)
         app = mc.summarise(FIXTURE, APP_ONLY)
         combined = mc.combine([core, app])

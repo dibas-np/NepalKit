@@ -100,9 +100,8 @@ in GitHub, in CI, or in the repository — see
 property in the project.
 
 **Residual:** an Ed25519 implementation failure, or a compromise of the release
-machine. Both are outside what this repository can control. Loss of the private
-key is a denial of updates to every existing install, not merely an
-inconvenience; see secrets-policy §4.
+machine. Both are outside what this repository can control. Losing the private
+key ends updates for every existing install; see secrets-policy §4.
 
 ### T3 — A hostile build reaches users through the Homebrew cask
 
@@ -203,9 +202,10 @@ input produces `nil`, rather than a plausible wrong answer.
 (`network.client`, for the update check) and two Mach-lookup exceptions for
 Sparkle's own XPC services ([ADR-0008](adr/0008-app-sandbox-and-network-entitlement.md)),
 and `scripts/verify-release-product.py` fails the release if the signed
-entitlement set differs from `NepalKit.entitlements`. (1.6.0 carried one extra
-read-only file entitlement, `com.apple.security.files.user-selected.read-only`,
-from a build setting; it was removed and is now asserted absent.)
+entitlement set differs from `NepalKit.entitlements`. 1.6.0 carried one extra
+entitlement from a build setting,
+`com.apple.security.files.user-selected.read-only`; it is removed and now
+asserted absent.
 Hardened runtime is required by `package-release.sh`, which fails the release if
 the flag is missing. Gatekeeper and notarization cover the install.
 

@@ -261,10 +261,7 @@ nonisolated enum Strings {
     /// both for the user reporting it and for the maintainer reading the report.
     ///
     /// The reason is presented as a quoted detail rather than spliced into the
-    /// sentence, so the framework's wording stays separable from the app's own
-    /// sentence. The `Could not check for updates: You're up to date!`
-    /// contradiction once seen here was a classification bug in the adapter
-    /// (fixed; see `UpdatePolicy.noUpdateKind`), not framework phrasing.
+    /// sentence, so the framework's wording stays separable from the app's.
     static func updateStatusFailedReason(_ reason: String) -> String {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
     }

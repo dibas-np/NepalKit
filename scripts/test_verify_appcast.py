@@ -41,9 +41,8 @@ RSS_OPEN = (
 RSS_CLOSE = "</channel></rss>"
 
 
-# Default builds are derived from the version rather than constant: several tests
-# build multi-item feeds, and a constant build would give every item the same
-# number, which the verifier's strict newest-build check correctly rejects.
+# The default build is derived from the version so multi-item feeds get distinct
+# build numbers; the verifier rejects a newest build that is not the highest.
 _DERIVED = object()
 
 

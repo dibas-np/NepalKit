@@ -90,8 +90,7 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertNotIn("FAIL", out)
 
     def test_a_failed_codesign_run_is_a_failure_even_with_xml(self):
-        # The stub still prints a perfectly good entitlement plist; only the exit
-        # code says the read failed. Without the check this case reported ok.
+        # The stub still prints a valid plist; only the exit code signals failure.
         code, out = self.run_case(codesign_exit=1)
         self.assertEqual(code, 1, out)
         self.assertIn("codesign exited 1", out)
