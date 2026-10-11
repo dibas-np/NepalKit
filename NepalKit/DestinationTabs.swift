@@ -46,5 +46,8 @@ struct DestinationTabs: View {
         // choose between rather than reading three unrelated buttons.
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Strings.popoverDestinationsLabel)
+        // Announced as tabs, not as unrelated buttons that happen to sit in a
+        // row; the selected one already carries `.isSelected`.
+        .accessibilityAddTraits(.isTabBar)
     }
 }

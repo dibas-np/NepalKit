@@ -41,15 +41,15 @@ struct TodaySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // No "Today" header here. The segmented control directly above already
-            // reads "Today" and is the selected segment, so a second "Today" two
-            // lines down repeats the destination to confirm what the control just
-            // said. Removing it also lets the date sit at the top of the content
+            // No "Today" header here. The tab directly above already reads
+            // "Today" and is the selected one, so a second "Today" two lines
+            // down repeats the destination to confirm what the tab just said.
+            // Removing it also lets the date sit at the top of the content
             // rather than below a label describing it.
             //
-            // The heading role is not lost: the segmented control carries the
-            // destination name, and the date below it is the first thing a reader
-            // meets either way.
+            // The heading role is not lost: the tab carries the destination
+            // name, and the date below it is the first thing a reader meets
+            // either way.
 
             if let todayBS = clock.todayBSDate(in: dataset) {
                 // The hero. Weight is what makes the date the first thing read

@@ -17,9 +17,19 @@ struct MonthGridDayDetailCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(detail.bikramSambat)
-                    .font(.title3.weight(.semibold))
-                    .accessibilityLabel(detail.spokenBikramSambat)
+                // The close button shares the title's row rather than floating
+                // over the corner, so a long date at a large text size wraps
+                // before it instead of running underneath it.
+                HStack(alignment: .firstTextBaseline) {
+                    Text(detail.bikramSambat)
+                        .font(.title3.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(detail.spokenBikramSambat)
+                    Spacer(minLength: 0)
+                    Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails, action: close)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                }
                 Text(detail.gregorian)
                     .font(.callout)
                     .accessibilityLabel(detail.spokenGregorian)
@@ -72,12 +82,6 @@ struct MonthGridDayDetailCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 8))
-        .overlay(alignment: .topTrailing) {
-            Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails, action: close)
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .padding(6)
-        }
         .accessibilityElement(children: .contain)
     }
 }

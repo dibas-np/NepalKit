@@ -52,7 +52,7 @@ struct MonthGridView: View {
                 MonthGridDayDetailCard(
                     detail: detail,
                     copy: { model.copy(detail) },
-                    addToCalendar: { calendarFailed = !model.calendarEvent(for: day, settings: settings).open() },
+                    addToCalendar: { calendarFailed = !model.addToCalendar(day, settings: settings) },
                     addToCalendarFailed: calendarFailed,
                     close: { selected = nil }
                 )

@@ -97,4 +97,13 @@ struct CalendarEventTests {
         #expect(!event.open(in: missing) { _ in called = true; return true })
         #expect(!called)
     }
+
+    @Test func addingADayReportsWhetherTheCalendarAppTookIt() throws {
+        let model = try kartik2083()
+        let dashami = try day(model, 4)
+        var handed: CalendarEvent?
+        #expect(model.addToCalendar(dashami, settings: latin) { handed = $0; return true })
+        #expect(handed?.date == GADay(year: 2026, month: 10, day: 21))
+        #expect(!model.addToCalendar(dashami, settings: latin) { _ in false })
+    }
 }

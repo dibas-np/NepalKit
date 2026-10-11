@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
+import SwiftUI
 import NepalKitCore
 
 /// What the popover opened from a day shows, on both channels. Built by the
@@ -75,5 +76,20 @@ extension MonthGridModel {
         let title = detail.festivals.isEmpty ? detail.bikramSambat : detail.festivals.joined(separator: ", ")
         let notes = ([detail.bikramSambat + " · " + detail.gregorian] + detail.holidays).joined(separator: "\n")
         return CalendarEvent(title: title, notes: notes, date: day.gregorian)
+    }
+
+    /// Adds `day` to the calendar app; false when it did not get there. On a
+    /// failure it also announces it: the card's message appears below the
+    /// buttons, where VoiceOver is not, so the press is not met with silence.
+    /// `open` is injected so a test can stand in for the calendar app.
+    func addToCalendar(
+        _ day: MonthGridDay, settings: DisplaySettings,
+        open: (CalendarEvent) -> Bool = { $0.open() }
+    ) -> Bool {
+        let added = open(calendarEvent(for: day, settings: settings))
+        if !added {
+            AccessibilityNotification.Announcement(Strings.addToCalendarFailed).post()
+        }
+        return added
     }
 }
