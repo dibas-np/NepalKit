@@ -6,8 +6,12 @@ import WidgetKit
 /// The Today complication: one static configuration across all four accessory
 /// families. Tapping it opens the Watch app, whose sole destination is Today.
 struct TodayComplication: Widget {
+    /// Placed complications are stored by this kind; renaming it silently
+    /// removes them from users' faces on upgrade.
+    static let kind = "NepalKitTodayComplication"
+
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "NepalKitTodayComplication", provider: makeTodayProvider()) { entry in
+        StaticConfiguration(kind: Self.kind, provider: makeTodayProvider()) { entry in
             TodayComplicationView(entry: entry)
         }
         .configurationDisplayName("Today in Bikram Sambat")

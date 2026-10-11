@@ -11,6 +11,11 @@ import WidgetKit
 struct TodayComplicationProviderTests {
     private let dataset = CalendarDataset.v2
 
+    @Test func widgetKindIsPinned() {
+        // Renaming the kind silently removes placed complications on upgrade.
+        #expect(TodayComplication.kind == "NepalKitTodayComplication")
+    }
+
     @Test func timelineReadsTheClockExactlyOnce() {
         let clock = CallCounter()
         let provider = TodayComplicationProvider(now: { clock.increment(); return .distantPast })
