@@ -29,7 +29,7 @@ struct MonthGridView: View {
         }
         // The model outlives the popover, so today is re-read on every
         // appearance, and the follower moves it while the grid stays open.
-        .onAppear { model.refreshToday(now: .now) }
+        .onAppear { model.refreshToday(now: clock.now) }
         .background { TodayFollower(clock: clock, model: model) }
     }
 }

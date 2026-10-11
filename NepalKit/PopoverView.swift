@@ -91,7 +91,6 @@ struct PopoverView: View {
                         // tab of its own: reading the date and seeing where it
                         // falls in the month are one glance, not two.
                         MonthGridView(model: monthGrid, settings: settings.settings, clock: clock)
-                        Divider()
                         ClocksSection(clock: clock, settings: settings.settings)
                     }
                 case .convert:
@@ -314,6 +313,9 @@ private struct ClocksSection: View {
             // imply the second is somehow significant, and it is not — the
             // reference only earns its row by differing.
             if !clock.localTimeIsRedundant {
+                // The divider comes and goes with the row, so a reader in
+                // Nepal is not left with a rule above nothing.
+                Divider()
                 Label {
                     Text(clock.localTimeString(digits: settings.digits))
                 } icon: {
