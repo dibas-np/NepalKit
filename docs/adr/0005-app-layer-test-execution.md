@@ -51,13 +51,15 @@ The first four cost coverage that nothing depends on. The fifth does not, and
 the reason is worth stating precisely rather than leaving to the exclusion
 list's own comment.
 
-`SparkleUpdateService.swift:131-135` maps Sparkle's `SPUNoUpdateFoundReason`
-onto `UpdatePolicy.NoUpdateFoundKind`, and that mapping is **outside** the test
-boundary. It is the boundary's real cost: a typo there reports a feed that
-could not be fetched or verified as "you are on the latest version", which is
-the one error a user cannot detect for themselves, and no test in this harness
-can catch it — the file cannot be compiled without the framework the harness
-deliberately does not link.
+`SparkleUpdateService.swift` once mapped Sparkle's `SPUNoUpdateFoundReason`
+onto `UpdatePolicy.NoUpdateFoundKind` itself, outside the test boundary, and
+that cost was real: the cast there never succeeded, so "you are on the latest
+version" was reported as a failure, and no test in this harness could catch it
+because the file cannot be compiled without the framework the harness
+deliberately does not link. The mapping now lives in
+`UpdatePolicy.noUpdateKind(rawReason:)` and is covered by `UpdatePolicyTests`;
+what remains outside the boundary is only the one-line `NSNumber` read in the
+adapter.
 
 The `UpdatePolicy` half *is* covered, by the harness that does compile it:
 `NepalKitTests/UpdatePolicyTests.swift:21-26` asserts the classification for all

@@ -110,11 +110,13 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
         mayPerformUpdateCheck updateCheck: SPUUpdateCheck,
         error: ()
     ) throws {
-        guard updateCheck != .updatesInBackground else { return }
-        let transient = MainActor.assumeIsolated {
-            UpdatePolicy.isTransientLaunch(installPath: Bundle.main.bundleURL.path)
+        let vetoed = MainActor.assumeIsolated {
+            UpdatePolicy.vetoesCheck(
+                isScheduled: updateCheck == .updatesInBackground,
+                installPath: Bundle.main.bundleURL.path
+            )
         }
-        guard !transient else {
+        guard !vetoed else {
             throw NSError(
                 domain: "NepalKit.Update",
                 code: 1,
@@ -130,18 +132,33 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     /// Sparkle reports "no valid update" for several genuinely different
     /// reasons, and the difference matters to a user: being on the latest version
     /// is a good answer, while a feed that could not be fetched or verified is
-    /// not. The reason enum is the public way to tell them apart.
+    /// not. The reason is read as the raw number the framework stores, because
+    /// an imported `NS_ENUM` does not bridge from `NSNumber`.
     nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
-        let reason = (error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? SPUNoUpdateFoundReason
-        let kind: UpdatePolicy.NoUpdateFoundKind
-        switch reason {
-        case .onLatestVersion: kind = .onLatestVersion
-        case .onNewerThanLatestVersion: kind = .onNewerThanLatestVersion
-        default: kind = .other
-        }
+        let rawReason = ((error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)?.intValue
         MainActor.assumeIsolated {
+            let kind = UpdatePolicy.noUpdateKind(rawReason: rawReason)
             onOutcome?(UpdatePolicy.outcome(forNoUpdateFound: kind,
                                             failureReason: error.localizedDescription))
+        }
+    }
+
+    /// Fetch, parse and signature failures never reach `updaterDidNotFindUpdate`;
+    /// the framework reports them here. Without this the model kept its previous
+    /// outcome under a fresh "Last checked" time, which is the one answer an
+    /// updater must not give.
+    nonisolated func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        let nsError = error as NSError
+        let domain = nsError.domain
+        let code = nsError.code
+        let description = error.localizedDescription
+        MainActor.assumeIsolated {
+            guard let outcome = UpdatePolicy.outcome(
+                forAbortedCheckDomain: domain,
+                code: code,
+                description: description
+            ) else { return }
+            onOutcome?(outcome)
         }
     }
 }
