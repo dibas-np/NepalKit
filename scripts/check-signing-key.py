@@ -36,13 +36,25 @@ _va = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_va)
 
 
-def sparkle_signer(sign_update: Path, key_file: Path | None) -> Callable[[Path], str]:
-    """A signer that runs `sign_update -p`, which prints only the base64 signature."""
+SIGN_TIMEOUT_SECONDS = 120
+
+
+def sparkle_signer(sign_update: Path, key_file: Path | None,
+                   timeout: float = SIGN_TIMEOUT_SECONDS) -> Callable[[Path], str]:
+    """A signer that runs `sign_update -p`, which prints only the base64 signature.
+
+    Bounded by a timeout: with the login keychain, sign_update can wait on an
+    access prompt, and an unanswered prompt must fail the check, not hang it.
+    """
     def sign(path: Path) -> str:
         command = [str(sign_update), "-p", str(path)]
         if key_file is not None:
             command += ["--ed-key-file", str(key_file)]
-        result = subprocess.run(command, capture_output=True, text=True)
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"sign_update did not finish within {timeout:g} s; "
+                               "was a keychain prompt left unanswered?") from None
         if result.returncode != 0:
             raise RuntimeError(f"sign_update exited {result.returncode}: {result.stderr.strip() or result.stdout.strip()}")
         return result.stdout.strip()

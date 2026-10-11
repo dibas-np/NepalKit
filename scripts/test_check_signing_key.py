@@ -75,6 +75,15 @@ class Check(unittest.TestCase):
         ok, _ = csk.check(plist_with(self.dir, public), lambda _p: "not base64!")
         self.assertFalse(ok)
 
+    def test_a_sign_update_that_hangs_times_out_as_a_failure(self):
+        _, public = keypair(self.dir, "a")
+        slow = self.dir / "slow_sign_update"
+        slow.write_text("#!/bin/sh\nsleep 5\n")
+        slow.chmod(0o755)
+        ok, message = csk.check(plist_with(self.dir, public), csk.sparkle_signer(slow, None, timeout=0.5))
+        self.assertFalse(ok)
+        self.assertIn("did not finish", message)
+
     def test_a_missing_sign_update_fails_cleanly(self):
         self.assertEqual(csk.main(["--sign-update", str(self.dir / "absent")]), 1)
 
