@@ -42,7 +42,9 @@ public struct CalendarDataset: Sendable {
     let yearStartIndices: [Int: Int]
 
     public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>, provisionalYears: Set<Int> = []) {
-        self.provisionalYears = provisionalYears
+        // Clipped to the range: a year the table does not support cannot be
+        // provisional, and naming it in a caveat would claim it is supported.
+        self.provisionalYears = provisionalYears.filter(supportedRange.contains)
         self.version = version
         self.years = years
         self.anchorBS = anchorBS
