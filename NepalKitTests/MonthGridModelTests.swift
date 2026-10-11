@@ -59,6 +59,15 @@ struct MonthGridModelTests {
         }
     }
 
+    @Test func saturdayIsTheHolidayColumn() throws {
+        let model = try baisakh2082()
+        #expect((0 ..< 7).filter(model.isWeeklyHolidayColumn) == [6])
+        let days = model.weeks.flatMap { $0 }.compactMap { $0 }
+        // 6 Baisakh 2082 = 19 April 2025, a Saturday.
+        #expect(days.filter(\.isWeeklyHoliday).map(\.bikramSambat.day) == [6, 13, 20, 27])
+        #expect(days.filter(\.isWeeklyHoliday).allSatisfy { $0.weekday == 7 })
+    }
+
     @Test func todayIsMarkedOnce() throws {
         let days = try baisakh2082().weeks.flatMap { $0 }.compactMap { $0 }
         #expect(days.filter(\.isToday).map(\.bikramSambat) == [BSDay(year: 2082, month: 1, day: 1)])

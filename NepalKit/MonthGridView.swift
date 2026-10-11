@@ -109,7 +109,7 @@ private struct MonthGridDays: View {
                 ForEach(0 ..< 7, id: \.self) { column in
                     Text(headers[column])
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(model.isWeeklyHolidayColumn(column) ? Color.red : Color.secondary)
                         .frame(maxWidth: .infinity)
                         .accessibilityLabel(spokenHeaders[column])
                 }
@@ -141,8 +141,13 @@ private struct MonthGridCell: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Red for the holiday column, as on a wall calendar. Still red on
+            // today: the tint behind it is light enough that the number stays
+            // legible, and dropping the red there would hide that today is
+            // the holiday.
             Text(model.dayText(day, settings: settings))
                 .font(.body.weight(day.isToday ? .semibold : .regular))
+                .foregroundStyle(day.isWeeklyHoliday ? Color.red : Color.primary)
             Text(model.gregorianDayText(day, settings: settings))
                 .font(.caption2)
                 .foregroundStyle(day.isToday ? .primary : .secondary)

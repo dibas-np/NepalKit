@@ -20,6 +20,14 @@ struct MonthGridDay: Hashable {
     /// 1 (Sunday) through 7 (Saturday), as the core reports it.
     let weekday: Int
     let isToday: Bool
+
+    /// Saturday (शनिबार) is Nepal's weekly public holiday, and Nepali wall
+    /// calendars print its column in red; the grid follows them so the week
+    /// reads the way a reader there already knows it.
+    static let weeklyHolidayWeekday = 7
+
+    /// Whether this day falls in the holiday column.
+    var isWeeklyHoliday: Bool { weekday == Self.weeklyHolidayWeekday }
 }
 
 /// Owns the month grid's state: which Bikram Sambat month is shown, the bounded
@@ -206,6 +214,12 @@ final class MonthGridModel {
     /// Full weekday names for the header's spoken channel.
     func spokenWeekdayHeaders(settings: DisplaySettings) -> [String] {
         (1 ... 7).map { weekdayName(for: $0, style: settings.monthNames) ?? "" }
+    }
+
+    /// Whether the header column (0 is Sunday) is the weekly holiday's, so the
+    /// header and the days under it are marked by the same rule.
+    func isWeeklyHolidayColumn(_ column: Int) -> Bool {
+        column + 1 == MonthGridDay.weeklyHolidayWeekday
     }
 
     static func shortWeekdayName(_ weekday: Int, style: MonthNameStyle) -> String {
