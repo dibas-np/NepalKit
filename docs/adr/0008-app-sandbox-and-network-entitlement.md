@@ -28,3 +28,13 @@ Sandboxing is chosen over the alternative of shipping unsandboxed because it
 costs nothing today, matches the build setting the project already declares, and
 narrows any future App Store question. It is not a claim of App Store readiness —
 distribution is a notarized disk image, not the store.
+
+## Amendment, 2026-10-10
+
+1.6.0 shipped `com.apple.security.files.user-selected.read-only`, which no
+decision recorded. It came from the build setting
+`ENABLE_USER_SELECTED_FILES = readonly`, which Xcode merges into the signed
+entitlements; the entitlements file alone is therefore not the contract. The
+setting is removed. `scripts/verify-release-product.py` now reads the entitlement
+set off the exported app, compares it with `NepalKit/NepalKit.entitlements`, and
+fails the release on any difference.

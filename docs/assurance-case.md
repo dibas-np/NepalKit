@@ -88,7 +88,8 @@ Depends on:
 
 - **3a. There is one network call and it is to one HTTPS host.** *Evidence:*
   `NepalKit/NepalKit.entitlements` grants exactly one network entitlement, for
-  the update check; no analytics SDK is depended on
+  the update check, and `scripts/verify-release-product.py` asserts the signed
+  product carries exactly that file's set; no analytics SDK is depended on
   ([docs/dependencies.md](dependencies.md)).
 - **3b. No credential or personal datum is stored.** *Evidence:* preferences in
   the app's own container; `no_leaked_credentials` on the badge entry.

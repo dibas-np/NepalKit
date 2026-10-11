@@ -201,7 +201,11 @@ than a plausible wrong answer.
 
 **Standing:** the app is sandboxed with exactly one network entitlement
 (`network.client`, for the update check) and two Mach-lookup exceptions for
-Sparkle's own XPC services ([ADR-0008](adr/0008-app-sandbox-and-network-entitlement.md)).
+Sparkle's own XPC services ([ADR-0008](adr/0008-app-sandbox-and-network-entitlement.md)),
+and `scripts/verify-release-product.py` fails the release if the signed
+entitlement set differs from `NepalKit.entitlements`. (1.6.0 carried one extra
+read-only file entitlement, `com.apple.security.files.user-selected.read-only`,
+from a build setting; it was removed and is now asserted absent.)
 Hardened runtime is required by `package-release.sh`, which fails the release if
 the flag is missing. Gatekeeper and notarization cover the install.
 
