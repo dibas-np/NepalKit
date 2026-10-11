@@ -41,6 +41,12 @@ RSS_OPEN = (
 RSS_CLOSE = "</channel></rss>"
 
 
+# Default builds are derived from the version rather than constant: several tests
+# build multi-item feeds, and a constant build would give every item the same
+# number, which the verifier's strict newest-build check correctly rejects.
+_DERIVED = object()
+
+
 def make_item(
     url: str | None = "https://example.com/NepalKit-1.0.zip",
     length: str | None = "1234",
@@ -49,9 +55,15 @@ def make_item(
     version: str = "1.0",
     include_enclosure: bool = True,
     minimum_system_version: str | None = "26.6",
+    build: str | None | object = _DERIVED,
 ) -> str:
     parts = ["<item>", "<title>t</title>"]
     parts.append(f"<sparkle:shortVersionString>{version}</sparkle:shortVersionString>")
+    if build is _DERIVED:
+        major, minor, patch = (list(map(int, version.split("."))) + [0, 0])[:3]
+        build = str(major * 10000 + minor * 100 + patch)
+    if build is not None:
+        parts.append(f"<sparkle:version>{build}</sparkle:version>")
     if minimum_system_version is not None:
         parts.append(
             f"<sparkle:minimumSystemVersion>{minimum_system_version}"
