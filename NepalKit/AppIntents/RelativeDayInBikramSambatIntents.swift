@@ -33,60 +33,57 @@ nonisolated enum RelativeDay {
     }
 }
 
+/// The shared shape of the tomorrow and yesterday intents: each names only
+/// its offset and its dialog.
+nonisolated protocol RelativeDayIntent: AppIntent {
+    static var offset: Int { get }
+    static func dialog(_ spoken: String) -> LocalizedStringResource
+}
+
+nonisolated extension RelativeDayIntent {
+    static var supportedModes: IntentModes { .background }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<BikramSambatDateEntity> & ProvidesDialog {
+        let answer = try Self.answer(now: Date(), in: AppData.dataset)
+        return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
+    }
+
+    static func answer(
+        now: Date,
+        in dataset: CalendarDataset,
+        monthNames: MonthNameStyle = SettingsStore().settings.monthNames
+    ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
+        let answer = try RelativeDay.answer(offset: offset, now: now, in: dataset, monthNames: monthNames)
+        return (answer.entity, dialog(answer.spoken))
+    }
+}
+
 /// Answers tomorrow's date in Bikram Sambat: the Nepal Time day after Today.
 ///
 /// One parameterless intent per offset rather than one intent with an offset
 /// parameter: voice only works for parameterless intents on macOS 26 (the
 /// spec's surface table), and each App Shortcut binds one intent type.
-struct TomorrowInBikramSambatIntent: AppIntent {
+struct TomorrowInBikramSambatIntent: RelativeDayIntent {
     static let title: LocalizedStringResource = "What is tomorrow's Bikram Sambat date"
 
     static var description: IntentDescription {
         IntentDescription("Speaks tomorrow's date in Bikram Sambat, Nepal's calendar.")
     }
 
-    static let supportedModes: IntentModes = .background
+    static let offset = 1
 
-    static var parameterSummary: some ParameterSummary { Summary() }
-
-    func perform() async throws -> some IntentResult & ReturnsValue<BikramSambatDateEntity> & ProvidesDialog {
-        let answer = try Self.answer(now: Date(), in: AppData.dataset)
-        return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
-    }
-
-    static func answer(
-        now: Date,
-        in dataset: CalendarDataset,
-        monthNames: MonthNameStyle = SettingsStore().settings.monthNames
-    ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
-        let answer = try RelativeDay.answer(offset: 1, now: now, in: dataset, monthNames: monthNames)
-        return (answer.entity, "Tomorrow is \(answer.spoken).")
-    }
+    static func dialog(_ spoken: String) -> LocalizedStringResource { "Tomorrow is \(spoken)." }
 }
 
 /// Answers yesterday's date in Bikram Sambat: the Nepal Time day before Today.
-struct YesterdayInBikramSambatIntent: AppIntent {
+struct YesterdayInBikramSambatIntent: RelativeDayIntent {
     static let title: LocalizedStringResource = "What was yesterday's Bikram Sambat date"
 
     static var description: IntentDescription {
         IntentDescription("Speaks yesterday's date in Bikram Sambat, Nepal's calendar.")
     }
 
-    static let supportedModes: IntentModes = .background
+    static let offset = -1
 
-    static var parameterSummary: some ParameterSummary { Summary() }
-
-    func perform() async throws -> some IntentResult & ReturnsValue<BikramSambatDateEntity> & ProvidesDialog {
-        let answer = try Self.answer(now: Date(), in: AppData.dataset)
-        return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
-    }
-
-    static func answer(
-        now: Date,
-        in dataset: CalendarDataset,
-        monthNames: MonthNameStyle = SettingsStore().settings.monthNames
-    ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
-        let answer = try RelativeDay.answer(offset: -1, now: now, in: dataset, monthNames: monthNames)
-        return (answer.entity, "Yesterday was \(answer.spoken).")
-    }
+    static func dialog(_ spoken: String) -> LocalizedStringResource { "Yesterday was \(spoken)." }
 }
