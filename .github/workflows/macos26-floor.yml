@@ -438,16 +438,34 @@ jobs:
             echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run; device compilation is checked separately."
           fi
 
+      # One retry, and only for the simulator failing to start the test host:
+      # "Application has termination assertions" and "The test runner hung
+      # before establishing connection" are the hosted runner's simulator, not
+      # the code, and they failed this job on unrelated pull requests again and
+      # again. The retry first shuts the device down and erases it. A failing
+      # test, or any other error, is not retried: it fails the job as before.
       - name: Watch suite
         if: steps.watchos.outputs.available == 'true'
+        env:
+          DEVICE: ${{ steps.watchos.outputs.device }}
         run: |
-          set -euo pipefail
-          xcodebuild test \
-            -project NepalKit.xcodeproj \
-            -scheme "NepalKitWatch Watch App" \
-            -configuration Debug \
-            -destination "platform=watchOS Simulator,id=${{ steps.watchos.outputs.device }}" \
-            CODE_SIGNING_ALLOWED=NO
+          set -uo pipefail
+          run_suite() {
+            xcodebuild test \
+              -project NepalKit.xcodeproj \
+              -scheme "NepalKitWatch Watch App" \
+              -configuration Debug \
+              -destination "platform=watchOS Simulator,id=$DEVICE" \
+              CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
+          }
+          run_suite "$RUNNER_TEMP/watch-1.log" && exit 0
+          if ! grep -qE "Application has termination assertions|test runner hung before establishing connection" "$RUNNER_TEMP/watch-1.log"; then
+            exit 1
+          fi
+          echo "::warning::The simulator did not start the Watch test host; resetting it and retrying once."
+          xcrun simctl shutdown "$DEVICE" || true
+          xcrun simctl erase "$DEVICE"
+          run_suite "$RUNNER_TEMP/watch-2.log"
 
       - name: The Watch targets at least build for device architecture
         run: |

@@ -8,7 +8,7 @@ import WidgetKit
 struct TodayComplication: Widget {
     /// Placed complications are stored by this kind; renaming it silently
     /// removes them from users' faces on upgrade.
-    static let kind = "NepalKitTodayComplication"
+    nonisolated static let kind = "NepalKitTodayComplication"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: Self.kind, provider: makeTodayProvider()) { entry in
