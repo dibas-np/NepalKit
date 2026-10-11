@@ -53,9 +53,9 @@ struct TodaySection: View {
             // Removing it also lets the date sit at the top of the content
             // rather than below a label describing it.
             //
-            // The heading role is not lost: the tab carries the destination
-            // name, and the date below it is the first thing a reader meets
-            // either way.
+            // The destination is still named: the selected tab announces
+            // "Today" as a tab, and the date below it is the first thing a
+            // reader meets either way. Nothing here is a heading.
 
             if let todayBS = clock.todayBSDate(in: dataset) {
                 // The hero. Weight is what makes the date the first thing read
