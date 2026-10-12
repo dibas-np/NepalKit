@@ -60,6 +60,9 @@ struct CalendarEventTests {
 
     @Test func textIsEscaped() {
         #expect(CalendarEvent.escape("a,b;c\\d\ne") == "a\\,b\\;c\\\\d\\ne")
+        // CRLF is one Character in Swift and a bare CR is a line break to a
+        // calendar parser; both must come out as the escaped newline.
+        #expect(CalendarEvent.escape("a\r\nb\rc") == "a\\nb\\nc")
     }
 
     @Test func longDevanagariLinesFoldWithinSeventyFiveOctets() {

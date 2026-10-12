@@ -77,9 +77,13 @@ struct CalendarEvent: Equatable {
         return String(repeating: "0", count: max(0, width - digits.count)) + digits
     }
 
-    /// RFC 5545 TEXT escaping: backslash, semicolon, comma and newline.
+    /// RFC 5545 TEXT escaping: backslash, semicolon, comma and newline. CRLF
+    /// and bare CR become newlines first: Swift reads "\r\n" as one Character,
+    /// which the "\n" replacement would miss, leaving a raw break in the line.
     static func escape(_ text: String) -> String {
-        text.replacing("\\", with: "\\\\")
+        text.replacing("\r\n", with: "\n")
+            .replacing("\r", with: "\n")
+            .replacing("\\", with: "\\\\")
             .replacing(";", with: "\\;")
             .replacing(",", with: "\\,")
             .replacing("\n", with: "\\n")
