@@ -234,11 +234,13 @@ struct TodayIntentTests {
 
     @Test("Running the intent answers the real today")
     func performAnswersFromTheRealClock() async throws {
+        // perform() reads the stored time reference, so the oracle does too.
+        let zone = SettingsStore().timeReference.timeZone
         let before = Date()
         let result = try await TodayInBikramSambatIntent().perform()
         let after = Date()
-        // Either clock read may straddle Nepal Time midnight, so accept both.
-        let todays = [before, after].map { todayBS(now: $0, in: dataset) }
+        // Either clock read may straddle midnight, so accept both.
+        let todays = [before, after].map { todayBS(now: $0, timeZone: zone, in: dataset) }
         #expect(todays.contains(result.value?.bsDay))
     }
 }

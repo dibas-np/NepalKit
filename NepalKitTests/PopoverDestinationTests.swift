@@ -1,5 +1,5 @@
-// The strings the popover's segmented control shows for each destination, the
-// only place these titles appear.
+// The strings the popover's destination tabs (DestinationTabs) show for each
+// destination.
 import SwiftUI
 import Testing
 @testable import NepalKit
@@ -7,14 +7,14 @@ import Testing
 @MainActor
 struct PopoverDestinationTests {
     @Test func segmentTitlesNameTheirDestinations() {
-        // The segments read `destination.title`; a renamed section would
-        // otherwise leave the control silently naming the old one.
+        // The tabs read `destination.title`; a renamed section would
+        // otherwise leave a tab silently naming the old one.
         #expect(PopoverDestination.today.title == Strings.todayLabel)
         #expect(PopoverDestination.convert.title == Strings.converterLabel)
     }
 
     @Test func destinationTitlesAreDistinct() {
-        // Two segments with the same title could not be told apart, by eye or
+        // Two tabs with the same title could not be told apart, by eye or
         // by VoiceOver.
         #expect(PopoverDestination.today.title != PopoverDestination.convert.title)
     }

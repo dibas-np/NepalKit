@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
+import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 _SCRIPT = Path(__file__).resolve().parent / "check-patro-reminder.py"
@@ -92,8 +94,14 @@ class Main(unittest.TestCase):
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
         self._use_procedure("no record")
-        with self.assertRaises(SystemExit):
-            cpr.main(["--today", "2027-02-01"])
+        # Pinned to a table that ends at 2084: once the shipped table reaches
+        # 2085 the reminder goes quiet by design, and this case would stop
+        # exercising the due window.
+        sys.path.insert(0, str(_SCRIPT.parent))
+        import dataset_table
+        with mock.patch.object(dataset_table, "shipped_table", return_value={2084: [30] * 12}):
+            with self.assertRaises(SystemExit):
+                cpr.main(["--today", "2027-02-01"])
 
 
 class TheCommittedProcedure(unittest.TestCase):
