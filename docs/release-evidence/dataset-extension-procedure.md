@@ -58,6 +58,27 @@ The current last supported Gregorian day is 2028-04-12. An extension should
 ship before that boundary. This procedure does not set a publication date or
 schedule automatic checks of a third-party website.
 
+## Festivals and public holidays for a new year
+
+Festivals and public holidays are separate from the month lengths and are
+listed one year at a time ([ADR-0016](../adr/0016-festivals-from-the-national-panchanga.md)
+and its amendment). Only 2083 is listed. From 1 Baisakh 2084 (14 April 2027)
+the month grid shows no festival marks or red holidays and says "Festivals and
+holidays are listed for 2083 BS only." It does not fail; it says what is missing.
+
+1. When the year's Panchanga is published, select its festivals and national
+   days under ADR-0016's rule into `FestivalsYYYY.swift`, beside
+   `Festivals2083.swift`, and pin the PDF's SHA-256 in SOURCES.md.
+2. When the Ministry of Home Affairs publishes the year's gazette notice of
+   public holidays (2083's was dated 2082-11-18, early March 2026), transcribe it
+   into `PublicHolidaysYYYY.swift` and pin it in SOURCES.md the same way. Every
+   day it names also needs a name in the festival list (the amendment).
+3. Add the year to `FestivalCalendar.panchanga` and
+   `PublicHolidayCalendar.gazette`. The grid's note then stops naming only 2083
+   with no other change.
+4. Have a second, independent read of the page images confirm every date and
+   wording, as for 2083, and re-pin the test counts.
+
 ## Monthly Samiti check, from 1 January 2027
 
 The Nepal Panchanga Nirnayak Samiti's determination of 2084 BS is expected
@@ -77,5 +98,10 @@ If February 2027 passes with no publication, plan for less lead time rather
 than waiting. The `patro-reminder` job in `.github/workflows/data-sources.yml`
 runs monthly and fails when this date is more than 35 days old; it checks that
 a person looked, not what the website says.
+
+That job cannot be relied on alone. GitHub disables a public repository's
+scheduled workflows after 60 days with no repository activity, so a project left
+untouched since the last release may never run it. Keep a reminder for
+January 2027 outside GitHub as well.
 
 last_checked: none
