@@ -88,10 +88,6 @@ class Check(unittest.TestCase):
         self.assertEqual(csk.main(["--sign-update", str(self.dir / "absent")]), 1)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class SparkleBin(unittest.TestCase):
     def _load(self, env: dict[str, str]):
         import os
@@ -116,3 +112,7 @@ class SparkleBin(unittest.TestCase):
         module = self._load({})
         self.assertTrue(str(module.SIGN_UPDATE).endswith("DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"))
         self.assertTrue(module.SIGN_UPDATE.is_relative_to(module.ROOT))
+
+
+if __name__ == "__main__":
+    unittest.main()
