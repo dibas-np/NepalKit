@@ -173,7 +173,7 @@ calling out because CI configuration invalidates them:
 | `code_review_standards`, `two_person_review` | The `main` ruleset losing its `pull_request` rule |
 | `hardening` | `ENABLE_HARDENED_RUNTIME` being turned off, or `package-release.sh` ceasing to check it |
 | `signed_releases` | Notarization or the appcast Ed25519 signature being dropped |
-| `version_tags_signed` | Release tags becoming signed - which would make this `Unmet` wrong in the project's favour |
+| `version_tags_signed` | A release tag being pushed unsigned; every tag from `v1.6.1` on is signed |
 | `static_analysis_fixed` | Code scanning being disabled, or alerts being closed by suppression rather than by fixing them |
 
 ## Checking the criterion names against upstream

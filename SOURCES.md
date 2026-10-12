@@ -72,8 +72,12 @@ a time, under [ADR-0016](docs/adr/0016-festivals-from-the-national-panchanga.md)
 For 2083 every day's observances were typed in from the PDF pinned above, 57
 were selected under the ADR's rule, and a second, independent read of the page
 images confirmed each one's day and wording, including the three printed as
-overflow in another day's row. The data is in
-[`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
+overflow in another day's row. Under the ADR's amendment, every day the gazette
+notice below names as a holiday or national day also has a name, which brings
+the list to 67 entries. Where the Panchanga prints that day, its wording is
+used; two days it does not print, जेनजी सहिद दिवस and ज्यापू दिवस, are named as
+the gazette names them and marked with the gazette as their source. The data is
+in [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
 No other source is used for festival dates.
 
 ### Public holidays

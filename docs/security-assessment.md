@@ -276,7 +276,8 @@ Re-run it, rather than re-reading it, when any of these changes:
 - a new dependency, or a change to how Sparkle is pinned;
 - a new network call or entitlement;
 - any change to the ruleset's bypass actors or approval count (F3);
-- a new release channel, including the planned App Store distribution;
+- a new release channel, such as the Watch app's App Store distribution that
+  ADR-0015 defers;
 - a security incident, or a new vulnerability in Sparkle (F4);
 - a move of signing or notarization off the release machine (F5).
 

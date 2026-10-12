@@ -23,8 +23,10 @@
 - Full Bikram Sambat and Gregorian dates with the weekday.
 - A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs. Choose **My time zone** in Settings and the two swap places.
 - Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
+- A month calendar under today's date, with the Gregorian dates beside each day, and festivals and public holidays for 2083 from the official Panchanga and the Nepal Gazette. Any day can be copied or added to your calendar.
+- A menu-bar date you can shape: weekday, year, and the time, in 12- or 24-hour form, with or without seconds.
 - Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
-- Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
+- Today's, tomorrow's and yesterday's Bikram Sambat dates through Siri, and date conversion through Shortcuts.
 - A standalone Apple Watch app with rectangular, inline, circular, and corner complications.
 - Optional launch at login.
 
