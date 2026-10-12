@@ -2,8 +2,8 @@
 
 NepalKit tracks three version numbers that move independently: the **application
 version** (`CFBundleShortVersionString`, human-facing, shown in About, currently
-`1.6.1`), the **build number** (`CFBundleVersion`, a monotonically increasing
-integer, currently `9`), and the **calendar dataset version** (currently
+`1.7.0`), the **build number** (`CFBundleVersion`, a monotonically increasing
+integer, currently `10`), and the **calendar dataset version** (currently
 `2.0.1`). Git tags follow the application version.
 
 The build number is not a display concern — it is load-bearing for updates.
