@@ -4,6 +4,36 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.7.0 — unreleased
+
+### A month calendar in Today
+
+Today now shows the whole Bikram Sambat month under today's date, with each day's Gregorian date beneath it and the Gregorian months beside the title. Saturdays are in red. Change months with the arrows, the arrow keys or by scrolling. Click a day to see it in both calendars and how far it is from today, copy it, or add it to your calendar as an all-day event.
+
+### Festivals and public holidays
+
+Festivals and national days for 2083, from Nepal's national Panchanga, are marked in the calendar and named under today's date. Nationwide public holidays from the Nepal Gazette are shown in red, and a day's details name holidays for a community, region or group. Later years are added as their Panchanga and gazette notice are published; until then the calendar says which years are listed.
+
+### Shape the menu-bar date
+
+A new Menu Bar tab in Settings previews the menu-bar date and can add the day of the week, the year and the time, in 12- or 24-hour form, with or without seconds.
+
+### Nepal Time or your time zone
+
+Today follows Nepal Time by default. Set Settings › General › Time zone to My time zone, and today, its midnight, the clocks and Siri's answers follow your Mac instead.
+
+### Siri
+
+Ask Siri for tomorrow's or yesterday's Nepali date as well as today's.
+
+### Fixes
+
+- The menu-bar date moves to the new day when midnight passed while your Mac was asleep, or when the system clock is changed.
+- In Shortcuts, a date converted to Gregorian and back no longer lands on the following day in time zones far ahead of UTC.
+- Settings says when macOS is holding the login item for your approval.
+- 2084, whose calendar is not yet officially published, is named as a projection in About, the converter, Siri and the calendar.
+- The popover uses less processor time while it is open.
+
 ## 1.6.1 — 2026-10-11
 
 ### Install an update from the menu bar
