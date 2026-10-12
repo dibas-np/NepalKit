@@ -4,19 +4,17 @@
 """Prove a Sparkle EdDSA private key matches the public key the app ships.
 
 Signs a scratch file with the pinned `sign_update` and verifies the signature
-against `SUPublicEDKey` in NepalKit/Info.plist. With --key-file it signs with a
-backup copy instead of the login keychain, so a restore can be tested without
-importing anything: a backup that has never signed something the app verifies
-is not yet a backup (ADR-0012).
+against `SUPublicEDKey` in NepalKit/Info.plist. --key-file signs with a backup
+copy instead of the login keychain, so a restore can be tested without
+importing anything (ADR-0012).
 
     scripts/check-signing-key.py                      # the keychain key
     scripts/check-signing-key.py --key-file PATH      # a backup copy
 
-Run it on the release machine. It reads the private key and prints ok or
-FAIL; a FAIL carries the reason, which can include sign_update's own message
-and the key file's path, never key material. It writes nothing outside a
-temporary directory. SPARKLE_BIN overrides where sign_update is found, as it
-does for scripts/verify-appcast.sh.
+Run it on the release machine. Output never includes key material, only
+sign_update's message and the key file's path on failure; nothing is written
+outside a temporary directory. SPARKLE_BIN overrides where sign_update is
+found, as for scripts/verify-appcast.sh.
 """
 
 from __future__ import annotations
@@ -32,9 +30,9 @@ from pathlib import Path
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
-# This checkout's own build of the pinned Sparkle, as verify-appcast.sh uses,
-# unless SPARKLE_BIN points at a directory holding the tools: sign_update
-# reaches the private key, so it is never whichever DerivedData matches a glob.
+# This checkout's build of the pinned Sparkle, unless SPARKLE_BIN names the
+# tools' directory. sign_update reaches the private key, so it is never
+# whichever DerivedData matches a glob.
 SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
                else ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update")
 
@@ -50,8 +48,8 @@ def sparkle_signer(sign_update: Path, key_file: Path | None,
                    timeout: float = SIGN_TIMEOUT_SECONDS) -> Callable[[Path], str]:
     """A signer that runs `sign_update -p`, which prints only the base64 signature.
 
-    Bounded by a timeout: with the login keychain, sign_update can wait on an
-    access prompt, and an unanswered prompt must fail the check, not hang it.
+    The timeout turns an unanswered keychain access prompt into a failure
+    rather than a hang.
     """
     def sign(path: Path) -> str:
         command = [str(sign_update), "-p", str(path)]

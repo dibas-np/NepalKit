@@ -5,9 +5,8 @@ Status: accepted
 
 ## Context
 
-A Nepali calendar without its festivals is half a calendar. The month grid
-(1.7.0) shows every day of the month, so the question of which days matter
-now has a place to be answered.
+The month grid (1.7.0) shows every day of the month, which gives festivals a
+place to appear.
 
 Festival dates cannot be computed from the month table. Most follow the lunar
 calendar (tithi), and their placement is a determination, not arithmetic. The

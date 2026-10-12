@@ -60,7 +60,7 @@ Stated so that their absence is a decision rather than an oversight.
 | Not doing | Why |
 |---|---|
 | Telemetry, analytics, crash reporting | Would be a second third-party dependency and the first with network egress of its own. See ADR-0012 for how the dependency budget is argued |
-| A documentation site separate from the repository | The landing page is one static page on the same GitHub Pages site as the update feed, and it points back here. The repository stays the documentation; a second site would need its own security posture and this project has no capacity for two |
+| A documentation site separate from the repository | The landing page is a single static page on the update feed's GitHub Pages site and points back here; the repository stays the documentation. A second site would need its own security posture and this project has no capacity for two |
 | Mac App Store distribution for the Mac app | The Developer ID channel is signed, notarized and update-signed end to end today. Adding a store would mean maintaining two update models |
 | A public API or plugin interface | The surface would be a security commitment. Not one a solo maintainer should make |
 

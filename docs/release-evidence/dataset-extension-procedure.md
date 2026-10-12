@@ -99,9 +99,8 @@ than waiting. The `patro-reminder` job in `.github/workflows/data-sources.yml`
 runs monthly and fails when this date is more than 35 days old; it checks that
 a person looked, not what the website says.
 
-That job cannot be relied on alone. GitHub disables a public repository's
-scheduled workflows after 60 days with no repository activity, so a project left
-untouched since the last release may never run it. Keep a reminder for
-January 2027 outside GitHub as well.
+Do not rely on the job alone: GitHub disables a public repository's scheduled
+workflows after 60 days without activity, so it may never run. Keep a reminder
+for January 2027 outside GitHub too.
 
 last_checked: none

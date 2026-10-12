@@ -438,12 +438,11 @@ jobs:
             echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run; device compilation is checked separately."
           fi
 
-      # One retry, and only for the simulator failing to start the test host:
-      # "Application has termination assertions" and "The test runner hung
-      # before establishing connection" are the hosted runner's simulator, not
-      # the code, and they failed this job on unrelated pull requests again and
-      # again. The retry first shuts the device down and erases it. A failing
-      # test, or any other error, is not retried: it fails the job as before.
+      # One retry, after shutting down and erasing the device, only when the
+      # hosted simulator fails to start the test host ("Application has
+      # termination assertions", "The test runner hung before establishing
+      # connection"), which repeatedly failed unrelated pull requests. Test
+      # failures and other errors are not retried.
       - name: Watch suite
         if: steps.watchos.outputs.available == 'true'
         env:

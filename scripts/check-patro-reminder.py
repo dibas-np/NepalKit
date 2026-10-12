@@ -3,16 +3,13 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Fail when the monthly Nepali Patro check is overdue.
 
-The shipped table ends at 2084 BS (2028-04-12), and 2084 is a projection. The
-Samiti's determination of 2084 is expected around Magh 2083 BS (January to
-February 2027), and only its published almanac makes a year attested or a new
-year shippable (ADR-0014). Nothing machine-readable announces it, so this does
-not look for the publication. It checks that a person has: the
+The shipped table ends at 2084 BS (2028-04-12), and 2084 is a projection.
+Only the Samiti's published almanac, expected around Magh 2083 BS (January to
+February 2027), attests a year or makes a new one shippable (ADR-0014). Nothing
+machine-readable announces it, so this checks that a person has looked: the
 `last_checked:` line in docs/release-evidence/dataset-extension-procedure.md
-must be no older than 35 days.
-
-Quiet before 2027-01-01, when the monthly check starts, and quiet once the
-shipped table reaches 2085, when the extension has shipped.
+must be no older than 35 days. Quiet before 2027-01-01 and once the shipped
+table reaches 2085.
 
     scripts/check-patro-reminder.py [--today YYYY-MM-DD]
 """
@@ -58,8 +55,8 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
                        "docs/release-evidence/dataset-extension-procedure.md")
     age = (today - checked).days
     if age < -1:
-        # A future date would make the age negative and pass forever. One day of
-        # slack covers a local date ahead of the runner's UTC date.
+        # A future date would pass forever. One day of slack covers a local
+        # date ahead of the runner's UTC date.
         return False, (f"`last_checked: {checked}` is in the future; record the date the "
                        "check was actually made")
     if age > MAX_AGE_DAYS:
@@ -78,9 +75,8 @@ def main(argv: list[str] | None = None) -> int:
     from dataset_table import shipped_table
 
     last_year = max(shipped_table())
-    # The record is read only when a check is due: before 2027 and after 2085
-    # ships the job stays quiet even if the line is gone. The pull-request suite
-    # still requires the committed line to be readable.
+    # Read only when a check is due, so a missing line is quiet outside that
+    # window. The pull-request suite still requires it to be readable.
     quiet = args.today < CHECKS_START or last_year >= EXTENDED_YEAR
     checked = None if quiet else last_checked(PROCEDURE.read_text(encoding="utf-8"))
     ok, message = verdict(args.today, checked, last_year)

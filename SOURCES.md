@@ -44,7 +44,7 @@ match askbuddie exactly.
 
 The government's national Panchanga for 2083 BS, published by the Nepal
 Panchanga Nirnayak Samiti under the Ministry of Culture, Tourism and Civil
-Aviation, confirms all twelve month lengths for 2083. That includes the four corrected
+Aviation, confirms all twelve 2083 month lengths, including the four corrected
 months above.
 
 - Page: [npns.gov.np, Panchanga of the year 2083](https://npns.gov.np/pages/panchanga-of-the-year-2083-5/).
@@ -71,12 +71,12 @@ Festivals and national days come from the same national Panchanga, one year at
 a time, under [ADR-0016](docs/adr/0016-festivals-from-the-national-panchanga.md).
 For 2083 every day's observances were typed in from the PDF pinned above, 57
 were selected under the ADR's rule, and a second, independent read of the page
-images confirmed each one's day and wording, including the three printed as
-overflow in another day's row. Under the ADR's amendment, every day the gazette
-notice below names as a holiday or national day also has a name, which brings
-the list to 67 entries. Where the Panchanga prints that day, its wording is
-used; two days it does not print, जेनजी सहिद दिवस and ज्यापू दिवस, are named as
-the gazette names them and marked with the gazette as their source. The data is
+images confirmed each one's day and wording, including three printed as
+overflow in another day's row. The ADR's amendment gives every holiday or
+national day in the gazette notice below a name, bringing the list to 67
+entries: the Panchanga's wording where it prints the day, and the gazette's for
+the two it does not (जेनजी सहिद दिवस, ज्यापू दिवस), which are marked with the
+gazette as their source. The data is
 in [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
 No other source is used for festival dates.
 

@@ -15,10 +15,8 @@ name: publish appcast
 
 on:
   push:
-    # Only when the feed, the landing page or one of its screenshots changes.
-    # A README text fix does not redeploy; a change to one of the three
-    # screenshots the page shows does. Either way the same feed is
-    # re-verified first.
+    # Only when the feed, the landing page or a screenshot it shows changes;
+    # a README text fix does not redeploy. The feed is re-verified either way.
     paths:
       - appcast.xml
       - site/**

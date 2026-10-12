@@ -63,8 +63,8 @@ jobs:
           PINNED=$(python3 - <<'PY'
           import pathlib, re
           text = pathlib.Path("NepalKit.xcodeproj/project.pbxproj").read_text()
-          # Only Sparkle's own block, so a later package's requirement is never
-          # read as Sparkle's.
+          # Sparkle's own block only, so another package's requirement is
+          # never read as Sparkle's.
           block = re.search(
               r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
               r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
@@ -110,10 +110,9 @@ jobs:
           echo "Sparkle pin is current"
 
   patro-reminder:
-    # The Samiti's 2084 determination is the one input this project cannot
-    # substitute for, and nothing machine-readable announces it. This fails
-    # when the monthly check recorded in the dataset extension procedure is
-    # more than 35 days old, from 2027-01-01 until the table reaches 2085.
+    # Nothing machine-readable announces the Samiti's 2084 determination, so
+    # this fails when the monthly check recorded in the dataset extension
+    # procedure is over 35 days old, from 2027-01-01 until the table reaches 2085.
     name: monthly Nepali Patro check is recorded
     runs-on: ubuntu-latest
     timeout-minutes: 5

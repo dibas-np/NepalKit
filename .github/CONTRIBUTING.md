@@ -182,7 +182,7 @@ until that workflow existed: the two gates ran only when a human ran this
 script. Two further gates are deliberately local-only and say so in the same
 workflow: LaunchServices unregistration (gate 8) needs a GUI login session a
 runner does not have, and the coverage floor (gate 14) needs the macOS
-toolchain and about six minutes from a cold build (seconds once the build is cached). CI runs every other gate in the workflow that
+toolchain and about six minutes from a cold build (seconds once cached). CI runs every other gate in the workflow that
 owns it; gate 1 runs as `build-for-testing` in `macos26-floor.yml`, so the
 hosted test bundle compiles on every pull request. This command is the local half and not a replacement:
 it is the only thing that runs all sixteen in one pass.

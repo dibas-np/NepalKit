@@ -32,8 +32,8 @@ privacy manifest for the Watch product, a review cycle, and store metadata
 and support pages that match the product. The Watch already runs without an
 iPhone app, which the store supports for standalone watchOS apps. The store
 build must decide how the provisional 2084 row ships (the Mac App Store
-readiness spec rules out shipping it behind a warning alone), which aligns
-naturally with the 2027 attestation.
+readiness spec rules out shipping it behind a warning alone), a decision best
+timed with the 2027 attestation.
 
 **B. Both apps on the App Store, and the Mac app keeps Developer ID too.** The
 Mac App Store variant in `.scratch/mac-app-store-readiness/spec.md`: no Sparkle in

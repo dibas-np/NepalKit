@@ -52,12 +52,11 @@ def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
     """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
     # llvm-cov strips the directory prefix common to every file it reports.
-    # The build directory is outside the checkout, so that prefix is some
-    # leading part of the repository path ("Users/me/" when both sit under
-    # the home folder, just "/" otherwise), and a row's path starts with a
-    # tail of the root. Try every tail, longest first, cut at "/" boundaries.
-    # Comparing raw strings silently matches nothing, which looks identical to
-    # "no product source was compiled".
+    # With the build outside the checkout that prefix is a leading part of the
+    # repository path ("Users/me/" when both sit under the home folder, "/"
+    # otherwise), so try every tail of the root, longest first, cut at "/".
+    # A mismatch silently matches nothing, which looks identical to "no product
+    # source was compiled".
     full = str(REPO_ROOT).lstrip("/") + "/"
     tails = [full] + [full[i + 1:] for i, c in enumerate(full[:-1]) if c == "/"]
     for line in stdout.splitlines():
@@ -168,13 +167,12 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True)
 
 
-# A persistent build directory per suite, so a second run builds incrementally
-# instead of from scratch. Outside the repository on purpose: llvm-cov strips
-# the path prefix common to every file it reports, so with the build inside the
-# checkout the report's paths lose the repository prefix the subject filter
-# matches on. Keyed by checkout so two worktrees do not share builds. Profiles
-# from an earlier run are deleted first: the report reads whichever .profdata
-# it finds, and a stale one would report the previous run's numbers.
+# A persistent build directory per suite, so later runs build incrementally.
+# Outside the repository because llvm-cov strips the path prefix common to
+# every reported file, and a build inside the checkout would strip the prefix
+# the subject filter matches on. Keyed by checkout so worktrees do not share
+# builds. Old profiles are deleted first: the report reads whichever .profdata
+# it finds, and a stale one reports the previous run's numbers.
 COVERAGE_BUILD = (Path.home() / "Library" / "Caches" / "nepalkit-coverage"
                   / hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12])
 
