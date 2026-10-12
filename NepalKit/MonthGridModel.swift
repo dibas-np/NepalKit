@@ -4,8 +4,7 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// One Bikram Sambat month as the month grid draws it: the year and month, and
-/// its days laid out in Sunday-first weeks.
+/// One Bikram Sambat month.
 struct MonthGridMonth: Hashable {
     let year: Int
     let month: Int
@@ -29,11 +28,11 @@ struct MonthGridDay: Hashable {
     let gregorian: GADay
     /// 1 (Sunday) through 7 (Saturday), as the core reports it.
     let weekday: Int
-    /// Only ever true inside the shown month: today showing as a neighbouring
-    /// month's spill-over is context, not the month the reader is looking at.
+    /// Only ever true inside the shown month: a neighbouring month's
+    /// spill-over is context.
     let isToday: Bool
-    /// False for the neighbouring months' days that fill the first and last
-    /// weeks. The view dims them and leaves them out of VoiceOver and taps.
+    /// False for the neighbouring months' days filling the first and last
+    /// weeks, which the view dims and leaves out of VoiceOver and taps.
     let isInShownMonth: Bool
     /// The festivals and national days on this day, in the Panchanga's order;
     /// empty for a year whose Panchanga has not been read (ADR-0016).
@@ -42,56 +41,48 @@ struct MonthGridDay: Hashable {
     /// empty for a working day or a year whose notice has not been read.
     let holidayScopes: [PublicHoliday.Scope]
 
-    /// Saturday (शनिबार) is Nepal's weekly public holiday, and Nepali wall
-    /// calendars print its column in red; the grid follows them so the week
-    /// reads the way a reader there already knows it.
+    /// Saturday (शनिबार), Nepal's weekly public holiday, which wall calendars
+    /// print in red.
     static let weeklyHolidayWeekday = 7
 
-    /// Whether this day falls in the holiday column.
     var isWeeklyHoliday: Bool { weekday == Self.weeklyHolidayWeekday }
 
-    /// Whether the gazette makes this day a holiday for everyone.
     var isNationwideHoliday: Bool { holidayScopes.contains(.nationwide) }
 
-    /// Whether the day number is red: a wall calendar prints a nationwide
-    /// public holiday in the Saturday red. A limited holiday (one community,
-    /// one region) stays black there, since most readers work that day; the
-    /// day's details say who it is for.
+    /// Whether the day number is red, as a wall calendar prints it. A limited
+    /// holiday (one community or region) stays black, since most readers work
+    /// that day; the day's details say who it is for.
     var isMarkedAsHoliday: Bool { isWeeklyHoliday || isNationwideHoliday }
 
-    /// Whether the cell carries the festival mark. Only inside the shown
-    /// month, for the same reason today is: a neighbouring month's day is
-    /// context, and a mark on it would read as this month's.
+    /// Only inside the shown month, like `isToday`: a mark on a neighbouring
+    /// month's day would read as this month's.
     var showsFestivalMark: Bool { isInShownMonth && !festivals.isEmpty }
 }
 
-/// Owns the month grid's state: which Bikram Sambat month is shown, the bounded
-/// navigation through the supported range, and the grid of weeks.
+/// The month grid's state: the shown month, bounded navigation through the
+/// supported range, and the grid of weeks.
 ///
-/// Session-scoped like `ConverterModel` and for the same reason: the popover's
-/// content closure captures it once. That makes today a value that can go stale
-/// across a midnight, so the view calls `refreshToday(now:)` each time it
-/// appears; that moves the today marking without moving the month the user
-/// navigated to. Midnight is in `timeZone`, Nepal Time unless the user chose
+/// Session-scoped like `ConverterModel`: the popover's content closure captures
+/// it once, so today can go stale across a midnight. The view calls
+/// `refreshToday(now:)` on appear, which moves the today marking but not the
+/// shown month. Midnight is in `timeZone`, Nepal Time unless the user chose
 /// their own (ADR-0017).
 @MainActor
 @Observable
 final class MonthGridModel {
-    /// The shown month. Only changed through the bounded navigation below, so it
-    /// is always inside the supported range.
+    /// Only changed through the bounded navigation, so always in range.
     private(set) var shown: MonthGridMonth
 
     /// Today in `timeZone` as a Bikram Sambat date, or nil past the supported range.
     private(set) var today: BSDay?
 
-    /// Today's Gregorian day, which a day's distance from today is
-    /// counted from. Kept beside `today` because it survives the range
-    /// boundary, where the Bikram Sambat side does not.
+    /// Today's Gregorian day, for distances from today. Kept beside `today`
+    /// because it survives the range boundary, where the Bikram Sambat side
+    /// does not.
     private(set) var todayGregorian: GADay?
 
-    /// True when today's date is later than the last day the dataset
-    /// covers. The range boundary state: today's month cannot be shown, so the
-    /// grid opens on the last supported month and the view says why.
+    /// Today is past the dataset's last day, so the grid opens on the last
+    /// supported month and the view says why.
     private(set) var isTodayPastSupportedRange: Bool
 
     /// The zone today is read in.
@@ -107,8 +98,7 @@ final class MonthGridModel {
     /// - Parameters:
     ///   - festivals: the days' festivals; injected so a test can mark its own.
     ///   - holidays: the days' public holidays, injected for the same reason.
-    ///   - now: the instant today is read from. Injected so a test or a
-    ///     preview does not depend on the day it runs.
+    ///   - now: the instant today is read from; injected for tests and previews.
     ///   - timeZone: the zone today is read in; the app passes the user's
     ///     time reference and moves it with `setTimeZone(_:now:)`.
     init(dataset: CalendarDataset = AppData.dataset, festivals: FestivalCalendar = .panchanga,
@@ -132,8 +122,7 @@ final class MonthGridModel {
     var canShowPreviousMonth: Bool { shown != first }
     var canShowNextMonth: Bool { shown != last }
 
-    /// Whether the shown month already is the one "Today" would return to, so
-    /// the control can be disabled instead of doing nothing.
+    /// Whether "Today" would return to the shown month, so it can be disabled.
     var isShowingTodayMonth: Bool { shown == Self.month(containing: today, in: dataset, pastRange: isTodayPastSupportedRange) }
 
     func showPreviousMonth() {
@@ -146,8 +135,7 @@ final class MonthGridModel {
         shown = shown.next
     }
 
-    /// Moves one month forward for a positive step and back for a negative
-    /// one, within the supported range. The arrow keys and scrolling page
+    /// Moves one month in the step's direction. Arrow keys and scrolling page
     /// through here, so they stop where the chevrons do.
     func page(by step: Int) {
         if step > 0 { showNextMonth() } else if step < 0 { showPreviousMonth() }
@@ -166,8 +154,8 @@ final class MonthGridModel {
         shown = Self.month(containing: today, in: dataset, pastRange: isTodayPastSupportedRange)
     }
 
-    /// Re-reads today without moving the shown month, so the today marking and
-    /// the range boundary state are current when the popover reopens.
+    /// Re-reads today without moving the shown month. Assigns only what
+    /// changed, so an unchanged day does not invalidate observers.
     func refreshToday(now: Date) {
         let state = Self.todayState(now: now, timeZone: timeZone, in: dataset)
         if today != state.today { today = state.today }
@@ -175,15 +163,13 @@ final class MonthGridModel {
         if isTodayPastSupportedRange != state.isPastRange { isTodayPastSupportedRange = state.isPastRange }
     }
 
-    /// Reads today in another zone. The shown month stays where the user put
-    /// it, as it does across a midnight; only the today marking moves.
+    /// Reads today in another zone; only the today marking moves.
     func setTimeZone(_ timeZone: TimeZone, now: Date) {
         self.timeZone = timeZone
         refreshToday(now: now)
     }
 
-    /// Today as the model reads it, in one value so `init` and
-    /// `refreshToday` cannot read it two different ways.
+    /// One reading of today, so `init` and `refreshToday` cannot disagree.
     private struct TodayState {
         let today: BSDay?
         let todayAD: GADay?
@@ -200,9 +186,8 @@ final class MonthGridModel {
         return TodayState(today: today, todayAD: todayGregorian, isPastRange: isPastRange)
     }
 
-    /// Today's month, else the supported range's last month past it, else its
-    /// first: a today before the range is not reachable with this dataset, but
-    /// it must still open on a real month rather than trap.
+    /// Today's month, else the range's last month past it, else its first: a
+    /// today before the range is unreachable with this dataset but must not trap.
     private static func month(containing today: BSDay?, in dataset: CalendarDataset, pastRange: Bool) -> MonthGridMonth {
         if let today { return MonthGridMonth(year: today.year, month: today.month) }
         return pastRange
@@ -212,18 +197,14 @@ final class MonthGridModel {
 
     // MARK: - Grid
 
-    /// Weeks the grid always draws. Six is the most a month can need (a
-    /// 32-day month starting on Saturday), and drawing six for every month
-    /// keeps the popover's height still while the reader pages through months,
-    /// which matters now that a scroll can change the month under the pointer.
+    /// Weeks the grid always draws: the most a month can need (a 32-day month
+    /// starting on Saturday), so the popover's height holds still while
+    /// scrolling pages months under the pointer.
     static let weekCount = 6
 
-    /// The shown month as `weekCount` Sunday-first weeks of seven cells. The
-    /// first and last weeks are filled with the neighbouring months' days
-    /// (`isInShownMonth` false), as a wall calendar fills them. A nil cell is a
-    /// day before the dataset's first or after its last, which has no Bikram
-    /// Sambat date to show. Nepali wall calendars start the week on Sunday
-    /// (आइतबार), which is also the core's weekday 1.
+    /// The shown month as `weekCount` Sunday-first (आइतबार, the core's weekday
+    /// 1) weeks, padded with neighbouring months' days as a wall calendar is.
+    /// A nil cell is outside the dataset, with no Bikram Sambat date.
     var weeks: [[MonthGridDay?]] {
         let length = monthLength(shown)
         let firstBS = BSDay(year: shown.year, month: shown.month, day: 1)
@@ -274,10 +255,9 @@ final class MonthGridModel {
         "\(monthName(month: shown.month, style: settings.monthNames)) \(formatNumber(shown.year, digits: settings.digits))"
     }
 
-    /// The Gregorian months the shown month spans, beside its title:
-    /// "Oct–Nov 2026", or "Dec 2026 – Jan 2027" across a year end. Short
-    /// month names, because the header shares its row with three buttons.
-    /// Nil only if the table cannot place the month.
+    /// The Gregorian months the shown month spans: "Oct–Nov 2026", or
+    /// "Dec 2026 – Jan 2027". Short names, as the header shares its row with
+    /// three buttons.
     func gregorianSpan(settings: DisplaySettings) -> String? {
         guard let (first, last) = gregorianBounds() else { return nil }
         let short = { (month: Int) in String(gregorianMonthName(month).prefix(3)) }
@@ -318,9 +298,8 @@ final class MonthGridModel {
         "\(monthName(month: shown.month, style: settings.monthNames)) \(SpokenDate.number(shown.year))"
     }
 
-    /// The weekday header, Sunday first. English names are cut to three letters
-    /// because seven full names do not fit a 340pt popover; the Nepali names are
-    /// already short forms.
+    /// The weekday header, Sunday first, in short forms: seven full names do
+    /// not fit a 340pt popover.
     func weekdayHeaders(settings: DisplaySettings) -> [String] {
         (1 ... 7).map { Self.shortWeekdayName($0, style: settings.monthNames) }
     }
@@ -330,8 +309,7 @@ final class MonthGridModel {
         (1 ... 7).map { weekdayName(for: $0, style: settings.monthNames) ?? "" }
     }
 
-    /// Whether the header column (0 is Sunday) is the weekly holiday's, so the
-    /// header and the days under it are marked by the same rule.
+    /// Whether header column `column` (0 is Sunday) is the weekly holiday's.
     func isWeeklyHolidayColumn(_ column: Int) -> Bool {
         column + 1 == MonthGridDay.weeklyHolidayWeekday
     }
@@ -352,10 +330,8 @@ final class MonthGridModel {
         formatNumber(day.gregorian.day, digits: settings.digits)
     }
 
-    /// The cell's spoken label: the whole Bikram Sambat date, the weekday and
-    /// the Gregorian date, so a cell read out of context still names its day,
-    /// then its festivals by name, which is what the cell's mark stands for,
-    /// and who the day is a public holiday for, which is what its red says.
+    /// The cell's spoken label: both full dates and the weekday, so a cell
+    /// read out of context names its day, then what its mark and red stand for.
     func spokenLabel(for day: MonthGridDay, settings: DisplaySettings) -> String {
         let parts = [
             day.isToday ? Strings.todayLabel : nil,
@@ -367,10 +343,8 @@ final class MonthGridModel {
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
 
-    /// The shown year's caveats, for the lines under the grid: a provisional
-    /// year, and a year missing a festival or holiday list. Empty for an
-    /// attested year both lists cover. A list with no years at all says
-    /// nothing, since there is no year to point to.
+    /// The shown year's caveats: provisional, or missing from the festival or
+    /// holiday list. A list with no years says nothing, having no year to name.
     func yearNotes(digits: DigitScript) -> [String] {
         let year = shown.year
         let festivals = festivalCalendar.years

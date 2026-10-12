@@ -2,11 +2,8 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The bar along the bottom of the popover: the actions, on the right.
-///
-/// It used to name the selected destination on the left as well. That repeated
-/// the segmented control at the top, whose selected segment already says where
-/// you are, so the bar now carries only what it is for.
+/// The bar along the bottom of the popover: the actions, on the right. It does
+/// not name the destination; the tabs at the top already do.
 ///
 /// Its own view type rather than a computed property on `PopoverView`, which is
 /// both the house rule (AGENTS.md:118) and the cheaper arrangement: this reads
@@ -24,9 +21,7 @@ struct PopoverFooter: View {
         // The container is a wrapping view, not a modifier — it has to *be* the
         // parent of the content it groups.
         //
-        // `spacing` matches the `HStack` inside, which is what makes the grouping
-        // read as one group rather than two objects that happen to be near each
-        // other.
+        // `spacing` matches the `HStack` inside, so the buttons read as one group.
         //
         // Glass refracts light by sampling content from an area larger than itself,
         // and glass cannot sample other glass — so glass buttons left in separate
@@ -111,9 +106,8 @@ struct PopoverFooter: View {
     /// standing in for the one label in this footer that has to be unmistakable.
     ///
     /// Shown short. `Strings.quitLabel` names the app because the app menu needs
-    /// to ("Quit NepalKit"); inside the app's own popover the name is already on
-    /// screen in the header, so the footer says only "Quit". The announcement
-    /// keeps the full name.
+    /// to ("Quit NepalKit"); the popover's header already shows the name. The
+    /// announcement keeps it.
     ///
     /// The ⌘Q shortcut lives on the app's termination command group
     /// (NepalKitApp.swift) so it works when the app is frontmost without the

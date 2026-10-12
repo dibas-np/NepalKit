@@ -3,15 +3,13 @@
 import SwiftUI
 import NepalKitCore
 
-/// What today is besides a date: its festivals, and whether it is a
-/// nationwide public holiday. Read once so the hero's line and its
-/// announcement come from the same lookup and cannot disagree.
+/// Today's festivals and whether it is a nationwide public holiday, read once
+/// so the hero's line and its announcement cannot disagree.
 struct TodayObservances {
     let festivals: [Festival]
     let isPublicHoliday: Bool
-    /// Whether the line should add "Public holiday". Not when the day is named
-    /// only by the gazette's own holiday name ("Dashain holiday"), which
-    /// already says it: "Dashain holiday, Public holiday" says it twice.
+    /// Whether the line adds "Public holiday": not when the gazette's own name
+    /// ("Dashain holiday") is the only one, which already says it.
     let saysPublicHoliday: Bool
 
     init(_ day: BSDay, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
@@ -21,8 +19,7 @@ struct TodayObservances {
         self.saysPublicHoliday = isPublicHoliday && !namedOnlyByGazette
     }
 
-    /// The line under the hero, or nil on a day with nothing to say: an empty
-    /// line on every other day would be space spent saying nothing.
+    /// The line under the hero, or nil on a day with nothing to say.
     func line(monthNames: MonthNameStyle) -> String? {
         guard !festivals.isEmpty || isPublicHoliday else { return nil }
         return Strings.todayFestivalLine(
@@ -36,9 +33,8 @@ struct TodaySection: View {
     let clock: ClockModel
     let settings: DisplaySettings
     let dataset: CalendarDataset
-    /// Today's festivals come from here; the month grid marks the same table.
+    /// The same tables the month grid marks.
     var festivals: FestivalCalendar = .panchanga
-    /// And today's public holiday, from the table that turns the grid's day red.
     var holidays: PublicHolidayCalendar = .gazette
 
     /// Last Bikram Sambat year the bundled dataset can convert. Named in the
@@ -47,36 +43,16 @@ struct TodaySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // No "Today" header here. The tab directly above already reads
-            // "Today" and is the selected one, so a second "Today" two lines
-            // down repeats the destination to confirm what the tab just said.
-            // Removing it also lets the date sit at the top of the content
-            // rather than below a label describing it.
-            //
-            // The destination is still named: the selected tab announces
-            // "Today" as a tab, and the date below it is the first thing a
-            // reader meets either way. Nothing here is a heading.
+            // No "Today" header: the selected tab above already says it, and
+            // the date belongs at the top. Nothing here is a heading.
 
             if let todayBS = clock.todayBSDate(in: dataset) {
-                // The hero. Weight is what makes the date the first thing read
-                // rather than a value sitting beside its own label; everything
-                // below steps down from it.
+                // The hero; everything below steps down from it. `largeTitle`,
+                // not a literal point size, which ignores the accessibility
+                // text size.
                 //
-                // `largeTitle`, and semantic like every other font here. This was
-                // a literal `system(size: 28)` — 2pt larger, and not scaling: a
-                // literal point size ignores the system accessibility text size,
-                // so a user enlarging text saw every line grow except the hero.
-                //
-                // Shown exactly as configured; announced in a form a voice can
-                // pronounce. The two come from the same date, so they cannot
-                // drift into describing different days.
-                //
-                // The weekday sits beside the date, a step down, so the day of
-                // the week is read with the date instead of hunted for in the
-                // grid's header. Two `Text`s, like the Gregorian line below, so
-                // a long weekday wraps on its own rather than breaking the date;
-                // one `Text` at the hero's size did not fit "Wednesday" on the
-                // row.
+                // The weekday is a separate `Text` so a long one wraps on its
+                // own rather than breaking the date.
                 let observances = TodayObservances(todayBS, festivals: festivals, holidays: holidays)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -89,10 +65,8 @@ struct TodaySection: View {
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    // Today's festivals and national days, a step below the
-                    // date. A nationwide public holiday says so at the end,
-                    // because that is what a reader opening the app on one
-                    // wants to know; a limited one waits for the day's details.
+                    // Today's festivals and national days, then any nationwide
+                    // public holiday; a limited one waits for the day's details.
                     if let line = observances.line(monthNames: settings.monthNames) {
                         Text(line)
                             .font(.callout)
@@ -100,27 +74,16 @@ struct TodaySection: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                // Combined so the hero is one element, and relabelled: the
-                // Gregorian date is no longer a line of its own (the grid shows
-                // it under today), so the announcement carries it - one
-                // sentence with both calendars and the weekday, which it
-                // already names, so the shown weekday is not said twice - and
+                // One element whose label adds the Gregorian date, which is
+                // shown only in the grid: both calendars, the weekday once,
                 // then today's festivals.
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(heroAnnouncement(todayBS, observances: observances))
             } else {
-                // Range boundary state: the bundled data has ended. Say so in
-                // words rather than showing a blank, and keep the Gregorian date
-                // and clocks below, which are still answerable.
-                // One element, not two: a heading and a sub-line are two
-                // separate announcements, and the second alone ("Supported
-                // through 2084 BS") is meaningless without the first. Merged, and
-                // given a single label, so the whole state is one sentence.
-                //
-                // Not styled as an error. The dataset ended, the app did not
-                // fail, and an alert-coloured panel would imply the user has done
-                // something wrong. The same weight as the date it replaces keeps
-                // the layout from jumping when the range is crossed.
+                // Range boundary state: the data has ended; the Gregorian date
+                // and clocks below still answer. One element, as "Supported
+                // through 2084 BS" alone means nothing. Not styled as an error:
+                // the app did not fail.
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Strings.bsDateUnavailable)
                         .font(.title3)
@@ -137,9 +100,7 @@ struct TodaySection: View {
             // Only past the supported range: the grid below shows today's
             // Gregorian day and month, so in range this line repeated it.
             if clock.todayBSDate(in: dataset) == nil, let todayAD = clock.todayADDate() {
-                // One date, two channels: the shown line as configured, the
-                // announcement with Latin digits and the weekday folded in, so
-                // the whole line is a single spoken sentence.
+                // Announced as one sentence, with Latin digits and the weekday.
                 let weekday = clock.weekdayString(style: settings.monthNames)
                 HStack(spacing: 4) {
                     Text(formatAD(todayAD, settings: settings))

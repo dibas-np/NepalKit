@@ -73,20 +73,16 @@ struct PopoverView: View {
 
             DestinationTabs(selection: $destination)
 
-            // Both destinations stay laid out, one over the other, and the
-            // swap cross-fades between them. The stack is as tall as the
-            // taller one (Today, with its month grid), so switching never
-            // resizes the menu-bar window. Swapping views in a `switch` did:
-            // the window shrank and grew on every switch, animated inside
-            // SwiftUI's commit, which AppKit rejects (layout recursion,
-            // "transaction during CA commit") and which made the popover jump.
+            // Both destinations stay laid out and cross-fade, so the window
+            // keeps the taller one's height. Swapping views in a `switch`
+            // resized the window inside SwiftUI's commit, which AppKit rejects
+            // (layout recursion, "transaction during CA commit").
             ZStack(alignment: .topLeading) {
                 VStack(alignment: .leading, spacing: 8) {
                     TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
                     Divider()
-                    // The month sits with today's date rather than behind a
-                    // tab of its own: reading the date and seeing where it
-                    // falls in the month are one glance, not two.
+                    // With today's date, not on a tab of its own: date and
+                    // month are read in one glance.
                     MonthGridView(
                         model: monthGrid, settings: settings.settings, clock: clock,
                         isActive: destination == .today
@@ -189,11 +185,9 @@ private struct HeaderBar: View {
                 .font(.subheadline.weight(.medium))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            // Sized by a constant "00:00:00" and drawn in an overlay, so the
-            // per-second change never resizes anything: a ticking `Text` in the
-            // stack itself made SwiftUI re-measure the whole popover every
-            // second. Digits are monospaced, so the template is exactly as wide
-            // as every reading.
+            // Sized by a constant "00:00:00" (monospaced, so as wide as any
+            // reading) with the time in an overlay: a ticking `Text` in the
+            // stack made SwiftUI re-measure the whole popover every second.
             Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
                 .hidden()
                 .overlay(alignment: .trailing) {
@@ -206,16 +200,14 @@ private struct HeaderBar: View {
     }
 }
 
-/// The header's ticking reading: the only part of the header that reads the
-/// clock, so the tick re-evaluates this and not the row around it.
+/// The header's only clock read, so the tick re-evaluates this and not the row.
 private struct HeaderClockTime: View {
     let clock: ClockModel
     let digits: DigitScript
 
     var body: some View {
         Text(clock.headerTimeString(digits: digits))
-            // Named aloud because nothing on screen says which clock this
-            // is, and with the user's own zone chosen it is not Nepal's.
+            // Named aloud: nothing on screen says which zone this is.
             .accessibilityLabel(
                 "\(clock.headerClockLabel): \(clock.headerTimeString(digits: .latin))"
             )
@@ -224,8 +216,8 @@ private struct HeaderClockTime: View {
 
 // MARK: - Clocks
 
-/// The other clock, which is the one the header cannot carry: the Mac's local
-/// time beside Nepal Time, or Nepal Time beside the user's own zone (ADR-0017).
+/// The clock the header does not carry: the Mac's local time beside Nepal
+/// Time, or Nepal Time beside the user's own zone (ADR-0017).
 ///
 /// Sits outside the Gregorian conditional because a clock is answerable
 /// regardless of calendar data, so it must survive the range boundary.
@@ -255,13 +247,10 @@ private struct ClocksSection: View {
             // imply the second is somehow significant, and it is not — the
             // reference only earns its row by differing.
             if clock.showsSecondaryClock {
-                // The divider comes and goes with the row, so a reader in
-                // Nepal is not left with a rule above nothing.
+                // Comes and goes with the row, so no rule sits above nothing.
                 Divider()
                 Label {
-                    // Sized by a constant reading and drawn in an overlay, as
-                    // the header's clock is, so the per-second change re-draws
-                    // only `SecondaryClockTime` and never re-measures the popover.
+                    // Constant-width template plus overlay, as in the header.
                     Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
                         .hidden()
                         .overlay(alignment: .leading) {
@@ -282,8 +271,7 @@ private struct ClocksSection: View {
     }
 }
 
-/// The secondary row's ticking reading: the only part of the row that reads
-/// the clock, so the tick re-evaluates this and not the row around it.
+/// The secondary row's only clock read, as `HeaderClockTime` is the header's.
 private struct SecondaryClockTime: View {
     let clock: ClockModel
     let digits: DigitScript

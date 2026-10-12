@@ -2,26 +2,19 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
-/// Turns scroll-wheel and trackpad scrolling over the grid into whole-month
-/// steps, at most one per gesture.
+/// Turns scrolling over the grid into whole-month steps.
 ///
-/// A trackpad reports a swipe as dozens of small precise deltas followed by
-/// momentum. Paging on each delta would fly through a year per flick, so a
-/// gesture turns the page once, after `threshold` points of travel, and its
-/// momentum is ignored. A mouse wheel has no gesture to speak of: each notch is
-/// one discrete event and turns one page, which is how a wheel pages anywhere.
+/// A trackpad swipe is dozens of small deltas then momentum; paging on each
+/// would fly through a year per flick. So a gesture pages once, after
+/// `threshold` points, and momentum is ignored. Each wheel notch pages once.
 struct MonthScrollPager {
-    /// Where an event sits in its gesture, read from `NSEvent` by the view.
     enum Phase {
         case began, changed, ended, momentum
         /// A wheel notch: no gesture around it.
         case discrete
 
-        /// An event's place in its gesture, from `NSEvent`'s two phase fields.
-        /// Momentum is checked first because a momentum event carries no
-        /// gesture phase of its own; an event with neither is a wheel notch.
-        /// A gesture that is cancelled, waiting to begin or resting reads as
-        /// ended, which turns no page.
+        /// Momentum first, as a momentum event has no gesture phase; neither
+        /// is a wheel notch. Cancelled, may-begin or stationary reads as ended.
         init(phase: NSEvent.Phase, momentumPhase: NSEvent.Phase) {
             if !momentumPhase.isEmpty {
                 self = .momentum
@@ -37,18 +30,15 @@ struct MonthScrollPager {
         }
     }
 
-    /// Points of trackpad travel before a gesture turns the page. Enough that
-    /// a resting finger's drift or a mostly sideways swipe does not page, small
-    /// enough that a deliberate short swipe does.
+    /// Enough to ignore a resting finger's drift or a sideways swipe, small
+    /// enough for a short deliberate one.
     static let threshold = 24.0
 
     private var travel = 0.0
     private var hasPaged = false
 
-    /// The month step this event makes: 1 for the next month, -1 for the
-    /// previous, 0 for none. Scrolling down (a negative delta, as AppKit
-    /// reports it after the user's scroll-direction setting) moves forward in
-    /// time, as scrolling down a document does.
+    /// The month step: 1, -1 or 0. Scrolling down (negative delta, after the
+    /// user's scroll-direction setting) moves forward, as in a document.
     mutating func step(deltaY: Double, phase: Phase) -> Int {
         switch phase {
         case .began:

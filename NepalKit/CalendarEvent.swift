@@ -4,27 +4,22 @@ import AppKit
 import Foundation
 import NepalKitCore
 
-/// An all-day event for one day, handed to the user's calendar app as an
-/// iCalendar file.
+/// An all-day event handed to the user's calendar app as an iCalendar file.
 ///
-/// A file rather than EventKit: Calendar opens it in its own "add event"
-/// window, where the user picks the calendar, adds an alert or cancels. The
-/// app never reads or writes a calendar, so it asks for no calendar access
-/// and needs no new sandbox entitlement (ADR-0008).
+/// A file rather than EventKit: Calendar opens its own "add event" window,
+/// and the app needs no calendar access or new sandbox entitlement (ADR-0008).
 struct CalendarEvent: Equatable {
     let title: String
     let notes: String
     let date: GADay
 
-    /// One identifier per day, so adding the same day twice offers the same
-    /// event rather than a second copy of it.
+    /// One identifier per day, so adding a day twice offers the same event.
     var uid: String {
         "nepalkit-\(date.year)-\(date.month)-\(date.day)@nepalkit"
     }
 
-    /// The event as an iCalendar (RFC 5545) document: CRLF line endings,
-    /// text escaped, long lines folded. `stamp` is the creation time the
-    /// format requires; injected so the output is testable.
+    /// The event as an RFC 5545 document. `stamp` is the required DTSTAMP,
+    /// injected for tests.
     func ics(stamp: Date) -> String {
         let lines = [
             "BEGIN:VCALENDAR",
@@ -33,8 +28,7 @@ struct CalendarEvent: Equatable {
             "BEGIN:VEVENT",
             "UID:\(uid)",
             "DTSTAMP:\(Self.utcStamp(stamp))",
-            // No DTEND: an all-day DTSTART alone is exactly one day (RFC 5545
-            // 3.6.1), so there is no next-day arithmetic to get wrong.
+            // No DTEND: an all-day DTSTART alone is one day (RFC 5545 3.6.1).
             "DTSTART;VALUE=DATE:\(Self.basic(date))",
             "SUMMARY:\(Self.escape(title))",
             "DESCRIPTION:\(Self.escape(notes))",
@@ -45,9 +39,8 @@ struct CalendarEvent: Equatable {
         return lines.map(Self.fold).joined(separator: "\r\n") + "\r\n"
     }
 
-    /// Writes the file into `directory` and hands it to the default calendar
-    /// app. False when the file could not be written or nothing opened it,
-    /// so the card can say so rather than leave the click unanswered.
+    /// Writes the file into `directory` and opens it in the default calendar
+    /// app. False when writing or opening failed, so the card can say so.
     func open(
         stamp: Date = .now,
         in directory: URL = FileManager.default.temporaryDirectory,
@@ -78,8 +71,7 @@ struct CalendarEvent: Equatable {
             + "T" + padded(parts.hour ?? 0, 2) + padded(parts.minute ?? 0, 2) + padded(parts.second ?? 0, 2) + "Z"
     }
 
-    /// `value` with leading zeros to `width` digits, in ASCII whatever the
-    /// locale: the format's own digits, never a reader's.
+    /// `value` zero-padded to `width` ASCII digits, whatever the locale.
     private static func padded(_ value: Int, _ width: Int) -> String {
         let digits = String(value)
         return String(repeating: "0", count: max(0, width - digits.count)) + digits
@@ -93,9 +85,8 @@ struct CalendarEvent: Equatable {
             .replacing("\n", with: "\\n")
     }
 
-    /// Folds a content line at 75 octets, never inside a character: the
-    /// names are Devanagari, three UTF-8 bytes a letter, so counting
-    /// characters would overrun the limit.
+    /// Folds a content line at 75 octets, never inside a character. Counts
+    /// UTF-8 bytes, not characters: Devanagari is three bytes a letter.
     static func fold(_ line: String) -> String {
         var folded = ""
         var width = 0
