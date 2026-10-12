@@ -41,7 +41,7 @@ struct WatchPresentationWiringTests {
             "TodayCornerComplication": (false, false),
         ]
         var offenders = try ComplicationWiringSource.undeclaredFamilies()
-        offenders += try ComplicationWiringSource.wiringOffenders(
+        offenders += ComplicationWiringSource.wiringOffenders(
             label: "supportedLabel",
             expected: expected,
             calls: try ComplicationWiringSource.supportedLabelCalls()
@@ -60,7 +60,7 @@ struct WatchPresentationWiringTests {
             "TodayCircularComplication": (nil, false),
             "TodayCornerComplication": (nil, true),
         ]
-        let offenders = try ComplicationWiringSource.wiringOffenders(
+        let offenders = ComplicationWiringSource.wiringOffenders(
             label: "boundaryLabel",
             expected: expected,
             calls: try ComplicationWiringSource.boundaryLabelCalls()
