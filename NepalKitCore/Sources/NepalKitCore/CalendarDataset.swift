@@ -33,17 +33,16 @@ public struct CalendarDataset: Sendable {
     public let supportedRange: ClosedRange<Int>
 
     /// Supported-range years whose rows are a projection rather than an
-    /// attested Nepali Patro (SOURCES.md, ADR-0014). Declared by the dataset,
-    /// so attesting a row means editing this set and nothing else: every
-    /// surface that names the caveat reads it from here.
+    /// attested Nepali Patro (SOURCES.md, ADR-0014). Every surface that names
+    /// the caveat reads it from here, so attesting a row means editing only this set.
     public let provisionalYears: Set<Int>
 
     /// Absolute day index of each supported year's first day (lookup cache).
     let yearStartIndices: [Int: Int]
 
     public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>, provisionalYears: Set<Int> = []) {
-        // Clipped to the range: a year the table does not support cannot be
-        // provisional, and naming it in a caveat would claim it is supported.
+        // Clipped to the range: naming an unsupported year in a caveat would
+        // claim it is supported.
         self.provisionalYears = provisionalYears.filter(supportedRange.contains)
         self.version = version
         self.years = years
@@ -70,8 +69,8 @@ public struct CalendarDataset: Sendable {
         years[bsYear]
     }
 
-    /// Whether the Bikram Sambat year's row is a provisional projection.
-    /// False for every attested year and for any year outside the table.
+    /// Whether the Bikram Sambat year's row is a provisional projection; false
+    /// outside the table.
     public func isProvisional(_ year: Int) -> Bool {
         provisionalYears.contains(year)
     }
@@ -219,8 +218,8 @@ public struct CalendarDataset: Sendable {
         anchorBS: BSDay(year: 2082, month: 1, day: 1),
         anchorAD: GADay(year: 2025, month: 4, day: 14),
         supportedRange: 1975 ... 2084,
-        // The maintainer's own 2084 row (SOURCES.md). Remove it from this set
-        // when the official Nepali Patro attests the row.
+        // The maintainer's own 2084 row (SOURCES.md). Remove once the official
+        // Nepali Patro attests it.
         provisionalYears: [2084]
     )
 }

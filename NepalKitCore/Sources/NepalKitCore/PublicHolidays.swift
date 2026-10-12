@@ -54,9 +54,9 @@ public struct PublicHolidayCalendar: Sendable {
         self.entries = entries
     }
 
-    /// The gazette's rows for `day`, in its order. One day can have several
-    /// rows of the same scope (18 Baisakh is three nationwide items), so a
-    /// reader wants `scopes(on:)`; this keeps the table as it was read.
+    /// The gazette's rows for `day`, in its order. A day can have several rows
+    /// of one scope (18 Baisakh has three nationwide), so display wants
+    /// `scopes(on:)`.
     public func holidays(on day: BSDay) -> [PublicHoliday] {
         entries[day] ?? []
     }

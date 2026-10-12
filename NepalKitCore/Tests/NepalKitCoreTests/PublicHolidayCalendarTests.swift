@@ -74,9 +74,8 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func theTableIsTheGazetteAndNotTheWeek() throws {
-        // Saturdays are the weekly holiday, which the grid draws on its own;
-        // the gazette table neither adds them nor skips a holiday that falls
-        // on one.
+        // The grid draws Saturdays itself; the gazette table neither adds them
+        // nor skips a holiday that falls on one.
         let dataset = CalendarDataset.v2
         var saturdaysOff = 0
         var saturdaysListed = 0
@@ -140,9 +139,8 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func everyHolidayDayHasAFestivalToNameIt() {
-        // The day's details name a holiday through the day's festivals, so a
-        // gazette day the festival table missed would show a holiday with
-        // nothing to say what it is.
+        // The day's details name a holiday through its festivals, so a gazette
+        // day the festival table missed would show an unnamed holiday.
         let missing = calendar.allEntries.map(\.day).filter { holidayDay in
             guard FestivalCalendar.panchanga.festivals(on: holidayDay).isEmpty else { return false }
             // Dashain and Tihar's days between their named ones.

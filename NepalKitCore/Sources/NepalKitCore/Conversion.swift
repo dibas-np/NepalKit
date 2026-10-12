@@ -183,18 +183,16 @@ extension GADay {
 
 /// Today's Bikram Sambat date: the civil day in `timeZone`, converted.
 ///
-/// Anchored to Nepal Time (UTC+5:45) by default, so the Bikram Sambat date
-/// flips at NPT midnight regardless of the system time zone. The Mac app lets a
-/// user choose their own zone instead (ADR-0017) and passes it here; the Watch
-/// keeps the default. The clock is injected (`now`) so the anchoring is
-/// testable.
+/// Defaults to Nepal Time (UTC+5:45), so the date flips at NPT midnight
+/// whatever the system zone; the Mac app may pass the user's chosen zone
+/// (ADR-0017). `now` is injected for testability.
 public func todayBS(now: Date, timeZone: TimeZone = nepalTimeZone, in dataset: CalendarDataset) -> BSDay? {
     guard let today = todayAD(now: now, timeZone: timeZone) else { return nil }
     return adToBS(today, in: dataset)
 }
 
-/// Today's Gregorian civil day in `timeZone`, Nepal Time unless one is given.
-/// The clock is injected (`now`) so the anchoring is testable.
+/// Today's Gregorian civil day in `timeZone` (default Nepal Time). `now` is
+/// injected for testability.
 public func todayAD(now: Date, timeZone: TimeZone = nepalTimeZone) -> GADay? {
     let components = ClockCalendars.gregorian(timeZone: timeZone).dateComponents([.year, .month, .day], from: now)
     guard let year = components.year, let month = components.month, let day = components.day else { return nil }
@@ -204,16 +202,16 @@ public func todayAD(now: Date, timeZone: TimeZone = nepalTimeZone) -> GADay? {
 /// The next midnight in `timeZone` after the given instant, for scheduling a
 /// date-flip refresh. Returns nil only if calendar math fails.
 ///
-/// `startOfDay` rather than a fixed 24 hours, so a zone with daylight saving
-/// gets its real midnight on the 23- and 25-hour days.
+/// Uses `startOfDay` rather than adding 24 hours so daylight-saving zones get
+/// their real midnight on 23- and 25-hour days.
 public func nextMidnight(after date: Date, in timeZone: TimeZone = nepalTimeZone) -> Date? {
     let calendar = ClockCalendars.gregorian(timeZone: timeZone)
     let startOfToday = calendar.startOfDay(for: date)
     return calendar.date(byAdding: .day, value: 1, to: startOfToday)
 }
 
-/// Next Nepal Time midnight after the given instant. Kept by name for the Watch
-/// app and its complications, which follow Nepal Time only.
+/// Next Nepal Time midnight after the given instant, for the Watch app and
+/// complications, which follow Nepal Time only.
 public func nextNPTMidnight(after date: Date) -> Date? {
     nextMidnight(after: date, in: nepalTimeZone)
 }

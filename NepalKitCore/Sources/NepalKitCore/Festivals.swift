@@ -14,10 +14,9 @@ public struct Festival: Hashable, Sendable {
         case internationalDay
     }
 
-    /// Where the entry was read. The Panchanga is the festival list's source
-    /// (ADR-0016); a gazetted holiday or national day it does not print is
-    /// taken from the gazette notice instead, and marked so it can be told
-    /// apart when the table is checked against either.
+    /// Where the entry was read: the Panchanga (ADR-0016), or the gazette
+    /// notice for a gazetted day the Panchanga does not print, so the table can
+    /// be checked against either.
     public enum Source: Hashable, Sendable {
         case panchanga
         case gazette

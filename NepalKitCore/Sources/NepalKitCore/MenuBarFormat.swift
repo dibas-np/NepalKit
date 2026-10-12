@@ -3,11 +3,8 @@
 import Foundation
 
 /// Which optional parts the menu-bar title carries beside the Bikram Sambat
-/// date, modelled on the options of the macOS menu-bar clock.
-///
-/// Every option defaults off, so `.standard` is the short "day month" title the
-/// menu bar has always shown, and a user who never opens the Menu Bar tab sees
-/// no change.
+/// date, modelled on the macOS menu-bar clock's options. Every option defaults
+/// off, so `.standard` is the original short "day month" title.
 public struct MenuBarFormat: Sendable, Hashable {
     /// The short weekday name before the date ("Mon", "सोम").
     public var showsWeekday: Bool
@@ -40,12 +37,10 @@ public struct MenuBarFormat: Sendable, Hashable {
 
 /// Formats a clock time in the given zone, honoring the digit-script setting.
 ///
-/// The 12-hour form carries no AM/PM, as the macOS menu-bar clock does not:
-/// the menu bar is read at a glance by someone who knows whether it is morning,
-/// and there is no existing Nepali form of the marker to pair with Devanagari
-/// digits. The spoken form adds it (`SpokenDate.menuBarDate`), because a
-/// listener has no glance to tell 10:57 in the morning from the evening. Its hour has no leading zero ("9:05"); the 24-hour form pads it
-/// ("09:05"), which is how both clock styles are conventionally written.
+/// The 12-hour form has no AM/PM, like the macOS menu-bar clock: a glance
+/// tells morning from evening, and there is no established Nepali marker to pair
+/// with Devanagari digits. `SpokenDate.menuBarDate` adds it for listeners. The
+/// 12-hour hour is unpadded ("9:05"); the 24-hour one is padded ("09:05").
 public func formatClockTime(
     _ date: Date,
     timeZone: TimeZone,
@@ -54,8 +49,7 @@ public func formatClockTime(
     digits: DigitScript
 ) -> String {
     let calendar = ClockCalendars.gregorian(timeZone: timeZone)
-    // `component(_:from:)` rather than `dateComponents`: it is non-optional,
-    // so there is no unreachable `?? 0` fallback for each field.
+    // `component(_:from:)` is non-optional, unlike `dateComponents`.
     let hour24 = calendar.component(.hour, from: date)
     let hour: String
     if usesTwentyFourHourClock {
@@ -72,11 +66,9 @@ public func formatClockTime(
 /// The menu-bar title for the instant `now`: weekday, date, year, time, each
 /// part present only if the format asks for it, in that fixed order.
 ///
-/// Every part is read in `timeZone` from the one instant, so the weekday, the
-/// date and the clock cannot disagree with each other around midnight. Nepal
-/// Time unless the caller passes the zone the user chose (ADR-0017). Nil past
-/// the supported range, where there is no Bikram Sambat date to anchor the
-/// title.
+/// Every part is read in `timeZone` (default Nepal Time; ADR-0017) from the
+/// one instant, so the parts cannot disagree around midnight. Nil outside the
+/// supported range.
 public func formatMenuBarTitle(
     now: Date,
     timeZone: TimeZone = nepalTimeZone,
@@ -108,13 +100,10 @@ private func todayWeekday(now: Date, timeZone: TimeZone) -> Int? {
 }
 
 extension SpokenDate {
-    /// The spoken form of `formatMenuBarTitle`: the same parts in the same
-    /// order, with Latin digits and the weekday's full name, because a short
-    /// form like "Mon" is an abbreviation a voice may spell out.
-    ///
-    /// The date always carries its year, whatever `showsYear` says, as every
-    /// spoken Bikram Sambat date does: the year costs a voice nothing to say
-    /// and the visual reason for dropping it — menu-bar width — does not apply.
+    /// The spoken form of `formatMenuBarTitle`: the same parts in order, with
+    /// Latin digits and the full weekday name, since a voice may spell out "Mon".
+    /// The year is always included, like every spoken Bikram Sambat date:
+    /// `showsYear` exists to save menu-bar width, which does not apply aloud.
     public static func menuBarDate(
         now: Date,
         timeZone: TimeZone = nepalTimeZone,
@@ -136,8 +125,7 @@ extension SpokenDate {
                 showsSeconds: format.showsSeconds,
                 digits: .latin
             )
-            // Spoken only: the screen leaves AM/PM to the reader's glance, a
-            // voice cannot, so the 12-hour time says which half of the day.
+            // Spoken only: a listener cannot glance to tell AM from PM.
             if format.usesTwentyFourHourClock {
                 parts.append(time)
             } else {

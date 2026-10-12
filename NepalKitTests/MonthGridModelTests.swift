@@ -241,9 +241,8 @@ struct MonthGridModelTests {
     }
 
     @Test func theHeroAnnouncesItsShownWeekdayOnce() throws {
-        // The hero shows the weekday beside the date and is relabelled with
-        // `SpokenDate.today`, which already names it: the label must say it
-        // once, not once for the date sentence and again for the shown text.
+        // The hero is relabelled with `SpokenDate.today`, which already names
+        // the shown weekday, so the label must say it only once.
         let clock = ClockModel(now: try TestDates.utc(2026, 10, 18, 6, 0), refreshes: false)
         let bs = try #require(clock.todayBSDate())
         let weekday = try #require(clock.weekdayString(style: .transliterated))
@@ -255,9 +254,8 @@ struct MonthGridModelTests {
     @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
 
-        // Read from the source, as WatchPresentationWiringTests does: the
-        // harness renders no views, so the composition is checked where it is
-        // written. The Today layer must build the grid; Convert must not.
+        // Read from the source, as WatchPresentationWiringTests does, because
+        // the harness renders no views. Today must build the grid; Convert must not.
         let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
         let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
         let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))

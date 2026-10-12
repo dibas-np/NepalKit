@@ -119,8 +119,7 @@ public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
 }
 
 /// Short weekday name for 1 (Sunday) through 7 (Saturday), or nil outside
-/// 1–7. English names are cut to three letters ("Mon"); the Nepali names are
-/// already short forms, so they are returned whole.
+/// 1–7. English names are cut to three letters; Nepali names are already short.
 public func shortWeekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
     guard let name = weekdayName(for: weekday, style: style) else { return nil }
     switch style {
@@ -169,11 +168,10 @@ func twoDigits(_ value: Int, digits: DigitScript) -> String {
     return digits.render(latinDigits: padded)
 }
 
-/// `formatClock`'s, `formatClockTime`'s and today's calendars, one per time zone.
-/// Building a `Calendar` per call dominated the cost of formatting, and both
-/// run at clock-tick frequency. The zones a process formats are few, so entries
-/// never evict. Lock-guarded because the functions are nonisolated and callers
-/// may not all be on one thread.
+/// Gregorian calendars for the clock formatters and today's date, one per time
+/// zone. Building a `Calendar` per call dominated formatting cost at clock-tick
+/// frequency. Zones are few, so entries never evict. Lock-guarded because
+/// callers are nonisolated and may be on any thread.
 enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
@@ -183,9 +181,9 @@ enum ClockCalendars {
         defer { lock.unlock() }
         if let cached = calendars[timeZone.identifier] { return cached }
         var calendar = Calendar(identifier: .gregorian)
-        // A fixed zone for the identifier, not the zone passed in: an
-        // autoupdating zone cached under today's identifier would follow the
-        // Mac to its next zone and answer for it under the old key.
+        // A fixed zone, not the one passed in: an autoupdating zone cached
+        // under today's identifier would follow the Mac to a new zone and
+        // answer for it under the old key.
         calendar.timeZone = TimeZone(identifier: timeZone.identifier) ?? timeZone
         calendars[timeZone.identifier] = calendar
         return calendar

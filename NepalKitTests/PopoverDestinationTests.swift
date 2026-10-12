@@ -1,6 +1,5 @@
-// Verify the strings the popover's segmented control shows for each
-// destination. The footer no longer names the destination, so the control is
-// the one place these titles appear.
+// The strings the popover's segmented control shows for each destination, the
+// only place these titles appear.
 import SwiftUI
 import Testing
 @testable import NepalKit
@@ -8,10 +7,8 @@ import Testing
 @MainActor
 struct PopoverDestinationTests {
     @Test func segmentTitlesNameTheirDestinations() {
-        // The segments read `destination.title`. These assertions are about the
-        // *strings* each destination contributes, which is the part that can
-        // silently go stale: a renamed section would leave the control naming
-        // the old one.
+        // The segments read `destination.title`; a renamed section would
+        // otherwise leave the control silently naming the old one.
         #expect(PopoverDestination.today.title == Strings.todayLabel)
         #expect(PopoverDestination.convert.title == Strings.converterLabel)
     }
@@ -23,9 +20,8 @@ struct PopoverDestinationTests {
     }
 
     @Test func everyDestinationHasATitle() {
-        // CaseIterable plus a switch that must be exhaustive: adding a case
-        // without a title fails to compile, and this asserts the values are not
-        // empty strings.
+        // The exhaustive switch catches a missing title at compile time; this
+        // catches an empty one.
         for destination in PopoverDestination.allCases {
             #expect(!destination.title.isEmpty)
         }
