@@ -6,6 +6,40 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>NepalKit</title>
         <item>
+            <title>1.7.0</title>
+            <pubDate>Mon, 12 Oct 2026 12:07:50 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.7.0</link>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>A month calendar in Today</b>
+<p>Today now shows the whole Bikram Sambat month under today's date, with each day's Gregorian date beneath it and the Gregorian months beside the title. Saturdays are in red. Change months with the arrows, the arrow keys or by scrolling. Click a day to see it in both calendars and how far it is from today, copy it, or add it to your calendar as an all-day event.</p>
+
+<b>Festivals and public holidays</b>
+<p>Festivals and national days for 2083, from Nepal's national Panchanga, are marked in the calendar and named under today's date. Nationwide public holidays from the Nepal Gazette are shown in red, and a day's details name holidays for a community, region or group. Later years are added as their Panchanga and gazette notice are published; until then the calendar says which years are listed.</p>
+
+<b>Shape the menu-bar date</b>
+<p>A new Menu Bar tab in Settings previews the menu-bar date and can add the day of the week, the year and the time, in 12- or 24-hour form, with or without seconds.</p>
+
+<b>Nepal Time or your time zone</b>
+<p>Today follows Nepal Time by default. Set Settings › General › Time zone to My time zone, and today, its midnight, the clocks and Siri's answers follow your Mac instead.</p>
+
+<b>Siri</b>
+<p>Ask Siri for tomorrow's or yesterday's Nepali date as well as today's.</p>
+
+<b>Fixes</b>
+<ul>
+<li>The menu-bar date moves to the new day when midnight passed while your Mac was asleep, or when the system clock is changed.</li>
+<li>In Shortcuts, a date converted to Gregorian and back no longer lands on the following day in time zones far ahead of UTC.</li>
+<li>Settings says when macOS is holding the login item for your approval.</li>
+<li>2084, whose calendar is not yet officially published, is named as a projection in About, the converter, Siri and the calendar.</li>
+<li>The popover uses less processor time while it is open.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.7.0/NepalKit-1.7.0.zip" length="3482503" type="application/octet-stream" sparkle:edSignature="RJtarGfDcxbTECmCyW+7QNf8LActOjxiFUFmycKxciPMgGBhr8vNTU53zVnQh+B18z4rK4Bjvd9lohGWoIZXBw=="/>
+        </item>
+        <item>
             <title>1.6.1</title>
             <pubDate>Sun, 11 Oct 2026 11:40:59 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.6.1</link>
@@ -106,58 +140,9 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
 ]]></description>
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.4.1/NepalKit-1.4.1.zip" length="3084391" type="application/octet-stream" sparkle:edSignature="heroQpHm9+9TtPGqbkTo5diQEzsCPRGd3jd/a9St3zQYpXZPYIpawNuOfEdTTKNDVaDnB5/I/Lbv7vb0ZY+IDg=="/>
         </item>
-        <item>
-            <title>1.4.0</title>
-            <pubDate>Wed, 30 Sep 2026 20:35:37 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.4.0</link>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
-            <description><![CDATA[
-<b>The update channel is signed end to end.</b>
-<ul>
-<li>The update feed itself now carries a signature, and NepalKit refuses a feed without one. Until now the app verified every download but trusted the feed that named it; both are checked now, so a tampered feed cannot point an installation at anything other than a signed archive.</li>
-</ul>
-<b>Settings:</b>
-<ul>
-<li>The Settings window is rebuilt around the system tab sidebar — Menu Bar, General, and About. About is no longer a separate window: what it showed sits on the About tab, beside the update controls that used to be their own Settings section. The popover's footer carries the gear and Quit, and its buttons take the new Liquid Glass treatment.</li>
-</ul>
-<b>Fixes:</b>
-<ul>
-<li>The hero date, the large Bikram Sambat line at the top of the popover, now scales with the user's text size, as every other line in the app already did.</li>
-</ul>
-<b>Requirements:</b>
-<ul>
-<li>NepalKit now requires macOS 26.6, up from 26.0. Installs on 26.0 to 26.5 keep working on 1.3.0 and are not offered this update.</li>
-<li>The bundled updater is Sparkle 2.10.0.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.4.0/NepalKit-1.4.0.zip" length="3084358" type="application/octet-stream" sparkle:edSignature="wcAM31N53ls8WY/jh7fdgsQ46t1W90sZbA9vGSCVPakUzj04YaLRuAGb0J9rcZIJn8PtGBavrm+adMXtuwfkCg=="/>
-        </item>
-        <item>
-            <title>1.3.0</title>
-            <pubDate>Wed, 30 Sep 2026 00:03:20 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.3.0</link>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
-            <description><![CDATA[
-<b>Nothing in the app itself has changed.</b>
-<p>This release exists because how NepalKit is numbered and installed changed, not because anything you can see or use did. If you are already on 1.2, there is no reason to take this one.</p>
-<b>Install:</b>
-<ul>
-<li>NepalKit can now be installed with Homebrew, from the project’s own tap: brew install --cask dibas-np/tap/nepalkit. Pick that or the DMG, not both — Homebrew installs to the same place NepalKit does, and while Homebrew is told the app updates itself (so it will not reinstall over one that has moved forward), a Sparkle update after a Homebrew install leaves the two disagreeing about which version is installed.</li>
-</ul>
-<b>Numbering:</b>
-<ul>
-<li>Versions now read three components — 1.3.0, not 1.3. The About window, the Git tag, and the Homebrew cask all show the same number because they are all derived from one value. Releases 1.0 to 1.2 keep the numbers they shipped with; their tags and downloads are not rewritten.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.3.0/NepalKit-1.3.0.zip" length="3100665" type="application/octet-stream" sparkle:edSignature="mWkN4ht2GEjfNGRW0RXu2WQipcuFWG06cUmYGfdxL9wQkciPtukWQUB3X4OKpRJmhlY8NNnFQGnnjlAyzUTNAQ=="/>
-        </item>
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: PvdovJya87doaZ1PYceBVg0A/s/zqWtGLxjKbsEXWjuqVUK/D53d+166KzRSa5WJcUBfhK1IEuc/uFFQm26WAA==
-length: 11664
+edSignature: 1Gq8inMT/euYY166PJSxT3niHNNDk40GyNVe/fvvmwaVS4qsJNm3o+xjx6ep0a2r4k9q3xyRpa98LeBxZuvWCA==
+length: 10710
 -->
