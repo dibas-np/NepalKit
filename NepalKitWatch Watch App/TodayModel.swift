@@ -66,8 +66,8 @@ final class TodayModel {
 
     /// The display for an arbitrary instant, without reading the clock or
     /// touching the lifecycle. Always On renders through this with its
-    /// timeline's date: a dimmed scene is not re-rendered for ordinary state
-    /// changes, so the midnight refresh above may never reach the screen.
+    /// timeline's date, since a dimmed scene may never show the midnight
+    /// refresh above.
     func display(at instant: Date) -> WatchDayDisplay {
         displayFor(instant)
     }

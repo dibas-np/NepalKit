@@ -7,8 +7,7 @@ import SwiftUI
 /// names the app and pronounces the date; merging the two would put
 /// "NepalKit," in the menu bar itself.
 ///
-/// Its own view so that the menu-bar clock's tick invalidates this label and
-/// nothing above it.
+/// Its own view so the menu-bar clock's tick invalidates only this label.
 struct MenuBarLabel: View {
     let menuBar: MenuBarModel
     let settings: DisplaySettingsModel

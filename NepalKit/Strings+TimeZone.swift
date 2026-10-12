@@ -14,19 +14,16 @@ nonisolated extension Strings {
         "My time zone (\(zoneName))"
     }
 
-    /// Says everything the choice moves, so nobody is surprised that the menu
-    /// bar, the month grid and Siri all changed at once, and that the Watch,
-    /// which has no settings, did not.
+    /// Lists everything the choice moves, and that the Watch (no settings) does
+    /// not.
     static let timeZoneFootnote = """
         Decides which day is today, when it rolls over at midnight, and the time \
         shown in the popover and the menu bar. Siri answers by it too. The Watch \
         always follows Nepal Time.
         """
 
-    /// Says which clock the menu-bar time is, because a time in the menu bar
-    /// beside the system's own clock invites the reading that it is the same
-    /// one. With the user's own zone chosen it is, and the footnote says where
-    /// that was decided.
+    /// Says which clock the menu-bar time is, since beside the system clock it
+    /// reads as the same one.
     static func menuBarTimeFootnote(_ reference: TimeReference) -> String {
         switch reference {
         case .nepal: "The time is Nepal Time, whatever your Mac's time zone."

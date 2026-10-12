@@ -164,8 +164,8 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     }
 
     /// Every cycle ends here, including scheduled checks that report no
-    /// outcome above — without it, "Last checked" would trail the framework's
-    /// own date until the next manual check.
+    /// outcome above; without it "Last checked" would lag until the next manual
+    /// check.
     nonisolated func updater(
         _ updater: SPUUpdater,
         didFinishUpdateCycleFor updateCheck: SPUUpdateCheck,

@@ -7,10 +7,9 @@ import SwiftUI
 
 @main
 struct NepalKitApp: App {
-    /// These five are built in `init`, not by property initializers, because
-    /// the four that read today must start in the time reference the settings
-    /// model loaded, and must be registered to follow it when it changes
-    /// (ADR-0017). A property initializer cannot see another property.
+    /// Built in `init` because the four that read today must start in, and be
+    /// registered to follow, the settings model's time reference (ADR-0017),
+    /// and a property initializer cannot see another property.
     @State private var settingsModel: DisplaySettingsModel
     @State private var menuBarModel: MenuBarModel
     @State private var clockModel: ClockModel
@@ -42,16 +41,14 @@ struct NepalKitApp: App {
         NepalKitShortcuts.updateAppShortcutParameters()
         let settings = DisplaySettingsModel()
         let reference = settings.timeReference
-        // Given the real store explicitly: the model's own default keeps the
-        // format in memory, so tests never read the developer's preferences.
+        // The real store, explicitly: the model's default is in-memory, for tests.
         let menuBar = MenuBarModel(store: SettingsStore(), timeZone: reference.timeZone)
         let clock = ClockModel(timeReference: reference)
         let monthGrid = MonthGridModel(timeZone: reference.timeZone)
-        // The converter only reads today for the day its pickers start on. A
-        // later change of reference leaves the user's pickers where they are.
+        // The converter reads today only for its pickers' starting day, so it
+        // does not follow later changes of reference.
         _converterModel = State(initialValue: ConverterModel(timeZone: reference.timeZone))
-        // Weak, so registering does not make the settings model the owner of
-        // the models it notifies; the scene owns all five.
+        // Weak: the scene owns all five, not the settings model.
         settings.observeTimeReference { [weak menuBar, weak clock, weak monthGrid] reference in
             menuBar?.setTimeZone(reference.timeZone)
             clock?.setTimeReference(reference)
@@ -88,10 +85,8 @@ struct NepalKitApp: App {
                 updates: updateCheckModel
             )
         } label: {
-            // A view of its own, not a `Text` built here: the title reads the
-            // menu-bar clock, which ticks every minute (every second with seconds
-            // shown), and a read in this body re-evaluated the whole App body, both
-            // scenes, on every tick. Inside `MenuBarLabel` it redraws only the label.
+            // A view of its own: read here, the menu-bar clock's tick would
+            // re-evaluate the whole App body, both scenes, every minute or second.
             MenuBarLabel(menuBar: menuBarModel, settings: settingsModel, updates: updateCheckModel)
         }
         .menuBarExtraStyle(.window)

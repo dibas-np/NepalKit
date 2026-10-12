@@ -19,11 +19,9 @@ final class ClockModel {
     /// only when it changes, so views that show the day (the Today hero) are
     /// invalidated once a day rather than on every per-second tick.
     private(set) var today: GADay?
-    /// Whether the secondary clock row shows: the two clocks read differently.
-    /// The comparison is symmetric, so the row hides on the same condition
-    /// whichever clock is the header's: two identical readings, which is every
-    /// Mac set to Nepal's offset. Stored, like `today`, and assigned only on a
-    /// change (a zone switch or a daylight-saving change), so the row is not
+    /// Whether the secondary clock row shows: the two clocks read differently,
+    /// whichever is the header's (so never on a Mac set to Nepal's offset).
+    /// Stored and assigned only on a change, like `today`, so the row is not
     /// invalidated every tick.
     private(set) var showsSecondaryClock = false
     /// Which clock today follows, and so which one the header shows.
@@ -87,16 +85,14 @@ final class ClockModel {
         injectedLocalTimeZone ?? systemZone()
     }
 
-    /// Follows a new time reference. Today is re-read at once and the clocks
-    /// read the new zone on their next read; nothing is scheduled here, because
-    /// the popover's tick re-reads both every second.
+    /// Follows a new time reference. Nothing is scheduled: the popover's tick
+    /// re-reads both clocks every second.
     func setTimeReference(_ timeReference: TimeReference) {
         self.timeReference = timeReference
         refreshToday()
     }
 
-    /// Re-reads today from `now`, assigning only on a change so an unchanged
-    /// day notifies no one.
+    /// Re-reads today from `now`, assigning only on a change.
     private func refreshToday() {
         let day = todayAD(now: now, timeZone: timeZone)
         if day != today { today = day }
@@ -104,9 +100,9 @@ final class ClockModel {
         if differs != showsSecondaryClock { showsSecondaryClock = differs }
     }
 
-    /// The zone today is read in: Nepal Time, or `localTimeZone`. Local is the
-    /// model's own `localTimeZone` rather than `TimeReference.timeZone`, so a
-    /// test's injected zone governs both the day and the clocks.
+    /// The zone today is read in. Uses the model's own `localTimeZone` rather
+    /// than `TimeReference.timeZone`, so a test's injected zone governs both the
+    /// day and the clocks.
     var timeZone: TimeZone {
         switch timeReference {
         case .nepal: nepalTimeZone
@@ -160,9 +156,8 @@ final class ClockModel {
 
     // MARK: - The two clocks
 
-    /// The header's clock: the one today follows. Nepal Time by default; the
-    /// Mac's own time when the user chose it, because then that is the clock
-    /// the date beneath it was read from.
+    /// The header's clock: the one today follows, since the date beneath it was
+    /// read from that clock.
     var headerClockLabel: String {
         switch timeReference {
         case .nepal: Strings.nepalTimeLabel

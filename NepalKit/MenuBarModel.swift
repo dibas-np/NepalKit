@@ -13,31 +13,25 @@ import NepalKitCore
 /// climbs into gigabytes, so the app never finishes launching. The label
 /// therefore reads observable state refreshed by a timer instead.
 ///
-/// A 30s poll is a backstop that writes only when the day has turned under it
-/// (`pollForMissedChange`); a one-shot midnight timer
+/// A 30s poll is a backstop (`pollForMissedChange`); a one-shot midnight timer
 /// fires just after the next midnight in `timeZone` (Nepal Time unless the user
 /// chose their own, ADR-0017) so the Bikram Sambat date flips within ~1s (User
 /// Story 6), then reschedules itself.
 ///
-/// When the title shows the time, a third timer ticks at each minute boundary (each second with seconds shown), aligned to the boundary
-/// rather than started on an arbitrary phase, so the clock changes when the
-/// minute does and not up to a minute late. It exists only while the time is
-/// shown: a menu-bar app that redraws every second for a date that changes
-/// once a day would be spending the user's battery on nothing.
+/// While the title shows the time, a third timer fires on each minute (or
+/// second) boundary, so the clock changes with the minute rather than up to a
+/// minute late. It exists only then, to avoid per-second redraws for a date
+/// that changes once a day.
 ///
-/// Timer intervals do not advance while the Mac sleeps, and a system clock
-/// change moves the wall clock under them, so both are observed: either one
-/// re-reads the clock and reschedules the midnight fire and the time tick, rather than leaving
-/// yesterday's date up until the next poll. A system time zone change is
-/// observed for the same reason: with the user's own zone chosen, it moves
-/// midnight.
+/// Timer intervals do not advance while the Mac sleeps, and a system clock or
+/// time zone change moves the wall clock or midnight under them, so all three
+/// are observed and re-read the clock and reschedule both timers.
 @MainActor
 @Observable
 final class MenuBarModel {
     private(set) var now = Date.now
-    /// The menu-bar title's optional parts. Owned here rather than beside the
-    /// display settings because it is the one setting that changes how this
-    /// model schedules its timers.
+    /// The menu-bar title's optional parts. Owned here rather than with the
+    /// display settings because it changes how this model schedules its timers.
     private(set) var format: MenuBarFormat
     /// The zone the title is read in and midnight is scheduled against.
     private(set) var timeZone: TimeZone
@@ -59,22 +53,20 @@ final class MenuBarModel {
     ///   that do not exercise the midnight flip pass `false` so they do not
     ///   leave real one-shot timers behind.
     /// - Parameter store: where the menu-bar format is read from and saved to.
-    ///   Nil keeps the format in memory only, starting at `.standard`. Unlike
-    ///   `DisplaySettingsModel`, nil does not mean `SettingsStore()`: this model
-    ///   is built by many tests that assert the standard title, and reading the
-    ///   developer's own preferences there would make them pass or fail by
-    ///   whatever the Menu Bar tab was last set to. The app passes the store.
+    ///   Nil keeps it in memory, starting at `.standard`. Unlike
+    ///   `DisplaySettingsModel`, nil does not mean `SettingsStore()`: many tests
+    ///   assert the standard title and must not depend on the developer's own
+    ///   Menu Bar preferences.
     /// - Parameter timeZone: the zone today follows; the app passes the user's
     ///   time reference and moves it with `setTimeZone(_:)`.
     /// - Parameter workspaceNotifications: where wake is posted; defaults to
     ///   `NSWorkspace.shared.notificationCenter`. Injected so a test can post a
     ///   wake without sleeping the Mac.
-    /// - Parameter systemNotifications: where a system clock or time zone change is posted;
-    ///   defaults to `NotificationCenter.default`.
+    /// - Parameter systemNotifications: where a system clock or time zone change
+    ///   is posted; defaults to `NotificationCenter.default`.
     ///
-    /// Both centers default in the body rather than the signature, for the same
-    /// reason as `LoginItemModel`: a default argument is evaluated in a
-    /// nonisolated context.
+    /// Both centers default in the body, not the signature, because a default
+    /// argument is evaluated in a nonisolated context (as in `LoginItemModel`).
     init(
         now: Date = .now,
         refreshInterval: TimeInterval = 30,
@@ -120,12 +112,10 @@ final class MenuBarModel {
         }
     }
 
-    /// The poll is a backstop, not the label's clock: the midnight fire, the
-    /// time tick and the wake, clock and zone observers already move `now` at
-    /// every change the title can show. So it writes `now` only when the day
-    /// has turned under it (a missed fire or notification); writing every 30 s
-    /// redrew the menu-bar item for a title that had not changed, which was
-    /// nearly all of the app's idle work.
+    /// A backstop for a missed fire or notification: the timers and observers
+    /// already move `now` at every change the title can show, so this writes
+    /// only when the day has turned. Writing every 30 s redrew an unchanged
+    /// menu-bar item and was nearly all of the app's idle work.
     func pollForMissedChange() {
         let fresh = Date.now
         if todayAD(now: fresh, timeZone: timeZone) != todayAD(now: now, timeZone: timeZone) {
@@ -142,9 +132,8 @@ final class MenuBarModel {
         clockObservers.append((center, token))
     }
 
-    /// Re-reads the clock after the Mac wakes or the system clock or zone is changed.
-    /// The midnight fire and the time tick are rescheduled because their
-    /// intervals were measured against a clock that has since jumped.
+    /// Re-reads the clock after a wake or a system clock or zone change, and
+    /// reschedules both timers, whose intervals were measured before the jump.
     func refreshAfterClockDiscontinuity() {
         now = .now
         if schedulesMidnightFire {
@@ -156,9 +145,8 @@ final class MenuBarModel {
     /// Persists a new menu-bar format and applies it at once: the label reads
     /// `format`, so it redraws on this assignment rather than at the next poll.
     ///
-    /// The clock is re-read first when this model refreshes, because `now` can
-    /// be up to a poll interval old and switching the time on would otherwise
-    /// show a minute that has already passed until the first tick.
+    /// `now` is re-read first because it can be a poll interval old, and
+    /// switching the time on would otherwise show a stale minute.
     func save(_ format: MenuBarFormat) {
         store?.save(format)
         if refreshes {
@@ -168,10 +156,8 @@ final class MenuBarModel {
         scheduleTimeTick()
     }
 
-    /// Moves today to another zone and applies it at once, like `save(_:)`:
-    /// the title redraws on the assignment, and the midnight fire and the time
-    /// tick are rescheduled because both were measured to the old zone's
-    /// boundaries.
+    /// Moves today to another zone and applies it at once, like `save(_:)`,
+    /// rescheduling both timers, which were measured to the old zone.
     func setTimeZone(_ timeZone: TimeZone) {
         if refreshes {
             now = .now
@@ -202,20 +188,17 @@ final class MenuBarModel {
     /// one. Internal and pure, like `midnightFireInterval`, so the alignment is
     /// assertable without real timers.
     ///
-    /// No guard second is added, unlike the midnight fire: the tick reschedules
-    /// from the clock it reads on firing, so a fire that lands a hair early is
-    /// followed at once by one that lands after the boundary, whereas a
-    /// one-second guard would put the clock a second late every minute.
+    /// No guard second, unlike the midnight fire: the tick reschedules from the
+    /// clock it reads on firing, so an early fire is followed at once by one past
+    /// the boundary, whereas a guard would make the clock a second late.
     static nonisolated func timeTickInterval(
         after date: Date,
         showsSeconds: Bool,
         in timeZone: TimeZone = nepalTimeZone
     ) -> TimeInterval {
         let period: TimeInterval = showsSeconds ? 1 : 60
-        // Every zone in use today, Nepal's +5:45 included, is a whole number of
-        // minutes from UTC, so the offset does not move a boundary; it is
-        // applied so the alignment is stated in the zone rather than relying on
-        // that.
+        // Every zone in use, Nepal's +5:45 included, is whole minutes from UTC,
+        // so the offset moves no boundary; it is applied so as not to rely on that.
         let zoneSeconds = date.timeIntervalSinceReferenceDate + TimeInterval(timeZone.secondsFromGMT(for: date))
         let remainder = zoneSeconds.truncatingRemainder(dividingBy: period)
         let elapsed = remainder < 0 ? remainder + period : remainder

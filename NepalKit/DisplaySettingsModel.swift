@@ -14,11 +14,10 @@ final class DisplaySettingsModel {
     private(set) var timeReference: TimeReference
 
     private let store: SettingsStore
-    /// What else must move when the time reference does. The menu-bar clock,
-    /// the popover's clock and the month grid each hold the zone they schedule
-    /// against, and a timer armed for Nepal's midnight is wrong the moment the
-    /// user picks their own zone, so they are told rather than left to notice
-    /// at their next tick. Not observed: it never draws.
+    /// Models that schedule against the zone (menu-bar clock, popover clock,
+    /// month grid). A timer armed for Nepal's midnight is wrong the moment the
+    /// zone changes, so they are told rather than left to notice at their next
+    /// tick.
     @ObservationIgnored private var timeReferenceObservers: [@MainActor (TimeReference) -> Void] = []
 
     /// `store` is optional rather than defaulted to `SettingsStore()` in the
@@ -39,8 +38,8 @@ final class DisplaySettingsModel {
     /// The zone "today" is read in: Nepal Time, or the Mac's own.
     var timeZone: TimeZone { timeReference.timeZone }
 
-    /// Persists the time reference and tells every observer, in the same call,
-    /// so the menu bar, the popover and the timers change together.
+    /// Persists the time reference and tells every observer in the same call,
+    /// so everything changes together.
     func save(_ reference: TimeReference) {
         store.save(reference)
         timeReference = reference
@@ -50,7 +49,7 @@ final class DisplaySettingsModel {
     }
 
     /// Registers a model that must follow the time reference. Called by the app
-    /// scene, which is the one place that holds every model.
+    /// scene, the one place that holds every model.
     func observeTimeReference(_ observer: @escaping @MainActor (TimeReference) -> Void) {
         timeReferenceObservers.append(observer)
     }

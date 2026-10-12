@@ -90,10 +90,9 @@ final class ConverterModel {
         self.dataset = dataset
         self.direction = direction
         let todayADDate = todayAD(now: now, timeZone: timeZone) ?? dataset.anchorAD
-        // Both pickers default to the same day: today, clamped into the
-        // convertible span, so past the supported range they open on its last
-        // day rather than the Bikram Sambat side jumping to the range's first.
-        // Inside the span this is exactly `todayBS(now:timeZone:in:)`.
+        // Both pickers default to today clamped into the convertible span, so
+        // past the supported range the Bikram Sambat side opens on its last day,
+        // not its first. Inside the span this equals `todayBS(now:timeZone:in:)`.
         let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { adToBS($0, in: dataset) }
         self.bsDate = BSDay(
             year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,
@@ -323,8 +322,7 @@ final class ConverterModel {
     /// month-name language still follows the user's setting, because a matching
     /// VoiceOver voice reads it; only the digits are made pronounceable.
     ///
-    /// Carries the provisional note when the shown result does, because the
-    /// view combines both into this one announcement.
+    /// Carries the provisional note too: the view speaks both as one.
     func spokenResult(settings: DisplaySettings) -> String? {
         guard let spoken = converted(settings: settings)?.spoken else { return nil }
         return resultIsProvisional ? "\(spoken). \(Strings.converterProvisionalNote)" : spoken

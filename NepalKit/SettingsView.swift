@@ -32,12 +32,11 @@ struct SettingsView: View {
     let updates: UpdateCheckModel
     /// The model behind the real menu-bar label, so the Menu Bar tab's preview
     /// cannot disagree with it and its format toggles change the label itself.
-    /// Not `@Bindable` here: only `MenuBarSettingsView` writes to it, and it
-    /// declares the binding where the toggles are.
+    /// Not `@Bindable` here: `MenuBarSettingsView` declares the binding where
+    /// the toggles are.
     let menuBar: MenuBarModel
-    /// The cache, not its value: this initialiser runs at launch inside the
-    /// `Settings` scene builder, so `value` is read only from `body`, which runs
-    /// once the window is shown. See `DeferredAppMetadata`.
+    /// The cache, not its value, because this initialiser runs at launch; see
+    /// `DeferredAppMetadata`.
     let metadataCache: DeferredAppMetadata
     /// Injected so the calendar facts are the same dataset the rest of the app
     /// converts with, and so a test can control them.

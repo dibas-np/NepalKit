@@ -22,10 +22,9 @@ struct TodayInBikramSambatIntent: AppIntent {
         return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
     }
 
-    /// Today's entity and dialog for `now`, read in the user's time reference
-    /// like the month names are read from their setting. Extracted so a test
-    /// can pass the instant and the zone instead of the wall clock and the
-    /// developer's own preferences.
+    /// Today's entity and dialog for `now` in the user's time reference.
+    /// Extracted so a test can pass the instant and zone rather than the wall
+    /// clock and the developer's preferences.
     static func answer(
         now: Date,
         in dataset: CalendarDataset,
@@ -40,9 +39,8 @@ struct TodayInBikramSambatIntent: AppIntent {
         return (entity, successDialog(bs, weekday: weekday(of: bs, in: dataset), in: dataset))
     }
 
-    /// The spoken answer for today — extracted so the wording, including the
-    /// provisional clause the dataset's flag adds, is testable without
-    /// running the intent against the wall clock.
+    /// The spoken answer for today, extracted so the wording (including the
+    /// provisional clause) is testable without the wall clock.
     static func successDialog(_ bs: BSDay, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
         if dataset.isProvisional(bs.year) {
             return "Today is \(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs)). This year is a provisional projection, not yet in the official Nepali Patro."

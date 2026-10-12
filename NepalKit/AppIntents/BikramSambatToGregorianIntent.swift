@@ -56,9 +56,9 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     /// Noon of the converted day in the calendar the reverse intent reads
     /// dates with, so the answer chains into "Convert to Bikram Sambat" as the
-    /// same day. Noon UTC is the next local day from UTC+12 to UTC+14 (New
-    /// Zealand, Fiji, Tonga, Kiribati). Noon rather than midnight keeps the
-    /// instant clear of daylight-saving transitions, which happen at night.
+    /// same day (noon UTC is the next local day from UTC+12 to UTC+14). Noon
+    /// keeps the instant clear of daylight-saving transitions, which happen at
+    /// night.
     static func noonInUserCalendar(
         for ad: GADay,
         calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()
@@ -83,8 +83,7 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     /// The spoken answer for a successful conversion — extracted beside the
     /// failure dialogs so the wording is testable without running the intent.
-    /// When the Bikram Sambat date asked about is in a provisional year, the
-    /// answer rests on the projection and says so.
+    /// A provisional Bikram Sambat year adds the projection clause.
     static func successDialog(_ ad: GADay, fromProvisionalYear: Bool) -> LocalizedStringResource {
         if fromProvisionalYear {
             return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad)). That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."

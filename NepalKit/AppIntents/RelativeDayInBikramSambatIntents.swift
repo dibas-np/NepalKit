@@ -8,8 +8,7 @@ import NepalKitCore
 ///
 /// Civil-day arithmetic, never instant arithmetic: Today's Gregorian day in
 /// that zone, advanced by whole days, then converted. Adding 86,400 seconds
-/// to `now` would agree on every day Nepal has today, but only by accident,
-/// and not on a daylight-saving change in the user's own zone.
+/// to `now` breaks across a daylight-saving change in the user's zone.
 nonisolated enum RelativeDay {
     /// A relative day's answer: the entity, the `<weekday>, <spoken date>`
     /// text, and whether the day's year is a provisional projection.
@@ -52,9 +51,9 @@ nonisolated enum RelativeDay {
 /// its offset and its dialog.
 nonisolated protocol RelativeDayIntent: AppIntent {
     static var offset: Int { get }
-    /// The answer, with the provisional-year clause Today and the converters
-    /// carry when the day falls in a projected year. Two literals rather than
-    /// one interpolated clause, so each stays a localizable whole sentence.
+    /// The answer, with the provisional-year clause when the day falls in a
+    /// projected year. Two literals rather than one interpolated clause, so
+    /// each stays a localizable whole sentence.
     static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource
 }
 

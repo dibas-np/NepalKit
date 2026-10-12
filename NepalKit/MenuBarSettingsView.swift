@@ -4,15 +4,15 @@ import NepalKitCore
 import SwiftUI
 
 /// The "Menu Bar" tab: what the menu-bar item currently shows, and the format
-/// options that belong to it alone — weekday, year and clock, after
-/// the macOS menu-bar clock's options.
+/// options that belong to it alone (weekday, year and clock, after the macOS
+/// menu-bar clock's options).
 ///
 /// Digit script and month names also shape the menu bar, but they shape the
 /// popover too, so they stay in General where a user looking for "how do I
 /// change my numbers" will find them.
 ///
-/// The preview is kept above the options: it is where a toggle's effect is
-/// seen, and it is also the thing a preview uniquely gives: the marker and the
+/// The preview sits above the options, where a toggle's effect is seen. It also
+/// shows what nothing else can: the marker and the
 /// beyond-range fallback are branches of `MenuBarModel.title` that are otherwise
 /// unreachable until the day they matter, and a user who has never seen either
 /// has no way to know what the menu bar will do. `MenuBarModelTests` covers the
@@ -28,19 +28,15 @@ struct MenuBarSettingsView: View {
 
     var body: some View {
         Form {
-            // Its own view: the preview reads the model's clock, which ticks every
-            // minute, or every second with seconds shown. In this body that tick
-            // re-evaluated the whole form, toggles and all; there it re-evaluates
-            // only the preview.
+            // Its own view so the clock's tick (each minute, or second)
+            // re-evaluates only the preview, not the whole form.
             MenuBarPreview(menuBar: menuBar, settings: settings, updateAvailable: updateAvailable)
             Section {
                 Toggle(Strings.menuBarShowsWeekday, isOn: $menuBar.showsWeekday)
                 Toggle(Strings.menuBarShowsYear, isOn: $menuBar.showsYear)
                 Toggle(Strings.menuBarShowsTime, isOn: $menuBar.showsTime)
-                // The clock's own options stay visible but disabled while the
-                // time is off, as the system clock's settings do, so a user can
-                // see they exist; indented to read as belonging to the toggle
-                // above.
+                // Visible but disabled while the time is off, as in the system
+                // clock's settings, and indented under the toggle they belong to.
                 Group {
                     Toggle(Strings.menuBarUsesTwentyFourHourClock, isOn: $menuBar.usesTwentyFourHourClock)
                     Toggle(Strings.menuBarShowsSeconds, isOn: $menuBar.showsSeconds)
@@ -59,8 +55,8 @@ struct MenuBarSettingsView: View {
     }
 }
 
-/// The preview section of the Menu Bar tab: what the menu-bar item shows, and
-/// how it is announced. Separate so the clock's tick redraws only this.
+/// The Menu Bar tab's preview: what the menu-bar item shows and how it is
+/// announced.
 private struct MenuBarPreview: View {
     let menuBar: MenuBarModel
     let settings: DisplaySettings
@@ -68,14 +64,9 @@ private struct MenuBarPreview: View {
 
     var body: some View {
         Section {
-            // Glass on the value itself, not on the form.
-            //
-            // Liquid Glass is only visible where nothing paints over it, and a
-            // `Form(.grouped)` section paints its own background across the
-            // full width. An earlier attempt put `.glassEffect` on the whole
-            // window instead, where it was invisible for the same reason and
-            // then swallowed clicks. The rule worth keeping: the material goes
-            // on the control, never behind the chrome.
+            // Glass on the value itself: a `Form(.grouped)` section paints its
+            // own background over anything behind it, so `.glassEffect` on the
+            // window was invisible (and swallowed clicks).
             Text(preview)
                 .font(.body.monospacedDigit())
                 .textSelection(.enabled)

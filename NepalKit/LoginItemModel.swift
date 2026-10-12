@@ -56,8 +56,8 @@ struct LiveLoginItemService: LoginItemServicing {
 /// `SMAppService` Cocoa errors with nothing in them to classify, so the
 /// operation is the only distinction the system actually offers, and the
 /// wording is better shown than paraphrased. A registration held for approval
-/// in System Settings is not a failure: `register()` succeeded, so it is the
-/// model's `requiresApproval` state rather than a case here.
+/// is not a failure (`register()` succeeded); it is the model's
+/// `requiresApproval` state.
 enum LoginItemFailure: Equatable {
     /// `register()` was refused, so the login item could not be turned on.
     case registration(String)
@@ -80,9 +80,9 @@ final class LoginItemModel {
     /// only makes the toggle spring back, never saying why.
     private(set) var setupError: LoginItemFailure?
 
-    /// macOS is holding the registration for approval. `isOn` reads it as on,
-    /// because `register()` accepted it, but the app will not launch at login
-    /// until the user allows it — so the toggle alone would claim too much.
+    /// macOS is holding the registration for approval. `isOn` is true, since
+    /// `register()` accepted it, but the app will not launch at login until the
+    /// user allows it.
     private(set) var requiresApproval: Bool
 
     private let service: any LoginItemServicing
@@ -134,8 +134,7 @@ final class LoginItemModel {
         service.openLoginItemsSettings()
     }
 
-    /// The single read of the system's state, so `isOn` and the approval
-    /// state cannot be refreshed one without the other.
+    /// Reads both together so `isOn` and `requiresApproval` cannot drift apart.
     private func readStatus() {
         isOn = service.isRegistered
         requiresApproval = service.requiresApproval

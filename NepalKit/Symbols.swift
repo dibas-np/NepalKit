@@ -55,19 +55,15 @@ enum Symbols {
     /// offer. Not `square.and.arrow.down`, which reads as saving a file to disk.
     static let update = "arrow.down.circle"
 
-    /// The month grid's previous and next buttons: the conventional paging
-    /// chevrons, drawn without text because their direction is the meaning. The
+    /// The month grid's previous and next buttons, drawn without text; the
     /// titles stay on the buttons for VoiceOver.
     static let previousMonth = "chevron.left"
     static let nextMonth = "chevron.right"
 
-    /// Closes the day details under the month grid: the system's dismiss
-    /// glyph, at the end of the card's title row.
+    /// Closes the day details under the month grid.
     static let closeDetails = "xmark.circle.fill"
 
-    /// The popover's destination tabs: a calendar page for Today, which
-    /// shows the month, and the two-way arrows for the converter, which works
-    /// in both directions.
+    /// The popover's destination tabs: Today and the converter.
     static let today = "calendar"
     static let converter = "arrow.left.arrow.right"
 

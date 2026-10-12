@@ -2,11 +2,10 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// NepalKit's App Shortcuts — ticket 02's seven phrases, verbatim, plus the
-/// parameterless tomorrow and yesterday answers (five of the ten-shortcut
-/// cap). Every
-/// phrase carries the application-name token; conversions take parameterless
-/// phrases and let Siri gather the date conversationally, because a `Date`
+/// NepalKit's App Shortcuts — ticket 02's seven phrases, verbatim, plus
+/// tomorrow and yesterday (five of the ten-shortcut cap). Every phrase carries
+/// the application-name token; conversions take parameterless phrases and let
+/// Siri gather the date conversationally, because a `Date`
 /// can never ride in a phrase and a month enum in one would spawn generated
 /// shortcuts against the ten-shortcut cap.
 struct NepalKitShortcuts: AppShortcutsProvider {

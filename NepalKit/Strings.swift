@@ -71,8 +71,7 @@ nonisolated enum Strings {
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
     /// Shown while macOS holds the login item for approval: the toggle reads on,
-    /// because the registration was accepted, yet nothing launches until the user
-    /// allows it under General > Login Items in System Settings.
+    /// yet nothing launches until the user allows it in System Settings.
     static let loginItemNeedsApproval = "NepalKit will not open at login until you allow it in System Settings, under Login Items."
     static let openLoginItemsSettings = "Open Login Items Settings"
     static let converterLabel = "Converter"
@@ -112,8 +111,8 @@ nonisolated enum Strings {
     /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
     /// year: the result line above already shows it.
     static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
-    /// The month grid's navigation. Previous and next are drawn as chevrons
-    /// alone, so these are their announced names.
+    /// The month grid's navigation; previous and next are announced names for
+    /// chevron-only buttons.
     static let previousMonthLabel = "Previous Month"
     static let nextMonthLabel = "Next Month"
     /// Returns the grid to today's month. The visible title is `todayLabel`.
@@ -228,13 +227,11 @@ nonisolated enum Strings {
     // declaration whose value it cannot read off the line as unclassified,
     // which fails the sweep rather than passing unchecked.
     static let siriShortcutsSection = "Siri & Shortcuts"
-    /// The load-bearing sentence, the spec's own with tomorrow and yesterday
-    /// added: it states what actually works rather than what the feature set
-    /// suggests. Voice parameter-filling for the conversions is an OS
-    /// behaviour the app does not control, and what the same App Intents
-    /// expose to Shortcuts is a different capability — so a section that
-    /// implied conversational conversions work by voice would be advertising
-    /// something that answers "late June or early July" from a web search.
+    /// The spec's sentence, with tomorrow and yesterday added: it states what
+    /// actually works. Voice parameter-filling for the conversions is an OS
+    /// behaviour the app does not control, so implying conversions work by
+    /// voice would advertise something that answers "late June or early July"
+    /// from a web search.
     static let siriShortcutsSummary = "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
     /// What each capability is, in the user's terms. Kept beside the phrases
     /// they introduce rather than in the view, so a phrase and the sentence
@@ -376,12 +373,11 @@ nonisolated enum Strings {
         "\(range.lowerBound) to \(range.upperBound) BS"
     }
     /// About surface: the projection caveat, generated from the dataset's
-    /// provisional years so attesting a row removes the year here too. Nil
-    /// when every row is attested, so the line disappears rather than empties.
+    /// provisional years so attesting a row updates it. Nil when every row is
+    /// attested.
     static func provisionalYearsNote(_ years: Set<Int>) -> String? {
         guard !years.isEmpty else { return nil }
-        // Joined by hand: this file imports only NepalKitCore, so no
-        // Foundation list formatting.
+        // Joined by hand: this file does not import Foundation.
         let sorted = years.sorted().map(String.init)
         let list = sorted.count == 1 ? sorted[0] : "\(sorted.dropLast().joined(separator: ", ")) and \(sorted[sorted.count - 1])"
         return years.count == 1

@@ -47,9 +47,8 @@ protocol UpdateServicing: AnyObject {
     /// Called as the framework reports the outcome of a check.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? { get set }
 
-    /// Called as the framework finishes an update cycle, whatever its result.
-    /// A scheduled background check can end without any outcome callback, yet
-    /// it still moves `lastCheckDate`; this is the signal that it has.
+    /// Called as the framework finishes an update cycle, whatever its result:
+    /// a scheduled check can move `lastCheckDate` without any outcome callback.
     var onCycleFinished: (@MainActor () -> Void)? { get set }
 
     /// Called with `true` as a scheduled update is presented, and `false` once
@@ -86,26 +85,22 @@ final class UpdateCheckModel {
     private(set) var isShowingReminder = false
 
     /// When the framework last completed a check, or nil before the first one.
-    /// Stored so Observation can see it change; refreshed from the service,
-    /// which stays the authority, whenever a check reports, finishes or is
-    /// started.
+    /// This and `automaticallyChecks` are stored copies so Observation sees them
+    /// change; the service stays the authority, and both are re-read whenever a
+    /// check reports, finishes or is started.
     private(set) var lastCheckDate: Date?
 
-    /// Stored so the toggle redraws, like `lastCheckDate`, and read back from
-    /// the service, which persists it and stays the authority: written only by
-    /// `setAutomaticallyChecks`, and refreshed whenever the date is.
     private(set) var automaticallyChecks: Bool
 
-    /// The toggle's binding: reads the stored copy and writes through
-    /// `setAutomaticallyChecks`, so a view binds with `$model.automaticChecksSetting`
-    /// rather than a closure `Binding` while the stored value stays `private(set)`.
+    /// The toggle's binding target, so a view can bind with `$` while
+    /// `automaticallyChecks` stays `private(set)`.
     var automaticChecksSetting: Bool {
         get { automaticallyChecks }
         set { setAutomaticallyChecks(newValue) }
     }
 
-    /// The toggle's write: through to the service, then read back, so what
-    /// the toggle shows is what the service kept.
+    /// Writes through to the service and reads back, so the toggle shows what
+    /// the service kept.
     func setAutomaticallyChecks(_ enabled: Bool) {
         service.automaticallyChecksForUpdates = enabled
         automaticallyChecks = service.automaticallyChecksForUpdates

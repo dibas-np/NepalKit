@@ -47,9 +47,8 @@ struct TodayScreen: View {
 
     var body: some View {
         // Always On does not re-render ordinary content, so the dimmed screen
-        // derives its day from the timeline's date instead of the model's
-        // stored display; a minute schedule lands within a minute of Nepal
-        // midnight. Awake, the stored display stays the single source.
+        // reads its day from the timeline's date (within a minute of Nepal
+        // midnight). Awake, the stored display stays the single source.
         TimelineView(.everyMinute) { context in
             content(for: isLuminanceReduced ? model.display(at: context.date) : model.display)
         }

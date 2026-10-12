@@ -19,9 +19,8 @@ struct GeneralSettingsView: View {
     /// The same dataset the rest of the app converts with (ADR-0010), so the
     /// Display section's live preview renders the calendar the app actually uses.
     let dataset: CalendarDataset
-    /// The Mac's own zone and locale, from the environment rather than
-    /// `.current`: SwiftUI redraws the "My time zone" label when either changes
-    /// (a Mac moved to a new zone while Settings is open), and previews can
+    /// From the environment rather than `.current`, so the "My time zone" label
+    /// redraws when either changes while Settings is open, and previews can
     /// override them.
     @Environment(\.timeZone) private var timeZone
     @Environment(\.locale) private var locale
@@ -51,10 +50,9 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                // Redrawn at every midnight in the chosen zone: nothing else this
-                // preview reads changes at midnight, so left open across one the
-                // row would keep showing yesterday. One wake a day, not a
-                // per-second clock.
+                // Redrawn at each midnight in the chosen zone; nothing else this
+                // row reads changes then, so it would otherwise keep showing
+                // yesterday. One wake a day, not a per-second clock.
                 TimelineView(MidnightSchedule(timeZone: settings.timeZone)) { _ in
                     if let preview = DisplayPreview.todayText(
                         now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
@@ -99,9 +97,8 @@ struct GeneralSettingsView: View {
                 .accessibilityLabel(Strings.launchAtLoginLabel)
 
                 if loginItem.requiresApproval {
-                    // Approval is a state, not a failure: the toggle is
-                    // truthfully on, so this says what is still missing and
-                    // takes the user to where it is granted.
+                    // Not a failure: the toggle is truly on, so this names
+                    // what is missing and links to where it is granted.
                     Text(Strings.loginItemNeedsApproval)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
