@@ -367,6 +367,19 @@ final class MonthGridModel {
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
 
+    /// The shown year's caveats, for the lines under the grid: a provisional
+    /// year, and a year with no festival or holiday list. Empty for an attested
+    /// year the lists cover. The two lists are one note because they are
+    /// transcribed for the same years (the dataset-extension procedure).
+    func yearNotes(digits: DigitScript) -> [String] {
+        let year = shown.year
+        let listed = festivalCalendar.years.union(holidayCalendar.years)
+        return [
+            dataset.isProvisional(year) ? Strings.monthGridProvisionalYear(year, digits: digits) : nil,
+            listed.isEmpty || listed.contains(year) ? nil : Strings.festivalsListedOnly(for: listed, digits: digits),
+        ].compactMap { $0 }
+    }
+
     /// Last supported Bikram Sambat year, named in the range boundary state.
     var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
 }

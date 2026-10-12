@@ -41,6 +41,7 @@ struct MonthGridView: View {
             }
 
             MonthGridDays(model: model, settings: settings, selected: $selected)
+            MonthGridYearNotes(model: model, settings: settings)
 
             // Details sit under the grid rather than in a popover of their
             // own: a popover anchored to a cell inside the menu-bar popover
@@ -193,6 +194,26 @@ private struct MonthGridHeader: View {
                 .disabled(!model.canShowNextMonth)
         }
         .symbolRenderingMode(.monochrome)
+    }
+}
+
+/// The shown year's caveats under its days: a projection, or no festival
+/// list. Without them, a year past the transcribed lists reads as a year
+/// with no festivals. Spoken with Latin digits, as the range note is.
+private struct MonthGridYearNotes: View {
+    let model: MonthGridModel
+    let settings: DisplaySettings
+
+    var body: some View {
+        let notes = model.yearNotes(digits: settings.digits)
+        let spoken = model.yearNotes(digits: .latin)
+        ForEach(notes.indices, id: \.self) { index in
+            Text(notes[index])
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(spoken[index])
+        }
     }
 }
 

@@ -51,4 +51,28 @@ nonisolated extension Strings {
         .sikhCommunity: ("Public holiday for the Sikh community", "सिख धर्मावलम्बीका लागि बिदा"),
         .gauraRegion: ("Public holiday where Gaura is observed", "गौरा पर्व मनाउने क्षेत्रमा बिदा"),
     ]
+
+    /// Under the month grid when the shown year has no festival or holiday
+    /// list. Without it, a year past the transcribed Panchanga and gazette
+    /// looks like a year with no festivals at all. Names the years that do
+    /// have one, so it stays true for any year it is shown under.
+    static func festivalsListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
+        "Festivals and holidays are listed for \(yearList(years, digits: digits)) BS only."
+    }
+
+    /// Under the month grid when the shown year is a provisional projection:
+    /// the grid's days for that year are a projection, which only About and
+    /// the converter said before.
+    static func monthGridProvisionalYear(_ year: Int, digits: DigitScript) -> String {
+        "\(formatNumber(year, digits: digits)) BS is a projection, not yet in the official Nepali Patro."
+    }
+
+    /// "2083", "2083 and 2084", "2083, 2084 and 2085", in the given digits.
+    /// Joined by hand, as `provisionalYearsNote` is, with no Foundation list
+    /// formatting.
+    private static func yearList(_ years: Set<Int>, digits: DigitScript) -> String {
+        let sorted = years.sorted().map { formatNumber($0, digits: digits) }
+        guard let last = sorted.last else { return "" }
+        return sorted.count == 1 ? last : "\(sorted.dropLast().joined(separator: ", ")) and \(last)"
+    }
 }
