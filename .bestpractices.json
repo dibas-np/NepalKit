@@ -54,7 +54,7 @@
   "osps_ac_04_01_status": "Met",
   "osps_ac_04_01_justification": "Every workflow declares permissions explicitly rather than inheriting the repository default, and release-tag.yml declares permissions: {} at the top level. macos26-floor.yml records that omitting the block means every step gets the default token, which for a public repository is usually read/write on contents.",
   "osps_br_02_01_status": "Met",
-  "osps_br_02_01_justification": "Each release has a distinct tag: nine release tags, 1.0 to 1.2 unprefixed two-component and v1.3.0 to v1.6.1 SemVer (ADR-0009). release-tag.yml's preflight job refuses any tag whose name does not match the MARKETING_VERSION of the NepalKit target, so a version cannot repeat or drift from the app.",
+  "osps_br_02_01_justification": "Each release has a distinct tag: ten release tags, 1.0 to 1.2 unprefixed two-component and v1.3.0 to v1.7.0 SemVer (ADR-0009). release-tag.yml's preflight job refuses any tag whose name does not match the MARKETING_VERSION of the NepalKit target, so a version cannot repeat or drift from the app.",
   "osps_br_04_01_status": "Met",
   "osps_br_04_01_justification": "CHANGELOG.md records functional and security-relevant changes per released version, and the same notes are published per release and shipped in the update appcast. Security-relevant entries are called out, for example the end-to-end signed update channel in 1.4.1.",
   "osps_br_05_01_status": "Met",

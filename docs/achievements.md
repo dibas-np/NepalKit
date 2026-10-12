@@ -4,7 +4,7 @@ A record of what shipped, in one place, because the changelog says what changed
 per release and this says what it added up to. Numbers here are counted from the
 repository, not from memory, and the command is given so a reader can check.
 
-Last counted: 2026-10-11, on `develop` just after v1.6.1. Recounted at each
+Last counted: 2026-10-12, on `main` just after v1.7.0. Recounted at each
 release (see the release runbook).
 
 ## The facts
@@ -12,11 +12,11 @@ release (see the release runbook).
 | | |
 | --- | --- |
 | First commit | 2026-09-27 |
-| Releases | 9 release tags (`1.0` to `v1.6.1`) plus 2 backup tags |
-| Commits | 405 |
-| Swift files | 121 |
-| Test files | 54 (23 core, 24 app, 7 Watch) |
-| Architecture decision records | 15 |
+| Releases | 10 release tags (`1.0` to `v1.7.0`) plus 2 backup tags |
+| Commits | 538 |
+| Swift files | 167 |
+| Test files | 77 (27 core, 43 app, 7 Watch) |
+| Architecture decision records | 17 |
 | Stars | 4 |
 | People with commit access | 1 |
 
@@ -38,7 +38,10 @@ gh api repos/dibas-np/NepalKit/collaborators --jq '.[].login'
 - Nepal Time clock at UTC+5:45 alongside local time
 - Conversion in both directions, with date pickers following real month lengths
 - Latin or Devanagari digits; Nepali or transliterated month and weekday names
-- Three Siri and Shortcuts intents
+- A month calendar with 2083 festivals from the national Panchanga and public holidays from the Nepal Gazette; any day can go to Calendar as an all-day event
+- A menu-bar date with optional weekday, year and time
+- Today in Nepal Time or the Mac's own time zone
+- Five Siri and Shortcuts intents
 - Standalone Apple Watch app with four complication styles
 - Signed, notarized updates through Sparkle, including the update feed itself
 - Offline conversion; network access only to check for updates
@@ -94,6 +97,6 @@ Stated so the omissions are decisions.
 | --- | --- |
 | A second maintainer | See [GOVERNANCE.md](../.github/GOVERNANCE.md) and finding F3 in [docs/security-assessment.md](security-assessment.md) |
 | An independent security review | The assessment in `docs/security-assessment.md` was written by the maintainer, which is the limitation it names about itself |
-| 80% statement coverage | Measured at 40.32%; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
+| 80% statement coverage | Measured at 42.24% of lines; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
 | Attested 2084 BS | Pending comparison with the approved Nepali Patro |
 | App Store distribution | See [docs/roadmap.md](roadmap.md) |
