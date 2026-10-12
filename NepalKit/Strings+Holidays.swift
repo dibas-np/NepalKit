@@ -56,8 +56,20 @@ nonisolated extension Strings {
     /// list. Without it, a year past the transcribed Panchanga and gazette
     /// looks like a year with no festivals at all. Names the years that do
     /// have one, so it stays true for any year it is shown under.
-    static func festivalsListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
+    static func festivalsAndHolidaysListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
         "Festivals and holidays are listed for \(yearList(years, digits: digits)) BS only."
+    }
+
+    /// The same note when only the festival list is missing: the Panchanga
+    /// and the gazette are published at different times, so a year can have
+    /// one before the other.
+    static func festivalsListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
+        "Festivals are listed for \(yearList(years, digits: digits)) BS only."
+    }
+
+    /// The same note when only the holiday list is missing.
+    static func holidaysListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
+        "Public holidays are listed for \(yearList(years, digits: digits)) BS only."
     }
 
     /// Under the month grid when the shown year is a provisional projection:

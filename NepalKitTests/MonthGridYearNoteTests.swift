@@ -48,13 +48,35 @@ struct MonthGridYearNoteTests {
         ])
     }
 
-    @Test func listedYearsAreTheUnionOfBothLists() throws {
+    @Test func aYearWithFestivalsButNoHolidaysNamesTheMissingList() throws {
+        // The Panchanga is published before the gazette notice, so 2084 can
+        // have festivals while its holidays are still unlisted.
+        let model = MonthGridModel(
+            festivals: FestivalCalendar(years: [2083, 2084], entries: [:]),
+            holidays: PublicHolidayCalendar(years: [2083], entries: [:]),
+            now: try TestDates.utc(2027, 5, 1, 6, 0)
+        )
+        #expect(model.yearNotes(digits: .latin) == [Self.projection2084, "Public holidays are listed for 2083 BS only."])
+    }
+
+    @Test func aYearWithHolidaysButNoFestivalsNamesTheMissingList() throws {
+        let model = MonthGridModel(
+            festivals: FestivalCalendar(years: [2083], entries: [:]),
+            holidays: PublicHolidayCalendar(years: [2083, 2084], entries: [:]),
+            now: try TestDates.utc(2027, 5, 1, 6, 0)
+        )
+        #expect(model.yearNotes(digits: .latin) == [Self.projection2084, "Festivals are listed for 2083 BS only."])
+    }
+
+    @Test func listsCoveringDifferentYearsAreNamedApart() throws {
         let model = MonthGridModel(
             festivals: FestivalCalendar(years: [2083, 2084], entries: [:]),
             holidays: PublicHolidayCalendar(years: [2083], entries: [:]),
             now: try TestDates.utc(2025, 4, 14, 6, 0)
         )
-        #expect(model.yearNotes(digits: .latin) == ["Festivals and holidays are listed for 2083 and 2084 BS only."])
+        #expect(model.yearNotes(digits: .latin) == [
+            "Festivals are listed for 2083 and 2084 BS only. Public holidays are listed for 2083 BS only.",
+        ])
     }
 
     @Test func noListsAtAllMeansNoListNote() throws {

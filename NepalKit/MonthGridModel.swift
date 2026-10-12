@@ -368,16 +368,26 @@ final class MonthGridModel {
     }
 
     /// The shown year's caveats, for the lines under the grid: a provisional
-    /// year, and a year with no festival or holiday list. Empty for an attested
-    /// year the lists cover. The two lists are one note because they are
-    /// transcribed for the same years (the dataset-extension procedure).
+    /// year, and a year missing a festival or holiday list. Empty for an
+    /// attested year both lists cover. A list with no years at all says
+    /// nothing, since there is no year to point to.
     func yearNotes(digits: DigitScript) -> [String] {
         let year = shown.year
-        let listed = festivalCalendar.years.union(holidayCalendar.years)
-        return [
-            dataset.isProvisional(year) ? Strings.monthGridProvisionalYear(year, digits: digits) : nil,
-            listed.isEmpty || listed.contains(year) ? nil : Strings.festivalsListedOnly(for: listed, digits: digits),
-        ].compactMap { $0 }
+        let festivals = festivalCalendar.years
+        let holidays = holidayCalendar.years
+        let lacksFestivals = !festivals.isEmpty && !festivals.contains(year)
+        let lacksHolidays = !holidays.isEmpty && !holidays.contains(year)
+        let listNote: String? = switch (lacksFestivals, lacksHolidays) {
+        case (true, true) where festivals == holidays:
+            Strings.festivalsAndHolidaysListedOnly(for: festivals, digits: digits)
+        case (true, true):
+            "\(Strings.festivalsListedOnly(for: festivals, digits: digits)) \(Strings.holidaysListedOnly(for: holidays, digits: digits))"
+        case (true, false): Strings.festivalsListedOnly(for: festivals, digits: digits)
+        case (false, true): Strings.holidaysListedOnly(for: holidays, digits: digits)
+        case (false, false): nil
+        }
+        return [dataset.isProvisional(year) ? Strings.monthGridProvisionalYear(year, digits: digits) : nil, listNote]
+            .compactMap { $0 }
     }
 
     /// Last supported Bikram Sambat year, named in the range boundary state.
