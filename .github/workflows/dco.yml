@@ -49,6 +49,10 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
+          # Commits already on main are skipped: they are published and tagged, so
+          # they cannot be signed off now. Without this, every merge of main back
+          # into develop fails on the release PR's own merge commit, which GitHub
+          # writes without a trailer. fetch-depth: 0 brings origin/main.
           while read -r sha; do
             if ! git log -1 --format='%B' "$sha" | grep -qiE '^[[:space:]]*Signed-off-by:[[:space:]]*.+$'; then
               subject=$(git log -1 --format='%s' "$sha")
@@ -58,7 +62,7 @@ jobs:
               echo "::error file=.github/CONTRIBUTING.md::Missing 'Signed-off-by:' in $sha — $subject"
               missing=$((missing + 1))
             fi
-          done < <(git rev-list "${BASE}..${HEAD}")
+          done < <(git rev-list "${BASE}..${HEAD}" --not origin/main)
           if [ "$missing" -gt 0 ]; then
             echo ""
             echo "$missing commit(s) without a DCO certificate."
