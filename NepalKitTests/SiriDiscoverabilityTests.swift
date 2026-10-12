@@ -32,7 +32,7 @@ struct SiriDiscoverabilityTests {
         #expect(Strings.siriShortcutsSection == "Siri & Shortcuts")
         #expect(
             Strings.siriShortcutsSummary
-                == "Ask Siri for today's Nepali date; run the conversions from Shortcuts."
+                == "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
         )
         // The sentence's two halves must stay distinct claims. If either were
         // dropped the section would imply something the prototype showed does

@@ -228,14 +228,14 @@ nonisolated enum Strings {
     // declaration whose value it cannot read off the line as unclassified,
     // which fails the sweep rather than passing unchecked.
     static let siriShortcutsSection = "Siri & Shortcuts"
-    /// The load-bearing sentence, verbatim from the spec: it states what
-    /// actually works rather than what the feature set suggests. Voice
-    /// parameter-filling for the conversions is an OS behaviour the app does
-    /// not control, and what the same App Intents expose to Shortcuts is a
-    /// different capability — so a section that implied conversational
-    /// conversions work by voice would be advertising something that answers
-    /// "late June or early July" from a web search.
-    static let siriShortcutsSummary = "Ask Siri for today's Nepali date; run the conversions from Shortcuts."
+    /// The load-bearing sentence, the spec's own with tomorrow and yesterday
+    /// added: it states what actually works rather than what the feature set
+    /// suggests. Voice parameter-filling for the conversions is an OS
+    /// behaviour the app does not control, and what the same App Intents
+    /// expose to Shortcuts is a different capability — so a section that
+    /// implied conversational conversions work by voice would be advertising
+    /// something that answers "late June or early July" from a web search.
+    static let siriShortcutsSummary = "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
     /// What each capability is, in the user's terms. Kept beside the phrases
     /// they introduce rather than in the view, so a phrase and the sentence
     /// naming it are read together and one cannot move without the other.
