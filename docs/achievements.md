@@ -4,7 +4,8 @@ A record of what shipped, in one place, because the changelog says what changed
 per release and this says what it added up to. Numbers here are counted from the
 repository, not from memory, and the command is given so a reader can check.
 
-Last counted: 2026-10-11, at v1.6.1.
+Last counted: 2026-10-11, on `develop` just after v1.6.1. Recounted at each
+release (see the release runbook).
 
 ## The facts
 
@@ -76,7 +77,7 @@ and four others. The corrections are in the history rather than quietly applied.
 
 **One person has commit access: `@dibas-np`.**
 
-One commit of 338 carries a different author identity, `TheBoss`, which is not a
+One commit carries a different author identity, `TheBoss`, which is not a
 collaborator and has never had push access. Whether that is the same individual
 under a second account or a genuine outside contribution is not something this
 repository can establish, so it is recorded here rather than resolved.

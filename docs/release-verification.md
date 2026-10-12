@@ -64,14 +64,20 @@ are intact, not who published them.
 
 Tags are signed with an SSH key, so Git needs to be told which key to trust
 before `git tag -v` can verify one. Take the key from GitHub's record of the
-account's signing keys and check its fingerprint against the one printed here,
-so the two sources have to agree:
+account's signing keys, keeping only the one whose fingerprint matches the one
+printed here, so the two sources have to agree and a mismatch stops the check:
 
 ```sh
+expected='SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik'
+rm -f nepalkit-signing.pub
 curl -s https://api.github.com/users/dibas-np/ssh_signing_keys \
-  | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["key"])' > nepalkit-signing.pub
-ssh-keygen -lf nepalkit-signing.pub
-# 256 SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik (ED25519)
+  | python3 -c 'import json, sys; [print(k["key"]) for k in json.load(sys.stdin)]' \
+  | while read -r key; do
+      printf '%s\n' "$key" > candidate.pub
+      [ "$(ssh-keygen -lf candidate.pub | awk '{print $2}')" = "$expected" ] && mv candidate.pub nepalkit-signing.pub
+    done
+rm -f candidate.pub
+test -s nepalkit-signing.pub || echo "FAIL: no GitHub signing key has fingerprint $expected"
 printf 'dibas-np@github.com namespaces="git" %s\n' "$(cat nepalkit-signing.pub)" > nepalkit-allowed-signers
 
 git fetch --tags

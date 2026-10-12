@@ -164,8 +164,9 @@ Recorded so nobody has to infer it. The keypair was generated on 28 September
 setting note above).
 
 The private key is held in the login keychain, with an encrypted iCloud copy as
-the off-machine backup. **No restore has been verified yet** — a backup that has
-not been restored from is a hope, not a backup.
+the off-machine backup and, since 2026-10-11, an offline paper copy. A restore
+from that copy was verified the same day (below); a backup that has not been
+restored from is a hope, not a backup.
 
 One residual risk, stated rather than glossed: on Apple platforms the keychain
 syncs through iCloud, so the keychain copy and the iCloud copy may share a single
@@ -174,12 +175,13 @@ together. That is the specific case the original custody plan ruled out by
 requiring an offline copy "not merely another copy synchronized through the same
 cloud account".
 
-The gap is narrow and cheap to close: an Ed25519 private key is 32 bytes, about
-64 hex characters, so a printed copy in a physical location is fully independent
-of Apple, of any cloud account, and of this machine. Worth doing before the first
+The gap is narrow and cheap to close: an Ed25519 private seed is 32 bytes,
+which `generate_keys -x` writes as one line of base64 (44 characters), so a
+printed copy in a physical location is fully independent of Apple, of any cloud
+account, and of this machine. Worth doing before the first
 signed artifact, and worth restoring *from* rather than merely re-reading.
 
-### This is now the top open risk in the project
+### This was the top open risk in the project (closed 2026-10-11)
 
 Raised to its own heading on 2026-09-29, after 1.0 and 1.1 shipped signed. The
 reason it matters more than it did: **two releases are now signed with this key**,
@@ -204,15 +206,17 @@ tools into `DerivedData/`:
 
 1. `scripts/check-signing-key.py` confirms the keychain key signs what the
    shipped `SUPublicEDKey` verifies.
-2. Export it: `DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x ~/sparkle-key.txt`.
+2. Export it into a private directory Time Machine skips, not the home folder,
+   where a backup or APFS snapshot would keep a copy after deletion:
+   `d=$(mktemp -d) && tmutil addexclusion "$d" && (umask 077 && DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x "$d/sparkle-key.txt")`.
    The file holds the private seed as one line of base64. It is the secret.
 3. Make the copy outside Apple's cloud: print that line, or write it to
    removable media kept offline, and store it physically. Not iCloud Drive, not
    a synced folder, never the repository.
 4. Restore from that copy, not from the export: type or copy it into a new
-   file, then run `scripts/check-signing-key.py --key-file <that file>`. An `ok`
+   file in `$d`, then run `scripts/check-signing-key.py --key-file <that file>`. An `ok`
    is the restore the second box asks for; it imports nothing into the keychain.
-5. Delete both temporary files and empty the Trash, then tick the boxes above
+5. Remove them with `rm -rf "$d"`, not the Trash, then tick the boxes above
    with the date.
 
 *Note, 2026-10-11:* both boxes are ticked. A lost key ends
