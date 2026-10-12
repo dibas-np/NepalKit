@@ -24,8 +24,8 @@ on:
       - docs/img/watch-today.png
       - docs/img/watch-complications.png
     branches: [main]
-  # Re-run the check on demand, without publishing. Useful after changing the
-  # verifier itself.
+  # Re-run the check on demand, without publishing: the deploy job runs only
+  # for a push to main. Useful after changing the verifier itself.
   workflow_dispatch:
 
 # Least privilege: verify runs untrusted-by-default repo content and needs
@@ -153,7 +153,11 @@ jobs:
   deploy:
     name: deploy to Pages
     needs: verify
-    if: needs.verify.outputs.publish == 'true'
+    # A push to main only. A dispatch, from any ref, verifies and stops here:
+    # the github-pages environment also admits only main, but a branch's own
+    # copy of this file could drop this line, so the environment is the guard
+    # and this keeps the code honest to the comment on workflow_dispatch.
+    if: needs.verify.outputs.publish == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

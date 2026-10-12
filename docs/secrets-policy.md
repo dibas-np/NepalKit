@@ -89,10 +89,12 @@ inherit the deploy key — the default is that it cannot see it.
 **Deployment protection on `release`.** The policy is that the `release`
 environment accepts deployments only from tags matching `v*`, so a workflow on a
 branch cannot receive `HOMEBREW_TAP_DEPLOY_KEY` even if it declares the
-environment; a required reviewer is optional on top. As of 2026-10-10 the
-environment had no protection rules (`protection_rules: []`,
-`deployment_branch_policy: null`). The rule lives in GitHub settings, not a
-workflow file; whoever changes it updates this paragraph.
+environment; a required reviewer is optional on top. As of 2026-10-12 the
+environment admits only the tag pattern `v*` (a custom deployment policy, no
+required reviewer), and `github-pages` admits only `main`. No tag ruleset
+restricts who may create a `v*` tag, so the tag rule is as strong as push
+access, which today only `@dibas-np` holds. The rule lives in GitHub settings,
+not a workflow file; whoever changes it updates this paragraph.
 
 `release-tag.yml` enforces the identity half of this in the `if:` of each job
 rather than in a script inside one. GitHub evaluates `if:` before the job

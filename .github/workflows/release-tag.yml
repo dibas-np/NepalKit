@@ -16,8 +16,13 @@
 # given the environment it guards; GitHub evaluates `if:` before the job exists,
 # so a job that should not run never receives the secret at all. The shell
 # assertions below are there to reject a *malformed* tag — a legitimate mistake —
-# and the `if:` is there to reject an *unauthorised* one, which is not a mistake
-# and should not be reachable by editing a line.
+# and the `if:` is there to reject an *unauthorised* one.
+#
+# The `if:` is still a line in this file, and GitHub runs the file from the
+# pushed ref, so someone who can push could edit it. The guard that cannot be
+# edited from a ref is the `release` environment's deployment policy, which
+# admits only `v*` tags (docs/secrets-policy.md). Both hold today because only
+# the owner can push.
 #
 # ## Nothing here can produce a release
 #
