@@ -18,7 +18,7 @@ this table, it is not a credential — it is a bug in this table.
 
 | Credential | What it can do | Where it lives | Reachable from a pull request? |
 | --- | --- | --- | --- |
-| Sparkle EdDSA **private** key | Sign the update feed, and sign update archives | The release machine's login keychain. Never in the repository, never in CI | **No** |
+| Sparkle EdDSA **private** key | Sign the update feed, and sign update archives | The release machine's login keychain. Rule 3 allows one offline physical backup; as of 2026-10-11 it exists on paper and a restore has been tested (ADR-0012). Never in the repository, never in CI, never in a synced folder | **No** |
 | Sparkle EdDSA **public** key | Verify updates — safe to disclose | `SUPublicEDKey` in `NepalKit/Info.plist`, committed | n/a |
 | Apple Developer ID Application certificate + private key | Code-sign a distributed `.app` | The release machine's keychain | **No** |
 | `notarytool` keychain profile (`NepalKit-notary`) | Submit to Apple's notary service | The release machine's keychain, created once with `xcrun notarytool store-credentials` | **No** |
@@ -49,6 +49,19 @@ These are the rules. They are short because the alternatives are worse.
    key and the Developer ID key are in the login keychain of one machine. There
    is no `.p12`, no `.pem`, and no key file in this repository to leak, rotate,
    or accidentally attach to a bug report.
+
+   **One exception: an offline backup of the Sparkle private key.** Losing that
+   key ends updates for every install, and an iCloud-synced keychain shares one
+   failure domain with its own backup (ADR-0012). So exactly one copy is kept
+   outside the keychain, under these rules:
+   - it is physical and offline: printed, or on removable media that is never
+     connected to a synced or networked location;
+   - it is stored where only the maintainer can reach it, and its location is
+     not written down in this repository;
+   - the export used to make it, and the file used to restore-test it, are
+     temporary and deleted as soon as the procedure in ADR-0012 finishes;
+   - if the copy is ever lost or exposed, the key is treated as leaked and
+     rotated (section 4).
 4. **CI credentials are scoped to the smallest thing that needs them.**
    `HOMEBREW_TAP_DEPLOY_KEY` is a **deploy key on the tap alone**. It cannot
    write to this repository, and it cannot sign anything.
@@ -76,10 +89,17 @@ inherit the deploy key — the default is that it cannot see it.
 **Deployment protection on `release`.** The policy is that the `release`
 environment accepts deployments only from tags matching `v*`, so a workflow on a
 branch cannot receive `HOMEBREW_TAP_DEPLOY_KEY` even if it declares the
-environment; a required reviewer is optional on top. As of 2026-10-10 the
-environment had no protection rules (`protection_rules: []`,
-`deployment_branch_policy: null`). The rule lives in GitHub settings, not a
-workflow file; whoever changes it updates this paragraph.
+environment. As of 2026-10-12:
+
+- `release` admits only the tag pattern `v*`, and `@dibas-np` is a required
+  reviewer, so each tap bump waits for an approval in the Actions run.
+- The "release tags" ruleset (id 24909077) blocks creating, moving or deleting
+  a `v*` tag for everyone but repository admins, so a tag carrying an edited
+  workflow cannot be pushed by anyone with write access alone.
+- `github-pages` admits only `main`.
+
+These live in GitHub settings, not a workflow file; whoever changes them
+updates this paragraph.
 
 `release-tag.yml` enforces the identity half of this in the `if:` of each job
 rather than in a script inside one. GitHub evaluates `if:` before the job

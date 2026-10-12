@@ -39,6 +39,8 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
 
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
 
+    var onCycleFinished: (@MainActor () -> Void)?
+
     /// Called as the framework presents a scheduled update, and once the user
     /// has attended to it. Drives the menu-bar marker; see
     /// `UpdateCheckModel.isShowingReminder`.
@@ -159,6 +161,17 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
             ) else { return }
             onOutcome?(outcome)
         }
+    }
+
+    /// Every cycle ends here, including scheduled checks that report no
+    /// outcome above; without it "Last checked" would lag until the next manual
+    /// check.
+    nonisolated func updater(
+        _ updater: SPUUpdater,
+        didFinishUpdateCycleFor updateCheck: SPUUpdateCheck,
+        error: Error?
+    ) {
+        MainActor.assumeIsolated { onCycleFinished?() }
     }
 }
 

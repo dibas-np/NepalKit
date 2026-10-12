@@ -49,4 +49,30 @@ struct Projected2084Tests {
         #expect(CalendarDataset.v2.gregorianEnd == GADay(year: 2028, month: 4, day: 12))
         #expect(adToBS(GADay(year: 2028, month: 4, day: 13), in: .v2) == nil)
     }
+
+    // SOURCES.md: 2084 is the maintainer's projection; 2083 is attested.
+    @Test("Only the projected 2084 row is provisional")
+    func onlyTheProjectedRowIsProvisional() {
+        #expect(CalendarDataset.v2.provisionalYears == [2084])
+        #expect(CalendarDataset.v2.isProvisional(2084))
+        #expect(!CalendarDataset.v2.isProvisional(2083))
+    }
+
+    @Test("Range bounds: the first year is attested, years outside the table are not provisional")
+    func provisionalFlagAtTheRangeBounds() {
+        #expect(!CalendarDataset.v2.isProvisional(1975))
+        #expect(!CalendarDataset.v2.isProvisional(1974))
+        #expect(!CalendarDataset.v2.isProvisional(2085))
+    }
+
+    @Test("A provisional year outside the supported range is dropped, not named")
+    func provisionalYearsAreClippedToTheRange() {
+        let v2 = CalendarDataset.v2
+        let dataset = CalendarDataset(
+            version: "test", years: v2.years, anchorBS: v2.anchorBS, anchorAD: v2.anchorAD,
+            supportedRange: v2.supportedRange, provisionalYears: [2084, 2085]
+        )
+        #expect(dataset.provisionalYears == [2084])
+        #expect(!dataset.isProvisional(2085))
+    }
 }

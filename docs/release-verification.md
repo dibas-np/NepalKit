@@ -62,20 +62,37 @@ A release carries two signatures. The **tag** says who cut the release; the
 **archive** says what is inside it. Checking only the second tells you the bytes
 are intact, not who published them.
 
+Tags are signed with an SSH key, so Git needs to be told which key to trust
+before `git tag -v` can verify one. Take the key from GitHub's record of the
+account's signing keys, keeping only the one whose fingerprint matches the one
+printed here, so the two sources have to agree and a mismatch stops the check:
+
 ```sh
+expected='SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik'
+rm -f nepalkit-signing.pub
+curl -s https://api.github.com/users/dibas-np/ssh_signing_keys \
+  | python3 -c 'import json, sys; [print(k["key"]) for k in json.load(sys.stdin)]' \
+  | while read -r key; do
+      printf '%s\n' "$key" > candidate.pub
+      [ "$(ssh-keygen -lf candidate.pub | awk '{print $2}')" = "$expected" ] && mv candidate.pub nepalkit-signing.pub
+    done
+rm -f candidate.pub
+test -s nepalkit-signing.pub || echo "FAIL: no GitHub signing key has fingerprint $expected"
+printf 'dibas-np@github.com namespaces="git" %s\n' "$(cat nepalkit-signing.pub)" > nepalkit-allowed-signers
+
 git fetch --tags
-git tag -v v<version>
+git -c gpg.ssh.allowedSignersFile=nepalkit-allowed-signers tag -v v<version>
 ```
 
-For a release cut after 2026-10-10, expect `Good "git" signature for
-dibas-np@github.com with ED25519 key` - the same key the commits are signed with,
-so `git log --show-signature` on the tagged commit should name the same
-fingerprint. `git tag -v` is the only check here that verifies a signature.
+From `v1.6.1` on, expect `Good "git" signature for dibas-np@github.com with
+ED25519 key SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik` - the same key
+the commits are signed with. A different fingerprint at either step is a
+failure. `git tag -v` is the only check here that verifies a signature.
 
-No published tag is signed yet. The eight release tags that exist today
-(`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are lightweight, so `git tag -v`
-reports that they are not tag objects; for those releases, rely on the archive and code signatures
-in the steps below. To see whether a tag is annotated at all:
+The eight earlier release tags (`1.0`, `1.1`, `1.2`, `v1.3.0` to `v1.6.0`) are
+lightweight, so `git tag -v` reports that they are not tag objects; for those
+releases, rely on the archive and code signatures in the steps below. To see
+whether a tag is annotated at all:
 
 ```sh
 git cat-file -t v<version>     # tag    -> annotated (may or may not be signed)

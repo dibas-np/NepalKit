@@ -31,7 +31,8 @@
 #   session with a GUI login, which a CI runner does not have.
 # * **Coverage floor** (gate 14) runs both Swift suites under `swift test` with
 #   coverage instrumentation and reads the result with `xcrun llvm-cov`. It needs
-#   the macOS toolchain and roughly six minutes. Running it here would make this
+#   the macOS toolchain and roughly six minutes from the cold build every CI
+#   run starts with (seconds locally, once cached). Running it here would make this
 #   workflow the slowest one in the repository to protect a number that moves
 #   slowly. It is enforced locally and the floor is committed, so a regression
 #   is caught by whoever runs the ladder.
@@ -82,3 +83,6 @@ jobs:
       - name: The coverage parser's own suite
         # Fixture text only; the xcrun llvm-cov call it parses is never made.
         run: python3 scripts/test_measure_coverage.py
+      - name: The signing-key check's own suite
+        # Throwaway keys only; it never sees the real signing key.
+        run: python3 scripts/test_check_signing_key.py

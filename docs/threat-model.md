@@ -17,7 +17,11 @@ watchOS app. It:
 - reads a **bundled** calendar table (`NepalKitCore`), converting between Bikram
   Sambat and Gregorian dates entirely offline;
 - holds user preferences in its own container;
-- offers three App Intents to Siri and Shortcuts;
+- offers five App Intents to Siri and Shortcuts;
+- hands a day to the user's calendar app as an all-day event, by writing an
+  iCalendar file into its own temporary directory and opening it with
+  `NSWorkspace` (Add to Calendar). It never reads or writes a calendar, so it
+  needs no calendar access and no further entitlement;
 - performs **one** network operation: checking a Sparkle appcast over HTTPS at
   `https://dibas-np.github.io/NepalKit/appcast.xml`, and installing an update
   the user has been prompted to approve.
@@ -258,5 +262,6 @@ claim above rather than the document in general:
   ([secrets-policy.md](secrets-policy.md)) — this would change T2, T3, and T6 at
   once;
 - a new feature that writes outside its container, or adds an IPC surface;
-- a new release channel (an App Store build is already a planned follow-up, and
-  would add a second, differently-shaped distribution boundary).
+- a new release channel (an App Store build for the Watch app is deferred under
+  [ADR-0015](adr/0015-watch-app-distribution.md), and would add a second,
+  differently-shaped distribution boundary).

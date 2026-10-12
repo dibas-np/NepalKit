@@ -77,23 +77,27 @@ final class ConverterModel {
     /// - Parameter now: the instant the pickers start from. Injected rather than
     ///   read from the wall clock so the initial selection is reproducible — a
     ///   preview or a test should not depend on the day it happens to run.
+    /// - Parameter timeZone: the zone "today" is read in for that starting day,
+    ///   the user's time reference in the app (ADR-0017).
     init(
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,
         adYear: Int? = nil, adMonth: Int? = nil, adDay: Int? = nil,
         dataset: CalendarDataset = AppData.dataset,
-        now: Date = .now
+        now: Date = .now,
+        timeZone: TimeZone = nepalTimeZone
     ) {
         self.dataset = dataset
         self.direction = direction
-        let todayBSDate = todayBS(now: now, in: dataset)
-        // todayBS is nil past the supported range (and only then); the picker
-        // defaults to the range's first day rather than a literal date.
-        let todayADDate = todayAD(now: now) ?? dataset.anchorAD
+        let todayADDate = todayAD(now: now, timeZone: timeZone) ?? dataset.anchorAD
+        // Both pickers default to today clamped into the convertible span, so
+        // past the supported range the Bikram Sambat side opens on its last day,
+        // not its first. Inside the span this equals `todayBS(now:timeZone:in:)`.
+        let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { adToBS($0, in: dataset) }
         self.bsDate = BSDay(
-            year: bsYear ?? todayBSDate?.year ?? dataset.supportedRange.lowerBound,
-            month: bsMonth ?? todayBSDate?.month ?? 1,
-            day: bsDay ?? todayBSDate?.day ?? 1
+            year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,
+            month: bsMonth ?? defaultBSDate?.month ?? 1,
+            day: bsDay ?? defaultBSDate?.day ?? 1
         )
         // todayAD cannot fail for a real instant; if it ever did, the dataset's
         // anchor day is an in-range fallback rather than an invented year.
@@ -106,11 +110,17 @@ final class ConverterModel {
         clampADDate()
     }
 
+    /// The convertible Gregorian day closest to `day`: `day` itself inside the
+    /// supported range, else the range's first or last day. Nil only if the
+    /// dataset cannot convert its own first day.
+    private static func convertibleDay(nearest day: GADay, in dataset: CalendarDataset) -> GADay? {
+        guard let first = dataset.gregorianStart, let last = dataset.gregorianEnd else { return nil }
+        return min(max(day, first), last)
+    }
+
     var bsYears: [Int] { Array(dataset.supportedRange) }
 
-    var minAD: GADay? {
-        bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset)
-    }
+    var minAD: GADay? { dataset.gregorianStart }
 
     var maxAD: GADay? {
         dataset.gregorianEnd
@@ -285,6 +295,18 @@ final class ConverterModel {
         }
     }
 
+    /// Whether the conversion's Bikram Sambat side falls in a provisional
+    /// year of the dataset: the picked date going BS → AD, the converted one
+    /// going AD → BS. The dataset decides, so attesting a row clears this.
+    var resultIsProvisional: Bool {
+        switch direction {
+        case .bsToAD:
+            dataset.isProvisional(bsDate.year)
+        case .adToBS:
+            adToBS(adDate, in: dataset).map { dataset.isProvisional($0.year) } ?? false
+        }
+    }
+
     /// Converted date plus weekday, honoring both display settings.
     /// Gregorian months stay English (no Nepali Gregorian names are defined);
     /// digits and weekday names honor the settings.
@@ -299,7 +321,10 @@ final class ConverterModel {
     /// value cannot describe a different day than the shown one. The
     /// month-name language still follows the user's setting, because a matching
     /// VoiceOver voice reads it; only the digits are made pronounceable.
+    ///
+    /// Carries the provisional note too: the view speaks both as one.
     func spokenResult(settings: DisplaySettings) -> String? {
-        converted(settings: settings)?.spoken
+        guard let spoken = converted(settings: settings)?.spoken else { return nil }
+        return resultIsProvisional ? "\(spoken). \(Strings.converterProvisionalNote)" : spoken
     }
 }

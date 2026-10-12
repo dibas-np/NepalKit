@@ -4,19 +4,20 @@ A record of what shipped, in one place, because the changelog says what changed
 per release and this says what it added up to. Numbers here are counted from the
 repository, not from memory, and the command is given so a reader can check.
 
-Last counted: 2026-10-04, at v1.6.0.
+Last counted: 2026-10-11, on `develop` just after v1.6.1. Recounted at each
+release (see the release runbook).
 
 ## The facts
 
 | | |
 | --- | --- |
 | First commit | 2026-09-27 |
-| Releases | 8 release tags (`1.0` to `v1.6.0`) plus 2 backup tags |
-| Commits | 338 |
-| Swift files | 120 |
+| Releases | 9 release tags (`1.0` to `v1.6.1`) plus 2 backup tags |
+| Commits | 405 |
+| Swift files | 121 |
 | Test files | 54 (23 core, 24 app, 7 Watch) |
-| Architecture decision records | 14 |
-| Stars | 3 |
+| Architecture decision records | 15 |
+| Stars | 4 |
 | People with commit access | 1 |
 
 Count them yourself:
@@ -76,7 +77,7 @@ and four others. The corrections are in the history rather than quietly applied.
 
 **One person has commit access: `@dibas-np`.**
 
-One commit of 338 carries a different author identity, `TheBoss`, which is not a
+One commit carries a different author identity, `TheBoss`, which is not a
 collaborator and has never had push access. Whether that is the same individual
 under a second account or a genuine outside contribution is not something this
 repository can establish, so it is recorded here rather than resolved.
@@ -93,6 +94,6 @@ Stated so the omissions are decisions.
 | --- | --- |
 | A second maintainer | See [GOVERNANCE.md](../.github/GOVERNANCE.md) and finding F3 in [docs/security-assessment.md](security-assessment.md) |
 | An independent security review | The assessment in `docs/security-assessment.md` was written by the maintainer, which is the limitation it names about itself |
-| 80% statement coverage | Measured at 38.91%; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
+| 80% statement coverage | Measured at 40.32%; see [docs/coverage.md](coverage.md) for why the SwiftUI layer makes that a refactor rather than a chore |
 | Attested 2084 BS | Pending comparison with the approved Nepali Patro |
 | App Store distribution | See [docs/roadmap.md](roadmap.md) |

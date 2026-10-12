@@ -48,10 +48,27 @@ struct BikramSambatToGregorianIntent: AppIntent {
         guard let ad = bsToAD(BSDay(year: year, month: month.rawValue, day: day), in: dataset) else {
             throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
         }
-        guard let instant = noonUTC(for: ad) else {
+        guard let instant = Self.noonInUserCalendar(for: ad) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad)))
+        return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad, fromProvisionalYear: dataset.isProvisional(year))))
+    }
+
+    /// Noon of the converted day in the calendar the reverse intent reads
+    /// dates with, so the answer chains into "Convert to Bikram Sambat" as the
+    /// same day (noon UTC is the next local day from UTC+12 to UTC+14). Noon
+    /// keeps the instant clear of daylight-saving transitions, which happen at
+    /// night.
+    static func noonInUserCalendar(
+        for ad: GADay,
+        calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()
+    ) -> Date? {
+        let components = DateComponents(year: ad.year, month: ad.month, day: ad.day, hour: 12)
+        // `Calendar` normalizes impossible components, so the day must read back.
+        guard let instant = calendar.date(from: components),
+              GregorianToBikramSambatIntent.namedDay(for: instant, calendar: calendar) == ad
+        else { return nil }
+        return instant
     }
 
     /// The full boundary — both calendars — because neither side of an
@@ -66,7 +83,11 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     /// The spoken answer for a successful conversion — extracted beside the
     /// failure dialogs so the wording is testable without running the intent.
-    static func successDialog(_ ad: GADay) -> LocalizedStringResource {
-        "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad))."
+    /// A provisional Bikram Sambat year adds the projection clause.
+    static func successDialog(_ ad: GADay, fromProvisionalYear: Bool) -> LocalizedStringResource {
+        if fromProvisionalYear {
+            return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad)). That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."
+        }
+        return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad))."
     }
 }

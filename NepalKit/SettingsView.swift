@@ -27,15 +27,17 @@ struct SettingsView: View {
     @Bindable var loginItem: LoginItemModel
     /// The updater is constructed and started at launch (NepalKitApp), so the About
     /// tab always has a model to read; its outcome state comes from the same
-    /// instance the background check reports into.
-    @Bindable var updates: UpdateCheckModel
-    /// Read by the Menu Bar preview so that tab cannot disagree with the real
-    /// menu-bar label. Deliberately not `@Bindable`: the preview shows the label,
-    /// it does not drive it, and a binding would invite writing to it here.
+    /// instance the background check reports into. Not `@Bindable` here: only
+    /// `AboutSettingsView` binds to it.
+    let updates: UpdateCheckModel
+    /// The model behind the real menu-bar label, so the Menu Bar tab's preview
+    /// cannot disagree with it and its format toggles change the label itself.
+    /// Not `@Bindable` here: `MenuBarSettingsView` declares the binding where
+    /// the toggles are.
     let menuBar: MenuBarModel
-    /// Read once, lazily, and cached — see `DeferredAppMetadata` for why the
-    /// bundled LICENSE is not read at launch.
-    let metadata: AppMetadata
+    /// The cache, not its value, because this initialiser runs at launch; see
+    /// `DeferredAppMetadata`.
+    let metadataCache: DeferredAppMetadata
     /// Injected so the calendar facts are the same dataset the rest of the app
     /// converts with, and so a test can control them.
     let dataset: CalendarDataset
@@ -83,7 +85,7 @@ struct SettingsView: View {
             // TabView does not reach the scroll views the system hosts for the
             // tab contents. As a sibling it reserves its height in the window's
             // own layout, so no tab's content can pass under it.
-            SettingsIdentityStrip(metadata: metadata)
+            SettingsIdentityStrip(metadata: metadataCache.value)
         }
         // Wide enough for the longest detail (About's Devanagari range line) beside
         // the sidebar without clipping, and tall enough that the General form's
@@ -108,6 +110,7 @@ struct SettingsView: View {
             MenuBarSettingsView(
                 menuBar: menuBar,
                 settings: settings.settings,
+                timeReference: settings.timeReference,
                 updateAvailable: updates.isShowingReminder
             )
         case .general:
@@ -119,7 +122,7 @@ struct SettingsView: View {
         case .about:
             AboutSettingsView(
                 updates: updates,
-                metadata: metadata,
+                metadata: metadataCache.value,
                 dataset: dataset
             )
         }
@@ -248,7 +251,7 @@ private struct SourceLink: View {
         loginItem: LoginItemModel(service: PreviewLoginService()),
         updates: UpdateCheckModel(service: PreviewUpdateService()),
         menuBar: MenuBarModel(now: AppData.previewInstant, refreshes: false),
-        metadata: .current(),
+        metadataCache: DeferredAppMetadata(),
         dataset: AppData.dataset
     )
     .frame(width: 700, height: 460)

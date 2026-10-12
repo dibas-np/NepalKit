@@ -32,7 +32,7 @@ struct SiriDiscoverabilityTests {
         #expect(Strings.siriShortcutsSection == "Siri & Shortcuts")
         #expect(
             Strings.siriShortcutsSummary
-                == "Ask Siri for today's Nepali date; run the conversions from Shortcuts."
+                == "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
         )
         // The sentence's two halves must stay distinct claims. If either were
         // dropped the section would imply something the prototype showed does
@@ -41,13 +41,15 @@ struct SiriDiscoverabilityTests {
         #expect(Strings.siriShortcutsSummary.contains("Shortcuts"))
     }
 
-    @Test("All three registered capabilities are listed with their phrases")
+    @Test("All five registered capabilities are listed with their phrases")
     func everyCapabilityIsListedWithAPhrase() {
         let capabilities = Strings.siriShortcutCapabilities
 
-        #expect(capabilities.count == 3)
+        #expect(capabilities.count == 5)
         #expect(capabilities.map(\.title) == [
             Strings.siriTodayCapability,
+            Strings.siriTomorrowCapability,
+            Strings.siriYesterdayCapability,
             Strings.siriConvertToBSCapability,
             Strings.siriConvertToGregorianCapability,
         ])
@@ -111,6 +113,26 @@ struct SiriDiscoverabilityTests {
         }
 
         #expect(offenders.isEmpty, "typographic characters in the discoverability copy: \(offenders)")
+    }
+
+    @Test("Every listed phrase has its catalog template, or it never registers")
+    func listedPhrasesHaveCatalogEntries() throws {
+        // App Shortcuts phrases load per app localization: a phrase missing
+        // from the catalog registers nothing, silently, while the build and
+        // metadata extraction still succeed.
+        let data = try Data(contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/AppShortcuts.xcstrings"))
+        let catalog = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try #require(catalog["strings"] as? [String: Any])
+
+        for capability in Strings.siriShortcutCapabilities {
+            let key = capability.phrase.replacing(Strings.appName, with: "${applicationName}")
+            #expect(strings[key] != nil, "catalog is missing \(key)")
+        }
+    }
+
+    @Test("The provider stays within the ten-shortcut cap")
+    func providerStaysUnderTheShortcutCap() {
+        #expect(NepalKitShortcuts.appShortcuts.count <= 10)
     }
 
     @Test("The popover carries no Siri hint")

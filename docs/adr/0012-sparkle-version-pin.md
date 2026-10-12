@@ -164,8 +164,9 @@ Recorded so nobody has to infer it. The keypair was generated on 28 September
 setting note above).
 
 The private key is held in the login keychain, with an encrypted iCloud copy as
-the off-machine backup. **No restore has been verified yet** — a backup that has
-not been restored from is a hope, not a backup.
+the off-machine backup and, since 2026-10-11, an offline paper copy. A restore
+from that copy was verified the same day (below); a backup that has not been
+restored from is a hope, not a backup.
 
 One residual risk, stated rather than glossed: on Apple platforms the keychain
 syncs through iCloud, so the keychain copy and the iCloud copy may share a single
@@ -174,12 +175,13 @@ together. That is the specific case the original custody plan ruled out by
 requiring an offline copy "not merely another copy synchronized through the same
 cloud account".
 
-The gap is narrow and cheap to close: an Ed25519 private key is 32 bytes, about
-64 hex characters, so a printed copy in a physical location is fully independent
-of Apple, of any cloud account, and of this machine. Worth doing before the first
+The gap is narrow and cheap to close: an Ed25519 private seed is 32 bytes,
+which `generate_keys -x` writes as one line of base64 (44 characters), so a
+printed copy in a physical location is fully independent of Apple, of any cloud
+account, and of this machine. Worth doing before the first
 signed artifact, and worth restoring *from* rather than merely re-reading.
 
-### This is now the top open risk in the project
+### This was the top open risk in the project (closed 2026-10-11)
 
 Raised to its own heading on 2026-09-29, after 1.0 and 1.1 shipped signed. The
 reason it matters more than it did: **two releases are now signed with this key**,
@@ -189,15 +191,35 @@ housekeeping item; it is now the single failure that ends distribution.
 
 Concretely outstanding:
 
-- [ ] A copy exists outside Apple's cloud, ideally printed and stored physically
-- [ ] A restore has been *performed* and a signature produced from the restored
+- [x] A copy exists outside Apple's cloud, ideally printed and stored physically (2026-10-11, on paper)
+- [x] A restore has been *performed* (2026-10-11, `scripts/check-signing-key.py --key-file`) and a signature produced from the restored
       material, verified against the public key in `NepalKit/Info.plist`
 
 The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
 
-*Note, 2026-10-11:* both boxes above are still unticked. A lost key ends
+**Closing both boxes.** The offline copy is the one exception
+`docs/secrets-policy.md` rule 3 allows, under the rules listed there. On the
+release machine, after `scripts/check-all.sh` has built the pinned Sparkle
+tools into `DerivedData/`:
+
+1. `scripts/check-signing-key.py` confirms the keychain key signs what the
+   shipped `SUPublicEDKey` verifies.
+2. Export it into a private directory Time Machine skips, not the home folder,
+   where a backup or APFS snapshot would keep a copy after deletion:
+   `d=$(mktemp -d) && tmutil addexclusion "$d" && (umask 077 && DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x "$d/sparkle-key.txt")`.
+   The file holds the private seed as one line of base64. It is the secret.
+3. Make the copy outside Apple's cloud: print that line, or write it to
+   removable media kept offline, and store it physically. Not iCloud Drive, not
+   a synced folder, never the repository.
+4. Restore from that copy, not from the export: type or copy it into a new
+   file in `$d`, then run `scripts/check-signing-key.py --key-file <that file>`. An `ok`
+   is the restore the second box asks for; it imports nothing into the keychain.
+5. Remove them with `rm -rf "$d"`, not the Trash, then tick the boxes above
+   with the date.
+
+*Note, 2026-10-11:* both boxes are ticked. A lost key ends
 updates for every existing install; it is not a manual recovery (see
 "`SURequireSignedFeed` also requires ..." below).
 

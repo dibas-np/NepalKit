@@ -46,6 +46,12 @@ provisional 2084 projection are recorded in [SOURCES.md](../SOURCES.md), which
 is the authority for it. It is listed here because "dependency" is ambiguous and
 this project would rather be explicit than tidy.
 
+The 2083 festivals and public holidays are data of the same kind: transcribed by
+hand from the national Panchanga and the Ministry of Home Affairs' gazette
+notice, both pinned by SHA-256 in [SOURCES.md](../SOURCES.md), under
+[ADR-0016](adr/0016-festivals-from-the-national-panchanga.md). Neither is
+fetched, and neither ships as a file.
+
 ### Build-time and CI tooling
 
 | Tool | Version | Pinned by | Verified how |

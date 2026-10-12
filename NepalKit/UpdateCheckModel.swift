@@ -47,6 +47,10 @@ protocol UpdateServicing: AnyObject {
     /// Called as the framework reports the outcome of a check.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? { get set }
 
+    /// Called as the framework finishes an update cycle, whatever its result:
+    /// a scheduled check can move `lastCheckDate` without any outcome callback.
+    var onCycleFinished: (@MainActor () -> Void)? { get set }
+
     /// Called with `true` as a scheduled update is presented, and `false` once
     /// the user has attended to it or the update session has finished.
     var onReminder: (@MainActor (Bool) -> Void)? { get set }
@@ -80,12 +84,40 @@ final class UpdateCheckModel {
     /// persists until the framework reports attention or the session ends.
     private(set) var isShowingReminder = false
 
+    /// When the framework last completed a check, or nil before the first one.
+    /// This and `automaticallyChecks` are stored copies so Observation sees them
+    /// change; the service stays the authority, and both are re-read whenever a
+    /// check reports, finishes or is started.
+    private(set) var lastCheckDate: Date?
+
+    private(set) var automaticallyChecks: Bool
+
+    /// The toggle's binding target, so a view can bind with `$` while
+    /// `automaticallyChecks` stays `private(set)`.
+    var automaticChecksSetting: Bool {
+        get { automaticallyChecks }
+        set { setAutomaticallyChecks(newValue) }
+    }
+
+    /// Writes through to the service and reads back, so the toggle shows what
+    /// the service kept.
+    func setAutomaticallyChecks(_ enabled: Bool) {
+        service.automaticallyChecksForUpdates = enabled
+        automaticallyChecks = service.automaticallyChecksForUpdates
+    }
+
     private let service: any UpdateServicing
 
     init(service: any UpdateServicing) {
         self.service = service
+        self.lastCheckDate = service.lastCheckDate
+        self.automaticallyChecks = service.automaticallyChecksForUpdates
         self.service.onOutcome = { [weak self] outcome in
             self?.outcome = outcome
+            self?.refreshLastCheckDate()
+        }
+        self.service.onCycleFinished = { [weak self] in
+            self?.refreshLastCheckDate()
         }
         self.service.onReminder = { [weak self] showing in
             if showing { self?.showReminder() } else { self?.dismissReminder() }
@@ -97,10 +129,17 @@ final class UpdateCheckModel {
     /// once; the framework ignores the repeat.
     func start() {
         service.start()
+        refreshLastCheckDate()
     }
 
     func checkNow() {
         service.checkForUpdates()
+        refreshLastCheckDate()
+    }
+
+    private func refreshLastCheckDate() {
+        lastCheckDate = service.lastCheckDate
+        automaticallyChecks = service.automaticallyChecksForUpdates
     }
 
     /// Called as the framework is about to present a scheduled update.
@@ -113,17 +152,6 @@ final class UpdateCheckModel {
     func dismissReminder() {
         isShowingReminder = false
     }
-
-    var automaticallyChecks: Bool {
-        get { service.automaticallyChecksForUpdates }
-        set { service.automaticallyChecksForUpdates = newValue }
-    }
-
-    /// When the framework last completed a check, or nil before the first one.
-    /// A read-through, for the same reason the protocol property is: the
-    /// framework updates it on scheduled checks that produce no new outcome
-    /// here, and one authoritative value beats two that can disagree.
-    var lastCheckDate: Date? { service.lastCheckDate }
 
     /// Whether a check has found an update this build can install. Gates the
     /// popover footer's update button.

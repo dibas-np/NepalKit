@@ -208,8 +208,39 @@ struct TodayIntentTests {
             "Convert a Bikram Sambat date to Gregorian with ${applicationName}",
             "Use ${applicationName} to convert from Bikram Sambat",
             "Today's Nepali date",
+            // The parameterless tomorrow and yesterday answers.
+            "What is tomorrow's Nepali date with ${applicationName}",
+            "What is tomorrow in Bikram Sambat with ${applicationName}",
+            "What was yesterday's Nepali date with ${applicationName}",
+            "Yesterday's Bikram Sambat date in ${applicationName}",
+            "Tomorrow's Nepali date",
+            "Yesterday's Nepali date",
         ] {
             #expect(strings?[key] != nil, "catalog is missing \(key)")
         }
+    }
+
+    // 1 Baisakh 2084 is 14 April 2027 (Projected2084Tests), the first day of
+    // the dataset's provisional row; 1 Baisakh 2082 is the attested anchor.
+    @Test("Today in a provisional year adds the projection clause; an attested year does not")
+    func todayDialogNamesTheProjection() {
+        let provisional = String(localized: TodayInBikramSambatIntent.successDialog(BSDay(year: 2084, month: 1, day: 1), weekday: 4, in: dataset))
+        #expect(provisional.hasPrefix("Today is "))
+        #expect(provisional.hasSuffix("2084. This year is a provisional projection, not yet in the official Nepali Patro."))
+        let attested = String(localized: TodayInBikramSambatIntent.successDialog(BSDay(year: 2082, month: 1, day: 1), weekday: 2, in: dataset))
+        #expect(attested.hasSuffix("2082."))
+        #expect(!attested.contains("provisional"))
+    }
+
+    @Test("Running the intent answers the real today")
+    func performAnswersFromTheRealClock() async throws {
+        // perform() reads the stored time reference, so the oracle does too.
+        let zone = SettingsStore().timeReference.timeZone
+        let before = Date()
+        let result = try await TodayInBikramSambatIntent().perform()
+        let after = Date()
+        // Either clock read may straddle midnight, so accept both.
+        let todays = [before, after].map { todayBS(now: $0, timeZone: zone, in: dataset) }
+        #expect(todays.contains(result.value?.bsDay))
     }
 }

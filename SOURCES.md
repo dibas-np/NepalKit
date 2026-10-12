@@ -38,7 +38,69 @@ match askbuddie exactly.
 | 1993 | Ashar, Shrawan | 31, 32 | 32, 31 | Dharan converter checked on 3 October 2026; boundaries below |
 | 2004 | Poush, Magh | 29, 30 | 30, 29 | Retained decision; previous arbitration rationale was not recoverable |
 | 2082 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Existing fixture: Magh 20 maps to 3 February 2026, attributed to Nepali Patro converter |
-| 2083 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Existing KMC grid check: Ashwin has 31 days |
+| 2083 | Ashwin, Mangsir, Poush, Magh | 31, 29, 30, 29 | 30, 30, 29, 30 | Official 2083 Panchanga, all twelve months (below); earlier KMC grid check: Ashwin has 31 days |
+
+### Official Panchanga check for 2083
+
+The government's national Panchanga for 2083 BS, published by the Nepal
+Panchanga Nirnayak Samiti under the Ministry of Culture, Tourism and Civil
+Aviation, confirms all twelve 2083 month lengths, including the four corrected
+months above.
+
+- Page: [npns.gov.np, Panchanga of the year 2083](https://npns.gov.np/pages/panchanga-of-the-year-2083-5/).
+- File read: [`FORMAT-2083-A_7f75xmb.pdf`](https://giwmscdnone.gov.np/media/pages/files/FORMAT-2083-A_7f75xmb.pdf),
+  27 pages, image only (no text layer), SHA-256
+  `e7615a149018edd41e6239f7d0ed0c513f94e0566277dca7af41347c62713bde`.
+- Read by eye on 11 October 2026 from the day (गते) and weekday (वार) columns
+  at each month boundary on pages 3-27. No data was copied into NepalKit.
+
+| 2083 month | Baisakh | Jestha | Ashar | Shrawan | Bhadra | Ashwin | Kartik | Mangsir | Poush | Magh | Falgun | Chaitra |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Panchanga | 31 | 31 | 32 | 31 | 31 | 31 | 30 | 29 | 30 | 29 | 30 | 30 |
+| NepalKit | 31 | 31 | 32 | 31 | 31 | 31 | 30 | 29 | 30 | 29 | 30 | 30 |
+
+The weekdays agree with the Gregorian anchor. The Panchanga gives 1 Baisakh
+2083 as a Tuesday (14 April 2026), 1 Kartik as a Sunday (18 October 2026, the
+Gregorian date it also prints) and 1 Baisakh 2084 as a Wednesday (14 April 2027).
+This is the first source for 2083 that is both official and recorded. The 2084
+row stays a projection until the 2084 Panchanga is published.
+
+### Festivals and national days
+
+Festivals and national days come from the same national Panchanga, one year at
+a time, under [ADR-0016](docs/adr/0016-festivals-from-the-national-panchanga.md).
+For 2083 every day's observances were typed in from the PDF pinned above, 57
+were selected under the ADR's rule, and a second, independent read of the page
+images confirmed each one's day and wording, including three printed as
+overflow in another day's row. The ADR's amendment gives every holiday or
+national day in the gazette notice below a name, bringing the list to 67
+entries: the Panchanga's wording where it prints the day, and the gazette's for
+the two it does not (जेनजी सहिद दिवस, ज्यापू दिवस), which are marked with the
+gazette as their source. The data is
+in [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
+No other source is used for festival dates.
+
+### Public holidays
+
+Which days are public holidays, and for whom, comes from the Ministry of Home
+Affairs notice for the year in the Nepal Gazette, under the ADR-0016
+amendment. For 2083 that is खण्ड ७५ संख्या ६७, भाग ५, dated 2082-11-18:
+
+- File read: [`२०८३_सालको_सार्वजनिक_विदा_(67_11_18).pdf`](https://moha.gov.np/upload/e66443e81e8cc9c4fa5c099a1fb1bb87/files/%E0%A5%A8%E0%A5%A6%E0%A5%AE%E0%A5%A9_%E0%A4%B8%E0%A4%BE%E0%A4%B2%E0%A4%95%E0%A5%8B_%E0%A4%B8%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%B5%E0%A4%9C%E0%A4%A8%E0%A4%BF%E0%A4%95_%E0%A4%B5%E0%A4%BF%E0%A4%A6%E0%A4%BE_(67_11_18).pdf),
+  12 pages, image only, SHA-256 `ffbabf83cad254b485504627f9e47fce6c1a7a28e2693a399ae88bf9c0279a29`.
+- Read by eye on 11 October 2026: 47 holiday rows on 41 days, each with its
+  gazette section and scope, plus three national days with offices open. A
+  second, independent read of the page images confirmed every date, section,
+  scope and printed weekday, the Dashain (Ashwin 31 to Kartik 6) and Tihar
+  (Kartik 22 to 26) ranges, and the 52 Saturdays of section 1.
+- Every dated holiday falls on the day the Panchanga gives, apart from two
+  national days the Panchanga does not print (ज्यापू दिवस, जेनजी सहिद दिवस),
+  recorded with the Gazette as their source. Holidays listed "on the day" with
+  no date (both Eids, Mohammad Jayanti, Siruwa Pawani, Bhoto Jatra) are left
+  out. Province-declared holidays are not in this notice.
+
+The data is in
+[`PublicHolidays2083.swift`](NepalKitCore/Sources/NepalKitCore/PublicHolidays2083.swift).
 
 The 2082 and 2083 descriptions preserve earlier evidence; those sources were
 not freshly checked during this cleanup. A maintainer-supplied claim of

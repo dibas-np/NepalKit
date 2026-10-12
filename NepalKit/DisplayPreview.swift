@@ -18,7 +18,12 @@ enum DisplayPreview {
     /// than a substitute date: the preview exists to show what a *choice* looks
     /// like, and inventing a date to keep the row visible would show a rendering
     /// of nothing. The range itself is the About tab's fact to state.
-    static func todayText(now: Date, in dataset: CalendarDataset, settings: DisplaySettings) -> String? {
-        todayBS(now: now, in: dataset).map { formatBS($0, settings: settings) }
+    static func todayText(
+        now: Date,
+        timeZone: TimeZone = nepalTimeZone,
+        in dataset: CalendarDataset,
+        settings: DisplaySettings
+    ) -> String? {
+        todayBS(now: now, timeZone: timeZone, in: dataset).map { formatBS($0, settings: settings) }
     }
 }

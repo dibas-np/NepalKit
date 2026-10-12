@@ -9,6 +9,14 @@ excluded:
   # This historical menu-bar experiment intentionally probes forced casts and
   # prints diagnostics; it is not part of the shipped app or maintained tooling.
   - scripts/menubar-spike.swift
+  # Local issue-tracker notes and scratch prototypes; only `.scratch/*/spec.md`
+  # is tracked, and CI never sees the rest, so linting it locally only turns the
+  # strict gate red on files no one ships.
+  - .scratch
+  # Agent worktrees: whole checkouts of other branches, git-ignored, that a
+  # Claude Code session can leave under .claude/worktrees. Their files are some
+  # other branch's, so linting them here judges code this branch does not ship.
+  - .claude
 
 disabled_rules:
   # Domain abbreviations such as `bs` and `ad` are established project vocabulary.

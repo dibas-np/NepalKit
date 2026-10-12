@@ -9,6 +9,9 @@ import ServiceManagement
 /// tests inject a mock. The boundary is never touched by tests.
 protocol LoginItemServicing {
     var isRegistered: Bool { get }
+    /// Registered, but held by macOS until the user allows it in System Settings.
+    var requiresApproval: Bool { get }
+    func openLoginItemsSettings()
     func register() throws
     func unregister() throws
 }
@@ -22,6 +25,14 @@ struct LiveLoginItemService: LoginItemServicing {
     var isRegistered: Bool {
         let status = SMAppService.mainApp.status
         return status == .enabled || status == .requiresApproval
+    }
+
+    var requiresApproval: Bool {
+        SMAppService.mainApp.status == .requiresApproval
+    }
+
+    func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     func register() throws {
@@ -44,9 +55,9 @@ struct LiveLoginItemService: LoginItemServicing {
 /// The cases name the operation, not the cause. The errors are opaque
 /// `SMAppService` Cocoa errors with nothing in them to classify, so the
 /// operation is the only distinction the system actually offers, and the
-/// wording is better shown than paraphrased. If a cause ever does need naming —
-/// a registration held for approval in System Settings, say — it earns its own
-/// case and the view's wording follows from it.
+/// wording is better shown than paraphrased. A registration held for approval
+/// is not a failure (`register()` succeeded); it is the model's
+/// `requiresApproval` state.
 enum LoginItemFailure: Equatable {
     /// `register()` was refused, so the login item could not be turned on.
     case registration(String)
@@ -69,6 +80,11 @@ final class LoginItemModel {
     /// only makes the toggle spring back, never saying why.
     private(set) var setupError: LoginItemFailure?
 
+    /// macOS is holding the registration for approval. `isOn` is true, since
+    /// `register()` accepted it, but the app will not launch at login until the
+    /// user allows it.
+    private(set) var requiresApproval: Bool
+
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
 
@@ -85,6 +101,7 @@ final class LoginItemModel {
         self.service = service
         self.defaults = defaults
         self.isOn = service.isRegistered
+        self.requiresApproval = service.requiresApproval
     }
 
     /// Registers at first launch so the date is in the menu bar from sign-in.
@@ -101,7 +118,7 @@ final class LoginItemModel {
         } catch {
             setupError = Self.failure(from: error, turningOn: true)
         }
-        isOn = service.isRegistered
+        readStatus()
         if isOn {
             defaults.set(true, forKey: Self.configuredKey)
         }
@@ -109,7 +126,18 @@ final class LoginItemModel {
 
     /// Re-reads external changes without changing registration or first-launch policy.
     func refreshStatus() {
+        readStatus()
+    }
+
+    /// Opens System Settings at Login Items, where a held registration is approved.
+    func openLoginItemsSettings() {
+        service.openLoginItemsSettings()
+    }
+
+    /// Reads both together so `isOn` and `requiresApproval` cannot drift apart.
+    private func readStatus() {
         isOn = service.isRegistered
+        requiresApproval = service.requiresApproval
     }
 
     func setOn(_ on: Bool) {
@@ -127,7 +155,7 @@ final class LoginItemModel {
             // and it is what the wording and the test both turn on.
             setupError = Self.failure(from: error, turningOn: on)
         }
-        isOn = service.isRegistered
+        readStatus()
     }
 
     /// The one mapping from a thrown error to a reported failure. Both call

@@ -10,8 +10,10 @@ import Testing
 struct LoginItemModelTests {
     final class MockService: LoginItemServicing {
         var registered: Bool
+        var requiresApproval = false
         var registerCalls = 0
         var unregisterCalls = 0
+        var openSettingsCalls = 0
         var error: (any Error)?
 
         init(registered: Bool = false) { self.registered = registered }
@@ -28,6 +30,10 @@ struct LoginItemModelTests {
             unregisterCalls += 1
             if let error { throw error }
             registered = false
+        }
+
+        func openLoginItemsSettings() {
+            openSettingsCalls += 1
         }
     }
 
@@ -294,5 +300,65 @@ struct LoginItemModelTests {
 
         #expect(on.isOn)
         #expect(!off.isOn)
+    }
+
+    @Test func approvalHeldBySystemIsSurfacedBesideAnOnToggle() throws {
+        // What the live service reports for `.requiresApproval`: registered,
+        // so the toggle is on, and held, so it must not read as done.
+        let service = MockService(registered: true)
+        service.requiresApproval = true
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+
+        #expect(model.isOn)
+        #expect(model.requiresApproval)
+
+        model.setOn(true)
+
+        #expect(service.registerCalls == 0)
+        #expect(model.requiresApproval)
+        #expect(model.setupError == nil)
+    }
+
+    @Test func approvalStateIsReadAfterFirstLaunchRegisters() throws {
+        let service = MockService()
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        #expect(!model.requiresApproval)
+
+        // register() succeeds, but macOS holds the item for approval.
+        service.requiresApproval = true
+        model.ensureDefaultOn()
+
+        #expect(model.isOn)
+        #expect(model.requiresApproval)
+    }
+
+    @Test func openLoginItemsSettingsIsForwardedToTheService() throws {
+        let service = MockService(registered: true)
+        service.requiresApproval = true
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+
+        model.openLoginItemsSettings()
+
+        #expect(service.openSettingsCalls == 1)
+        #expect(service.registerCalls == 0)
+        #expect(service.unregisterCalls == 0)
+    }
+
+    @Test func refreshPicksUpApprovalGrantedOrWithdrawnInSystemSettings() throws {
+        let service = MockService(registered: true)
+        service.requiresApproval = true
+        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        #expect(model.requiresApproval)
+
+        service.requiresApproval = false
+        model.refreshStatus()
+        #expect(!model.requiresApproval)
+        #expect(model.isOn)
+
+        service.requiresApproval = true
+        model.refreshStatus()
+        #expect(model.requiresApproval)
+        #expect(service.registerCalls == 0)
+        #expect(service.unregisterCalls == 0)
     }
 }

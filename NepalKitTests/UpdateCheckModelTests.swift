@@ -4,28 +4,6 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Test double, same shape as the `LoginItemServicing` mock. The production
-/// service needs Sparkle and a live updater session, which the harness does not
-/// link, so this is how the model's own logic is covered.
-@MainActor
-final class FakeUpdateService: UpdateServicing {
-    private(set) var startCount = 0
-    private(set) var checkCount = 0
-    var automaticallyChecksForUpdates = true
-    var onOutcome: (@MainActor (UpdateOutcome) -> Void)?
-    var onReminder: (@MainActor (Bool) -> Void)?
-    var lastCheckDate: Date?
-
-    func start() { startCount += 1 }
-    func checkForUpdates() { checkCount += 1 }
-
-    /// Simulate the framework reporting a result.
-    func report(_ outcome: UpdateOutcome) { onOutcome?(outcome) }
-
-    /// Simulate the framework raising or clearing the gentle reminder.
-    func remind(_ showing: Bool) { onReminder?(showing) }
-}
-
 @MainActor
 struct UpdateCheckModelTests {
     @Test func startingIsForwarded() {
@@ -56,18 +34,51 @@ struct UpdateCheckModelTests {
         #expect(model.statusText != Strings.updateStatusUpToDate)
     }
 
-    @Test func lastCheckDateIsReadThroughFromTheService() throws {
-        // Read-through, not a mirror: the framework owns the fact, and the
-        // model's job is only to put it where Settings can show it. A copy
-        // here could silently disagree with the framework's own answer.
+    @Test func lastCheckDateIsReadFromTheServiceAtInit() throws {
+        let service = FakeUpdateService()
+        let when = try TestDates.utc(2026, 10, 1, 9, 0)
+        service.lastCheckDate = when
+
+        #expect(UpdateCheckModel(service: service).lastCheckDate == when)
+    }
+
+    @Test func aReportedOutcomeRefreshesLastCheckDate() throws {
+        // Stored so the About tab redraws; the outcome callback is when the
+        // framework's own date has moved.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
-
         #expect(model.lastCheckDate == nil)
 
         let when = try TestDates.utc(2026, 10, 1, 9, 0)
         service.lastCheckDate = when
+        service.report(.upToDate)
+
         #expect(model.lastCheckDate == when)
+    }
+
+    @Test func aFinishedCycleWithNoOutcomeRefreshesLastCheckDate() throws {
+        // A scheduled background check can finish without any outcome
+        // callback; the cycle-finished signal still moves the date.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+
+        let when = try TestDates.utc(2026, 10, 2, 9, 0)
+        service.lastCheckDate = when
+        service.finishCycle()
+
+        #expect(model.lastCheckDate == when)
+        #expect(model.outcome == nil)
+    }
+
+    @Test func automaticallyChecksIsReadFromTheServiceAtInit() {
+        let service = FakeUpdateService()
+        service.automaticallyChecksForUpdates = false
+
+        let model = UpdateCheckModel(service: service)
+
+        #expect(model.automaticallyChecks == false)
+        // Reading at init must not write back.
+        #expect(service.automaticWrites == 1)
     }
 
     @Test func aFailedCheckIsNotReportedAsUpToDate() {
@@ -139,12 +150,13 @@ struct UpdateCheckModelTests {
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
-        model.automaticallyChecks = false
+        model.setAutomaticallyChecks(false)
         #expect(model.automaticallyChecks == false)
         #expect(service.automaticallyChecksForUpdates == false)
 
-        model.automaticallyChecks = true
+        model.setAutomaticallyChecks(true)
         #expect(service.automaticallyChecksForUpdates == true)
+        #expect(service.automaticWrites == 2)
     }
 
     @Test func theReminderIsIndependentOfTheReportedOutcome() {
@@ -367,5 +379,15 @@ struct UpdateCheckModelTests {
             .map { String($0.standardizedFileURL.path.dropFirst(prefix.count)) }
             .filter { $0.hasSuffix(".swift") && !$0.split(separator: "/").contains { $0 == "Assets.xcassets" } }
             .sorted()
+    }
+
+    @Test func automaticChecksFollowTheServiceWhenItChangesElsewhere() {
+        // Sparkle can change the setting itself (its first-launch prompt);
+        // the model reads it back rather than keeping a copy that drifts.
+        let service = FakeUpdateService()
+        let model = UpdateCheckModel(service: service)
+        service.automaticallyChecksForUpdates = false
+        model.checkNow()
+        #expect(model.automaticallyChecks == false)
     }
 }

@@ -55,7 +55,20 @@ enum Symbols {
     /// offer. Not `square.and.arrow.down`, which reads as saving a file to disk.
     static let update = "arrow.down.circle"
 
+    /// The month grid's previous and next buttons, drawn without text; the
+    /// titles stay on the buttons for VoiceOver.
+    static let previousMonth = "chevron.left"
+    static let nextMonth = "chevron.right"
+
+    /// Closes the day details under the month grid.
+    static let closeDetails = "xmark.circle.fill"
+
+    /// The popover's destination tabs: Today and the converter.
+    static let today = "calendar"
+    static let converter = "arrow.left.arrow.right"
+
     static let all: [String] = [
-        launchAtLogin, settings, about, menuBar, general, repository, update
+        launchAtLogin, settings, about, menuBar, general, repository, update,
+        previousMonth, nextMonth, closeDetails, today, converter
     ]
 }

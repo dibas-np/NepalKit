@@ -21,10 +21,12 @@
 
 - Today's Bikram Sambat date in the menu bar, without a Dock icon.
 - Full Bikram Sambat and Gregorian dates with the weekday.
-- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs.
+- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs. Choose **My time zone** in Settings and the two swap places.
 - Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
+- A month calendar under today's date, with the Gregorian dates beside each day, and festivals and public holidays for 2083 from the official Panchanga and the Nepal Gazette. Any day can be copied or added to your calendar.
+- A menu-bar date you can shape: weekday, year, and the time, in 12- or 24-hour form, with or without seconds.
 - Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
-- Today's Bikram Sambat date through Siri, and date conversion through Shortcuts.
+- Today's, tomorrow's and yesterday's Bikram Sambat dates through Siri, and date conversion through Shortcuts.
 - A standalone Apple Watch app with rectangular, inline, circular, and corner complications.
 - Optional launch at login.
 
@@ -48,11 +50,11 @@ If you still use version 1.0, install a newer release once to enable automatic u
 
 ## Usage
 
-Click the menu-bar date to open the popover. **Today** shows the dates and clocks. **Convert** lets you convert a date in either direction.
+Click the menu-bar date to open the popover. **Today** shows today's Bikram Sambat date and weekday above a month grid, with each day's Gregorian date beneath it and the Gregorian months it spans beside the title. Click a day to see it in both calendars and how far it is from today, copy it, or add it to your calendar as an all-day event. Scroll over the grid or press the left and right arrow keys to change months. Festivals and national days for 2083 come from Nepal's national Panchanga, plus two national days only the Home Ministry's Nepal Gazette notice lists; they are marked with a dot in the grid, listed in a day's details, and named under today's date. Nationwide public holidays from that Gazette notice are red, like Saturdays; holidays limited to a community, region or group are named in a day's details. **Convert** lets you convert a date in either direction.
 
-Open **Settings** with **⌘,** to change the menu-bar display, digit script, month and weekday names, or launch-at-login preference.
+Open **Settings** with **⌘,** to change the digit script, month and weekday names, time zone, or launch-at-login preference. **Settings → Menu Bar** previews the menu-bar date and can add the day of the week, the year, and the clock (12- or 24-hour, with or without seconds), like the macOS menu-bar clock.
 
-Today's date follows Nepal Time, even when your Mac uses another time zone. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
+Today's date follows Nepal Time by default, even when your Mac uses another time zone. Set **Settings → General → Time zone** to **My time zone** and today, its midnight, the clocks and Siri's answers follow your Mac's time zone instead ([ADR-0017](docs/adr/0017-today-in-nepal-time-or-the-users-time-zone.md)). The Watch app always follows Nepal Time. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
 
 ## Siri and Shortcuts
 
@@ -62,9 +64,17 @@ Ask Siri:
 
 NepalKit answers with today's Bikram Sambat date and weekday using its bundled calendar data.
 
-The Shortcuts app includes three NepalKit actions:
+You can also ask for the days either side:
+
+> What is tomorrow's Nepali date with NepalKit
+>
+> What was yesterday's Nepali date with NepalKit
+
+The Shortcuts app includes five NepalKit actions:
 
 - Get today's Bikram Sambat date.
+- Get tomorrow's Bikram Sambat date.
+- Get yesterday's Bikram Sambat date.
 - Convert a Gregorian date to Bikram Sambat.
 - Convert a Bikram Sambat date to Gregorian.
 
@@ -89,7 +99,7 @@ Today refreshes when the app becomes active and schedules a refresh for the next
 
 Large-text layouts preserve the primary date information, and VoiceOver announces dates using Latin digits and transliterated names. Dates outside the supported range show an unavailable state with support context; calculation failures have a separate error state.
 
-To install the Watch app from source, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. The Mac DMG installs only the macOS app.
+The Watch app is a developer preview, built from source; it is not on the App Store ([ADR-0015](docs/adr/0015-watch-app-distribution.md)). To install it, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. A development-signed install stops launching when its provisioning profile expires; build and run it from Xcode again to renew it. Calendar data updates reach the watch only when you rebuild. The Mac DMG installs only the macOS app.
 
 ## Supported dates and calendar data
 

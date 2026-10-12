@@ -9,12 +9,13 @@ nonisolated enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
     /// Separator between a date and its weekday on a shown date line.
     ///
-    /// Shared by both places the pairing appears — the popover's Gregorian
-    /// line, which lays the two halves out as separate `Text`s in an `HStack`
-    /// so they wrap independently, and the converter's shown result, which
-    /// composes them through `datedWithWeekday`. The popover therefore does not
-    /// call the composer; what must not drift is the separator itself, because
-    /// the spoken channel has to avoid it in both.
+    /// Shared by every place the pairing appears — the popover's hero date and
+    /// its Gregorian line past the range, which lay the two halves out as
+    /// separate `Text`s in an `HStack` so they wrap independently, and the
+    /// converter's shown result, which composes them through
+    /// `datedWithWeekday`. The popover therefore does not call the composer;
+    /// what must not drift is the separator itself, because the spoken channel
+    /// has to avoid it in all of them.
     static let weekdaySeparator = "·"
     static func datedWithWeekday(_ date: String, _ weekday: String) -> String {
         "\(date) \(weekdaySeparator) \(weekday)"
@@ -69,6 +70,10 @@ nonisolated enum Strings {
     static let localTimeLabel = "Local"
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
+    /// Shown while macOS holds the login item for approval: the toggle reads on,
+    /// yet nothing launches until the user allows it in System Settings.
+    static let loginItemNeedsApproval = "NepalKit will not open at login until you allow it in System Settings, under Login Items."
+    static let openLoginItemsSettings = "Open Login Items Settings"
     static let converterLabel = "Converter"
     /// Names the direction toggle. Distinguishes it from the popover's own
     /// Today/Converter switcher, which is a different control directly above.
@@ -102,6 +107,43 @@ nonisolated enum Strings {
     static let monthLabel = "Month"
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
+    /// Secondary line under a converter result whose Bikram Sambat side falls
+    /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
+    /// year: the result line above already shows it.
+    static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
+    /// The month grid's navigation; previous and next are announced names for
+    /// chevron-only buttons.
+    static let previousMonthLabel = "Previous Month"
+    static let nextMonthLabel = "Next Month"
+    /// Returns the grid to today's month. The visible title is `todayLabel`.
+    static let showTodayHelp = "Shows the month containing today"
+    static let monthGridDaysLabel = "Days" // names the weekday header and the grid for VoiceOver
+    /// The day popover's distance from today. Today reuses `todayLabel`.
+    static let tomorrowLabel = "Tomorrow"
+    static let yesterdayLabel = "Yesterday"
+    /// "In 5 days", "3 days ago". The count honours the digit setting on
+    /// screen; the spoken channel passes `.latin`.
+    static func relativeDays(_ days: Int, digits: DigitScript) -> String {
+        switch days {
+        case 0: todayLabel
+        case 1: tomorrowLabel
+        case -1: yesterdayLabel
+        case 2...: "In \(formatNumber(days, digits: digits)) days"
+        default: "\(formatNumber(-days, digits: digits)) days ago"
+        }
+    }
+    /// The day popover's actions. Copy takes the Bikram Sambat date as shown.
+    static let copyDateLabel = "Copy"
+    static let copyDateHelp = "Copies the Bikram Sambat date"
+    static let closeDayDetailsLabel = "Close Day Details" // the details card under the grid
+    static let monthGridDayHelp = "Shows this day's details" // a grid day is a button that shows them
+    /// A day's festivals as one line; a comma, not a middle dot, so shown and spoken share it.
+    static func festivalNames(_ names: [String]) -> String { names.joined(separator: ", ") }
+    /// Range boundary state on the month grid: today is past the supported
+    /// range, so the grid shows the last supported month instead.
+    static func monthGridPastRange(_ bsYear: Int, digits: DigitScript) -> String {
+        "Today is past the supported range. \(supportedThrough(bsYear, digits: digits))."
+    }
     /// The menu command's title, in the app menu. Apple's convention there is the
     /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"
@@ -185,18 +227,18 @@ nonisolated enum Strings {
     // declaration whose value it cannot read off the line as unclassified,
     // which fails the sweep rather than passing unchecked.
     static let siriShortcutsSection = "Siri & Shortcuts"
-    /// The load-bearing sentence, verbatim from the spec: it states what
-    /// actually works rather than what the feature set suggests. Voice
-    /// parameter-filling for the conversions is an OS behaviour the app does
-    /// not control, and what the same App Intents expose to Shortcuts is a
-    /// different capability — so a section that implied conversational
-    /// conversions work by voice would be advertising something that answers
-    /// "late June or early July" from a web search.
-    static let siriShortcutsSummary = "Ask Siri for today's Nepali date; run the conversions from Shortcuts."
+    /// The spec's sentence, with tomorrow and yesterday added: it states what
+    /// actually works. Voice parameter-filling for the conversions is an OS
+    /// behaviour the app does not control, so implying conversions work by
+    /// voice would advertise something that answers "late June or early July"
+    /// from a web search.
+    static let siriShortcutsSummary = "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
     /// What each capability is, in the user's terms. Kept beside the phrases
     /// they introduce rather than in the view, so a phrase and the sentence
     /// naming it are read together and one cannot move without the other.
     static let siriTodayCapability = "Today's date in Bikram Sambat"
+    static let siriTomorrowCapability = "Tomorrow's date in Bikram Sambat"
+    static let siriYesterdayCapability = "Yesterday's date in Bikram Sambat"
     static let siriConvertToBSCapability = "Convert a Gregorian date to Bikram Sambat"
     static let siriConvertToGregorianCapability = "Convert a Bikram Sambat date to Gregorian"
 
@@ -218,7 +260,7 @@ nonisolated enum Strings {
         var id: String { phrase }
     }
 
-    /// The three capabilities this build registers, in the order they appear in
+    /// The five capabilities this build registers, in the order they appear in
     /// Settings.
     ///
     /// Computed rather than stored, and that is a deliberate answer to the
@@ -226,11 +268,13 @@ nonisolated enum Strings {
     /// fails on any `static let` whose value it cannot read off one line. A
     /// stored array of `Capability` would be exactly that: an unreadable
     /// constant, needing an exemption that would then be a hole. Composed from
-    /// the six string constants above — every one of which the sweep reads and
+    /// the ten string constants above — every one of which the sweep reads and
     /// checks on its own — it holds no literal of its own to escape the check.
     static var siriShortcutCapabilities: [Capability] {
         [
             Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
+            Capability(title: siriTomorrowCapability, phrase: siriTomorrowPhrase),
+            Capability(title: siriYesterdayCapability, phrase: siriYesterdayPhrase),
         Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
             Capability(title: siriConvertToGregorianCapability, phrase: siriConvertToGregorianPhrase),
         ]
@@ -240,6 +284,8 @@ nonisolated enum Strings {
     /// token spelled out. The token is the framework's, not this app's: it
     /// resolves to whatever the app is called, which here is `appName`.
     static let siriTodayPhrase = "What is today's Nepali date with \(appName)"
+    static let siriTomorrowPhrase = "What is tomorrow's Nepali date with \(appName)"
+    static let siriYesterdayPhrase = "What was yesterday's Nepali date with \(appName)"
     static let siriConvertToBSPhrase = "Convert a date to Bikram Sambat with \(appName)"
     static let siriConvertToGregorianPhrase = "Convert a Bikram Sambat date to Gregorian with \(appName)"
     static let updatesSection = "Software Update"
@@ -325,6 +371,18 @@ nonisolated enum Strings {
     /// case. Spoken only; the screen keeps the dash.
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
+    }
+    /// About surface: the projection caveat, generated from the dataset's
+    /// provisional years so attesting a row updates it. Nil when every row is
+    /// attested.
+    static func provisionalYearsNote(_ years: Set<Int>) -> String? {
+        guard !years.isEmpty else { return nil }
+        // Joined by hand: this file does not import Foundation.
+        let sorted = years.sorted().map(String.init)
+        let list = sorted.count == 1 ? sorted[0] : "\(sorted.dropLast().joined(separator: ", ")) and \(sorted[sorted.count - 1])"
+        return years.count == 1
+            ? "\(list) BS is a provisional projection until the official Nepali Patro is published."
+            : "\(list) BS are provisional projections until the official Nepali Patro is published."
     }
     static let datasetVersionLabel = "Dataset version"
     static let supportedRangeLabel = "Supported range"

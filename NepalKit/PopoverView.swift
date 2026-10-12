@@ -6,7 +6,7 @@ import NepalKitCore
 
 /// Which of the popover's two destinations is showing.
 ///
-/// Today and Convert are peers, so they are named as a segmented control rather
+/// Today and Convert are peers, so they are named as tabs rather
 /// than as one screen with a section stapled to the bottom. The alternative made
 /// the popover a single long scroll in which the converter was always expanded,
 /// so opening it to read the date also presented three pickers and a result the
@@ -21,9 +21,16 @@ enum PopoverDestination: String, CaseIterable {
         case .convert: Strings.converterLabel
         }
     }
+
+    var symbol: String {
+        switch self {
+        case .today: Symbols.today
+        case .convert: Symbols.converter
+        }
+    }
 }
 
-/// Popover: today's date, the converter, and routes into Settings and About.
+/// Popover: today's date and month, the converter, and routes into Settings and About.
 ///
 /// Iconography (per ADR-0004): SF Symbols throughout, monochrome for small
 /// inline icons so they keep contrast beside text. The menu-bar extra itself
@@ -37,6 +44,7 @@ struct PopoverView: View {
     let settings: DisplaySettingsModel
     let clock: ClockModel
     let converter: ConverterModel
+    let monthGrid: MonthGridModel
     /// Settings open through SwiftUI's own action rather than a hand-built
     /// window; the activation half is `WindowPresentation`'s (ADR-0011).
     @Environment(\.openSettings) private var openSettings
@@ -53,7 +61,7 @@ struct PopoverView: View {
     /// resting state because it is what the menu-bar item just showed.
     @State private var destination: PopoverDestination = .today
 
-    /// One width for both destinations, so switching tabs does not resize the
+    /// One width for every destination, so switching tabs does not resize the
     /// popover under the pointer. Fixed rather than a minimum because the
     /// converter's pickers are the widest content; a minimum would let the Today
     /// screen shrink narrower than they do.
@@ -63,34 +71,28 @@ struct PopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             HeaderBar(clock: clock, settings: settings.settings)
 
-            Picker("", selection: $destination) {
-                ForEach(PopoverDestination.allCases, id: \.self) { option in
-                    Text(option.title).tag(option)
-                }
-            }
-            .pickerStyle(.segmented)
-            // The control is untitled and the label hidden, but that is not the
-            // same as unlabelled: without this the two segments announce only
-            // "Today" and "Convert" with no indication that they are a choice
-            // between views. `AXRadioGroup` is what a segmented control is.
-            .accessibilityLabel(Strings.popoverDestinationsLabel)
-            .accessibilityElement(children: .contain)
+            DestinationTabs(selection: $destination)
 
-            // The swap cross-fades: Today and Convert are two states of one
-            // surface, not two replacements. Scoped to the switch rather than
-            // the outer stack so the segmented control and the footer's
-            // position label, which also read `destination`, update plainly.
-            Group {
-                switch destination {
-                case .today:
-                    VStack(alignment: .leading, spacing: 8) {
-                        TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
-                        Divider()
-                        ClocksSection(clock: clock, settings: settings.settings)
-                    }
-                case .convert:
-                    ConverterView(model: converter, settings: settings.settings)
+            // Both destinations stay laid out and cross-fade, so the window
+            // keeps the taller one's height. Swapping views in a `switch`
+            // resized the window inside SwiftUI's commit, which AppKit rejects
+            // (layout recursion, "transaction during CA commit").
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
+                    Divider()
+                    // With today's date, not on a tab of its own: date and
+                    // month are read in one glance.
+                    MonthGridView(
+                        model: monthGrid, settings: settings.settings, clock: clock,
+                        isActive: destination == .today
+                    )
+                    ClocksSection(clock: clock, settings: settings.settings)
                 }
+                .destinationLayer(isShowing: destination == .today)
+
+                ConverterView(model: converter, settings: settings.settings)
+                    .destinationLayer(isShowing: destination == .convert)
             }
             .animation(.default, value: destination)
         }
@@ -104,16 +106,27 @@ struct PopoverView: View {
 
         // Settings and Quit live below the content rather than inside either
         // destination. They open another window or end the process, so they are
-        // not a step in navigating Today and Convert, and burying them in one tab
+        // not a step in navigating the destinations, and burying them in one tab
         // would hide them from the other.
         //
-        // `destination`, `openSettings` and the update state are all this hands
-        // over, so a per-second clock tick never re-evaluates the footer - the
-        // same reasoning that made the header, Today and Clocks their own view
+        // `openSettings` and the update state are all this hands over, so a
+        // per-second clock tick never re-evaluates the footer - the same
+        // reasoning that made the header, Today and Clocks their own view
         // types.
-        PopoverFooter(destination: destination, openSettings: { openSettings() }, updates: updates)
+        PopoverFooter(openSettings: { openSettings() }, updates: updates)
     }
 
+}
+
+extension View {
+    /// One destination in the popover's stack: drawn, hit-testable, focusable
+    /// and read out only while it is the one showing.
+    fileprivate func destinationLayer(isShowing: Bool) -> some View {
+        opacity(isShowing ? 1 : 0)
+            .allowsHitTesting(isShowing)
+            .disabled(!isShowing)
+            .accessibilityHidden(!isShowing)
+    }
 }
 
 #if DEBUG
@@ -123,6 +136,7 @@ struct PopoverView: View {
         // Keep the preview clock fixed when the visibility task starts.
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
+        monthGrid: MonthGridModel(now: AppData.previewInstant),
         dataset: AppData.dataset,
         // The resting state: no update, so no update button in the footer.
         updates: UpdateCheckModel(service: PreviewUpdateService())
@@ -138,6 +152,7 @@ struct PopoverView: View {
         settings: .preview,
         clock: ClockModel(now: AppData.previewInstant, refreshes: false),
         converter: ConverterModel(now: AppData.previewInstant),
+        monthGrid: MonthGridModel(now: AppData.previewInstant),
         dataset: AppData.dataset,
         updates: UpdateCheckModel(service: PreviewUpdateService(reporting: .updateAvailable))
     )
@@ -147,7 +162,8 @@ struct PopoverView: View {
 
 // MARK: - Header Bar
 
-/// Identity on the left, the live Nepal Time on the right.
+/// Identity on the left, the live clock today follows on the right: Nepal Time,
+/// or the Mac's own time when the user chose it (ADR-0017).
 ///
 /// The reference this follows leads with a title bar carrying a name and a
 /// running value, and that is what makes it read as a surface with its own
@@ -169,114 +185,39 @@ private struct HeaderBar: View {
                 .font(.subheadline.weight(.medium))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Text(clock.nptTimeString(digits: settings.digits))
+            // Sized by a constant "00:00:00" (monospaced, so as wide as any
+            // reading) with the time in an overlay: a ticking `Text` in the
+            // stack made SwiftUI re-measure the whole popover every second.
+            Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+                .hidden()
+                .overlay(alignment: .trailing) {
+                    HeaderClockTime(clock: clock, digits: settings.digits)
+                }
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                .accessibilityLabel(
-                    "\(Strings.nepalTimeLabel): \(clock.nptTimeString(digits: .latin))"
-                )
         }
     }
 }
 
-// MARK: - Today
-
-/// Today's date as the hero, with the Gregorian line beneath it.
-private struct TodaySection: View {
+/// The header's only clock read, so the tick re-evaluates this and not the row.
+private struct HeaderClockTime: View {
     let clock: ClockModel
-    let settings: DisplaySettings
-    let dataset: CalendarDataset
-
-    /// Last Bikram Sambat year the bundled dataset can convert. Named in the
-    /// range boundary state so a user past it can tell a data limit from a bug.
-    private var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
+    let digits: DigitScript
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // No "Today" header here. The segmented control directly above already
-            // reads "Today" and is the selected segment, so a second "Today" two
-            // lines down repeats the destination to confirm what the control just
-            // said. Removing it also lets the date sit at the top of the content
-            // rather than below a label describing it.
-            //
-            // The heading role is not lost: the segmented control carries the
-            // destination name, and the date below it is the first thing a reader
-            // meets either way.
-
-            if let todayBS = clock.todayBSDate(in: dataset) {
-                // The hero. Weight is what makes the date the first thing read
-                // rather than a value sitting beside its own label; everything
-                // below steps down from it.
-                //
-                // `largeTitle`, and semantic like every other font here. This was
-                // a literal `system(size: 28)` — 2pt larger, and not scaling: a
-                // literal point size ignores the system accessibility text size,
-                // so a user enlarging text saw every line grow except the hero.
-                //
-                // Shown exactly as configured; announced in a form a voice can
-                // pronounce. The two come from the same date, so they cannot
-                // drift into describing different days.
-                Text(formatBS(todayBS, settings: settings))
-                    .font(.largeTitle.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                    // Label only: `children: .ignore` leaves a `Text` with no
-                    // accessibility role at all. Replacing the label keeps its
-                    // static-text role.
-                    .accessibilityLabel(
-                        SpokenDate.bs(todayBS, monthNames: settings.monthNames)
-                    )
-            } else {
-                // Range boundary state: the bundled data has ended. Say so in
-                // words rather than showing a blank, and keep the Gregorian date
-                // and clocks below, which are still answerable.
-                // One element, not two: a heading and a sub-line are two
-                // separate announcements, and the second alone ("Supported
-                // through 2084 BS") is meaningless without the first. Merged, and
-                // given a single label, so the whole state is one sentence.
-                //
-                // Not styled as an error. The dataset ended, the app did not
-                // fail, and an alert-coloured panel would imply the user has done
-                // something wrong. The same weight as the date it replaces keeps
-                // the layout from jumping when the range is crossed.
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Strings.bsDateUnavailable)
-                        .font(.title3)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(Strings.supportedThrough(lastSupportedBSYear, digits: settings.digits))
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(
-                    "\(Strings.bsDateUnavailable). \(Strings.supportedThrough(lastSupportedBSYear, digits: .latin))"
-                )
-            }
-
-            if let todayAD = clock.todayADDate() {
-                // One date, two channels: the shown line as configured, the
-                // announcement with Latin digits and the weekday folded in, so
-                // the whole line is a single spoken sentence.
-                let weekday = clock.weekdayString(style: settings.monthNames)
-                HStack(spacing: 4) {
-                    Text(formatAD(todayAD, settings: settings))
-                    if let weekday {
-                        Text("\(Strings.weekdaySeparator) \(weekday)")
-                    }
-                }
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(
-                    SpokenDate.gregorianAnnouncement(date: todayAD, weekday: weekday)
-                )
-            }
-        }
+        Text(clock.headerTimeString(digits: digits))
+            // Named aloud: nothing on screen says which zone this is.
+            .accessibilityLabel(
+                "\(clock.headerClockLabel): \(clock.headerTimeString(digits: .latin))"
+            )
     }
 }
 
 // MARK: - Clocks
 
-/// The local-time reference, which is the one clock the header cannot carry.
+/// The clock the header does not carry: the Mac's local time beside Nepal
+/// Time, or Nepal Time beside the user's own zone (ADR-0017).
 ///
 /// Sits outside the Gregorian conditional because a clock is answerable
 /// regardless of calendar data, so it must survive the range boundary.
@@ -293,33 +234,50 @@ private struct ClocksSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Nepal Time is not repeated here. The header carries it, so a second
-            // copy one row below showed the same ticking value twice and made the
-            // popover read as though it had two clocks to offer.
+            // The header's clock is not repeated here. A second copy one row
+            // below showed the same ticking value twice and made the popover
+            // read as though it had two clocks to offer.
             //
-            // Only the local reference remains, which is the half the header
+            // Only the other reference remains, which is the half the header
             // cannot carry: the header is one value, and "what time is it here
             // compared to Nepal" is a comparison that needs both.
             //
-            // Omitted entirely when the local reading would repeat Nepal Time,
+            // Omitted entirely when the two readings would repeat each other,
             // which is the case for every user in Nepal. Two identical clocks
             // imply the second is somehow significant, and it is not — the
             // reference only earns its row by differing.
-            if !clock.localTimeIsRedundant {
+            if clock.showsSecondaryClock {
+                // Comes and goes with the row, so no rule sits above nothing.
+                Divider()
                 Label {
-                    Text(clock.localTimeString(digits: settings.digits))
+                    // Constant-width template plus overlay, as in the header.
+                    Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+                        .hidden()
+                        .overlay(alignment: .leading) {
+                            SecondaryClockTime(clock: clock, digits: settings.digits)
+                        }
                 } icon: {
-                    Text(Strings.localTimeLabel)
+                    Text(clock.secondaryClockLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                .accessibilityLabel("\(Strings.localTimeLabel): \(clock.localTimeString(digits: .latin))")
             }
         }
         .accessibilityElement(children: .contain)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The secondary row's only clock read, as `HeaderClockTime` is the header's.
+private struct SecondaryClockTime: View {
+    let clock: ClockModel
+    let digits: DigitScript
+
+    var body: some View {
+        Text(clock.secondaryTimeString(digits: digits))
+            .accessibilityLabel("\(clock.secondaryClockLabel): \(clock.secondaryTimeString(digits: .latin))")
     }
 }

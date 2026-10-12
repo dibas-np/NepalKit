@@ -215,11 +215,11 @@ struct SpokenOptionLabelTests {
     private static func stringsConstantsReachingTheSpokenChannel(
         forbidden: Set<Character>
     ) throws -> [String] {
-        // Proven not announced: the popover's weekday line is a visible `Text`
-        // inside an `HStack` that carries an explicit `.accessibilityLabel` of
-        // `SpokenDate.gregorianAnnouncement`, so the middle dot is replaced
-        // before it reaches the accessibility tree (PopoverView.swift). The
-        // converter's shown line is the only other use, and it is the `.shown`
+        // Proven not announced: the popover's weekday lines (beside the hero
+        // date, and on the Gregorian line past the range) sit in `HStack`s
+        // labelled `SpokenDate.today` or `SpokenDate.gregorianAnnouncement`,
+        // so the middle dot never reaches the accessibility tree
+        // (PopoverView.swift). The converter's shown line is the only other use, and it is the `.shown`
         // half of a tuple whose `.spoken` half is built separately.
         let shownThatNeverAnnounces: Set<String> = ["weekdaySeparator"]
         // A `static let` this cannot read a value out of is a hole in the sweep,

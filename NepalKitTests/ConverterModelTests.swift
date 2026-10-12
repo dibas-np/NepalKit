@@ -189,4 +189,82 @@ struct ConverterModelTests {
         #expect(model.adMonths(year: 1943) == Array(4 ... 12))
         #expect(model.adMonths(year: 1944) == Array(1 ... 4))
     }
+
+    // The supported range is 1975-2084 BS, 13 April 1918 through 12 April 2028
+    // (CONTEXT.md); 30 Chaitra 2084 is its last day (RoundTripTests).
+    @Test("Past the supported range, both pickers open on its last day")
+    func defaultsPastTheRangeNameTheLastSupportedDay() throws {
+        // 06:00 UTC is 11:45 Nepal Time on 13 April 2028, the day after the range.
+        for now in [try TestDates.utc(2028, 4, 13, 6, 0), try TestDates.utc(2030, 5, 12, 6, 0)] {
+            let model = ConverterModel(now: now)
+            #expect(model.adDate == GADay(year: 2028, month: 4, day: 12))
+            #expect(model.bsDate == BSDay(year: 2084, month: 12, day: 30))
+            #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+        }
+    }
+
+    @Test("Before the supported range, both pickers open on its first day")
+    func defaultsBeforeTheRangeNameTheFirstSupportedDay() throws {
+        let model = ConverterModel(now: try TestDates.utc(1900, 1, 1, 6, 0))
+        #expect(model.adDate == GADay(year: 1918, month: 4, day: 13))
+        #expect(model.bsDate == BSDay(year: 1975, month: 1, day: 1))
+        #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+    }
+
+    @Test("Inside the supported range, both pickers open on today in Nepal Time")
+    func defaultsInsideTheRangeNameToday() throws {
+        // 27 September 2026 is 11 Ashoj 2083 (see `bsToADKnownDateWithWeekday`).
+        let model = ConverterModel(now: try TestDates.utc(2026, 9, 27, 12, 0))
+        #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
+        #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 11))
+        #expect(bsToAD(model.bsDate, in: AppData.dataset) == model.adDate)
+    }
+
+    // 22 Bhadra 2084 is 8 September 2027 (Projected2084Tests); 2084 is the
+    // dataset's provisional row, 2083 is attested (SOURCES.md).
+    @Test("A Bikram Sambat to Gregorian result from 2084 is provisional, shown and spoken")
+    func bsToADResultInAProvisionalYear() {
+        let model = ConverterModel(direction: .bsToAD, bsYear: 2084, bsMonth: 5, bsDay: 22, adYear: 2027, adMonth: 9, adDay: 8)
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        #expect(model.resultIsProvisional)
+        #expect(model.convertedText(settings: settings) == "8 September 2027 · Wednesday")
+        #expect(model.spokenResult(settings: settings) == "8 September 2027, Wednesday. Provisional projection, not yet in the official Nepali Patro")
+    }
+
+    @Test("A Gregorian to Bikram Sambat result landing in 2084 is provisional")
+    func adToBSResultInAProvisionalYear() {
+        let model = ConverterModel(direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11, adYear: 2027, adMonth: 9, adDay: 8)
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        #expect(model.resultIsProvisional)
+        #expect(model.spokenResult(settings: settings)?.hasSuffix(". Provisional projection, not yet in the official Nepali Patro") == true)
+    }
+
+    @Test("Results in attested years carry no provisional note, both directions")
+    func attestedResultsAreNotProvisional() {
+        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
+        let bsSide = bsModel()
+        #expect(!bsSide.resultIsProvisional)
+        #expect(bsSide.spokenResult(settings: settings) == "27 September 2026, Sunday")
+        // 13 April 2027 is the last day of 2083 (Chaitra 30); 2084 starts the next day.
+        let adSide = ConverterModel(direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11, adYear: 2027, adMonth: 4, adDay: 13)
+        #expect(!adSide.resultIsProvisional)
+        #expect(adSide.spokenResult(settings: settings)?.contains("Provisional") == false)
+    }
+
+    @Test("The About note is generated from the dataset's provisional years")
+    func provisionalYearsNoteFollowsTheDataset() {
+        #expect(Strings.provisionalYearsNote([2084]) == "2084 BS is a provisional projection until the official Nepali Patro is published.")
+        #expect(Strings.provisionalYearsNote([]) == nil)
+        #expect(Strings.provisionalYearsNote(AppData.dataset.provisionalYears) != nil)
+    }
+
+    @Test func theDirectionPickerBindingCarriesTheDateAcross() {
+        let model = bsModel()
+        #expect(model.directionSelection == .bsToAD)
+        model.directionSelection = .adToBS
+        #expect(model.direction == .adToBS)
+        #expect(model.adDate == GADay(year: 2026, month: 9, day: 27))
+        model.directionSelection = .adToBS
+        #expect(model.direction == .adToBS)
+    }
 }

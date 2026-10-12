@@ -1,4 +1,5 @@
-# Publish the Sparkle appcast as the update feed.
+# Publish the Sparkle appcast as the update feed, alongside the landing page
+# in site/ (with the README screenshots from docs/img).
 #
 # The feed is what every install polls for updates, so it is verified here
 # rather than deployed on trust. Verification uses the public key committed to
@@ -14,12 +15,17 @@ name: publish appcast
 
 on:
   push:
-    # Only when a feed actually changes. A README fix must not redeploy.
+    # Only when the feed, the landing page or a screenshot it shows changes;
+    # a README text fix does not redeploy. The feed is re-verified either way.
     paths:
       - appcast.xml
+      - site/**
+      - docs/img/popover.png
+      - docs/img/watch-today.png
+      - docs/img/watch-complications.png
     branches: [main]
-  # Re-run the check on demand, without publishing. Useful after changing the
-  # verifier itself.
+  # Re-run the check on demand, without publishing: the deploy job runs only
+  # for a push to main. Useful after changing the verifier itself.
   workflow_dispatch:
 
 # Least privilege: verify runs untrusted-by-default repo content and needs
@@ -130,7 +136,11 @@ jobs:
         # "tar: appcast.xml: Cannot open: Not a directory".
         run: |
           set -euo pipefail
-          mkdir -p _site
+          mkdir -p _site/img
+          cp -R site/. _site/
+          # Only the screenshots the page shows, not every image in docs/img.
+          cp docs/img/popover.png docs/img/watch-today.png docs/img/watch-complications.png _site/img/
+          # Copied last so nothing in site/ can shadow the verified feed.
           cp appcast.xml _site/
           ls -la _site
 
@@ -143,7 +153,11 @@ jobs:
   deploy:
     name: deploy to Pages
     needs: verify
-    if: needs.verify.outputs.publish == 'true'
+    # A push to main only. A dispatch, from any ref, verifies and stops here:
+    # the github-pages environment also admits only main, but a branch's own
+    # copy of this file could drop this line, so the environment is the guard
+    # and this keeps the code honest to the comment on workflow_dispatch.
+    if: needs.verify.outputs.publish == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

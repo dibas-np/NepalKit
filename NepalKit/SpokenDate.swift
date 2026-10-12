@@ -25,8 +25,24 @@ extension SpokenDate {
         dataset: CalendarDataset,
         updateAvailable: Bool = false
     ) -> String {
+        menuBar(
+            spokenDate: today.map { bs($0, monthNames: monthNames) },
+            dataset: dataset,
+            updateAvailable: updateAvailable
+        )
+    }
+
+    /// The same announcement around an already-spoken date, which is how the
+    /// menu-bar extra calls it: the date part there carries whatever weekday and
+    /// time the menu-bar format adds (`SpokenDate.menuBarDate`). Nil means the
+    /// date is past the supported range.
+    static func menuBar(
+        spokenDate: String?,
+        dataset: CalendarDataset,
+        updateAvailable: Bool = false
+    ) -> String {
         let reminder = updateAvailable ? "\(Strings.updateAvailableSpoken), " : ""
-        guard let today else {
+        guard let spokenDate else {
             // Past the supported range the label is a marker, not a date, and a
             // bare "n/a" spoken alone is meaningless — it reads as a broken
             // item. Say what actually happened instead. The end date comes from
@@ -37,6 +53,6 @@ extension SpokenDate {
             }
             return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(ad(end)))"
         }
-        return "\(Strings.appNameForSpeech), \(reminder)\(bs(today, monthNames: monthNames))"
+        return "\(Strings.appNameForSpeech), \(reminder)\(spokenDate)"
     }
 }

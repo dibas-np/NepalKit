@@ -84,6 +84,38 @@ struct ConverterLayoutTests {
         }
     }
 
+    @Test func monthGridColumnsFitThePopover() {
+        // Seven equal columns with 2pt gutters share the content width, so each
+        // weekday header and each day number must fit one column. The Bikram
+        // Sambat day is drawn at body size, larger than the controls this
+        // estimate was set for, so it is checked at 1.5x.
+        let column = (Self.popoverContentWidth - 6 * 2) / 7
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            for weekday in 1 ... 7 {
+                let name = MonthGridModel.shortWeekdayName(weekday, style: style)
+                #expect(Self.width(of: name) <= column, "'\(name)' needs ~\(Int(Self.width(of: name)))pt, column is \(Int(column))pt")
+            }
+        }
+        for digits in [DigitScript.latin, .devanagari] {
+            let day = formatNumber(32, digits: digits)
+            #expect(Self.width(of: day) * 1.5 <= column, "\(day) does not fit a \(Int(column))pt column")
+        }
+    }
+
+    @Test func monthGridHeaderFitsThePopover() {
+        // Title, the text "Today" button, and two chevron-only buttons on one
+        // row. The widest title is the longest month name with a four-digit year.
+        let chevrons = 2 * Self.controlChrome
+        let today = Self.controlChrome + 16 + Self.width(of: Strings.todayLabel)
+        for style in [MonthNameStyle.nepali, .transliterated] {
+            for month in 1 ... 12 {
+                let title = "\(monthName(month: month, style: style)) \(formatNumber(2084, digits: .devanagari))"
+                let demanded = Self.width(of: title) * 1.2 + today + chevrons + 3 * 4
+                #expect(demanded <= Self.popoverContentWidth, "'\(title)' header needs ~\(Int(demanded))pt")
+            }
+        }
+    }
+
     /// Conservative advance width for a string at the control's text size.
     ///
     /// Deliberately pessimistic: Devanagari conjuncts and diacritics advance

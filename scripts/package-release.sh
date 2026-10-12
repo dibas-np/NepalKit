@@ -399,6 +399,11 @@ python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 # symlink, and the bytes copied into it include the signed appcast.
 OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
+# Read-only, because the feed's signature covers every byte and an autosaving
+# editor can rewrite a file that was only opened (Zed did, for 1.6.1).
+# verify-appcast.sh makes its staging copy writable again, so a read-only feed
+# copied into the repository cannot break the next release.
+chmod 0444 "$OUT_DIR"/*
 
 # The last thing this run does to the machine, and the only one the operator
 # would not otherwise notice: nothing from $WORK should be left registered.

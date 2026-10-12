@@ -82,6 +82,19 @@ class SummariseTests(unittest.TestCase):
         self.assertEqual(counts["regions"], 10)
         self.assertEqual(counts["regions_hit"], 8)
 
+    def test_a_shared_home_prefix_stripped_by_llvm_cov_still_matches(self):
+        """With the build under the same home folder, llvm-cov drops that prefix too."""
+        tail = ROOT.split("/", 2)[2]  # e.g. "Users/me/" gone, the rest kept
+        report = FIXTURE.replace(ROOT, tail)
+        counts = mc.summarise(report, APP_ONLY)
+        self.assertEqual(counts["files"], 2)
+        self.assertEqual(counts["lines"], 500)
+
+    def test_an_unrelated_path_with_a_matching_tail_word_is_not_counted(self):
+        """Tails are cut at "/" boundaries, so "xNepalKit/" is not "NepalKit/"."""
+        counts = mc.summarise(f"x{APP}C.swift 10 2 80.00% 4 1 75.00% 200 140 30.00% 0 0 -", APP_ONLY)
+        self.assertEqual(counts["files"], 0)
+
     def test_an_empty_report_is_all_zeros(self):
         counts = mc.summarise("", APP_ONLY)
         self.assertEqual(set(counts.values()), {0})
@@ -149,6 +162,19 @@ class RegressionTests(unittest.TestCase):
     def test_the_half_hundredth_tolerance_holds(self):
         totals = dict(self.FLOOR["totals"], lines=39.996)
         self.assertEqual(mc.regressions(totals, self.FLOOR["suites"], self.FLOOR), [])
+
+
+class ClearProfiles(unittest.TestCase):
+    def test_removes_stale_profiles_and_keeps_build_products(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a" / "b").mkdir(parents=True)
+            (root / "a" / "old.profraw").write_text("x")
+            (root / "a" / "b" / "merged.profdata").write_text("x")
+            (root / "a" / "b" / "Tests.xctest").write_text("keep")
+            self.assertEqual(mc.clear_profiles(root), 2)
+            self.assertEqual([p.name for p in root.rglob("*") if p.is_file()], ["Tests.xctest"])
 
 
 if __name__ == "__main__":

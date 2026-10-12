@@ -9,6 +9,12 @@ Status: waiting
 > The procedure is `docs/release-evidence/dataset-extension-procedure.md`. This
 > ticket is the calendar and the two decisions; the procedure is how they get
 > carried out.
+>
+> **Updated 2026-10-11 for ADR-0014.** The table's sole historical base is now
+> askbuddie, pinned at `d3475606`, plus 14 explicit local corrections; the
+> multi-source corroboration this ticket first described is no longer the
+> policy. The monthly check and its `last_checked:` record moved into the
+> procedure, and a scheduled job now fails when that record is overdue.
 
 ## Why this exists
 
@@ -27,15 +33,14 @@ manage.
 
 ## The trigger
 
-`SOURCES.md`, in "Why 2084 is the upper bound — and a correction", records the
-schedule as of 28 September 2026: the Nepal Panchanga Nirnayak Samiti approves
+As recorded on 28 September 2026, the Nepal Panchanga Nirnayak Samiti approves
 each year's patro a few months before that year begins, it **has published
 through 2083 BS only**, and the official determination of **2084 is expected
 around Magh 2083 BS (January–February 2027)**. The 2083 almanac was confirmed
 published in December 2025, following the same pattern as 2082.
 
 So the first decision comes in **January–February 2027**, roughly three months
-before 2084 BS begins on 13 April 2027. That three months is the entire budget
+before 2084 BS begins on 14 April 2027. That three months is the entire budget
 for a decision, a transcription, a baseline regeneration and a release.
 
 **Target the release months before 2028-04-12, not weeks.** The deadline is
@@ -47,12 +52,10 @@ weeks away" is not a thing that can be said to them afterwards.
 
 ### 1. Attest or contradict the shipped 2084 row
 
-The shipped 2084 row is a **projection**. `SOURCES.md` is explicit that this is
-in tension with ADR-0001's rule that nothing is extrapolated, and that it is
-recorded rather than smoothed over. Three sources carry it — `medic` (base),
-`askbuddie` (MIT), and the Kathmandu Metropolitan City calendar — with
-`subeshb1/Nepali-Date` alone against them, differing in five months and on the
-year total (366 against 365).
+The shipped 2084 row is NepalKit's own **provisional projection**, a 365-day
+development and testing row, not attributed to the askbuddie base (ADR-0014,
+SOURCES.md). ADR-0014 keeps it as a separate, recorded exception to "nothing is
+extrapolated".
 
 When the Samiti publishes 2084, compare all twelve months of the published
 almanac against the shipped row. Compare months, not totals: a transposition
@@ -69,19 +72,11 @@ preserves the total, and every one of the twenty recorded arbitrations is one.
 
 ### 2. Ship 2085 only once it is attested
 
-Corroborate 2085 across the KMC calendar, the four pinned community tables, and
-at least one published-Patro reproduction, and record who agrees. Then apply
-the rule, from `SOURCES.md`, verbatim:
-
-> Still not shipped: nothing is extrapolated
-> (ADR-0001), and agreement between projections is not attestation.
-
-Only the Samiti's published almanac makes a year shippable. `medic`,
-`askbuddie`, `go-bs` and KMC currently agree on the same 2085 row of
-`[31, 32, 31, 32, 30, 31, 30, 30, 29, 30, 30, 30]` (366 days), and
-`subeshb1/Nepali-Date` differs — but that agreement is the precondition for
-shipping 2085, not permission to ship it. **2085 waits for the Samiti, not for
-KMC.**
+Compare the Samiti's published 2085 almanac with the pinned askbuddie base
+(`scripts/verify-candidate-year.py 2085`) and record every difference and how it
+was resolved in SOURCES.md. Other converters may be consulted as targeted
+evidence, but they are not additional bases (ADR-0014), and agreement between
+projections is not attestation. **2085 waits for the Samiti's almanac.**
 
 A green run of `scripts/verify-candidate-year.py` is not a decision. It
 informs one.
@@ -90,7 +85,7 @@ informs one.
 
 - Whether the identifier `CalendarDataset.v2` is renamed to `.v3` at extension
   time, or whether the dataset version moves without it. ADR-0010's rule
-  points one way; the deviation options are in the procedure's step 3d, and the
+  points one way; the procedure's step 5 covers versioning, and the
   maintainer takes that decision with the evidence in front of them.
 - Whether a second independent 2085 reproduction can be obtained, and what is
   done if it cannot.
@@ -99,22 +94,5 @@ informs one.
 
 ## Monthly check, from 1 January 2027 onward
 
-Once a month, until the trigger fires:
-
-1. **Read the Samiti's publication notices on `npns.gov.np`.** Publication is
-   the trigger; the notice is where it is announced. Absence of a notice in
-   January is not evidence the year will not be published — 2083 was confirmed
-   in December 2025.
-2. **If it published, read the almanac itself.** A notice proves a year was
-   determined; it does not give you the twelve month lengths, and a
-   republication is not the almanac.
-3. **Then run the tooling**, which is corroboration and not the gate:
-
-   ```sh
-   python3 scripts/verify-candidate-year.py 2084
-   python3 scripts/verify-candidate-year.py 2085
-   ```
-
-If February 2027 passes with no publication, escalate rather than let the
-calendar run down. The Samiti's schedule is the one input this project cannot
-substitute for, and a slip in it needs more lead time, not less.
+Moved to the procedure's "Monthly Samiti check" section, which also holds the
+`last_checked:` record that the `patro-reminder` job reads.

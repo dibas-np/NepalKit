@@ -10,25 +10,20 @@ committed to is the condition that would let it be built.
 
 ## Where the project is
 
-v1.6.1 ships a menu-bar date, a converter, Siri and Shortcuts support, and a
+v1.7.0 ships a menu-bar date you can shape, a month calendar with 2083's
+festivals and public holidays, a converter, Siri and Shortcuts support, and a
 standalone Apple Watch app with four complication styles. See
 [CHANGELOG.md](../CHANGELOG.md) for what has actually changed and
 [docs/achievements.md](achievements.md) for what it added up to.
 
 ## Planned
 
-### App Store distribution for the Watch app
+### App Store distribution for the Watch app — deferred
 
-The Watch app is currently built from source and runs on a development-signed
-destination. Distribution means a signing identity, a store record, a privacy
-manifest, and a review cycle.
-
-*Blocked on:* a decision about whether the Mac app stays Developer-ID-only. The
-two channels have different update models — Sparkle versus the store — and
-supporting both is a permanent tax, not a one-time cost.
-
-*Would change:* ADR-0008 (distribution is a notarized disk image, not the
-store) if the answer is that both ship.
+The Watch app stays source-built and development-signed until users ask for a
+store release ([ADR-0015](adr/0015-watch-app-distribution.md)). A GitHub issue
+asking for it reopens this item; the ADR records the store option's costs and
+the timing that would suit it.
 
 ### Reducing the supported calendar range
 
@@ -58,9 +53,6 @@ risk — a compromised single account — are closed by this and by nothing else
   cannot be covered without either UI tests or a view-logic refactor, and
   [ADR-0005](adr/0005-app-layer-test-execution.md) records the harness decision
   and the hosted-runner history.
-- **Signing release tags.** Documented; no published tag is signed yet. The first
-  signed tag will be the next release's. See
-  [docs/release-verification.md](release-verification.md) for how to verify one.
 
 ## Not planned
 
@@ -69,7 +61,7 @@ Stated so that their absence is a decision rather than an oversight.
 | Not doing | Why |
 |---|---|
 | Telemetry, analytics, crash reporting | Would be a second third-party dependency and the first with network egress of its own. See ADR-0012 for how the dependency budget is argued |
-| A website separate from the repository | The GitHub repository is the documentation. A second site would need its own security posture and this project has no capacity for two |
+| A documentation site separate from the repository | The landing page is a single static page on the update feed's GitHub Pages site and points back here; the repository stays the documentation. A second site would need its own security posture and this project has no capacity for two |
 | Mac App Store distribution for the Mac app | The Developer ID channel is signed, notarized and update-signed end to end today. Adding a store would mean maintaining two update models |
 | A public API or plugin interface | The surface would be a security commitment. Not one a solo maintainer should make |
 

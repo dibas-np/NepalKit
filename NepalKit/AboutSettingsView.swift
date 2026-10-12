@@ -15,6 +15,8 @@ import SwiftUI
 /// them puts the version a user is about to report next to the control that
 /// changes it, which is the pairing that makes a bug report actionable.
 struct AboutSettingsView: View {
+    /// `@Bindable` for the automatic-checks toggle; `automaticChecksSetting`
+    /// writes through to the service, which stays the authority.
     @Bindable var updates: UpdateCheckModel
     /// The build's own facts. Read from the bundle by the app and passed in, so
     /// the version here cannot disagree with the one the menu bar was built from.
@@ -41,6 +43,12 @@ struct AboutSettingsView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(Strings.supportedRangeLabel)
                 .accessibilityValue(Strings.supportedRangeSpoken(dataset.supportedRange))
+                if let note = Strings.provisionalYearsNote(dataset.provisionalYears) {
+                    // Directly under the range it qualifies.
+                    Text(note)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text(metadata.name)
             }
@@ -52,7 +60,7 @@ struct AboutSettingsView: View {
                 Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
                     .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
 
-                Toggle(isOn: $updates.automaticallyChecks) {
+                Toggle(isOn: $updates.automaticChecksSetting) {
                     Text(Strings.updateAutomaticallyLabel)
                 }
 

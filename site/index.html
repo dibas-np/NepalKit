@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NepalKit</title>
+<meta name="description" content="Today's Bikram Sambat date in your Mac's menu bar, with the month at a glance, festivals and public holidays, Nepal Time, date conversion, and Siri and Shortcuts support.">
+<meta name="theme-color" content="#DC143C">
+<meta property="og:type" content="website">
+<meta property="og:title" content="NepalKit">
+<meta property="og:description" content="Today's Bikram Sambat date in your Mac's menu bar, with the whole month, its festivals and holidays a click away.">
+<meta property="og:url" content="https://dibas-np.github.io/NepalKit/">
+<meta property="og:image" content="https://dibas-np.github.io/NepalKit/img/popover.png">
+<meta property="og:image:alt" content="NepalKit's Today view with the Bikram Sambat month grid">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' rx='230' fill='%23C71236'/%3E%3Crect x='262' y='252' width='500' height='520' rx='64' fill='%23fff'/%3E%3Crect x='360' y='192' width='44' height='110' rx='22' fill='%23fff'/%3E%3Crect x='620' y='192' width='44' height='110' rx='22' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #fbfaf9;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #5f5f66;
+    --line: #e7e3e1;
+    --accent: #c71236;
+    --button: #c71236;
+    --button-ink: #ffffff;
+    --code-bg: #f3efee;
+    --shadow: 0 1px 2px rgb(29 29 31 / .04), 0 8px 24px rgb(29 29 31 / .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141214;
+      --surface: #1d1a1c;
+      --text: #f2f0f1;
+      --muted: #a8a3a6;
+      --line: #322d30;
+      --accent: #ff6b82;
+      --button: #dc143c;
+      --button-ink: #ffffff;
+      --code-bg: #262124;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141214;
+    --surface: #1d1a1c;
+    --text: #f2f0f1;
+    --muted: #a8a3a6;
+    --line: #322d30;
+    --accent: #ff6b82;
+    --button: #dc143c;
+    --button-ink: #ffffff;
+    --code-bg: #262124;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  }
+  a { color: var(--accent); text-underline-offset: .15em; }
+  img { max-width: 100%; height: auto; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+  /* Hero: words left, screenshot right; stacked and centred on narrow screens. */
+  header.hero {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 56px; align-items: center;
+    padding-top: 80px; padding-bottom: 72px;
+  }
+  .icon { width: 80px; height: 80px; filter: drop-shadow(0 6px 16px rgb(122 10 38 / .25)); }
+  h1 { font-size: clamp(2.6rem, 6vw, 4rem); line-height: 1.02; letter-spacing: -0.03em; margin: 20px 0 14px; }
+  .tagline { font-size: clamp(1.15rem, 2.4vw, 1.4rem); line-height: 1.4; color: var(--muted); max-width: 26em; margin: 0; text-wrap: balance; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 32px 0 14px; }
+  .button {
+    display: inline-block; padding: 12px 22px; border-radius: 999px;
+    background: var(--button); color: var(--button-ink);
+    font-weight: 600; text-decoration: none;
+  }
+  .button:hover { filter: brightness(1.08); }
+  .button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .requirements { color: var(--muted); font-size: .9rem; margin: 0; }
+
+  .brew {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 24px; max-width: 100%;
+    padding: 10px 14px; border-radius: 10px; background: var(--code-bg);
+    font: 14px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .brew code { white-space: nowrap; min-width: 0; overflow-x: auto; }
+  .brew button {
+    flex: none; font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface);
+    color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+  }
+
+  .shot { display: block; width: 340px; border-radius: 14px; box-shadow: 0 24px 60px rgb(0 0 0 / .22); }
+
+  section { padding: 72px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(1.6rem, 3.5vw, 2.1rem); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 10px; }
+  .lede { color: var(--muted); margin: 0 0 32px; max-width: 38em; }
+
+  /* Card grids sized to their count, so no card is left alone on a row. */
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px 22px 24px; box-shadow: var(--shadow); }
+  .card h3 { font-size: 1.05rem; margin: 0 0 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+  .watch { display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center; }
+  .watch-shots { display: flex; gap: 16px; }
+  .watch-shots img { width: 170px; border-radius: 28px; }
+  @media (max-width: 860px) {
+    header.hero { grid-template-columns: minmax(0, 1fr); gap: 48px; padding-top: 56px; text-align: center; }
+    .shot { margin: 0 auto; }
+    .tagline { margin: 0 auto; }
+    .cta { justify-content: center; }
+    .grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 600px) {
+    .grid.two, .grid.three { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .watch { grid-template-columns: 1fr; }
+    .watch-shots { justify-content: center; }
+    .watch-shots img { width: calc(50% - 8px); max-width: 170px; }
+  }
+
+  /* Siri phrases as speech bubbles. */
+  .phrases { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .phrases li {
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+    border-radius: 20px 20px 20px 6px; padding: 10px 18px; font-size: 1.1rem;
+  }
+  ul.plain { padding-left: 1.2em; margin: 0; color: var(--muted); }
+  ul.plain li { margin: 4px 0; }
+  .note { margin: 20px 0 0; font-size: .9rem; color: var(--muted); }
+
+  footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 12px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="hero wrap">
+  <div>
+  <svg class="icon" viewBox="0 0 1024 1024" role="img" aria-label="NepalKit app icon">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#DC143C"/>
+        <stop offset="1" stop-color="#7A0A26"/>
+      </linearGradient>
+    </defs>
+    <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+    <rect x="262" y="252" width="500" height="520" rx="64" fill="#fff"/>
+    <rect x="360" y="192" width="44" height="110" rx="22" fill="#fff"/>
+    <rect x="620" y="192" width="44" height="110" rx="22" fill="#fff"/>
+    <path fill="#C71236" d="m 417.68004,516.88 c 0,15.12 37.44,57.24 51.84,57.24 13.68,0 19.08,-6.84 19.08,-20.16 v -31.68 h 66.24 V 647.2 h 41.04 V 452.8 h 29.16 v -40.68 h -226.08 v 40.68 h 155.88 v 36.36 h -111.6 c -16.56,0 -25.56,16.2 -25.56,27.72 z M 587.9598,411.76 499.3998,316 l -27.36,21.24 79.56,74.52 z"/>
+  </svg>
+  <h1>NepalKit</h1>
+  <p class="tagline">Today's Bikram Sambat date in your Mac's menu bar, with the whole month, its festivals and holidays a click away.</p>
+
+  <div class="cta">
+    <a class="button" href="https://github.com/dibas-np/NepalKit/releases/latest">Download for Mac</a>
+    <a class="button ghost" href="https://github.com/dibas-np/NepalKit">View on GitHub</a>
+  </div>
+  <p class="requirements">Free and open source · macOS 26.6 or later</p>
+
+  <div class="brew">
+    <code id="brew-cmd">brew install --cask dibas-np/tap/nepalkit</code>
+    <button type="button" id="copy">Copy</button>
+    <span id="copy-status" class="visually-hidden" role="status" aria-live="polite"></span>
+  </div>
+  </div>
+
+  <img class="shot" src="img/popover.png" width="340" height="440"
+       alt="NepalKit's Today view: 25 Ashoj 2083 in Devanagari, marked as Ghatasthapana and a public holiday, above the month grid with Gregorian dates, festival dots, and Saturdays and holidays in red">
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <h2>The whole month, one click away</h2>
+      <p class="lede">Click the menu-bar date for today's Bikram Sambat date above a month grid, with each day's Gregorian date beneath it.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Festivals and national days</h3>
+          <p>2083's festivals and national days, from Nepal's national Panchanga, are marked with a dot and named under today's date.</p>
+        </div>
+        <div class="card">
+          <h3>Public holidays in red</h3>
+          <p>Nationwide public holidays from the Nepal Gazette show in red like Saturdays. Holidays limited to a community, region or group are named too.</p>
+        </div>
+        <div class="card">
+          <h3>Any day, in detail</h3>
+          <p>Click a day to see it in both calendars and how far it is from today. Copy it, or add it to your calendar as an all-day event.</p>
+        </div>
+        <div class="card">
+          <h3>Flip through months</h3>
+          <p>Scroll over the grid or press the left and right arrow keys. The Gregorian months it spans sit beside the title.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Everything else you'd expect</h2>
+      <p class="lede">A native menu-bar app with no Dock icon, built for anyone who keeps time by the Nepali calendar.</p>
+      <div class="grid three">
+        <div class="card">
+          <h3>Your menu bar, your way</h3>
+          <p>Add the weekday, the year, and the clock (12- or 24-hour, with or without seconds), with a live preview in Settings.</p>
+        </div>
+        <div class="card">
+          <h3>Nepal Time</h3>
+          <p>A live UTC+5:45 clock, with your own time beside it when they differ. Today follows Nepal Time by default; choose your Mac's time zone instead and the two clocks swap places.</p>
+        </div>
+        <div class="card">
+          <h3>Date conversion</h3>
+          <p>Convert between Bikram Sambat and Gregorian, with pickers that follow each month's actual length.</p>
+        </div>
+        <div class="card">
+          <h3>Your script, your names</h3>
+          <p>Latin or Devanagari digits, with Nepali or transliterated month and weekday names.</p>
+        </div>
+        <div class="card">
+          <h3>Siri and Shortcuts</h3>
+          <p>Ask Siri for today's, tomorrow's or yesterday's date, or convert dates in either direction from Shortcuts.</p>
+        </div>
+        <div class="card">
+          <h3>Private by design</h3>
+          <p>Works offline. No account, no analytics, no telemetry. The network is used only to check for updates.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap watch">
+      <div>
+        <h2>On your wrist, too</h2>
+        <p class="lede">A standalone Apple Watch app shows today's Bikram Sambat date with its weekday and the Gregorian date, offline and independent of your Mac and iPhone.</p>
+        <ul class="plain">
+          <li>Rectangular, inline, circular, and corner complications.</li>
+          <li>Anchored to Nepal Time in any time zone.</li>
+          <li>Refreshes at Nepal midnight.</li>
+        </ul>
+        <p class="note">The Watch app is a developer preview for watchOS 26 or later. It isn't on the App Store or in the Mac download; you <a href="https://github.com/dibas-np/NepalKit#on-the-apple-watch">build it from source with Xcode</a>.</p>
+      </div>
+      <div class="watch-shots">
+        <img src="img/watch-today.png" width="324" height="394" loading="lazy"
+             alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date">
+        <img src="img/watch-complications.png" width="422" height="514" loading="lazy"
+             alt="An Infograph watch face with NepalKit corner complications showing the Bikram Sambat date along the bezel">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Ask Siri</h2>
+      <p class="lede">NepalKit answers with the Bikram Sambat date and weekday.</p>
+      <ul class="phrases">
+        <li>“What is today's Nepali date with NepalKit”</li>
+        <li>“What is tomorrow's Nepali date with NepalKit”</li>
+        <li>“What was yesterday's Nepali date with NepalKit”</li>
+      </ul>
+      <p class="lede">Shortcuts adds five actions: today's, tomorrow's and yesterday's Bikram Sambat date, and conversion in both directions.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Calendar data you can check</h2>
+      <p class="lede">NepalKit supports 1975 through 2084 BS (April 1918 through April 2028). Month lengths come from a bundled, sourced table, and 2083's are checked against the government's national Panchanga. Festivals come from that Panchanga, and public holidays from the Home Ministry's Nepal Gazette notice. Every source, correction and limit is documented in <a href="https://github.com/dibas-np/NepalKit/blob/main/SOURCES.md">SOURCES.md</a>. 2084 BS is a provisional projection. For official use, consult the published Nepali Patro.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="https://github.com/dibas-np/NepalKit/releases">Releases</a>
+      <a href="https://github.com/dibas-np/NepalKit/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/dibas-np/NepalKit/blob/main/docs/release-verification.md">Verify a download</a>
+      <a href="https://github.com/dibas-np/NepalKit/blob/main/SECURITY.md">Security</a>
+      <a href="https://github.com/dibas-np/NepalKit/blob/main/SUPPORT.md">Support</a>
+    </nav>
+    <p>NepalKit is licensed under GPL-3.0-or-later. Releases are signed and notarized and update through Sparkle.</p>
+  </div>
+</footer>
+
+<script>
+  document.getElementById("copy").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    // A focused button's new text is not announced, so the result also goes to a live region.
+    const status = document.getElementById("copy-status");
+    try {
+      await navigator.clipboard.writeText(document.getElementById("brew-cmd").textContent);
+      button.textContent = "Copied";
+      status.textContent = "Install command copied";
+    } catch {
+      button.textContent = "Select and copy";
+      status.textContent = "Could not copy. Select the install command and copy it.";
+    }
+    setTimeout(() => { button.textContent = "Copy"; status.textContent = ""; }, 1600);
+  });
+</script>
+</body>
+</html>

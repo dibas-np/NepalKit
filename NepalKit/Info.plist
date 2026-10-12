@@ -115,8 +115,8 @@
 	  The tradeoff Sparkle documents for both keys is real and belongs to the
 	  maintainer, not to this file: verification this strict means losing access
 	  to the EdDSA private key costs you updates, because every feed would then
-	  fail validation. That is what ADR-0012's two unticked key-custody boxes are
-	  about. Existing installs cannot survive losing the key: a feed signed by any
+	  fail validation. That is what ADR-0012's key-custody section is about
+	  (an offline copy and a verified restore, both since 2026-10-11). Existing installs cannot survive losing the key: a feed signed by any
 	  other key is rejected before Sparkle reads an item, so the Apple
 	  code-signing fallback never runs and users must reinstall by hand or
 	  through Homebrew. Key custody is the only mitigation.

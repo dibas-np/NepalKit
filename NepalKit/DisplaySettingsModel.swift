@@ -10,8 +10,15 @@ import NepalKitCore
 @Observable
 final class DisplaySettingsModel {
     private(set) var settings: DisplaySettings
+    /// Whether today follows Nepal Time or the Mac's own zone (ADR-0017).
+    private(set) var timeReference: TimeReference
 
     private let store: SettingsStore
+    /// Models that schedule against the zone (menu-bar clock, popover clock,
+    /// month grid). A timer armed for Nepal's midnight is wrong the moment the
+    /// zone changes, so they are told rather than left to notice at their next
+    /// tick.
+    @ObservationIgnored private var timeReferenceObservers: [@MainActor (TimeReference) -> Void] = []
 
     /// `store` is optional rather than defaulted to `SettingsStore()` in the
     /// signature. A default argument is evaluated in a nonisolated context,
@@ -25,6 +32,26 @@ final class DisplaySettingsModel {
         let store = store ?? SettingsStore()
         self.store = store
         self.settings = store.settings
+        self.timeReference = store.timeReference
+    }
+
+    /// The zone "today" is read in: Nepal Time, or the Mac's own.
+    var timeZone: TimeZone { timeReference.timeZone }
+
+    /// Persists the time reference and tells every observer in the same call,
+    /// so everything changes together.
+    func save(_ reference: TimeReference) {
+        store.save(reference)
+        timeReference = reference
+        for observer in timeReferenceObservers {
+            observer(reference)
+        }
+    }
+
+    /// Registers a model that must follow the time reference. Called by the app
+    /// scene, the one place that holds every model.
+    func observeTimeReference(_ observer: @escaping @MainActor (TimeReference) -> Void) {
+        timeReferenceObservers.append(observer)
     }
 
     func save(_ settings: DisplaySettings) {
@@ -50,6 +77,11 @@ final class DisplaySettingsModel {
     var monthNames: MonthNameStyle {
         get { settings.monthNames }
         set { save(monthNames: newValue) }
+    }
+
+    var timeReferenceSelection: TimeReference {
+        get { timeReference }
+        set { save(newValue) }
     }
 
     #if DEBUG

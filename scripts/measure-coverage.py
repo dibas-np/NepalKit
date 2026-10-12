@@ -28,12 +28,13 @@ toolchain and nothing else.
 from __future__ import annotations
 
 import argparse
+import fcntl
+import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -50,13 +51,20 @@ FLOOR_FILE = REPO_ROOT / "scripts" / "coverage-floor.json"
 def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
     """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
-    # llvm-cov prints report paths with the leading "/" stripped, so both sides
-    # are normalised before comparing. Comparing raw strings silently matches
-    # nothing, which looks identical to "no product source was compiled".
-    root = str(REPO_ROOT).lstrip("/") + "/"
+    # llvm-cov strips the directory prefix common to every file it reports.
+    # With the build outside the checkout that prefix is a leading part of the
+    # repository path ("Users/me/" when both sit under the home folder, "/"
+    # otherwise), so try every tail of the root, longest first, cut at "/".
+    # A mismatch silently matches nothing, which looks identical to "no product
+    # source was compiled".
+    full = str(REPO_ROOT).lstrip("/") + "/"
+    tails = [full] + [full[i + 1:] for i, c in enumerate(full[:-1]) if c == "/"]
     for line in stdout.splitlines():
         parts = line.split()
-        if len(parts) != 13 or not parts[0].startswith(root):
+        if len(parts) != 13:
+            continue
+        root = next((tail for tail in tails if parts[0].startswith(tail)), None)
+        if root is None:
             continue
         relative = parts[0][len(root):]
         if any(relative.startswith(prefix) for prefix in prefixes):
@@ -159,10 +167,41 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True)
 
 
+# A persistent build directory per suite, so later runs build incrementally.
+# Outside the repository because llvm-cov strips the path prefix common to
+# every reported file, and a build inside the checkout would strip the prefix
+# the subject filter matches on. Keyed by checkout so worktrees do not share
+# builds. Old profiles are deleted first: the report reads whichever .profdata
+# it finds, and a stale one reports the previous run's numbers.
+COVERAGE_BUILD = (Path.home() / "Library" / "Caches" / "nepalkit-coverage"
+                  / hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12])
+
+
+def clear_profiles(build_dir: Path) -> int:
+    """Delete every .profraw and .profdata under build_dir; return how many."""
+    stale = [p for pattern in ("*.profraw", "*.profdata") for p in build_dir.rglob(pattern)]
+    for path in stale:
+        path.unlink()
+    return len(stale)
+
+
 def measure(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
     """Run one suite with coverage and total its subject files."""
+    build_dir.mkdir(parents=True, exist_ok=True)
+    # Held until the report is read, so a concurrent run cannot delete this
+    # run's profiles between the test and the report.
+    with open(build_dir / ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return measure_locked(label, package, prefixes, build_dir)
+
+
+def measure_locked(
+    label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
+) -> dict[str, int]:
+    """measure() with the suite directory's lock held."""
+    clear_profiles(build_dir)
     result = run(
         [
             "swift", "test",
@@ -198,15 +237,14 @@ def main() -> int:
 
     raw_counts: dict[str, dict[str, int]] = {}
     raw: dict[str, dict[str, float]] = {}
-    with tempfile.TemporaryDirectory() as directory:
-        for label, package, prefixes in SUITES:
-            counts = measure(label, package, prefixes, Path(directory) / label.replace(" ", "-"))
-            raw_counts[label] = counts
-            result = percentages(counts)
-            raw[label] = result
-            print(f"  {label:<16} lines {result['lines']:6.2f}%  "
-                  f"regions {result['regions']:6.2f}%  "
-                  f"functions {result['functions']:6.2f}%  ({result['files']} files)")
+    for label, package, prefixes in SUITES:
+        counts = measure(label, package, prefixes, COVERAGE_BUILD / label.replace(" ", "-"))
+        raw_counts[label] = counts
+        result = percentages(counts)
+        raw[label] = result
+        print(f"  {label:<16} lines {result['lines']:6.2f}%  "
+              f"regions {result['regions']:6.2f}%  "
+              f"functions {result['functions']:6.2f}%  ({result['files']} files)")
 
     # The combined figure is sum(hit)/sum(lines) across both suites, so a 300-line
     # file weighs 300 lines. A plain mean of the two percentages would let the

@@ -2,21 +2,13 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The bar along the bottom of the popover: the selected destination on the left,
-/// the actions on the right.
-///
-/// This follows the reference layout, where the footer names where you are on the
-/// left and puts the actions on the right. Naming the destination here is what the
-/// segmented control's selection does not say on its own when the popover is read
-/// as a whole: the control is a control, and this is the surface's own statement
-/// of position.
+/// The bar along the bottom of the popover: the actions, on the right. It does
+/// not name the destination; the tabs at the top already do.
 ///
 /// Its own view type rather than a computed property on `PopoverView`, which is
 /// both the house rule (AGENTS.md:118) and the cheaper arrangement: this reads
-/// `destination` and the actions, none of the clock, so a per-second tick never
-/// re-evaluates it.
+/// the actions, none of the clock, so a per-second tick never re-evaluates it.
 struct PopoverFooter: View {
-    let destination: PopoverDestination
     /// Passed in rather than read from the environment here, so this type depends
     /// on the action and not on how the popover happens to reach Settings.
     let openSettings: () -> Void
@@ -29,11 +21,7 @@ struct PopoverFooter: View {
         // The container is a wrapping view, not a modifier — it has to *be* the
         // parent of the content it groups.
         //
-        // It wraps the whole footer rather than only the buttons, so the
-        // destination label sits inside the same sampling region and the buttons'
-        // refraction of the text beside them is consistent. `spacing` matches the
-        // `HStack` inside, which is what makes the grouping read as one group
-        // rather than two objects that happen to be near each other.
+        // `spacing` matches the `HStack` inside, so the buttons read as one group.
         //
         // Glass refracts light by sampling content from an area larger than itself,
         // and glass cannot sample other glass — so glass buttons left in separate
@@ -43,10 +31,6 @@ struct PopoverFooter: View {
             VStack(spacing: 0) {
                 Divider()
                 HStack(spacing: 8) {
-                    Text(destination.title)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
                     Spacer(minLength: 8)
 
                     // Shown rather than `.disabled`: a permanently greyed button
@@ -122,10 +106,8 @@ struct PopoverFooter: View {
     /// standing in for the one label in this footer that has to be unmistakable.
     ///
     /// Shown short. `Strings.quitLabel` names the app because the app menu needs
-    /// to ("Quit NepalKit"); inside the app's own popover the name is already on
-    /// screen in the header two lines up, so the footer says only "Quit" and gives
-    /// the width back to the destination label. The announcement keeps the full
-    /// name.
+    /// to ("Quit NepalKit"); the popover's header already shows the name. The
+    /// announcement keeps it.
     ///
     /// The ⌘Q shortcut lives on the app's termination command group
     /// (NepalKitApp.swift) so it works when the app is frontmost without the

@@ -7,10 +7,14 @@ import SwiftUI
 
 @main
 struct NepalKitApp: App {
-    @State private var settingsModel = DisplaySettingsModel()
-    @State private var menuBarModel = MenuBarModel()
-    @State private var clockModel = ClockModel()
-    @State private var converterModel = ConverterModel()
+    /// Built in `init` because the four that read today must start in, and be
+    /// registered to follow, the settings model's time reference (ADR-0017),
+    /// and a property initializer cannot see another property.
+    @State private var settingsModel: DisplaySettingsModel
+    @State private var menuBarModel: MenuBarModel
+    @State private var clockModel: ClockModel
+    @State private var converterModel: ConverterModel
+    @State private var monthGridModel: MonthGridModel
     /// No default initializer: the default-on registration below must run
     /// before the model is ever read, and a property initializer would run
     /// first, constructing a second model that is immediately discarded.
@@ -35,6 +39,25 @@ struct NepalKitApp: App {
         // findings, and the reason it lives in init: every launch re-asserts
         // the registration, cold or warm.
         NepalKitShortcuts.updateAppShortcutParameters()
+        let settings = DisplaySettingsModel()
+        let reference = settings.timeReference
+        // The real store, explicitly: the model's default is in-memory, for tests.
+        let menuBar = MenuBarModel(store: SettingsStore(), timeZone: reference.timeZone)
+        let clock = ClockModel(timeReference: reference)
+        let monthGrid = MonthGridModel(timeZone: reference.timeZone)
+        // The converter reads today only for its pickers' starting day, so it
+        // does not follow later changes of reference.
+        _converterModel = State(initialValue: ConverterModel(timeZone: reference.timeZone))
+        // Weak: the scene owns all five, not the settings model.
+        settings.observeTimeReference { [weak menuBar, weak clock, weak monthGrid] reference in
+            menuBar?.setTimeZone(reference.timeZone)
+            clock?.setTimeReference(reference)
+            monthGrid?.setTimeZone(reference.timeZone, now: .now)
+        }
+        _settingsModel = State(initialValue: settings)
+        _menuBarModel = State(initialValue: menuBar)
+        _clockModel = State(initialValue: clock)
+        _monthGridModel = State(initialValue: monthGrid)
         // Default on: the date is in the menu bar from the moment of sign-in.
         // Configured through a local so init never touches wrapper storage.
         let login = LoginItemModel()
@@ -55,24 +78,16 @@ struct NepalKitApp: App {
                 settings: settingsModel,
                 clock: clockModel,
                 converter: converterModel,
+                monthGrid: monthGridModel,
                 dataset: AppData.dataset,
                 // The same instance Settings reads, so an update found while the
                 // popover is open puts the footer's button on screen immediately.
                 updates: updateCheckModel
             )
         } label: {
-            // The shown label stays the short date, prefixed only while an update
-            // is unattended; the announcement is a sentence that names the app
-            // and pronounces the date. Merging them would put "NepalKit," in the
-            // menu bar itself.
-            Text(menuBarModel.title(
-                settings: settingsModel.settings,
-                updateAvailable: updateCheckModel.isShowingReminder
-            ))
-                .accessibilityLabel(menuBarModel.spokenTitle(
-                    settings: settingsModel.settings,
-                    updateAvailable: updateCheckModel.isShowingReminder
-                ))
+            // A view of its own: read here, the menu-bar clock's tick would
+            // re-evaluate the whole App body, both scenes, every minute or second.
+            MenuBarLabel(menuBar: menuBarModel, settings: settingsModel, updates: updateCheckModel)
         }
         .menuBarExtraStyle(.window)
         // A menu-bar-only app has no Dock icon and no Cmd-Tab presence, so this
@@ -108,7 +123,7 @@ struct NepalKitApp: App {
                 loginItem: loginItemModel,
                 updates: updateCheckModel,
                 menuBar: menuBarModel,
-                metadata: metadataCache.value,
+                metadataCache: metadataCache,
                 dataset: AppData.dataset
             )
         }

@@ -16,8 +16,13 @@
 # given the environment it guards; GitHub evaluates `if:` before the job exists,
 # so a job that should not run never receives the secret at all. The shell
 # assertions below are there to reject a *malformed* tag — a legitimate mistake —
-# and the `if:` is there to reject an *unauthorised* one, which is not a mistake
-# and should not be reachable by editing a line.
+# and the `if:` is there to reject an *unauthorised* one.
+#
+# The `if:` is still a line in this file, and GitHub runs the file from the
+# pushed ref, so someone who can push could edit it. The guard that cannot be
+# edited from a ref is in GitHub settings: the `release` environment admits
+# only `v*` tags and needs the owner's approval, and a tag ruleset lets only
+# admins create a `v*` tag (docs/secrets-policy.md).
 #
 # ## Nothing here can produce a release
 #
@@ -56,8 +61,8 @@
 # `--verify-tag` is load-bearing rather than decorative. Without it,
 # `gh release create` creates a *lightweight* tag when none exists, and a
 # lightweight tag carries no signature: `git cat-file -t v1.6.0` answers `commit`,
-# not `tag`, and `git tag -v` cannot verify it. Every existing release tag is
-# lightweight. This is not a defect in those releases - the archive signature is
+# not `tag`, and `git tag -v` cannot verify it. Every release tag before
+# v1.6.1 is lightweight. This is not a defect in those releases - the archive signature is
 # what protects users and has been present since 1.4.1 - but it means the tag
 # itself added nothing, so a publisher able to move a tag could change what a
 # release points at without the archive signature noticing.

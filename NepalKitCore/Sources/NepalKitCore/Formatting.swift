@@ -118,6 +118,16 @@ public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
     }
 }
 
+/// Short weekday name for 1 (Sunday) through 7 (Saturday), or nil outside
+/// 1–7. English names are cut to three letters; Nepali names are already short.
+public func shortWeekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
+    guard let name = weekdayName(for: weekday, style: style) else { return nil }
+    switch style {
+    case .nepali: return name
+    case .transliterated: return String(name.prefix(3))
+    }
+}
+
 /// Formats a Bikram Sambat date as "day month year" honoring both display settings.
 public func formatBS(_ bs: BSDay, settings: DisplaySettings) -> String {
     let month = monthName(month: bs.month, style: settings.monthNames)
@@ -153,17 +163,16 @@ public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
     "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthName(ad.month)) \(formatNumber(ad.year, digits: settings.digits))"
 }
 
-private func twoDigits(_ value: Int, digits: DigitScript) -> String {
+func twoDigits(_ value: Int, digits: DigitScript) -> String {
     let padded = value < 10 ? "0\(value)" : String(value)
     return digits.render(latinDigits: padded)
 }
 
-/// `formatClock`'s calendars, one per time zone. Building a `Calendar` per call
-/// dominated the cost of formatting, and `formatClock` runs at clock-tick
-/// frequency. The zones a process formats are few, so entries never evict.
-/// Lock-guarded because the function is nonisolated and callers may not all be
-/// on one thread.
-private enum ClockCalendars {
+/// Gregorian calendars for the clock formatters and today's date, one per time
+/// zone. Building a `Calendar` per call dominated formatting cost at clock-tick
+/// frequency. Zones are few, so entries never evict. Lock-guarded because
+/// callers are nonisolated and may be on any thread.
+enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
 
@@ -172,7 +181,10 @@ private enum ClockCalendars {
         defer { lock.unlock() }
         if let cached = calendars[timeZone.identifier] { return cached }
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
+        // A fixed zone, not the one passed in: an autoupdating zone cached
+        // under today's identifier would follow the Mac to a new zone and
+        // answer for it under the old key.
+        calendar.timeZone = TimeZone(identifier: timeZone.identifier) ?? timeZone
         calendars[timeZone.identifier] = calendar
         return calendar
     }

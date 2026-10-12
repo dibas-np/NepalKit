@@ -3,6 +3,7 @@
 import Foundation
 import Testing
 import NepalKitCore
+import SwiftUI
 @testable import NepalKitWatchApp
 
 /// The Today lifecycle contract, tested through supplied state: launch and
@@ -242,6 +243,34 @@ struct TodayModelTests {
         #expect(clock.reads == 1)
     }
 
+    // MARK: Scene phase
+
+    @Test func onlyTheBackgroundPhaseDeactivates() {
+        #expect(shouldStayActive(in: .active))
+        #expect(shouldStayActive(in: .inactive))
+        #expect(!shouldStayActive(in: .background))
+    }
+
+    @Test func inactivePhaseKeepsTheMidnightRefresh() async throws {
+        // Always On: a dimmed screen is still visible, so midnight must still
+        // land while the scene is inactive.
+        let clock = MutableClock(try anchoredInstant())
+        let signals = SignalFixture()
+        let model = makeModel(
+            clock: clock,
+            signals: signals,
+            nextMidnight: { $0.addingTimeInterval(0.05) }
+        )
+        model.activate()
+        if !shouldStayActive(in: .inactive) {
+            model.deactivate()
+        }
+
+        try await waitUntil(timeout: .seconds(5)) { clock.reads >= 2 }
+
+        model.deactivate()
+    }
+
     // MARK: Inactive resume
 
     @Test func multiDayResumeRecomputesImmediately() throws {
@@ -317,5 +346,30 @@ struct TodayModelTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(condition(), "Condition was not met within \(timeout)")
+    }
+}
+
+// MARK: Always On
+
+extension TodayModelTests {
+    @Test func displayAtAnInstantPastNepalMidnightIsTheNewDay() throws {
+        // Always On renders through `display(at:)` with the timeline's date,
+        // so it alone must cross midnight (18:15 UTC) — no activation, no
+        // clock read.
+        let clock = MutableClock(try anchoredInstant())
+        let model = makeModel(clock: clock, signals: SignalFixture())
+
+        let before = model.display(at: try UTCWatchFixture.utc(2026, 9, 26, 18, 14))
+        let after = model.display(at: try UTCWatchFixture.utc(2026, 9, 26, 18, 16))
+
+        guard case .supported(let old) = before, case .supported(let new) = after else {
+            Issue.record("Expected supported displays")
+            return
+        }
+        #expect(old.bikramSambatDay == "१०")
+        #expect(new.bikramSambatDay == "११")
+        #expect(new.bikramSambatMonthName == "असोज")
+        #expect(clock.reads == 0)
+        #expect(model.display == nil)
     }
 }
