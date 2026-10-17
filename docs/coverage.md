@@ -2,13 +2,13 @@
 
 The number, what it means, and why it is not a target yet.
 
-**Measured 2026-10-12 at `fdee48b`, by `scripts/measure-coverage.py`.**
+**Measured 2026-10-17 at `500b910`, by `scripts/measure-coverage.py`.**
 
 | Suite | Files | Lines | Regions | Functions |
 | --- | --- | --- | --- | --- |
-| `NepalKitCore` — the calendar engine | 12 | **89.23%** | 83.16% | 86.54% |
-| `NepalKit` — the app layer | 50 | **36.05%** | 63.83% | 59.35% |
-| **Combined** | **62** | **42.24%** | **67.54%** | **63.12%** |
+| `NepalKitCore` — the calendar engine | 12 | **89.20%** | 83.16% | 86.54% |
+| `NepalKit` — the app layer | 50 | **38.40%** | 64.57% | 59.75% |
+| **Combined** | **62** | **44.60%** | **68.16%** | **63.47%** |
 
 Core's files are counted once, in their own row: the app row holds `NepalKit/`
 only, although the app-test harness links `NepalKitCore`. The combined row is
@@ -26,36 +26,36 @@ The combined figure is close to meaningless on its own, and the split is the
 point:
 
 - The calendar engine — conversion, month lengths, formatting, spoken dates — is
-  **89.23%** covered, because it is pure logic with an exhaustive round-trip
+  **89.20%** covered, because it is pure logic with an exhaustive round-trip
   suite. This is the part where a bug is a wrong date.
-- The app layer is **36.05%** covered, because most of it is SwiftUI.
+- The app layer is **38.40%** covered, because most of it is SwiftUI.
 
 The app layer holds 88% of the executable lines the two suites instrument —
-4,657 of 5,270 — and returns 36.05% line coverage where the calendar engine
-returns 89.23%. A single combined percentage hides that the part which is easy
+4,393 of 5,004 — and returns 38.40% line coverage where the calendar engine
+returns 89.20%. A single combined percentage hides that the part which is easy
 to get wrong is well covered and the part which is mostly declarative layout is
 not.
 
 ## Why there is no target
 
 The OpenSSF badge asks for 80% and 90% statement coverage and 80% branch
-coverage. This project is at 42.24% lines / 67.54% regions / 63.12% functions. Those answers are `Unmet`
+coverage. This project is at 44.60% lines / 68.16% regions / 63.47% functions. Those answers are `Unmet`
 and writing a target above the truth would be a gate that fails every day.
 
-**The gap is not a chore; it is a refactor.** The eight files below hold 1,737
-lines — 37% of the app layer's 4,657 executable lines — and every one of them is
+**The gap is not a chore; it is a refactor.** The eight files below hold 1,595
+lines — 36% of the app layer's 4,393 executable lines — and every one of them is
 at exactly 0%:
 
 | File | Lines |
 | --- | --- |
-| `GeneralSettingsView.swift` | 443 |
+| `GeneralSettingsView.swift` | 437 |
 | `SettingsView.swift` | 248 |
 | `ConverterView.swift` | 237 |
-| `MonthGridDayDetailCard.swift` | 223 |
-| `AboutSettingsView.swift` | 191 |
-| `MenuBarSettingsView.swift` | 160 |
-| `PopoverFooter.swift` | 119 |
-| `DestinationTabs.swift` | 116 |
+| `MonthGridDayDetailCard.swift` | 208 |
+| `AboutSettingsView.swift` | 188 |
+| `MenuBarSettingsView.swift` | 140 |
+| `PopoverFooter.swift` | 117 |
+| `DestinationTabs.swift` | 20 |
 
 These are llvm-cov executable-line counts and include compiler-expanded
 `#Preview` code, so they can exceed a file's physical length.
