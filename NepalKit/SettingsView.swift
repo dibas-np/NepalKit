@@ -163,7 +163,7 @@ private struct SettingsIdentityStrip: View {
                     .accessibilityHidden(true)
             }
             Text(metadata.name)
-                .font(.callout.weight(.medium))
+                .font(.callout.weight(.semibold))
                 .lineLimit(1)
             Text(Strings.versionLabel(metadata.versionDescription))
                 .font(.caption)

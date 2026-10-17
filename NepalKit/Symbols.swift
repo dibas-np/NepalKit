@@ -63,12 +63,8 @@ enum Symbols {
     /// Closes the day details under the month grid.
     static let closeDetails = "xmark.circle.fill"
 
-    /// The popover's destination tabs: Today and the converter.
-    static let today = "calendar"
-    static let converter = "arrow.left.arrow.right"
-
     static let all: [String] = [
         launchAtLogin, settings, about, menuBar, general, repository, update,
-        previousMonth, nextMonth, closeDetails, today, converter
+        previousMonth, nextMonth, closeDetails
     ]
 }

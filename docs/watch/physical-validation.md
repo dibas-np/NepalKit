@@ -172,3 +172,10 @@ lifecycle smoke check, not proof of stale-date correction across a day boundary.
 Use the ordinary Release build without a debugger; the fixed-instant fixture
 clock does not advance with real elapsed time and cannot prove this physical
 transition by waiting.
+
+### 2026-10-17 — watchOS 26 kit alignment (re-check pending)
+
+| Item | Change | Result |
+| --- | --- | --- |
+| Rectangular (two-line) | Order flipped to match Apple's watchOS 26 kit: weekday · year (caption2, semibold, accentable) over day/month (title3). Same two fonts, so the Modular slot's two-line budget is unchanged. | Re-check pending on the 44 mm Modular middle slot. |
+| Today | Inline navigation title "NepalKit" under the clock, tinted with the new red accent colour. | Simulator only; on-device re-check pending. |

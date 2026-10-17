@@ -87,12 +87,18 @@ struct TodayRectangularComplication: View {
                 // leading of 2 as the large-text fallback above, for the same
                 // reason: which of the two compositions runs, the slot's height
                 // budget does not change.
+                //
+                // Label line over the metric, as every rectangular layout in
+                // Apple's watchOS 26 kit is arranged: the small emphasized line
+                // first, tinted on tinted faces, then the value large. Same two
+                // fonts as before, so the two-line height that fits the Modular
+                // slot is unchanged; only the order is.
                 VStack(alignment: .leading, spacing: 2) {
+                    Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
+                        .font(.caption2.weight(.semibold))
+                        .widgetAccentable()
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
-                    Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: false))

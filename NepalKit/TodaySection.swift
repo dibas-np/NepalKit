@@ -49,7 +49,8 @@ struct TodaySection: View {
             if let todayBS = clock.todayBSDate(in: dataset) {
                 // The hero; everything below steps down from it. `largeTitle`,
                 // not a literal point size, which ignores the accessibility
-                // text size.
+                // text size. Bold, the emphasized Large Title in Apple's macOS 27
+                // kit.
                 //
                 // The weekday is a separate `Text` so a long one wraps on its
                 // own rather than breaking the date.
@@ -57,7 +58,7 @@ struct TodaySection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(formatBS(todayBS, settings: settings))
-                            .font(.largeTitle.weight(.semibold))
+                            .font(.largeTitle.bold())
                         if let weekday = clock.weekdayString(style: settings.monthNames) {
                             Text("\(Strings.weekdaySeparator) \(weekday)")
                                 .font(.title3)

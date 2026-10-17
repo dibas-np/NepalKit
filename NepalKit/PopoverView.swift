@@ -21,13 +21,6 @@ enum PopoverDestination: String, CaseIterable {
         case .convert: Strings.converterLabel
         }
     }
-
-    var symbol: String {
-        switch self {
-        case .today: Symbols.today
-        case .convert: Symbols.converter
-        }
-    }
 }
 
 /// Popover: today's date and month, the converter, and routes into Settings and About.
@@ -182,7 +175,7 @@ private struct HeaderBar: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(Strings.appName)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             // Sized by a constant "00:00:00" (monospaced, so as wide as any

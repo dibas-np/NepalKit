@@ -2,44 +2,29 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The popover's destinations as a row of quiet tabs, the selected one on a
-/// soft capsule. Not a segmented control: that reads as a form control and
-/// squeezes every segment narrower as destinations are added.
+/// The popover's destinations as the system segmented control.
+///
+/// It used to be a hand-drawn row of tabs on a soft capsule, kept apart from a
+/// segmented control because that read as a form control. Apple's macOS 27 kit
+/// settles it the other way: its segmented control is a capsule track with the
+/// selection raised inside it, which is exactly what the custom row
+/// imitated. The custom row also sat directly above the
+/// converter's own segmented control, so the popover showed two selection
+/// idioms one above the other.
+///
+/// Text only, as the kit's segments are, and sized to its labels like the
+/// converter's direction control below it, so the two read as one family.
 struct DestinationTabs: View {
     @Binding var selection: PopoverDestination
-    @Namespace private var capsule
 
     var body: some View {
-        HStack(spacing: 2) {
+        Picker(Strings.popoverDestinationsLabel, selection: $selection) {
             ForEach(PopoverDestination.allCases, id: \.self) { destination in
-                let isSelected = destination == selection
-                Button {
-                    selection = destination
-                } label: {
-                    Label(destination.title, systemImage: destination.symbol)
-                        .font(.callout.weight(isSelected ? .semibold : .regular))
-                        .foregroundStyle(isSelected ? .primary : .secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background {
-                            if isSelected {
-                                // One capsule that moves between tabs.
-                                Capsule()
-                                    .fill(.quaternary)
-                                    .matchedGeometryEffect(id: "selected", in: capsule)
-                            }
-                        }
-                        .contentShape(.capsule)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                Text(destination.title)
+                    .tag(destination)
             }
         }
-        .symbolRenderingMode(.monochrome)
-        .animation(.snappy, value: selection)
-        // Named and announced as a tab bar, not as unrelated buttons.
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Strings.popoverDestinationsLabel)
-        .accessibilityAddTraits(.isTabBar)
+        .pickerStyle(.segmented)
+        .labelsHidden()
     }
 }

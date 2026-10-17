@@ -21,19 +21,28 @@ struct TodayView: View {
     #endif
 
     var body: some View {
-        #if NEPALKIT_WATCH_FIXTURES
-        Group {
-            if let fixtureNote {
-                // The active fixture identifies itself on screen.
-                Text(fixtureNote)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+        // The app's name sits under the clock, top trailing and tinted, as on
+        // every app screen in Apple's watchOS 26 kit. Without it the screen is
+        // an unlabelled date that could be any app's.
+        NavigationStack {
+            #if NEPALKIT_WATCH_FIXTURES
+            Group {
+                if let fixtureNote {
+                    // The active fixture identifies itself on screen.
+                    Text(fixtureNote)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                TodayScreen(model: model)
             }
+            .navigationTitle("NepalKit")
+            .navigationBarTitleDisplayMode(.inline)
+            #else
             TodayScreen(model: model)
+                .navigationTitle("NepalKit")
+                .navigationBarTitleDisplayMode(.inline)
+            #endif
         }
-        #else
-        TodayScreen(model: model)
-        #endif
     }
 }
 
@@ -67,8 +76,9 @@ struct TodayScreen: View {
         switch display {
         case nil:
             // Launch window only: the first activation resolves Today
-            // immediately, so there is nothing to promise here yet.
-            Text("NepalKit")
+            // immediately, so there is nothing to promise here yet, and the
+            // title above already names the app.
+            Color.clear
         case .some(.supported(let components)):
             TodaySupportedView(components: components)
         case .some(.rangeBoundary(let boundary)):
