@@ -87,7 +87,7 @@ Date conversions currently work through Shortcuts. Siri cannot yet collect the c
 ## On the Apple Watch
 
 <p align="center">
-  <img src="docs/img/watch-today.png" alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date" width="200" />
+  <img src="docs/img/watch-today.png" alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date under the NepalKit title" width="200" />
   <img src="docs/img/watch-complications.png" alt="An Infograph watch face with NepalKit corner complications showing १७ असोज २०८३ along the bezel" width="200" />
 </p>
 
