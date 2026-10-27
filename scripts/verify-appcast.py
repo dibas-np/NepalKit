@@ -52,6 +52,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
@@ -101,6 +102,10 @@ NS = {"sparkle": SPARKLE_NS}
 # does not cover — it is checked against the contract instead of trusted.
 NOTES_TAGS = {"b", "li", "p", "ul"}
 MAX_NOTES_CHARS = 8192
+
+# Release and minimumSystemVersion strings. embed_notes also relies on it to keep
+# a feed-supplied version from naming a file outside the notes directory.
+NUMERIC_VERSION = r"[0-9]+\.[0-9]+(?:\.[0-9]+)?"
 
 
 class _NotesHTMLCheck(HTMLParser):
@@ -191,9 +196,21 @@ def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
     return result.returncode == 0
 
 
+class _HTTPSOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Apply the enclosure url's https rule to every redirect hop too."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if urlparse(newurl).scheme != "https":
+            raise urllib.error.URLError(f"refusing redirect to non-https url {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_HTTPSOnlyRedirects)
+
+
 def fetch(url: str, timeout: int = 60) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": "NepalKit-appcast-verify"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _OPENER.open(request, timeout=timeout) as response:
         return response.read()
 
 
@@ -228,7 +245,7 @@ def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
     return raw[:start], signature_b64, declared_length
 
 
-def verify_feed_signature(appcast: Path, info_plist: Path) -> None:
+def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
     """Require the feed itself to be signed, and check the signature.
 
     This runs regardless of `--skip-crypto`, unlike the enclosure checks. The
@@ -239,7 +256,6 @@ def verify_feed_signature(appcast: Path, info_plist: Path) -> None:
     against the published feed in `.github/workflows/pages.yml`, which is the
     only place in the repository that sees the real thing.
     """
-    raw = appcast.read_bytes()  # NOSONAR
     content, signature_b64, declared_length = extract_feed_signature(raw)
 
     if signature_b64 is None:
@@ -323,13 +339,15 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
     """
     raw = appcast.read_text(encoding="utf-8")  # NOSONAR
 
-    def describe(match: re.Match[str]) -> str:
-        block = match.group(0)
+    def describe(block: str) -> str:
         if "<description" in block:
             return block
-        version = re.search(r"<sparkle:shortVersionString>([^<]+)</", block).group(1)
+        found = re.search(r"<sparkle:shortVersionString>([^<]+)</", block)
+        version = found.group(1) if found else ""
+        if not re.fullmatch(NUMERIC_VERSION, version):
+            sys.exit(f"not a numeric release version: {version!r}")
         notes = notes_dir / f"{version}.html"
-        # sys.exit, not fail(): these two are release-stopping conditions the
+        # sys.exit, not fail(): these are release-stopping conditions the
         # shell's `set -e` turns into a dead pipeline, and the caller's contract
         # for them is a message on stderr and a non-zero exit. fail() would
         # print to stdout inside a report that otherwise reads as a list of
@@ -364,7 +382,20 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
     # Nothing is written until the whole pass has succeeded: a half-described
     # feed is a published feed with a silent hole in it, which is strictly worse
     # than a release that stopped.
-    described = re.sub(r"<item>.*?</item>", describe, raw, flags=re.S)
+    #
+    # Matches what `re.sub(r"<item>.*?</item>", ..., flags=re.S)` would, without
+    # its quadratic rescan from every unclosed <item>.
+    parts: list[str] = []
+    position = 0
+    while (start := raw.find("<item>", position)) != -1:
+        end = raw.find("</item>", start)
+        if end == -1:
+            break
+        end += len("</item>")
+        parts += [raw[position:start], describe(raw[start:end])]
+        position = end
+    parts.append(raw[position:])
+    described = "".join(parts)
     appcast.write_text(described, encoding="utf-8")  # NOSONAR
     ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
 
@@ -377,8 +408,12 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         print(f"App deployment floor: {floor}")
 
     # --- 1. Well-formedness and required fields -----------------------------
+    # Read once and parse only the signed bytes, so what is checked below is what
+    # the feed signature covers. Sparkle's client also drops the trailing block.
+    feed_bytes = appcast.read_bytes()  # NOSONAR
+    signed_content, _, _ = extract_feed_signature(feed_bytes)
     try:
-        root = ET.parse(appcast).getroot()
+        root = ET.fromstring(signed_content)
     except ET.ParseError as exc:
         fail(f"not well-formed XML: {exc}")
     if not root.tag.endswith("rss"):
@@ -389,12 +424,12 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("feed contains no <item>: an app checking this would see no updates at all")
     ok(f"well-formed, {len(items)} item(s)")
 
-    # Releases use numeric two- or three-component versions. Compare them
-    # numerically so historical feed ordering cannot change the current floor.
+    # Compare release versions numerically so historical feed ordering cannot
+    # change the current floor.
     release_versions = []
     for item in items:
         version = item.findtext("sparkle:shortVersionString", default="", namespaces=NS)
-        if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", version):
+        if not re.fullmatch(NUMERIC_VERSION, version):
             fail(f"invalid release shortVersionString: {version!r}")
         components = tuple(int(part) for part in version.split("."))
         release_versions.append(components + (0,) * (3 - len(components)))
@@ -437,6 +472,11 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     # could not run, which is what used to be a printed line and a green exit.
     verified = 0
     skipped: list[str] = []
+    # Fetching follows the feed's urls, so authenticate the feed first. Runs that
+    # do not fetch check it last, below.
+    fetching = enclosure is None and not skip_crypto
+    if fetching:
+        verify_feed_signature(feed_bytes, info_plist)
 
     for item in items:
         version = item.findtext("sparkle:shortVersionString", default="?", namespaces=NS)
@@ -471,7 +511,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         ok(f"version {version}: https url, length {declared_length}, 64-byte signature")
         if minimum is None:
             fail(f"version {version}: no <sparkle:minimumSystemVersion>")
-        if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", minimum):
+        if not re.fullmatch(NUMERIC_VERSION, minimum):
             fail(f"version {version}: malformed minimumSystemVersion {minimum!r}")
         if item is not current_item:
             ok(f"version {version}: historical minimumSystemVersion {minimum}")
@@ -508,7 +548,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
             # whose enclosure names this file can be checked against it.
             if Path(parsed.path).name == enclosure.name:
                 payload = enclosure.read_bytes()  # NOSONAR
-        elif not skip_crypto:
+        elif fetching:
             print(f"  ..    fetching {url}")
             try:
                 payload = fetch(url)
@@ -554,7 +594,8 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     # and byte checks by the caller's request, and a caller who waived those is
     # not entitled to an unverified feed as well. The check is local and costs
     # no network, so there is nothing to defer it for.
-    verify_feed_signature(appcast, info_plist)
+    if not fetching:
+        verify_feed_signature(feed_bytes, info_plist)
 
     if skipped:
         print(

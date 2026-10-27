@@ -21,8 +21,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+import urllib.error
+import urllib.request
 from pathlib import Path
+from unittest import mock
 
 _MODULE = Path(__file__).resolve().parent / "verify-appcast.py"
 _spec = importlib.util.spec_from_file_location("verify_appcast", _MODULE)
@@ -203,11 +207,11 @@ def sign_feed(tmp: Path, body: str, priv: Path, *, signature: bytes | None = Non
 
 
 def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
-               minimum_system_version: str | None = None) -> str:
+               minimum_system_version: str | None = None, skip_crypto: bool = True) -> str:
     buf = io.StringIO()
     with test.assertRaises(SystemExit) as ctx:
         with contextlib.redirect_stdout(buf):
-            va.verify(feed, plist, None, True, minimum_system_version)
+            va.verify(feed, plist, None, skip_crypto, minimum_system_version)
     test.assertEqual(ctx.exception.code, 1)
     return buf.getvalue()
 
@@ -1295,6 +1299,84 @@ class FeedHistory(unittest.TestCase):
             expected = RSS_OPEN + "".join(make_item(version=str(version)) for version in range(6, 1, -1)) + RSS_CLOSE
             self.assertEqual(feed.read_text(), expected, "generation must retain the five newest release records")
 
+
+class UntrustedFeedInputTest(unittest.TestCase):
+    """What the verifier does with a feed it has not authenticated yet."""
+
+    def test_a_path_shaped_version_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(description=None, version="../x", build="1"))
+            original = feed.read_bytes()
+            message = run_embed(self, feed, write_notes_dir(tmp_path, {}))
+            self.assertEqual(feed.read_bytes(), original)
+        self.assertIn("not a numeric release version", message)
+
+    def test_an_item_with_no_version_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, "<item><title>t</title></item>")
+            message = run_embed(self, feed, write_notes_dir(tmp_path, {}))
+        self.assertIn("not a numeric release version", message)
+
+    def test_unclosed_item_markers_are_scanned_in_linear_time(self) -> None:
+        # The old regex took ~40s here; the bound leaves room for a slow runner.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item() + "<!--" + "<item>" * 50000 + "-->")
+            original = feed.read_text(encoding="utf-8")
+            started = time.monotonic()
+            capture_embed(feed, write_notes_dir(tmp_path, {}))
+            elapsed = time.monotonic() - started
+            self.assertEqual(feed.read_text(encoding="utf-8"), original)
+        self.assertLess(elapsed, 10.0)
+
+    def test_the_item_scan_matches_the_regex_it_replaced(self) -> None:
+        # Stray openings are where the two could differ: the regex took a stray
+        # <item> and the item after it as one match, and skipped a trailing one.
+        notes = {"1.0": "<p>a</p>", "1.1": "<p>b</p>"}
+
+        def embedded(body: str) -> str:
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+                feed = write_feed(tmp_path, body)
+                capture_embed(feed, write_notes_dir(tmp_path, notes))
+                return feed.read_text(encoding="utf-8")[len(RSS_OPEN):-len(RSS_CLOSE)]
+
+        first = make_item(version="1.0", description=None)
+        second = make_item(version="1.1", description=None)
+        self.assertEqual(embedded(first + "<item>" + second + "<item>"),
+                         embedded(first) + "<item>" + embedded(second) + "<item>")
+
+    def test_an_unsigned_feed_is_refused_before_anything_is_fetched(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(va, "fetch") as fetch:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item())
+            output = run_verify(self, feed, write_plist(tmp_path), skip_crypto=False)
+        fetch.assert_not_called()
+        self.assertIn("the feed is not signed", output)
+
+    def test_items_after_the_signing_block_are_not_read(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(va, "fetch") as fetch:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            signed = (RSS_OPEN + make_item(version="1.0")).encode("utf-8")
+            sig = base64.b64encode(ed25519_sign(priv, tmp_path, signed)).decode()
+            block = f"<!-- sparkle-signatures:\nedSignature: {sig}\nlength: {len(signed)}\n-->"
+            feed = tmp_path / "trailing.xml"
+            feed.write_text(signed.decode("utf-8") + block + make_item(version="2.0") + RSS_CLOSE,
+                            encoding="utf-8")
+            output = run_verify(self, feed, write_plist_with_key(tmp_path, key), skip_crypto=False)
+        fetch.assert_not_called()
+        self.assertIn("not well-formed XML", output)
+
+    def test_a_redirect_to_http_is_refused(self) -> None:
+        handler = va._HTTPSOnlyRedirects()
+        request = urllib.request.Request("https://example.com/a.zip")
+        with self.assertRaises(urllib.error.URLError):
+            handler.redirect_request(request, None, 302, "Found", {}, "http://example.com/a.zip")
+        followed = handler.redirect_request(request, None, 302, "Found", {}, "https://cdn.example.com/a.zip")
+        self.assertEqual(followed.full_url, "https://cdn.example.com/a.zip")
 
 if __name__ == "__main__":
     unittest.main()
