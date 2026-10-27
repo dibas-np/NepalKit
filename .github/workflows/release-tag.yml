@@ -334,6 +334,7 @@ jobs:
       - name: Configure the tap deploy key
         env:
           TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # An empty secret must fail here, loudly, rather than producing a
@@ -352,16 +353,19 @@ jobs:
             User git
             IdentityFile ~/.ssh/tap_deploy_key
             IdentitiesOnly yes
+            StrictHostKeyChecking yes
           CONFIG
           chmod 600 ~/.ssh/config
 
-          # GitHub's host key, fetched rather than pinned. A deploy key on a
-          # third-party host is a trust decision with a live expiry, and
-          # keyscan's exposure is a connect-time MITM on the same connection that
-          # carries the push; the alternative is a hardcoded host key that has to
-          # be replaced by hand when GitHub rotates it, which is the failure this
-          # is meant to avoid. Public repositories are what this runs against.
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          # GitHub's host keys from the meta API: fetched, so a rotation does not
+          # break the release, but over TLS, unlike `ssh-keyscan`, so a network
+          # attacker cannot substitute their own.
+          KEYS="$(gh api meta --jq '.ssh_keys[] | "github.com " + .')"
+          if [ -z "$KEYS" ]; then
+            echo "::error::GitHub's meta API returned no SSH host keys" >&2
+            exit 1
+          fi
+          printf '%s\n' "$KEYS" >> ~/.ssh/known_hosts
 
       - name: Clone the tap over the deploy key
         run: |
