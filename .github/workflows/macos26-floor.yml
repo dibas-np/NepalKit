@@ -276,6 +276,11 @@ jobs:
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
+      # Here rather than with the other script suites in badge-entry.yml:
+      # release-core.sh is a zsh script, and that job's Linux runner has no zsh.
+      - name: Package release script suite
+        run: python3 scripts/test_release_core.py
+
       # The committed SwiftPM harness, not `xcodebuild test`, which once hung on
       # the hosted runner before connecting, even with an empty test. See
       # ADR-0005.

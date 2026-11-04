@@ -343,8 +343,8 @@ read the skip as coverage.
 
 ## Commands
 
-- Everything: `scripts/check-all.sh`, the sixteen local gates. That count is the
-  script's own `total`, and a green run prints `==> all 16 gates passed`, so the
+- Everything: `scripts/check-all.sh`, the seventeen local gates. That count is the
+  script's own `total`, and a green run prints `==> all 17 gates passed`, so the
   number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
 - App-layer tests: `scripts/run-app-tests.sh`, the documented runner (see

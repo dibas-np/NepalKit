@@ -61,7 +61,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=16
+total=17
 ran=0
 summary=""
 current=""
@@ -170,6 +170,10 @@ gate "deployment floor consistency" bash -c '
     python3 "$1/scripts/test_verify_deployment_floor.py"
     python3 "$1/scripts/verify-deployment-floor.py"
 ' _ "$repo_root"
+# The package release script, against throwaway repositories and a throwaway
+# signing key. macos26-floor.yml runs it too; it needs zsh, which the Linux
+# runner that has the other script suites does not have.
+gate "package release script suite" python3 "$repo_root/scripts/test_release_core.py"
 # Last, and last in the file for a reason: this is the only gate that needs a
 # watchOS simulator runtime, so a contributor on a machine without one should
 # discover that from its own line rather than have it fail three gates earlier.

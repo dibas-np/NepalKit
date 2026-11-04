@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Dibas Sigdel
+"""Behavioural suite for scripts/release-core.sh.
+
+Run: python3 scripts/test_release_core.py
+
+Each test builds a throwaway world: a repository holding a NepalKitCore/
+package and a copy of the script, a bare origin it tracks, a bare mirror, a
+throwaway SSH signing key, and stubs on PATH for gh, swift and xcodebuild. git
+itself is real, subtree split, tag signing and pushes included, so what is
+asserted is what the script does to real refs. Needs zsh, git and ssh-keygen;
+nothing touches the network or the project's signing key.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parent
+SCRIPT = SCRIPTS / "release-core.sh"
+VERIFICATION_GUIDE = SCRIPTS.parent / "docs" / "release-verification.md"
+
+CHANGELOG = """# Changelog
+
+## 0.1.0 — 2026-11-04
+
+- The first release.
+"""
+
+GH_STUB = """#!/bin/sh
+# gh, as release-core.sh uses it: repo view, the release lookup, release create.
+world="$(dirname "$0")/.."
+case "$1 $2" in
+  "repo view") exit 0 ;;
+  "api "*)
+    if [ -f "$world/released" ]; then echo "$(cat "$world/released")"; exit 0; fi
+    echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+  "release create")
+    printf '%s\\n' "$@" >> "$world/gh-release.log"
+    if [ "${STUB_GH_RELEASE_EXIT:-0}" != 0 ]; then exit "$STUB_GH_RELEASE_EXIT"; fi
+    echo "$3" > "$world/released"; exit 0 ;;
+esac
+echo "unexpected gh call: $*" >&2
+exit 2
+"""
+
+SUITE_STUB = """#!/bin/sh
+echo "✔ Test run with 3 tests in 1 suite passed after 0.1 seconds."
+"""
+
+
+def git(*args: str, cwd: Path, check: bool = True) -> str:
+    return subprocess.run(["git", *args], cwd=cwd, check=check, capture_output=True,
+                          text=True).stdout.strip()
+
+
+class World:
+    """A repository, its origin, a mirror, a signing key and the tool stubs."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.repo = root / "repo"
+        self.origin = root / "origin.git"
+        self.mirror = root / "mirror.git"
+        self.bin = root / "bin"
+        self.home = root / "home"
+        self.home.mkdir()
+        self.bin.mkdir()
+        for name, body in (("gh", GH_STUB), ("swift", SUITE_STUB), ("xcodebuild", SUITE_STUB)):
+            stub = self.bin / name
+            stub.write_text(body, encoding="utf-8")
+            stub.chmod(0o755)
+
+        key = root / "signing-key"
+        subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "test", "-f", str(key)],
+                       check=True)
+        self.key = key
+        self.fingerprint = subprocess.run(["ssh-keygen", "-lf", str(key)], check=True,
+                                          capture_output=True, text=True).stdout.split()[1]
+        self.allowed_signers = root / "allowed_signers"
+        self.allowed_signers.write_text(
+            f'release@example.com namespaces="git" {(root / "signing-key.pub").read_text()}',
+            encoding="utf-8",
+        )
+
+        git("init", "--quiet", "--initial-branch=develop", str(self.repo), cwd=root)
+        for key_name, value in (("user.name", "Release Test"), ("user.email", "release@example.com"),
+                                ("gpg.format", "ssh"), ("user.signingkey", str(key)),
+                                ("gpg.ssh.allowedSignersFile", str(self.allowed_signers))):
+            git("config", key_name, value, cwd=self.repo)
+        package = self.repo / "NepalKitCore"
+        (package / "Sources" / "NepalKitCore").mkdir(parents=True)
+        (package / "Package.swift").write_text("// swift-tools-version: 6.2\n", encoding="utf-8")
+        (package / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
+        (package / "Sources" / "NepalKitCore" / "Core.swift").write_text("let core = 1\n", encoding="utf-8")
+        (self.repo / "README.md").write_text("The app.\n", encoding="utf-8")
+        (self.repo / "scripts").mkdir()
+        shutil.copy2(SCRIPT, self.repo / "scripts" / "release-core.sh")
+        self.commit("the package")
+
+        git("init", "--quiet", "--bare", str(self.origin), cwd=root)
+        git("remote", "add", "origin", str(self.origin), cwd=self.repo)
+        git("push", "--quiet", "origin", "develop", cwd=self.repo)
+        git("init", "--quiet", "--bare", "--initial-branch=main", str(self.mirror), cwd=root)
+
+    def commit(self, message: str) -> None:
+        git("add", "-A", cwd=self.repo)
+        git("commit", "--quiet", "-m", message, cwd=self.repo)
+
+    def run(self, *args: str, **overrides: str) -> subprocess.CompletedProcess:
+        env = {
+            "PATH": f"{self.bin}:{os.environ['PATH']}",
+            "HOME": str(self.home),
+            "TMPDIR": str(self.root),
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "CORE_MIRROR_REPO": "example/NepalKitCore",
+            "CORE_MIRROR_URL": str(self.mirror),
+            "CORE_SIGNING_FINGERPRINT": self.fingerprint,
+        }
+        env.update(overrides)
+        return subprocess.run(["zsh", str(self.repo / "scripts" / "release-core.sh"), *args],
+                              cwd=self.repo, env=env, capture_output=True, text=True)
+
+    def split(self) -> str:
+        return git("subtree", "split", "--quiet", "--prefix=NepalKitCore", "HEAD", cwd=self.repo)
+
+    def head(self) -> str:
+        return git("rev-parse", "HEAD", cwd=self.repo)
+
+    def refs(self, repository: Path) -> dict[str, str]:
+        listed = git("ls-remote", str(repository), cwd=self.root)
+        return {ref: sha for sha, ref in (line.split("\t") for line in listed.splitlines())}
+
+    def releases(self) -> list[str]:
+        log = self.root / "gh-release.log"
+        return log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+
+
+class ReleaseCoreTest(unittest.TestCase):
+    def setUp(self) -> None:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        self.world = World(Path(scratch.name))
+
+    def assertNothingPublished(self) -> None:
+        self.assertEqual(self.world.refs(self.world.mirror), {})
+        self.assertNotIn("refs/tags/core-v0.1.0", self.world.refs(self.world.origin))
+        self.assertEqual(self.world.releases(), [])
+
+    def test_a_malformed_version_is_refused(self) -> None:
+        result = self.world.run("1.2")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not a major.minor.patch version", result.stderr)
+
+    def test_a_missing_changelog_entry_is_refused(self) -> None:
+        result = self.world.run("0.2.0")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("no '## 0.2.0 — <date>' entry", result.stderr)
+        self.assertNothingPublished()
+
+    def test_a_release_publishes_the_split_and_both_signed_tags(self) -> None:
+        result = self.world.run("0.1.0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        mirror = self.world.refs(self.world.mirror)
+        self.assertEqual(mirror["refs/heads/main"], self.world.split())
+        self.assertEqual(mirror["refs/tags/v0.1.0^{}"], self.world.split())
+        origin = self.world.refs(self.world.origin)
+        self.assertEqual(origin["refs/tags/core-v0.1.0^{}"], self.world.head())
+        for repository, tag in ((self.world.mirror, "v0.1.0"), (self.world.repo, "core-v0.1.0")):
+            verified = subprocess.run(
+                ["git", "-c", f"gpg.ssh.allowedSignersFile={self.world.allowed_signers}", "tag", "-v", tag],
+                cwd=repository, capture_output=True, text=True,
+            )
+            self.assertIn(f'Good "git" signature for release@example.com with ED25519 key '
+                          f'{self.world.fingerprint}', verified.stderr)
+        # The package's v* tag must never land in the monorepo, where it would
+        # read as an app release.
+        self.assertEqual(git("tag", "--list", "v*", cwd=self.world.repo), "")
+        releases = self.world.releases()
+        self.assertEqual(releases.count("create"), 1)
+        notes = Path(releases[releases.index("--notes-file") + 1])
+        self.assertFalse(notes.exists(), "the notes file lives in the run's own directory")
+        self.assertIn("--verify-tag", releases)
+
+    def test_a_dry_run_signs_both_tags_and_pushes_nothing(self) -> None:
+        result = self.world.run("--dry-run", "0.1.0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count('Good "git" signature'), 2)
+        self.assertIn("Nothing was pushed", result.stdout)
+        self.assertNothingPublished()
+        self.assertEqual(git("tag", "--list", cwd=self.world.repo), "")
+
+    def test_a_dirty_tree_stops_a_release_but_only_warns_a_dry_run(self) -> None:
+        (self.world.repo / "README.md").write_text("changed\n", encoding="utf-8")
+        released = self.world.run("0.1.0")
+        self.assertEqual(released.returncode, 1)
+        self.assertIn("uncommitted changes", released.stderr)
+        dry = self.world.run("--dry-run", "0.1.0")
+        self.assertEqual(dry.returncode, 0, dry.stderr)
+        self.assertIn("warning (dry run): the working tree has uncommitted changes", dry.stderr)
+        self.assertNothingPublished()
+
+    def test_an_unpushed_head_stops_a_release(self) -> None:
+        (self.world.repo / "README.md").write_text("changed\n", encoding="utf-8")
+        self.world.commit("not pushed")
+        result = self.world.run("0.1.0")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("HEAD is not origin/develop", result.stderr)
+        self.assertNothingPublished()
+
+    def test_an_unreachable_mirror_fails_rather_than_reading_as_empty(self) -> None:
+        result = self.world.run("0.1.0", CORE_MIRROR_URL=str(self.world.root / "missing.git"))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("cannot read refs/heads/main", result.stderr)
+        self.assertNotIn("refs/tags/core-v0.1.0", self.world.refs(self.world.origin))
+        self.assertEqual(self.world.releases(), [])
+
+    def test_a_mirror_changed_outside_the_script_is_refused(self) -> None:
+        stray = self.world.root / "stray"
+        git("init", "--quiet", "--initial-branch=main", str(stray), cwd=self.world.root)
+        (stray / "x").write_text("x\n", encoding="utf-8")
+        git("add", "x", cwd=stray)
+        git("-c", "user.name=x", "-c", "user.email=x@example.com", "commit", "--quiet", "-m", "stray",
+            cwd=stray)
+        git("push", "--quiet", str(self.world.mirror), "main", cwd=stray)
+
+        result = self.world.run("0.1.0")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not an ancestor of the split", result.stderr)
+        self.assertNotIn("refs/tags/v0.1.0", self.world.refs(self.world.mirror))
+        self.assertNotIn("refs/tags/core-v0.1.0", self.world.refs(self.world.origin))
+
+    def test_a_published_tag_at_another_commit_is_refused(self) -> None:
+        self.assertEqual(self.world.run("0.1.0").returncode, 0)
+        (self.world.repo / "NepalKitCore" / "Sources" / "NepalKitCore" / "Core.swift").write_text(
+            "let core = 2\n", encoding="utf-8")
+        self.world.commit("a core change")
+        git("push", "--quiet", "origin", "develop", cwd=self.world.repo)
+
+        result = self.world.run("0.1.0")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("v0.1.0 on example/NepalKitCore is", result.stderr)
+        self.assertIn("not this split", result.stderr)
+
+    def test_a_tag_signed_by_another_key_is_refused_before_anything_is_pushed(self) -> None:
+        result = self.world.run("0.1.0", CORE_SIGNING_FINGERPRINT="SHA256:not-the-documented-key")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("is not signed by SHA256:not-the-documented-key", result.stderr)
+        self.assertNothingPublished()
+
+    def test_signing_that_cannot_be_verified_is_refused(self) -> None:
+        git("config", "--unset", "gpg.ssh.allowedSignersFile", cwd=self.world.repo)
+        result = self.world.run("--dry-run", "0.1.0")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no gpg.ssh.allowedSignersFile", result.stderr)
+
+    def test_a_run_that_stopped_after_publishing_can_be_finished(self) -> None:
+        first = self.world.run("0.1.0", STUB_GH_RELEASE_EXIT="1")
+        self.assertNotEqual(first.returncode, 0)
+        published = self.world.refs(self.world.mirror)
+        self.assertIn("refs/tags/v0.1.0", published)
+
+        second = self.world.run("0.1.0")
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertIn("already on example/NepalKitCore at the split", second.stdout)
+        self.assertIn("core-v0.1.0 is already on origin at HEAD", second.stdout)
+        # The published tag is the same object, not a re-signed replacement.
+        self.assertEqual(self.world.refs(self.world.mirror), published)
+        self.assertEqual(self.world.releases().count("create"), 2)
+        self.assertTrue((self.world.root / "released").exists())
+
+    def test_the_mirror_push_is_atomic(self) -> None:
+        # An update hook that refuses the tag alone. Pushed atomically, main is
+        # refused with it, so the mirror never shows a release branch without
+        # its tag.
+        hook = self.world.mirror / "hooks" / "update"
+        hook.write_text('#!/bin/sh\ncase "$1" in refs/tags/*) exit 1 ;; esac\n', encoding="utf-8")
+        hook.chmod(0o755)
+        result = self.world.run("0.1.0")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.world.refs(self.world.mirror), {})
+        self.assertNotIn("refs/tags/core-v0.1.0", self.world.refs(self.world.origin))
+
+    def test_no_variable_meets_a_colon_unbraced(self) -> None:
+        # In zsh, "$TAG:refs/..." applies the :r modifier to $TAG, so a refspec
+        # silently loses its version's last component. It reached this script
+        # twice; a variable followed by a colon is always written ${NAME}:.
+        code = [line.split("#", 1)[0] for line in SCRIPT.read_text(encoding="utf-8").splitlines()]
+        offenders = [f"line {number}: {line.strip()}" for number, line in enumerate(code, start=1)
+                     if re.search(r"\$[A-Za-z_][A-Za-z0-9_]*:[A-Za-z&]", line)]
+        self.assertEqual(offenders, [])
+
+    def test_the_expected_key_is_the_one_the_verification_guide_publishes(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+        guide = VERIFICATION_GUIDE.read_text(encoding="utf-8")
+        default = re.search(r'CORE_SIGNING_FINGERPRINT:-(SHA256:[A-Za-z0-9+/]+)', script)
+        published = re.search(r"expected='(SHA256:[A-Za-z0-9+/]+)'", guide)
+        self.assertIsNotNone(default)
+        self.assertIsNotNone(published)
+        self.assertEqual(default.group(1), published.group(1))
+
+
+if __name__ == "__main__":
+    unittest.main()

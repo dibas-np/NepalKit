@@ -45,6 +45,18 @@ Nepali formatting. Publishing it raises four questions, each with a cost:
    The package's v* tags never exist in this repository: the script creates
    them in a private bare repository and pushes them only to the mirror.
 
+   The script signs both tags, and requires each to verify against the key
+   `docs/release-verification.md` publishes, before it pushes anything. The
+   mirror's main and its tag go up in one atomic push. A run that stops after
+   that point can be rerun with the same version: steps already published at
+   the same commits are skipped, and a tag at any other commit is refused.
+
+   Releases are cut from `develop`, the branch the maintainer integrates on,
+   which `main` trails through release pull requests. A package release
+   therefore does not wait for `main`'s required checks. Its gate is the
+   script's own run of the core suite on all three platforms, in the split it
+   publishes. `scripts/test_release_core.py` tests the script itself.
+
    The version stays below 1.0 until the public API has been reviewed for
    outside use. Today's surface was written for the app and includes types only
    the app uses (`MenuBarFormat`, `WatchDayDisplay`, `ComplicationAccessibility`,

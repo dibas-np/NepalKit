@@ -244,15 +244,18 @@ consumer that resolves it.
 release machine. No workflow and no deploy key can reach it. Each release tag
 is signed with the commit-signing key, and the mirror's history is a
 deterministic `git subtree split` of this repository, so anyone can check a
-release against reviewed source
+release against this repository's history
 ([release verification](release-verification.md#verifying-a-nepalkitcore-release)).
-The script fast-forwards main only, and refuses a mirror changed outside it.
+The script fast-forwards main only, refuses a mirror changed outside it, and
+pushes nothing until both tags verify against the published key.
 The mirror's rulesets block force-pushing or deleting main and updating or
 deleting any `v*` tag, with no bypass actor. Rewriting a published release
 first needs a ruleset change, which GitHub's audit log records.
 
-**Residual:** full compromise of the maintainer's GitHub account can rewrite
-the mirror. Consumers who pin a revision in `Package.resolved` are not affected
+**Residual:** releases are cut from `develop`, so a package release can carry
+core code that has not yet passed `main`'s required checks. The script's own
+three-platform suite is its gate. Full compromise of the maintainer's GitHub
+account can rewrite the mirror. Consumers who pin a revision in `Package.resolved` are not affected
 until they update it. A consumer who updates without verifying the tag gets
 whatever the mirror serves.
 

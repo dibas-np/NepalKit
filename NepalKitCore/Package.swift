@@ -33,9 +33,11 @@ let package = Package(
     // every watchOS block in the Xcode project having to agree with itself.
     //
     // iOS has no NepalKit product. It is declared because the package is
-    // published for other apps (ADR-0018), and scripts/release-core.sh runs the
-    // core suite on an iOS Simulator before every release, so the floor is
-    // tested rather than inherited from the toolchain's default.
+    // published for other apps (ADR-0018). The core compiles against this
+    // floor, and scripts/release-core.sh runs its suite on an iOS Simulator
+    // before every release. That simulator is iOS 27, the only iOS runtime on
+    // the release machine, so behaviour on iOS 26 itself is not run; the floor
+    // is compile-checked, not inherited from the toolchain's default.
     platforms: [.macOS(.v26), .iOS(.v26), .watchOS(.v26)],
     products: [
         .library(name: "NepalKitCore", targets: ["NepalKitCore"]),

@@ -237,7 +237,7 @@ Every check above also runs mechanically, so you do not have to:
 | Appcast structure, enclosure lengths, and the EdDSA signature over the real bytes | `scripts/verify-appcast.py`, run by `pages.yml` | Every change to `appcast.xml`, and on demand |
 | Downloaded `.app` identity, version, and `sha256` for the cask | `scripts/update-cask.sh` | Every `v*` tag |
 | Deployment floor agreement across project, script, and built product | `scripts/verify-deployment-floor.py` | Every pull request |
-| NepalKitCore suite on macOS, iOS and watchOS, run in the split that is published | `scripts/release-core.sh` | Every NepalKitCore release |
+| NepalKitCore suite on macOS, iOS and watchOS, run in the split that is published, and both tags verified against the key above before anything is pushed | `scripts/release-core.sh`, tested by `scripts/test_release_core.py` | Every NepalKitCore release |
 | Gatekeeper on a machine that has never trusted the developer | [`docs/release-evidence/fresh-mac-install-procedure.md`](release-evidence/fresh-mac-install-procedure.md) | Before publication |
 
 The last one is the only check that cannot be done from a machine that already
