@@ -10,3 +10,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # CodeQL refuses to run when `init` and `analyze` are at different
+    # versions, and without a group Dependabot bumps each in its own PR — so
+    # every release produced two PRs that could never go green on their own
+    # (#64/#65, #66/#67, #68/#69). One group keeps both steps on one SHA.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"
