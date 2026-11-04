@@ -42,14 +42,18 @@ Nepali formatting. Publishing it raises four questions, each with a cost:
    and tags. Each release also gets a signed `core-v<version>` tag here, on the
    source commit. That prefix matches neither the `v*` tag ruleset nor
    `release-tag.yml`, so a package release can never be read as an app release.
-   The package's v* tags never exist in this repository: the script creates
-   them in a private bare repository and pushes them only to the mirror.
+   The package's v* tags never exist under `refs/tags` in this repository. The
+   script signs them in a private repository and keeps them under
+   `refs/release-core/` for the length of the run, which no push of tags
+   includes.
 
-   The script signs both tags, and requires each to verify against the key
-   `docs/release-verification.md` publishes, before it pushes anything. The
-   mirror's main and its tag go up in one atomic push. A run that stops after
-   that point can be rerun with the same version: steps already published at
-   the same commits are skipped, and a tag at any other commit is refused.
+   Every tag must name the right commit and verify against the key
+   `docs/release-verification.md` publishes before anything is pushed. That
+   holds for a tag already published, too: a rerun verifies it instead of
+   trusting it. The pushes go from this repository, so its own remotes and
+   settings apply. The mirror's main and its tag go up in one atomic push. A
+   run that stops partway can be rerun with the same version: only what is
+   missing is pushed, and a tag at any other commit is refused.
 
    Releases are cut from `develop`, the branch the maintainer integrates on,
    which `main` trails through release pull requests. A package release
