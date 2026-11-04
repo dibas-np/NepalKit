@@ -5,123 +5,64 @@ Status: accepted
 
 ## Context
 
-NepalKitCore has been a local package since 1.0. The Mac app and the Watch
-products reference it by path, and nothing outside this repository could
-depend on it. The roadmap listed "a public API or plugin interface" under *Not
-planned*, because a published surface is a commitment a solo maintainer has to
-keep.
-
-The core is the part of NepalKit that is useful to other apps: offline
-Bikram Sambat conversion over a table with recorded provenance, Nepal Time, and
-Nepali formatting. Publishing it raises four questions, each with a cost:
-
-- **Where it lives.** SwiftPM resolves a package only from the root of a
-  repository, and the manifest here is at `NepalKitCore/Package.swift`.
-- **How it versions.** ADR-0009 keeps the app version, the build number and the
-  dataset version independent. A library adds a fourth number with its own
-  contract.
-- **What licence it carries.** Under GPL-3.0-or-later the core could be linked
-  only by GPL software, which in practice also keeps it out of App Store apps.
-- **Which platforms it claims.** The manifest declared macOS and watchOS only,
-  the two floors NepalKit ships on. iOS, where most consumers would be, was
-  neither declared nor tested.
+NepalKitCore is a local package that only the app and the Watch products use,
+and the roadmap listed a public API under *Not planned*. The core is the part
+other apps could use: offline Bikram Sambat conversion over a table with
+recorded provenance, Nepal Time, and Nepali formatting. Publishing it means
+deciding where it lives (SwiftPM needs a manifest at a repository root), how
+it versions (ADR-0009 already keeps three independent numbers), its licence
+(GPL keeps it out of most apps, including App Store ones), and its platforms
+(iOS was neither declared nor tested).
 
 ## Decision
 
-1. **A mirror repository, `dibas-np/NepalKitCore`.** This repository stays the
-   only place the core is developed. The mirror's main is
-   `git subtree split --prefix=NepalKitCore` of it, pushed from the release
-   machine by `scripts/release-core.sh`. The split is deterministic, so anyone
-   can rerun it and compare commits. The mirror is read-only, and its README
-   sends issues and pull requests here. Its issues and wiki are off. Its
-   rulesets block force-pushing or deleting main and updating or deleting a
-   `v*` tag, with no bypass actor, so a published release cannot move.
+1. **A read-only mirror, `dibas-np/NepalKitCore`.** The core is still
+   developed only here. The mirror's main is
+   `git subtree split --prefix=NepalKitCore`, which anyone can rerun and
+   compare. Issues and the wiki are off, and rulesets with no bypass block
+   force-pushing or deleting main and moving or deleting a `v*` tag.
 
-2. **Its own semantic version, starting at 0.1.0.** Release tags on the mirror
-   are `v<version>`, signed with the key that signs this repository's commits
-   and tags. Each release also gets a signed `core-v<version>` tag here, on the
-   source commit. That prefix matches neither the `v*` tag ruleset nor
-   `release-tag.yml`, so a package release can never be read as an app release.
-   The package's v* tags never exist under `refs/tags` in this repository. The
-   script signs them in a private repository and keeps them under
-   `refs/release-core/` for the length of the run, which no push of tags
-   includes.
+2. **Its own semver, from 0.1.0.** Mirror tags are `v<version>`; the source
+   commit here gets `core-v<version>`, which neither the `v*` ruleset nor
+   `release-tag.yml` matches. Both are signed with the commit-signing key.
+   `scripts/release-core.sh` cuts releases from `develop`, so they do not wait
+   for `main`'s checks. Its gate is the core suite on macOS, iOS and watchOS,
+   run in the split. It verifies every tag, new or already published, against
+   the published key before pushing anything, and pushes the mirror
+   atomically. `scripts/test_release_core.py` tests it.
 
-   Every tag must name the right commit and verify against the key
-   `docs/release-verification.md` publishes before anything is pushed. That
-   holds for a tag already published, too: a rerun verifies it instead of
-   trusting it. The pushes go from this repository, so its own remotes and
-   settings apply. The mirror's main and its tag go up in one atomic push. A
-   run that stops partway can be rerun with the same version: only what is
-   missing is pushed, and a tag at any other commit is refused.
+   The API stays below 1.0 until it is reviewed for outside use. It still
+   carries app-only types (`MenuBarFormat`, `WatchDayDisplay`,
+   `ComplicationAccessibility`, `WatchDayCopy`) and module-level functions
+   like `bsToAD`.
 
-   Releases are cut from `develop`, the branch the maintainer integrates on,
-   which `main` trails through release pull requests. A package release
-   therefore does not wait for `main`'s required checks. Its gate is the
-   script's own run of the core suite on all three platforms, in the split it
-   publishes. `scripts/test_release_core.py` tests the script itself.
+3. **The core is MIT.** The maintainer is its only human author; the other
+   commit identities are AI tools. `NepalKitCore/LICENSE` and the core's SPDX
+   headers say MIT, the askbuddie notice is unchanged, and everything else
+   stays GPL-3.0-or-later. This grants nothing new for the calendar data
+   (SOURCES.md, *Copyright scope*).
 
-   The version stays below 1.0 until the public API has been reviewed for
-   outside use. Today's surface was written for the app and includes types only
-   the app uses (`MenuBarFormat`, `WatchDayDisplay`, `ComplicationAccessibility`,
-   `WatchDayCopy`) and module-level functions such as `bsToAD`. Under 0.x a
-   minor release may change any of it, and the README tells consumers to pin
-   to the next minor version.
-
-3. **NepalKitCore is relicensed to MIT.** The maintainer is the core's only
-   human author, and the other commit identities in its history are AI tools,
-   so the change needs no one else's consent. `NepalKitCore/LICENSE` carries
-   the MIT text, and the core's SPDX headers say `MIT`. The askbuddie base
-   table was already MIT, and its notice is retained unchanged. The app, the
-   Watch products, the scripts and the documentation stay GPL-3.0-or-later.
-   The licence change grants nothing new for the calendar data:
-   SOURCES.md's *Copyright scope* section still applies to it.
-
-4. **iOS 26 is declared, and tested at every release.** The manifest declares
-   `.iOS(.v26)`. `release-core.sh` runs the full core suite on macOS, an iOS
-   Simulator and a watchOS Simulator, in a clone of the split, before it signs a
-   tag. Running the suite in the split rather than here also proves the package
-   needs nothing from the rest of this repository. When this was decided, the
-   iOS suite ran on the iOS 27 Simulator, the only iOS runtime installed on the
-   release machine. Its compile floor is 26 because the manifest says so.
+4. **iOS 26 is declared.** It is compile-checked. The suite runs on the iOS 27
+   Simulator, the only iOS runtime on the release machine.
 
 ## Consequences
 
-- The roadmap's *Not planned* row narrows to a plugin interface. The core's API
-  is now a published surface, which is the commitment that row warned about.
-  0.x is how the project limits that commitment until the API has been reviewed.
-- A package release is a maintainer action from the release machine, like an
-  app release. No new credential exists: the pushes use the maintainer's own
-  GitHub access, and no workflow can reach the mirror.
-- The mirror's commits are not signed, because `git subtree split` rewrites
-  them and drops the signatures. Each release tag is signed and covers the
-  tree it points at. A reader verifies a release against this repository by
-  rerunning the split ([release verification](../release-verification.md#verifying-a-nepalkitcore-release)).
-- Changes under `NepalKitCore/` are contributed under MIT, not GPL
-  (CONTRIBUTING.md, *Licensing of contributions*).
-- A dataset change reaches the package's consumers only through a package
-  release, so one should follow the app release that ships it. A narrowed
-  supported range (ADR-0010) is a breaking change for consumers. It needs a
-  minor bump under 0.x and a major bump after 1.0.
+- The roadmap's *Not planned* row narrows to a plugin interface; 0.x limits
+  the API commitment until the review.
+- No new credential exists, and no workflow can reach the mirror.
+- `git subtree split` drops commit signatures, so the signed tags are what
+  consumers verify ([release verification](../release-verification.md#verifying-a-nepalkitcore-release)).
+- Changes under `NepalKitCore/` are contributed under MIT.
+- A dataset change reaches consumers only through a package release. A
+  narrowed range (ADR-0010) is breaking: a minor bump under 0.x, major after.
 
 ## Considered options
 
-**A `Package.swift` at this repository's root.** Rejected. It needs no second
-repository, but the package's versions would be the app's `v*` tags. An app
-release with no core change would bump the library, and a breaking library
-change would need an app major version. It would also make the pre-1.0 option
-impossible, because the tags are already at 1.7.0.
+- **A root `Package.swift` here.** Rejected: the package would version with
+  the app's `v*` tags, already at 1.7.0.
+- **Move the core out and consume it remotely.** Rejected: a dataset fix and
+  the app change it needs could no longer share a pull request.
+- **Keep the core GPL.** Rejected by the maintainer.
+- **1.0.0 now.** Rejected: it would freeze app-only names.
 
-**Move the core into its own repository and consume it remotely.** Rejected.
-Calendar data changes, the app and the Watch products would land in two
-repositories, and a dataset correction could no longer be reviewed in one pull
-request with the app change it requires.
-
-**Keep the core GPL.** Rejected by the maintainer. A GPL Swift package is
-usable only by GPL software, which defeats the reason for publishing it.
-
-**Release 1.0.0 with today's API.** Rejected. It would freeze names that exist
-only for the app's menu bar and Watch complications.
-
-This ADR amends ADR-0014's statement that NepalKit code is GPL-3.0-or-later,
-for the core only.
+This ADR amends ADR-0014's licence statement for the core only.

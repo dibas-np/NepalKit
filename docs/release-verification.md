@@ -199,16 +199,12 @@ defaults read /Applications/NepalKit.app/Contents/Info SUPublicEDKey
 
 ## Verifying a NepalKitCore release
 
-The Swift package at <https://github.com/dibas-np/NepalKitCore> is a mirror of
-this repository's `NepalKitCore/` directory
-([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Its release tags
-are `v<version>`. Each one has a matching `core-v<version>` tag here on the
-source commit. A release passes two checks. Both tags are signed with the key
-from step 2 above, and the mirror's commit is the one this repository's history
-produces.
-
-Build `nepalkit-allowed-signers` as in step 2, then use a full clone of each
-repository (not `--depth`, which `git subtree split` cannot work from):
+<https://github.com/dibas-np/NepalKitCore> mirrors `NepalKitCore/`
+([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Each `v<version>`
+there has a `core-v<version>` here on the source commit. Check that both are
+signed with the key from step 2, and that the mirror's commit is the split of
+this repository. Build `nepalkit-allowed-signers` as in step 2, then, with full
+clones (`git subtree split` cannot work from `--depth`):
 
 ```sh
 git clone https://github.com/dibas-np/NepalKitCore.git
@@ -221,10 +217,9 @@ test "$(git -C NepalKit subtree split --quiet --prefix=NepalKitCore core-v<versi
   && echo "mirror matches" || echo "FAIL: the mirror is not the split of core-v<version>"
 ```
 
-Expect the same `Good "git" signature` as in step 2 for both tags, then
-`mirror matches`. The mirror's commits are unsigned, because the split
-rewrites every commit and the signatures cannot survive it. The signed tag
-covers the tree it points at.
+Expect a `Good "git" signature` for both tags, then `mirror matches`. The
+mirror's commits are unsigned (the split rewrites them); the signed tag covers
+the tree.
 
 ## What this repository automates
 

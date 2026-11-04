@@ -50,11 +50,9 @@ extension DynamicTypeSize {
     }
 }
 
-/// Rectangular: a small label line, the weekday and the Bikram Sambat year,
-/// over the Bikram Sambat day and month. The Gregorian date is not drawn, and
-/// the announced label leaves it out too. At large text sizes the weekday goes
-/// as well, leaving the day and month over the year — and the announced label
-/// drops what the visuals dropped.
+/// Rectangular: weekday · year over the Bikram Sambat day and month; at large
+/// text sizes, day and month over the year. The announced label drops what the
+/// visuals drop.
 struct TodayRectangularComplication: View {
     let state: TodayComplicationState
 
@@ -90,13 +88,9 @@ struct TodayRectangularComplication: View {
                 //
                 // Label line over the metric, as every rectangular layout in
                 // Apple's watchOS 26 kit is arranged: the small emphasized line
-                // first, tinted on tinted faces, then the value large. The same
-                // two text styles as before, so the two-line height that fits
-                // the Modular slot is unchanged. The label is now semibold,
-                // which is wider: in the simulator the widest label measured
-                // 71 pt semibold against 70 pt regular at xLarge, under half
-                // the 162 pt width of a 40 mm screen. The on-device re-check
-                // covers width as well as height (physical-validation.md).
+                // first, tinted on tinted faces, then the value large. Same
+                // text styles, so the two-line height is unchanged; semibold
+                // measured 1 pt wider (71 pt at xLarge), well inside the slot.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2.weight(.semibold))

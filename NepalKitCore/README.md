@@ -89,22 +89,15 @@ official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
 ## Where development happens
 
-This repository is a read-only mirror of the `NepalKitCore/` directory in
-[dibas-np/NepalKit](https://github.com/dibas-np/NepalKit). Open issues and pull
-requests there. The source comments refer to that repository's SOURCES.md and
-`docs/adr/`.
-
-The mirror's history is `git subtree split --prefix=NepalKitCore` of the
-NepalKit repository, so you can reproduce it yourself. Each release tag here is
-signed, and a matching `core-v<version>` tag in NepalKit marks the source commit.
+This is a read-only mirror of `NepalKitCore/` in
+[dibas-np/NepalKit](https://github.com/dibas-np/NepalKit), where issues and pull
+requests go and where the source comments' SOURCES.md and `docs/adr/` live. Its
+history is a reproducible `git subtree split`, and its tags are signed;
 [Verifying a NepalKitCore release](https://github.com/dibas-np/NepalKit/blob/develop/docs/release-verification.md#verifying-a-nepalkitcore-release)
 gives the commands.
 
 ## License
 
-MIT. See [LICENSE](LICENSE). The month-length table's base is MIT-licensed,
-copyright (c) 2023 Ask Buddie. Its complete notice ships in the package's
-resource bundle as `AskBuddie-LICENSE.txt`.
-
-The NepalKit app that uses this package is licensed separately, under
-GPL-3.0-or-later.
+MIT; see [LICENSE](LICENSE). The month-length table's base is MIT, copyright
+(c) 2023 Ask Buddie, with its notice in the resource bundle as
+`AskBuddie-LICENSE.txt`. The NepalKit app is GPL-3.0-or-later.

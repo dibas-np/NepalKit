@@ -5,12 +5,9 @@
 
 Run: python3 scripts/test_release_core.py
 
-Each test builds a throwaway world: a repository holding a NepalKitCore/
-package and a copy of the script, a bare origin it tracks, a bare mirror, a
-throwaway SSH signing key, and stubs on PATH for gh, swift and xcodebuild. git
-itself is real, subtree split, tag signing and pushes included, so what is
-asserted is what the script does to real refs. Needs zsh, git and ssh-keygen;
-nothing touches the network or the project's signing key.
+Each test builds a throwaway repository, origin, mirror and SSH key, with gh,
+swift and xcodebuild stubbed. git is real, so the assertions are about real
+refs. Needs zsh, git and ssh-keygen; no network, no real key.
 """
 
 from __future__ import annotations
@@ -152,9 +149,7 @@ class ReleaseCoreTest(unittest.TestCase):
     def setUp(self) -> None:
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
-        # Every git call, the World's own as well as the script's, runs with no
-        # system or global configuration: a developer's global commit.gpgsign or
-        # gpg.ssh.program would otherwise reach the throwaway repositories.
+        # No system or global git config, for the World's git calls and the script's.
         isolated = mock.patch.dict(os.environ, {
             "HOME": str(Path(scratch.name) / "home"),
             "GIT_CONFIG_NOSYSTEM": "1",
@@ -196,8 +191,7 @@ class ReleaseCoreTest(unittest.TestCase):
             )
             self.assertIn(f'Good "git" signature for release@example.com with ED25519 key '
                           f'{self.world.fingerprint}', verified.stderr)
-        # The package's v* tag must never land in the monorepo's tags, where it
-        # would read as an app release, and the run's staging refs are gone.
+        # A v* tag here would read as an app release.
         self.assertEqual(git("tag", "--list", "v*", cwd=self.world.repo), "")
         self.assertEqual(self.world.staged(), "")
         releases = self.world.releases()
@@ -296,8 +290,6 @@ class ReleaseCoreTest(unittest.TestCase):
 
     def test_an_unsigned_published_tag_is_not_adopted(self) -> None:
         # A lightweight tag at the right commit, as a hand push would leave.
-        # Resuming verifies what is already published, so this is refused
-        # instead of becoming the release.
         git("push", "--quiet", str(self.world.mirror), f"{self.world.split()}:refs/heads/main",
             f"{self.world.split()}:refs/tags/v0.1.0", cwd=self.world.repo)
         result = self.world.run("0.1.0")
@@ -339,9 +331,6 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertIn("v0.1.0 is already on example/NepalKitCore; verifying it", result.stdout)
 
     def test_relative_signing_paths_still_sign_in_the_private_repositories(self) -> None:
-        # Relative to this repository, where the script runs. The tags are
-        # signed in private repositories elsewhere, so a key path copied there
-        # verbatim would name a file that does not exist.
         for name, source in ((".signing-key", self.world.key), (".allowed_signers", self.world.allowed_signers)):
             shutil.copy(source, self.world.repo / name)
         (self.world.repo / ".git" / "info" / "exclude").write_text(".signing-key\n.allowed_signers\n",
@@ -353,8 +342,6 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_the_source_tag_goes_to_every_push_url_of_origin(self) -> None:
-        # Pushed as `origin` from this repository, so its push urls, transport
-        # settings and hooks apply, not a url copied into a private repository.
         second = self.world.root / "second.git"
         git("init", "--quiet", "--bare", str(second), cwd=self.world.root)
         git("remote", "set-url", "--add", "--push", "origin", str(self.world.origin), cwd=self.world.repo)
@@ -364,9 +351,7 @@ class ReleaseCoreTest(unittest.TestCase):
             self.assertEqual(self.world.refs(repository)["refs/tags/core-v0.1.0^{}"], self.world.head())
 
     def test_the_mirror_push_is_atomic(self) -> None:
-        # An update hook that refuses the tag alone. Pushed atomically, main is
-        # refused with it, so the mirror never shows a release branch without
-        # its tag.
+        # Refuse the tag alone; an atomic push must then refuse main too.
         hook = self.world.mirror / "hooks" / "update"
         hook.write_text('#!/bin/sh\ncase "$1" in refs/tags/*) exit 1 ;; esac\n', encoding="utf-8")
         hook.chmod(0o755)
@@ -376,9 +361,7 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertNotIn("refs/tags/core-v0.1.0", self.world.refs(self.world.origin))
 
     def test_no_variable_meets_a_colon_unbraced(self) -> None:
-        # In zsh, "$TAG:refs/..." applies the :r modifier to $TAG, so a refspec
-        # silently loses its version's last component. It reached this script
-        # twice; a variable followed by a colon is always written ${NAME}:.
+        # zsh reads "$TAG:refs/..." as $TAG with the :r modifier. Write ${TAG}:.
         code = [line.split("#", 1)[0] for line in SCRIPT.read_text(encoding="utf-8").splitlines()]
         offenders = [f"line {number}: {line.strip()}" for number, line in enumerate(code, start=1)
                      if re.search(r"\$[A-Za-z_][A-Za-z0-9_]*:[A-Za-z&]", line)]

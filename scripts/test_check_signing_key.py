@@ -85,8 +85,7 @@ class Check(unittest.TestCase):
         self.assertIn("did not finish", message)
 
     def test_a_key_sign_update_echoes_back_is_not_printed(self):
-        # sign_update prints a key it cannot decode. A malformed copy of the
-        # backup seed is most of the real one, so it must not reach the FAIL line.
+        # sign_update echoes a key it cannot decode; a mistyped seed is most of the real one.
         _, public = keypair(self.dir, "a")
         seed = base64.b64encode(bytes(range(32))).decode()
         for typed in (seed, seed.rstrip("="), seed[:10] + seed[12:]):

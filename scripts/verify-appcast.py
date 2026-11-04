@@ -432,13 +432,8 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail(f"root element is <{root.tag}>, expected an RSS document")
 
     # --- 2. The feed's own signature ----------------------------------------
-    # Checked once, here, before any field the feed declares is read: until the
-    # signature verifies, every value below is attacker-editable, and the fetch
-    # in layer 3 follows the feed's own urls. Only a feed too broken to parse is
-    # reported for something else first. It runs on every path, `--skip-crypto`
-    # included: that flag waives the per-item archive checks, whose bytes CI
-    # does not have, and the feed is right here. It is local and costs no
-    # network, so there is nothing to defer it for.
+    # Before any field is read or url fetched, on every path: `--skip-crypto`
+    # waives only the per-archive checks.
     verify_feed_signature(feed_bytes, info_plist)
 
     items = root.findall("./channel/item")

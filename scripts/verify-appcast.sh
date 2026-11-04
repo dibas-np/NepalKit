@@ -246,12 +246,8 @@ fi
 STATUS=0
 VERIFIED_VERSIONS=""
 UNVERIFIED_VERSIONS=""
-# The denominator comes from the verifier too, from its "well-formed, N
-# item(s)" line. It parses only the bytes the feed signature covers, so counting
-# <item> over the whole file would also count anything after the signing block,
-# which the verifier never reads, and report "N of N+1". The wording is part of
-# that contract: test_the_item_tally_counts_what_the_verifier_read runs the real
-# verifier's output through the line below, so rewording either side fails it.
+# The denominator is the verifier's own "well-formed, N item(s)" count, which
+# excludes anything after the signing block. A test pins the wording.
 ITEMS=""
 ARCHIVES_CHECKED=0
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do

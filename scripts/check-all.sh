@@ -35,9 +35,8 @@
 #     documents it separately, for that case.
 #   - The other `scripts/verify-*` and `scripts/package-release.sh`, which are
 #     release-time gates over packaged artifacts and a live feed.
-#   - The NepalKitCore suite on iOS and watchOS Simulators. The core gate below
-#     runs it on macOS only; `scripts/release-core.sh` runs all three, in the
-#     split it publishes, before every package release (ADR-0018).
+#   - The NepalKitCore suite on iOS and watchOS; `scripts/release-core.sh` runs
+#     those before each package release.
 #   - Physical-device validation of the Watch targets. The last gate below builds
 #     all three Watch targets and runs the Watch suite, but on a simulator: a
 #     green run is not evidence that the app launches on an Apple Watch, that a
@@ -170,9 +169,7 @@ gate "deployment floor consistency" bash -c '
     python3 "$1/scripts/test_verify_deployment_floor.py"
     python3 "$1/scripts/verify-deployment-floor.py"
 ' _ "$repo_root"
-# The package release script, against throwaway repositories and a throwaway
-# signing key. macos26-floor.yml runs it too; it needs zsh, which the Linux
-# runner that has the other script suites does not have.
+# Throwaway repositories and key. Runs in macos26-floor.yml, which has zsh.
 gate "package release script suite" python3 "$repo_root/scripts/test_release_core.py"
 # Last, and last in the file for a reason: this is the only gate that needs a
 # watchOS simulator runtime, so a contributor on a machine without one should

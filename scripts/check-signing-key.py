@@ -68,18 +68,15 @@ def sparkle_signer(sign_update: Path, key_file: Path | None,
     return sign
 
 
-# A base64 run long enough to be key material. An Ed25519 seed is 44
-# characters, and a truncated or mistyped one is still most of that.
+# Long enough to be (most of) a 44-character Ed25519 seed.
 _KEY_LIKE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 
 def withhold_key_material(text: str, key_file: Path | None) -> str:
-    """`text` with the key file's contents, and anything shaped like a key, removed.
+    """`text` without the key file's contents or anything shaped like a key.
 
-    sign_update echoes a key it cannot decode ("Failed to decode base64 encoded
-    key data from: <key>"), and this message is printed to a terminal whose
-    scrollback can outlive the restore. A malformed backup seed is still most of
-    the real one, so an exact-match scrub alone would miss the case that prints.
+    sign_update echoes a key it cannot decode, and a mistyped seed is most of the
+    real one, so an exact-match scrub alone is not enough.
     """
     if key_file is not None:
         try:

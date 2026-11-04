@@ -295,9 +295,7 @@ def capture_embed(feed: Path, notes_dir: Path) -> str:
     return buf.getvalue()
 
 class VerifyAppcastTest(unittest.TestCase):
-    # The feed signature is checked before any field the feed declares is read,
-    # so a fixture aimed at a later check has to be signed. An unsigned one stops
-    # at "the feed is not signed" and tests nothing else.
+    # Fixtures aimed at checks after the feed signature have to be signed.
     @classmethod
     def setUpClass(cls) -> None:
         cls._keys = tempfile.TemporaryDirectory()
@@ -321,9 +319,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertIn("no <item>", output)
 
     def test_an_unsigned_feed_is_refused_before_its_fields_are_read(self) -> None:
-        # A build regression is the first field check. Unsigned, the feed is
-        # refused for that, not for the regression, because nothing it declares
-        # is trusted until its signature verifies.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item(version="1.1", build="4")
@@ -688,10 +683,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertLess(sign, first_verify, "the feed is verified before it is signed")
 
     def test_the_item_tally_counts_what_the_verifier_read(self) -> None:
-        # The tally's denominator is the verifier's own item count, which leaves
-        # out anything after the signing block. Counting <item> over the file
-        # would include it, and report "1 of 2" for a feed the verifier saw one
-        # item in.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         self.assertNotIn("grep -o '<item>'", script)
         count_line = next(line for line in script.splitlines()
@@ -711,8 +702,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertEqual(counted, "1")
 
     def test_the_tally_names_a_missing_archive_rather_than_a_verifier_failure(self) -> None:
-        # With no archive staged the verifier never runs, so there is no FAIL
-        # line to point at. The tally has to say what actually happened.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         start = script.index("if (( ARCHIVES_CHECKED == 0 )); then")
         block = script[start:script.index("\nfi\n", start) + 4]
@@ -1406,9 +1395,6 @@ class UntrustedFeedInputTest(unittest.TestCase):
         self.assertLess(elapsed, 10.0)
 
     def test_the_item_scan_matches_the_regex_it_replaced(self) -> None:
-        # Held against the regex itself, not against an expectation derived by
-        # hand. Stray, trailing, nested and unmatched tags are where a find-based
-        # scan and a lazy regex could disagree.
         cases = [
             "",
             "no items at all",
@@ -1433,8 +1419,6 @@ class UntrustedFeedInputTest(unittest.TestCase):
                 )
 
     def test_stray_item_openings_survive_embedding(self) -> None:
-        # End to end through --embed-notes: a stray <item> and the item after it
-        # are one block, as the regex had them, and a trailing one is left alone.
         notes = {"1.0": "<p>a</p>", "1.1": "<p>b</p>"}
 
         def embedded(body: str) -> str:

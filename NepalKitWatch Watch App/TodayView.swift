@@ -68,9 +68,8 @@ struct TodayScreen: View {
     }
 }
 
-/// One display state, fitted to the space under the navigation title. The
-/// title takes a row from every state, so each one gives way to a scroll view
-/// where it does not fit, rather than being clipped (`TodayLayoutTests`).
+/// One display state. Each scrolls rather than clips where it does not fit
+/// under the navigation title.
 struct TodayStateView: View {
     let display: WatchDayDisplay?
 
@@ -95,8 +94,7 @@ struct TodayStateView: View {
     }
 }
 
-/// `content` where it fits, and the same content in a scroll view where it
-/// does not.
+/// `content`, or `content` in a scroll view where it does not fit.
 struct TodayFittingView<Content: View>: View {
     let content: Content
 
@@ -135,11 +133,8 @@ func shouldStayActive(in phase: ScenePhase) -> Bool {
 /// date lines with scrolling, so every part stays readable — the deterministic
 /// fallback the accepted presentation selected instead of truncation or
 /// shrinking.
-///
-/// Below that size the hero is still shown only where it fits. The xxLarge
-/// threshold was set when Today had the whole screen, and the inline title now
-/// takes a row of it, so a text size alone no longer promises the fit
-/// (`TodayLayoutTests`).
+/// Below that size the hero is still shown only where it fits, because the
+/// threshold predates the navigation title.
 struct TodaySupportedView: View {
     let components: WatchDayComponents
 
@@ -157,8 +152,6 @@ struct TodaySupportedView: View {
     }
 }
 
-/// The hero: weekday, a prominent Bikram Sambat day, its month and year, and
-/// the Gregorian date.
 struct TodayHeroView: View {
     let components: WatchDayComponents
 
@@ -180,7 +173,6 @@ struct TodayHeroView: View {
     }
 }
 
-/// The fallback: full date lines in a scroll view, nothing dropped.
 struct TodayScrollingDateLinesView: View {
     let components: WatchDayComponents
 
@@ -194,9 +186,7 @@ struct TodayScrollingDateLinesView: View {
 }
 
 extension WatchDayComponents {
-    /// Today's announcement, the same in both compositions. Core supplies the
-    /// spoken pieces: one weekday, the full Bikram Sambat date with Latin
-    /// digits, and the Gregorian date presented here.
+    /// Today's announcement, shared by the hero and the fallback.
     var todaySpokenLabel: String {
         ComplicationAccessibility.supportedLabel(self, weekday: true, gregorian: true)
     }
