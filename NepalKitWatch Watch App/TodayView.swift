@@ -55,7 +55,7 @@ struct TodayScreen: View {
         // reads its day from the timeline's date (within a minute of Nepal
         // midnight). Awake, the stored display stays the single source.
         TimelineView(.everyMinute) { context in
-            content(for: isLuminanceReduced ? model.display(at: context.date) : model.display)
+            TodayStateView(display: isLuminanceReduced ? model.display(at: context.date) : model.display)
         }
         .task { model.activate() }
         .onChange(of: scenePhase) { _, phase in
@@ -66,9 +66,15 @@ struct TodayScreen: View {
             }
         }
     }
+}
 
-    @ViewBuilder
-    private func content(for display: WatchDayDisplay?) -> some View {
+/// One display state, fitted to the space under the navigation title. The
+/// title takes a row from every state, so each one gives way to a scroll view
+/// where it does not fit, rather than being clipped (`TodayLayoutTests`).
+struct TodayStateView: View {
+    let display: WatchDayDisplay?
+
+    var body: some View {
         switch display {
         case nil:
             // Launch window only: the first activation resolves Today
@@ -78,9 +84,32 @@ struct TodayScreen: View {
         case .some(.supported(let components)):
             TodaySupportedView(components: components)
         case .some(.rangeBoundary(let boundary)):
-            TodayBoundaryView(boundary: boundary)
+            TodayFittingView {
+                TodayBoundaryView(boundary: boundary)
+            }
         case .some(.calculationError(let components)):
-            TodayErrorView(components: components)
+            TodayFittingView {
+                TodayErrorView(components: components)
+            }
+        }
+    }
+}
+
+/// `content` where it fits, and the same content in a scroll view where it
+/// does not.
+struct TodayFittingView<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView {
+                content
+            }
         }
     }
 }

@@ -114,7 +114,7 @@ python3 scripts/test_release_core.py        # 16. the NepalKitCore release scrip
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 17. the Watch app and its complications: 59 tests
+    CODE_SIGNING_ALLOWED=NO                   # 17. the Watch app and its complications: 60 tests
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
