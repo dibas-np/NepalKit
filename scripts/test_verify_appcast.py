@@ -710,6 +710,27 @@ class VerifyAppcastTest(unittest.TestCase):
         ).stdout
         self.assertEqual(counted, "1")
 
+    def test_the_tally_names_a_missing_archive_rather_than_a_verifier_failure(self) -> None:
+        # With no archive staged the verifier never runs, so there is no FAIL
+        # line to point at. The tally has to say what actually happened.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        start = script.index("if (( ARCHIVES_CHECKED == 0 )); then")
+        block = script[start:script.index("\nfi\n", start) + 4]
+
+        def tally(checked: int, items: str) -> subprocess.CompletedProcess:
+            prelude = (f'ARCHIVES_CHECKED={checked}; ITEMS="{items}"; VERIFIED=0; UNVERIFIED=0; '
+                       f'ARCHIVES_DIR=/staged; STATUS=0\n')
+            return subprocess.run(["bash", "-c", prelude + block + 'exit "$STATUS"'],
+                                  capture_output=True, text=True)
+
+        none_staged = tally(0, "")
+        self.assertEqual(none_staged.returncode, 1)
+        self.assertIn("no .zip or .dmg in /staged", none_staged.stderr)
+        self.assertNotIn("FAIL line", none_staged.stderr)
+        stopped = tally(1, "")
+        self.assertEqual(stopped.returncode, 1)
+        self.assertIn("FAIL line above", stopped.stderr)
+
     def test_signing_is_skipped_when_the_private_key_is_absent(self) -> None:
         # CI must never hold signing material, and pages.yml runs this script
         # against the committed feed. So the absence of sign_update skips signing

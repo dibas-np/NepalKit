@@ -4,20 +4,24 @@
 """Verify a Sparkle appcast before it is allowed to become a public feed.
 
 An appcast is the only thing standing between a tampered binary and an
-auto-installing user, so it gets checked rather than trusted. Three layers,
-each of which catches something the others cannot:
+auto-installing user, so it gets checked rather than trusted. Four layers, in
+the order they run, each of which catches something the others cannot:
 
-  1. Well-formedness, and the fields Sparkle actually requires. A feed missing
-     an enclosure or a signature makes the app silently check nothing.
-  2. Enclosure consistency: `length` must equal the real byte count of the
+  1. Well-formedness. Only a feed too broken to parse is reported before the
+     feed's own signature.
+  2. The *feed's* signature, checked before any field the feed declares is
+     read. A signed archive proves the download was not swapped; a signed feed
+     proves the feed did not lie about what the download is. See
+     `extract_feed_signature` for the format. Then the fields Sparkle actually
+     requires: a feed missing an enclosure or a signature makes the app
+     silently check nothing.
+  3. Enclosure consistency: `length` must equal the real byte count of the
      downloaded file. This is what stops a truncated or substituted download
      from being accepted.
-  3. Cryptographic verification of the Ed25519 signature against the *committed
-     public key*, using stock openssl. No private key, no keychain, so this runs
-     anywhere - including CI, where the private key must never be present.
-  4. The same, one level up: the *feed* is signed too. A signed archive proves
-     the download was not swapped; a signed feed proves the feed did not lie
-     about what the download is. See `extract_feed_signature` for the format.
+  4. Cryptographic verification of each archive's Ed25519 signature against the
+     *committed public key*, using stock openssl. No private key, no keychain,
+     so this runs anywhere - including CI, where the private key must never be
+     present.
 
 Why openssl and not Sparkle's own `sign_update --verify`: verification with
 sign_update needs the private key (`--ed-key-file` is rejected for public keys,

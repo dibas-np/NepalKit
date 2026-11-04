@@ -249,11 +249,15 @@ UNVERIFIED_VERSIONS=""
 # The denominator comes from the verifier too, from its "well-formed, N
 # item(s)" line. It parses only the bytes the feed signature covers, so counting
 # <item> over the whole file would also count anything after the signing block,
-# which the verifier never reads, and report "N of N+1".
+# which the verifier never reads, and report "N of N+1". The wording is part of
+# that contract: test_the_item_tally_counts_what_the_verifier_read runs the real
+# verifier's output through the line below, so rewording either side fails it.
 ITEMS=""
+ARCHIVES_CHECKED=0
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     echo
     echo "verifying against $archive:t"
+    ARCHIVES_CHECKED=$(( ARCHIVES_CHECKED + 1 ))
     output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
     printf '%s\n' "$output"
     # Read back out of the verifier's own lines rather than re-derived here, so
@@ -266,14 +270,17 @@ for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"
     UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
-    count=$(printf '%s\n' "$output" | sed -n 's/^.*well-formed, \([0-9][0-9]*\) item(s).*/\1/p' | head -n 1)
+    count=$(printf '%s\n' "$output" | sed -n 's/^.*well-formed, \([0-9][0-9]*\) item(s).*/\1/p' | awk 'NR == 1 { print }')
     ITEMS=${count:-$ITEMS}
 done
 VERIFIED=$(printf '%s\n' "$VERIFIED_VERSIONS" | sort -u | grep -c . || true)
 UNVERIFIED=$(printf '%s\n' "$UNVERIFIED_VERSIONS" | sort -u | grep -c . || true)
 
 echo
-if [[ -z "$ITEMS" ]]; then
+if (( ARCHIVES_CHECKED == 0 )); then
+    echo "no .zip or .dmg in $ARCHIVES_DIR, so nothing was verified against an archive" >&2
+    STATUS=1
+elif [[ -z "$ITEMS" ]]; then
     echo "the verifier stopped before counting the feed's items; its FAIL line above says why" >&2
     STATUS=1
 elif [[ "$VERIFIED" -eq "$ITEMS" ]]; then
