@@ -246,11 +246,11 @@ fi
 STATUS=0
 VERIFIED_VERSIONS=""
 UNVERIFIED_VERSIONS=""
-# Occurrences, not lines: `grep -c '<item>'` counts the lines that mention an
-# item, which is only the same number while the generator happens to write one
-# per line, and a wrong denominator here would report "1 of 1" over a feed with
-# three releases in it.
-ITEMS=$(grep -o '<item>' "$APPCAST" | wc -l | tr -d ' ' || true)
+# The denominator comes from the verifier too, from its "well-formed, N
+# item(s)" line. It parses only the bytes the feed signature covers, so counting
+# <item> over the whole file would also count anything after the signing block,
+# which the verifier never reads, and report "N of N+1".
+ITEMS=""
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     echo
     echo "verifying against $archive:t"
@@ -266,12 +266,17 @@ for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"
     UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): no enclosure bytes available to verify.*/\1/p')"
+    count=$(printf '%s\n' "$output" | sed -n 's/^.*well-formed, \([0-9][0-9]*\) item(s).*/\1/p' | head -n 1)
+    ITEMS=${count:-$ITEMS}
 done
 VERIFIED=$(printf '%s\n' "$VERIFIED_VERSIONS" | sort -u | grep -c . || true)
 UNVERIFIED=$(printf '%s\n' "$UNVERIFIED_VERSIONS" | sort -u | grep -c . || true)
 
 echo
-if [[ "$VERIFIED" -eq "$ITEMS" ]]; then
+if [[ -z "$ITEMS" ]]; then
+    echo "the verifier stopped before counting the feed's items; its FAIL line above says why" >&2
+    STATUS=1
+elif [[ "$VERIFIED" -eq "$ITEMS" ]]; then
     echo "byte-verified all $ITEMS feed item(s)"
 else
     echo "byte-verified $VERIFIED of $ITEMS feed item(s); $UNVERIFIED had no archive in $ARCHIVES_DIR to check"

@@ -55,6 +55,7 @@ import tempfile
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
@@ -329,6 +330,26 @@ def deployment_floor(override: str | None = None) -> str | None:
     return match.group(1) if match else None
 
 
+def replace_items(raw: str, replace: Callable[[str], str]) -> str:
+    """Replace each `<item>...</item>` block in `raw` with `replace(block)`.
+
+    Matches what `re.sub(r"<item>.*?</item>", ..., flags=re.S)` would, without
+    its quadratic rescan from every unclosed <item>. A test holds the two
+    against each other on the inputs where they could differ.
+    """
+    parts: list[str] = []
+    position = 0
+    while (start := raw.find("<item>", position)) != -1:
+        end = raw.find("</item>", start)
+        if end == -1:
+            break
+        end += len("</item>")
+        parts += [raw[position:start], replace(raw[start:end])]
+        position = end
+    parts.append(raw[position:])
+    return "".join(parts)
+
+
 def embed_notes(appcast: Path, notes_dir: Path) -> None:
     """Embed scripts/release-notes/<version>.html into each item's <description>.
 
@@ -382,20 +403,7 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
     # Nothing is written until the whole pass has succeeded: a half-described
     # feed is a published feed with a silent hole in it, which is strictly worse
     # than a release that stopped.
-    #
-    # Matches what `re.sub(r"<item>.*?</item>", ..., flags=re.S)` would, without
-    # its quadratic rescan from every unclosed <item>.
-    parts: list[str] = []
-    position = 0
-    while (start := raw.find("<item>", position)) != -1:
-        end = raw.find("</item>", start)
-        if end == -1:
-            break
-        end += len("</item>")
-        parts += [raw[position:start], describe(raw[start:end])]
-        position = end
-    parts.append(raw[position:])
-    described = "".join(parts)
+    described = replace_items(raw, describe)
     appcast.write_text(described, encoding="utf-8")  # NOSONAR
     ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
 
@@ -418,6 +426,16 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail(f"not well-formed XML: {exc}")
     if not root.tag.endswith("rss"):
         fail(f"root element is <{root.tag}>, expected an RSS document")
+
+    # --- 2. The feed's own signature ----------------------------------------
+    # Checked once, here, before any field the feed declares is read: until the
+    # signature verifies, every value below is attacker-editable, and the fetch
+    # in layer 3 follows the feed's own urls. Only a feed too broken to parse is
+    # reported for something else first. It runs on every path, `--skip-crypto`
+    # included: that flag waives the per-item archive checks, whose bytes CI
+    # does not have, and the feed is right here. It is local and costs no
+    # network, so there is nothing to defer it for.
+    verify_feed_signature(feed_bytes, info_plist)
 
     items = root.findall("./channel/item")
     if not items:
@@ -472,11 +490,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     # could not run, which is what used to be a printed line and a green exit.
     verified = 0
     skipped: list[str] = []
-    # Fetching follows the feed's urls, so authenticate the feed first. Runs that
-    # do not fetch check it last, below.
     fetching = enclosure is None and not skip_crypto
-    if fetching:
-        verify_feed_signature(feed_bytes, info_plist)
 
     for item in items:
         version = item.findtext("sparkle:shortVersionString", default="?", namespaces=NS)
@@ -540,7 +554,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                      f"({', '.join(sorted(set(checker.offenses)))}); allowed: b, li, p, ul")
             ok(f"version {version}: release notes match the notes contract ({len(description)} chars)")
 
-        # --- 2. Enclosure bytes match the declared length -------------------
+        # --- 3. Enclosure bytes match the declared length -------------------
         payload: bytes | None = None
         if enclosure is not None:
             # The feed keeps one item per release ever published, while
@@ -565,7 +579,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                 )
             ok(f"version {version}: enclosure length matches ({actual} bytes)")
 
-            # --- 3. Cryptographic verification ---------------------------
+            # --- 4. Cryptographic verification ---------------------------
             if skip_crypto:
                 # The bytes were here but the signature was not checked, so
                 # this item cleared only one of its two layers. Counted for the
@@ -585,17 +599,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         else:
             skipped.append(version)
             print(f"  skip  version {version}: no enclosure bytes available to verify")
-
-    # --- 4. The feed's own signature ----------------------------------------
-    # The last of the verification *layers*, so a feed that is broken in some
-    # more basic way is reported for that reason rather than for this one — but
-    # ahead of the skip summary below, which is a report rather than a layer.
-    # It has to run on every path: `--skip-crypto` skips the per-item signature
-    # and byte checks by the caller's request, and a caller who waived those is
-    # not entitled to an unverified feed as well. The check is local and costs
-    # no network, so there is nothing to defer it for.
-    if not fetching:
-        verify_feed_signature(feed_bytes, info_plist)
 
     if skipped:
         print(

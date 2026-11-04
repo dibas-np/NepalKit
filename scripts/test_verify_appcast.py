@@ -295,12 +295,42 @@ def capture_embed(feed: Path, notes_dir: Path) -> str:
     return buf.getvalue()
 
 class VerifyAppcastTest(unittest.TestCase):
+    # The feed signature is checked before any field the feed declares is read,
+    # so a fixture aimed at a later check has to be signed. An unsigned one stops
+    # at "the feed is not signed" and tests nothing else.
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._keys = tempfile.TemporaryDirectory()
+        cls.key, cls.priv = ed25519_keypair(Path(cls._keys.name), "verify")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._keys.cleanup()
+
+    def feed(self, tmp: Path, body: str) -> Path:
+        return sign_feed(tmp, body, self.priv, name="feed.xml")
+
+    def plist(self, tmp: Path) -> Path:
+        return write_plist_with_key(tmp, self.key)
+
     def test_no_items_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, "")
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, "")
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("no <item>", output)
+
+    def test_an_unsigned_feed_is_refused_before_its_fields_are_read(self) -> None:
+        # A build regression is the first field check. Unsigned, the feed is
+        # refused for that, not for the regression, because nothing it declares
+        # is trusted until its signature verifies.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            feed = write_feed(tmp_path, make_item(version="1.1", build="4")
+                              + make_item(version="1.0", build="5"))
+            output = run_verify(self, feed, self.plist(tmp_path))
+        self.assertIn("the feed is not signed", output)
+        self.assertNotIn("not higher than build", output)
 
     def test_root_not_rss_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -322,42 +352,42 @@ class VerifyAppcastTest(unittest.TestCase):
     def test_missing_enclosure_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(include_enclosure=False))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(include_enclosure=False))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("no <enclosure>", output)
 
     def test_http_url_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(
+            feed = self.feed(
                 tmp_path, make_item(url="http://example.com/NepalKit-1.0.zip")
             )
-            output = run_verify(self, feed, write_plist(tmp_path))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("not https", output)
 
     def test_bad_length_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            plist = write_plist(tmp_path)
-            feed = write_feed(tmp_path, make_item(length=None))
+            plist = self.plist(tmp_path)
+            feed = self.feed(tmp_path, make_item(length=None))
             output = run_verify(self, feed, plist)
             self.assertIn("length missing or non-numeric", output)
-            feed = write_feed(tmp_path, make_item(length="abc"))
+            feed = self.feed(tmp_path, make_item(length="abc"))
             output = run_verify(self, feed, plist)
             self.assertIn("length missing or non-numeric", output)
 
     def test_missing_signature_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(signature=None))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(signature=None))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("no sparkle:edSignature", output)
 
     def _build_feed_output(self, items: str) -> str:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, items)
-            return run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, items)
+            return run_verify(self, feed, self.plist(tmp_path))
 
     def test_newest_release_must_have_a_higher_build_than_every_earlier_one(self) -> None:
         output = self._build_feed_output(
@@ -392,40 +422,40 @@ class VerifyAppcastTest(unittest.TestCase):
     def test_signature_not_base64_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(signature="!!!"))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(signature="!!!"))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("not valid base64", output)
 
     def test_signature_wrong_length_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             short = base64.b64encode(bytes(63)).decode()
-            feed = write_feed(tmp_path, make_item(signature=short))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(signature=short))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("63 bytes", output)
 
     def test_description_foreign_tag_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(
+            feed = self.feed(
                 tmp_path, make_item(description="<p>hi</p><script>x</script>")
             )
-            output = run_verify(self, feed, write_plist(tmp_path))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("script", output)
 
     def test_description_cdata_break_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(description="foo]]>bar"))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(description="foo]]>bar"))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("]]>", output)
 
     def test_description_too_long_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             long_notes = "x" * (va.MAX_NOTES_CHARS + 1)
-            feed = write_feed(tmp_path, make_item(description=long_notes))
-            output = run_verify(self, feed, write_plist(tmp_path))
+            feed = self.feed(tmp_path, make_item(description=long_notes))
+            output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn(f"over the {va.MAX_NOTES_CHARS} cap", output)
 
     def test_happy_path_passes(self) -> None:
@@ -452,8 +482,8 @@ class VerifyAppcastTest(unittest.TestCase):
         # systems the app cannot run on, so the mismatch must stop publication.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            feed = write_feed(tmp_path, make_item(minimum_system_version="12.0"))
-            output = run_verify(self, feed, write_plist(tmp_path), "26.6")
+            feed = self.feed(tmp_path, make_item(minimum_system_version="12.0"))
+            output = run_verify(self, feed, self.plist(tmp_path), "26.6")
         self.assertIn("minimumSystemVersion is 12.0 but the app ships as 26.6", output)
 
     def test_matching_feed_floor_passes(self) -> None:
@@ -656,6 +686,29 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertLess(generate, sign, "the feed is signed before generate_appcast rewrites it")
         self.assertLess(embed, sign, "the feed is signed before the notes are embedded")
         self.assertLess(sign, first_verify, "the feed is verified before it is signed")
+
+    def test_the_item_tally_counts_what_the_verifier_read(self) -> None:
+        # The tally's denominator is the verifier's own item count, which leaves
+        # out anything after the signing block. Counting <item> over the file
+        # would include it, and report "1 of 2" for a feed the verifier saw one
+        # item in.
+        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
+        self.assertNotIn("grep -o '<item>'", script)
+        count_line = next(line for line in script.splitlines()
+                          if "well-formed, " in line and "sed -n" in line)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            key, priv = ed25519_keypair(tmp_path)
+            feed = sign_feed(tmp_path, make_item(version="1.0"), priv)
+            with feed.open("a", encoding="utf-8") as handle:
+                handle.write(make_item(version="2.0"))
+            output = capture_verify(feed, write_plist_with_key(tmp_path, key))
+            self.assertEqual(feed.read_text(encoding="utf-8").count("<item>"), 2)
+        counted = subprocess.run(
+            ["bash", "-c", f'output="$1"\n{count_line}\nprintf "%s" "$count"', "_", output],
+            check=True, capture_output=True, text=True,
+        ).stdout
+        self.assertEqual(counted, "1")
 
     def test_signing_is_skipped_when_the_private_key_is_absent(self) -> None:
         # CI must never hold signing material, and pages.yml runs this script
@@ -1332,8 +1385,35 @@ class UntrustedFeedInputTest(unittest.TestCase):
         self.assertLess(elapsed, 10.0)
 
     def test_the_item_scan_matches_the_regex_it_replaced(self) -> None:
-        # Stray openings are where the two could differ: the regex took a stray
-        # <item> and the item after it as one match, and skipped a trailing one.
+        # Held against the regex itself, not against an expectation derived by
+        # hand. Stray, trailing, nested and unmatched tags are where a find-based
+        # scan and a lazy regex could disagree.
+        cases = [
+            "",
+            "no items at all",
+            "<item>a</item>",
+            "<item>a</item><item>b</item>",
+            "<item>a</item><item><item>b</item><item>",
+            "<item><item>nested</item></item>",
+            "</item><item>a</item></item>",
+            "<item>unclosed",
+            "<item>a</item>tail<item>",
+            "<item>\nmulti\nline\n</item>\n<item>x</item>",
+            "<items>not an item</items><item>a</item>",
+        ]
+        def mark(block: str) -> str:
+            return f"[{len(block)}:{block}]"
+
+        for raw in cases:
+            with self.subTest(raw=raw):
+                self.assertEqual(
+                    va.replace_items(raw, mark),
+                    re.sub(r"<item>.*?</item>", lambda m: mark(m.group(0)), raw, flags=re.S),
+                )
+
+    def test_stray_item_openings_survive_embedding(self) -> None:
+        # End to end through --embed-notes: a stray <item> and the item after it
+        # are one block, as the regex had them, and a trailing one is left alone.
         notes = {"1.0": "<p>a</p>", "1.1": "<p>b</p>"}
 
         def embedded(body: str) -> str:
