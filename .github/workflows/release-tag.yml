@@ -344,18 +344,17 @@ jobs:
             echo "::error::HOMEBREW_TAP_DEPLOY_KEY is empty in the release environment"
             exit 1
           fi
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$TAP_DEPLOY_KEY" > ~/.ssh/tap_deploy_key
-          chmod 600 ~/.ssh/tap_deploy_key
-          cat >> ~/.ssh/config <<'CONFIG'
-          Host github-tap
-            HostName github.com
-            User git
-            IdentityFile ~/.ssh/tap_deploy_key
-            IdentitiesOnly yes
-            StrictHostKeyChecking yes
-          CONFIG
-          chmod 600 ~/.ssh/config
+          # Everything ssh reads for the tap is in one directory, and git runs
+          # ssh with `-F` on that config, which makes ssh read it and no other
+          # file: not ~/.ssh/config, not /etc/ssh/ssh_config. ssh keeps the first
+          # value it finds for an option, so a block appended to a config that
+          # already held `Host *` with `StrictHostKeyChecking no` would lose to
+          # it. The known_hosts files are named for the same reason: only the
+          # keys fetched below are trusted.
+          TAP_SSH="$RUNNER_TEMP/tap-ssh"
+          install -m 700 -d "$TAP_SSH"
+          printf '%s\n' "$TAP_DEPLOY_KEY" > "$TAP_SSH/key"
+          chmod 600 "$TAP_SSH/key"
 
           # GitHub's host keys from the meta API: fetched, so a rotation does not
           # break the release, but over TLS, unlike `ssh-keyscan`, so a network
@@ -365,12 +364,27 @@ jobs:
             echo "::error::GitHub's meta API returned no SSH host keys" >&2
             exit 1
           fi
-          printf '%s\n' "$KEYS" >> ~/.ssh/known_hosts
+          printf '%s\n' "$KEYS" > "$TAP_SSH/known_hosts"
+
+          cat > "$TAP_SSH/config" <<CONFIG
+          Host github-tap
+            HostName github.com
+            User git
+            IdentityFile $TAP_SSH/key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile $TAP_SSH/known_hosts
+            GlobalKnownHostsFile /dev/null
+          CONFIG
+          chmod 600 "$TAP_SSH/config"
 
       - name: Clone the tap over the deploy key
         run: |
           set -euo pipefail
-          git clone git@github-tap:dibas-np/homebrew-tap.git "$RUNNER_TEMP/tap"
+          SSH_COMMAND="ssh -F $RUNNER_TEMP/tap-ssh/config"
+          git -c core.sshCommand="$SSH_COMMAND" clone git@github-tap:dibas-np/homebrew-tap.git "$RUNNER_TEMP/tap"
+          # Kept on the clone, so the push in the last step uses the same config.
+          git -C "$RUNNER_TEMP/tap" config core.sshCommand "$SSH_COMMAND"
           git -C "$RUNNER_TEMP/tap" config user.name "github-actions[bot]"
           git -C "$RUNNER_TEMP/tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
