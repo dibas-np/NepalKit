@@ -217,7 +217,7 @@ mirrored="$(git -C NepalKitCore rev-parse 'v<version>^{commit}')"
 
 git clone https://github.com/dibas-np/NepalKit.git
 git -C NepalKit -c gpg.ssh.allowedSignersFile="$PWD/nepalkit-allowed-signers" tag -v core-v<version>
-test "$(git -C NepalKit subtree split --prefix=NepalKitCore core-v<version>)" = "$mirrored" \
+test "$(git -C NepalKit subtree split --quiet --prefix=NepalKitCore core-v<version>)" = "$mirrored" \
   && echo "mirror matches" || echo "FAIL: the mirror is not the split of core-v<version>"
 ```
 
