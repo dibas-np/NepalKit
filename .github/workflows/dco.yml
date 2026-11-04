@@ -1,7 +1,8 @@
 # Developer Certificate of Origin, as promised in .github/CONTRIBUTING.md.
 #
 # .github/CONTRIBUTING.md asks every submitter to certify, per commit, that the work is
-# theirs or that they have the right to submit it under GPL-3.0-or-later. That
+# theirs or that they have the right to submit it under the licence of the files
+# it changes: MIT under NepalKitCore/, GPL-3.0-or-later everywhere else. That
 # promise was unenforced: the repository had no DCO check, and the history shows
 # why that is a real gap rather than a formality — the check never ran, so no
 # commit has ever carried a `Signed-off-by` trailer, and the rule had quietly
@@ -46,6 +47,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
           missing=0
@@ -66,8 +68,12 @@ jobs:
           if [ "$missing" -gt 0 ]; then
             echo ""
             echo "$missing commit(s) without a DCO certificate."
+            # Rebased onto the pull request's own base, not main: a branch cut
+            # from develop rebased onto main would replay, re-sign and force-push
+            # every develop commit main does not have yet.
             echo "Add one without rewriting anything else:"
-            echo "  git rebase --signoff origin/main && git push --force-with-lease"
+            echo "  git fetch origin $BASE_REF"
+            echo "  git rebase --signoff origin/$BASE_REF && git push --force-with-lease"
             exit 1
           fi
           echo "Every commit carries a Signed-off-by line."
