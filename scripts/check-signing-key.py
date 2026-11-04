@@ -23,6 +23,7 @@ import argparse
 import base64
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -61,9 +62,33 @@ def sparkle_signer(sign_update: Path, key_file: Path | None,
             raise RuntimeError(f"sign_update did not finish within {timeout:g} s; "
                                "was a keychain prompt left unanswered?") from None
         if result.returncode != 0:
-            raise RuntimeError(f"sign_update exited {result.returncode}: {result.stderr.strip() or result.stdout.strip()}")
+            detail = result.stderr.strip() or result.stdout.strip()
+            raise RuntimeError(f"sign_update exited {result.returncode}: {withhold_key_material(detail, key_file)}")
         return result.stdout.strip()
     return sign
+
+
+# A base64 run long enough to be key material. An Ed25519 seed is 44
+# characters, and a truncated or mistyped one is still most of that.
+_KEY_LIKE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
+
+
+def withhold_key_material(text: str, key_file: Path | None) -> str:
+    """`text` with the key file's contents, and anything shaped like a key, removed.
+
+    sign_update echoes a key it cannot decode ("Failed to decode base64 encoded
+    key data from: <key>"), and this message is printed to a terminal whose
+    scrollback can outlive the restore. A malformed backup seed is still most of
+    the real one, so an exact-match scrub alone would miss the case that prints.
+    """
+    if key_file is not None:
+        try:
+            contents = key_file.read_text(encoding="utf-8", errors="replace").strip()
+        except OSError:
+            contents = ""
+        if contents:
+            text = text.replace(contents, "<key material withheld>")
+    return _KEY_LIKE.sub("<key material withheld>", text)
 
 
 def check(info_plist: Path, sign: Callable[[Path], str]) -> tuple[bool, str]:

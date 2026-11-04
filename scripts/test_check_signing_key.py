@@ -84,6 +84,25 @@ class Check(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("did not finish", message)
 
+    def test_a_key_sign_update_echoes_back_is_not_printed(self):
+        # sign_update prints a key it cannot decode. A malformed copy of the
+        # backup seed is most of the real one, so it must not reach the FAIL line.
+        _, public = keypair(self.dir, "a")
+        seed = base64.b64encode(bytes(range(32))).decode()
+        for typed in (seed, seed.rstrip("="), seed[:10] + seed[12:]):
+            key_file = self.dir / "typed.key"
+            key_file.write_text(typed)
+            echoing = self.dir / "echoing_sign_update"
+            echoing.write_text('#!/bin/sh\nwhile [ "$1" != --ed-key-file ]; do shift; done\n'
+                               'echo "ERROR! Failed to decode base64 encoded key data from: $(cat "$2")"\n'
+                               "exit 1\n")
+            echoing.chmod(0o755)
+            ok, message = csk.check(plist_with(self.dir, public), csk.sparkle_signer(echoing, key_file))
+            self.assertFalse(ok)
+            self.assertIn("Failed to decode", message)
+            self.assertNotIn(typed, message)
+            self.assertNotIn(typed[:16], message)
+
     def test_a_missing_sign_update_fails_cleanly(self):
         self.assertEqual(csk.main(["--sign-update", str(self.dir / "absent")]), 1)
 
