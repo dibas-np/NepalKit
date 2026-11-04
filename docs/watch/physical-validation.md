@@ -177,5 +177,5 @@ transition by waiting.
 
 | Item | Change | Result |
 | --- | --- | --- |
-| Rectangular (two-line) | Order flipped to match Apple's watchOS 26 kit: weekday · year (caption2, semibold, accentable) over day/month (title3). Same two fonts, so the Modular slot's two-line budget is unchanged. | Re-check pending on the 44 mm Modular middle slot. |
-| Today | Inline navigation title "NepalKit" under the clock, tinted with the new red accent colour. | Simulator only; on-device re-check pending. |
+| Rectangular (two-line) | Order flipped to match Apple's watchOS 26 kit: weekday · year (caption2, now semibold, accentable) over day/month (title3). Same two text styles, so the Modular slot's two-line height budget is unchanged. Semibold is wider: the widest label measured 71 pt against 70 pt regular at xLarge in the simulator. | Re-check pending on the 44 mm Modular middle slot, for width as well as height. |
+| Today | Inline navigation title "NepalKit" under the clock, tinted with the new red accent colour. The title takes a row of the screen, so the hero now also gives way to the scrolling date lines wherever it does not fit (`TodayLayoutTests`). In the simulator the hero at xLarge is 104 pt tall on the 40 mm screen's 197 pt. | Simulator only; on-device re-check pending, at xLarge on a 40 or 41 mm watch. |

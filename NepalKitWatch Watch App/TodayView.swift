@@ -25,23 +25,19 @@ struct TodayView: View {
         // every app screen in Apple's watchOS 26 kit. Without it the screen is
         // an unlabelled date that could be any app's.
         NavigationStack {
-            #if NEPALKIT_WATCH_FIXTURES
             Group {
+                #if NEPALKIT_WATCH_FIXTURES
                 if let fixtureNote {
                     // The active fixture identifies itself on screen.
                     Text(fixtureNote)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+                #endif
                 TodayScreen(model: model)
             }
             .navigationTitle("NepalKit")
             .navigationBarTitleDisplayMode(.inline)
-            #else
-            TodayScreen(model: model)
-                .navigationTitle("NepalKit")
-                .navigationBarTitleDisplayMode(.inline)
-            #endif
         }
     }
 }
@@ -106,10 +102,15 @@ func shouldStayActive(in phase: ScenePhase) -> Bool {
 
 /// The supported day in the accepted Day-first composition: one weekday, a
 /// prominent Bikram Sambat day, month and year, and the full corresponding
-/// Gregorian date. At accessibility text sizes the hero treatment gives way
-/// to full date lines with scrolling, so every part stays readable — the
-/// deterministic fallback the accepted presentation selected instead of
-/// truncation or shrinking.
+/// Gregorian date. At large text sizes the hero treatment gives way to full
+/// date lines with scrolling, so every part stays readable — the deterministic
+/// fallback the accepted presentation selected instead of truncation or
+/// shrinking.
+///
+/// Below that size the hero is still shown only where it fits. The xxLarge
+/// threshold was set when Today had the whole screen, and the inline title now
+/// takes a row of it, so a text size alone no longer promises the fit
+/// (`TodayLayoutTests`).
 struct TodaySupportedView: View {
     let components: WatchDayComponents
 
@@ -117,33 +118,58 @@ struct TodaySupportedView: View {
 
     var body: some View {
         if dynamicTypeSize.watchLargeTextFallback {
-            ScrollView {
-                TodayDateLinesView(components: components)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(spokenLabel)
-            }
+            TodayScrollingDateLinesView(components: components)
         } else {
-            VStack {
-                Text(components.weekdayName)
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                Text(components.bikramSambatDay)
-                    .font(.largeTitle.bold())
-                Text("\(components.bikramSambatMonthName) \(components.bikramSambatYear)")
-                    .font(.title3)
-                Text("\(components.gregorianDay) \(components.gregorianMonthName) \(components.gregorianYear)")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            ViewThatFits(in: .vertical) {
+                TodayHeroView(components: components)
+                TodayScrollingDateLinesView(components: components)
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(spokenLabel)
         }
     }
+}
 
-    /// Core supplies the spoken pieces: one weekday, the full Bikram Sambat
-    /// date with Latin digits, and the Gregorian date presented here.
-    private var spokenLabel: String {
-        ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: true)
+/// The hero: weekday, a prominent Bikram Sambat day, its month and year, and
+/// the Gregorian date.
+struct TodayHeroView: View {
+    let components: WatchDayComponents
+
+    var body: some View {
+        VStack {
+            Text(components.weekdayName)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text(components.bikramSambatDay)
+                .font(.largeTitle.bold())
+            Text("\(components.bikramSambatMonthName) \(components.bikramSambatYear)")
+                .font(.title3)
+            Text("\(components.gregorianDay) \(components.gregorianMonthName) \(components.gregorianYear)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(components.todaySpokenLabel)
+    }
+}
+
+/// The fallback: full date lines in a scroll view, nothing dropped.
+struct TodayScrollingDateLinesView: View {
+    let components: WatchDayComponents
+
+    var body: some View {
+        ScrollView {
+            TodayDateLinesView(components: components)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(components.todaySpokenLabel)
+        }
+    }
+}
+
+extension WatchDayComponents {
+    /// Today's announcement, the same in both compositions. Core supplies the
+    /// spoken pieces: one weekday, the full Bikram Sambat date with Latin
+    /// digits, and the Gregorian date presented here.
+    var todaySpokenLabel: String {
+        ComplicationAccessibility.supportedLabel(self, weekday: true, gregorian: true)
     }
 }
 
