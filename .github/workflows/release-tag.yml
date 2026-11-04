@@ -366,22 +366,26 @@ jobs:
           fi
           printf '%s\n' "$KEYS" > "$TAP_SSH/known_hosts"
 
+          # Paths quoted, here and in core.sshCommand below, so a RUNNER_TEMP
+          # with a space in it (a self-hosted runner) still names one file.
           cat > "$TAP_SSH/config" <<CONFIG
           Host github-tap
             HostName github.com
             User git
-            IdentityFile $TAP_SSH/key
+            IdentityFile "$TAP_SSH/key"
             IdentitiesOnly yes
             StrictHostKeyChecking yes
-            UserKnownHostsFile $TAP_SSH/known_hosts
+            UserKnownHostsFile "$TAP_SSH/known_hosts"
             GlobalKnownHostsFile /dev/null
           CONFIG
           chmod 600 "$TAP_SSH/config"
+          # One definition of the directory, for the steps that use it.
+          echo "TAP_SSH=$TAP_SSH" >> "$GITHUB_ENV"
 
       - name: Clone the tap over the deploy key
         run: |
           set -euo pipefail
-          SSH_COMMAND="ssh -F $RUNNER_TEMP/tap-ssh/config"
+          SSH_COMMAND="ssh -F $(printf '%q' "$TAP_SSH/config")"
           git -c core.sshCommand="$SSH_COMMAND" clone git@github-tap:dibas-np/homebrew-tap.git "$RUNNER_TEMP/tap"
           # Kept on the clone, so the push in the last step uses the same config.
           git -C "$RUNNER_TEMP/tap" config core.sshCommand "$SSH_COMMAND"
