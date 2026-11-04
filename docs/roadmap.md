@@ -18,6 +18,18 @@ standalone Apple Watch app with four complication styles. See
 
 ## Planned
 
+### NepalKitCore 1.0
+
+The calendar engine is published as an MIT-licensed Swift package, at 0.x
+([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Its public API
+was written for the app and still includes types only the app uses, such as
+`MenuBarFormat` and `WatchDayDisplay`, along with module-level functions like
+`bsToAD`.
+
+*Blocked on:* an API review for outside use. That review decides what stays
+public, what moves into the app, and how the conversion functions are named.
+1.0 is the point where those names stop changing in minor releases.
+
 ### App Store distribution for the Watch app — deferred
 
 The Watch app stays source-built and development-signed until users ask for a
@@ -63,7 +75,7 @@ Stated so that their absence is a decision rather than an oversight.
 | Telemetry, analytics, crash reporting | Would be a second third-party dependency and the first with network egress of its own. See ADR-0012 for how the dependency budget is argued |
 | A documentation site separate from the repository | The landing page is a single static page on the update feed's GitHub Pages site and points back here; the repository stays the documentation. A second site would need its own security posture and this project has no capacity for two |
 | Mac App Store distribution for the Mac app | The Developer ID channel is signed, notarized and update-signed end to end today. Adding a store would mean maintaining two update models |
-| A public API or plugin interface | The surface would be a security commitment. Not one a solo maintainer should make |
+| A plugin interface | The surface would be a security commitment. Not one a solo maintainer should make. The NepalKitCore package is a library other apps link, not a way into this app ([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)) |
 
 ## How this document goes stale
 

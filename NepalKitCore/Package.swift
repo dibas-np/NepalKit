@@ -31,7 +31,12 @@ let package = Package(
     //
     // scripts/verify-deployment-floor.py is what checks that relation, alongside
     // every watchOS block in the Xcode project having to agree with itself.
-    platforms: [.macOS(.v26), .watchOS(.v26)],
+    //
+    // iOS has no NepalKit product. It is declared because the package is
+    // published for other apps (ADR-0018), and scripts/release-core.sh runs the
+    // core suite on an iOS Simulator before every release, so the floor is
+    // tested rather than inherited from the toolchain's default.
+    platforms: [.macOS(.v26), .iOS(.v26), .watchOS(.v26)],
     products: [
         .library(name: "NepalKitCore", targets: ["NepalKitCore"]),
     ],

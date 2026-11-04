@@ -16,8 +16,10 @@ length, Gregorian anchor, supported range or dataset version.
 The complete upstream notice is retained in
 [AskBuddie-LICENSE.txt](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt).
 SwiftPM copies it into the shared core resource bundle for app distributions.
-NepalKit's code and documentation remain GPL-3.0-or-later; the upstream MIT
-notice and permission conditions remain applicable to upstream material.
+NepalKitCore, the package that carries the table, is MIT-licensed
+([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md)). The rest of
+NepalKit's code and its documentation remain GPL-3.0-or-later. The upstream
+MIT notice and permission conditions remain applicable to upstream material.
 
 Earlier versions used a different base and several comparison tables. The
 current table has been checked against the askbuddie pin and can be reproduced

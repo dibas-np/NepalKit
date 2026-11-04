@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later AND MIT
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 // Copyright (c) 2023 Ask Buddie (historical base table)
 /// A versioned Bikram Sambat month-length table with its conversion anchor.

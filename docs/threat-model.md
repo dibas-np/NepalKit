@@ -231,6 +231,31 @@ that a green comparison is not official attestation.
 `SOURCES.md` both say so in bold; that is the mitigation, and it is a
 documentation control rather than a technical one.
 
+### T10 — A hostile NepalKitCore release reaches other apps
+
+**Actor:** attacker with the maintainer's GitHub session. **Boundary:** 5.
+
+Other apps resolve NepalKitCore from the mirror, `dibas-np/NepalKitCore`
+([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). SwiftPM checks
+no signature, so a moved tag or a hostile commit on the mirror reaches every
+consumer that resolves it.
+
+**Standing:** the mirror is written only by `scripts/release-core.sh` from the
+release machine. No workflow and no deploy key can reach it. Each release tag
+is signed with the commit-signing key, and the mirror's history is a
+deterministic `git subtree split` of this repository, so anyone can check a
+release against reviewed source
+([release verification](release-verification.md#verifying-a-nepalkitcore-release)).
+The script fast-forwards main only, and refuses a mirror changed outside it.
+The mirror's rulesets block force-pushing or deleting main and updating or
+deleting any `v*` tag, with no bypass actor. Rewriting a published release
+first needs a ruleset change, which GitHub's audit log records.
+
+**Residual:** full compromise of the maintainer's GitHub account can rewrite
+the mirror. Consumers who pin a revision in `Package.resolved` are not affected
+until they update it. A consumer who updates without verifying the tag gets
+whatever the mirror serves.
+
 ## Out of scope
 
 - **Physical access to an unlocked Mac.** Stated as out of scope in

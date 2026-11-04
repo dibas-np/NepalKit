@@ -412,14 +412,18 @@ that way, so the claim is that changes are small, not that they are decomposed.
 
 ## Licensing of contributions
 
-Contributions are accepted under the same terms as the project:
-**GPL-3.0-or-later**. See [LICENSE](../LICENSE).
+Contributions are accepted under the licence of the files they change:
+
+- **MIT** for everything under `NepalKitCore/`, the published Swift package. See
+  [NepalKitCore/LICENSE](../NepalKitCore/LICENSE) and
+  [ADR-0018](../docs/adr/0018-publish-the-core-as-a-swift-package.md).
+- **GPL-3.0-or-later** for everything else. See [LICENSE](../LICENSE).
 
 NepalKit uses a **Developer Certificate of Origin (1.1)**. By submitting a
 pull request you certify that:
 
 1. Each commit is your original work, or you have the right to submit it under
-   GPL-3.0-or-later; and
+   the licence above that applies to the files it changes; and
 2. You are not aware of a licence or contract that would forbid the submission.
 
 To sign off, add a `Signed-off-by:` line to every commit message, matching the

@@ -43,3 +43,10 @@ may be consulted as targeted evidence but are not additional base dependencies.
 A green baseline proves the observation has not drifted, not official accuracy
 or independent authorship. Changing a source label does not by itself settle
 copyright questions about earlier work.
+
+## Amendment, 2026-11-04
+
+NepalKitCore, which carries the table, is now MIT-licensed
+([ADR-0018](0018-publish-the-core-as-a-swift-package.md)). The rest of
+NepalKit's code and its documentation remain GPL-3.0-or-later. The askbuddie
+notice is retained unchanged.

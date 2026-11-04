@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
 /// A public holiday on a Bikram Sambat date, as the Home Ministry's notice in

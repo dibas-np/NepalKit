@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
 // Festivals and national days for 2083 BS, read from the national Panchanga

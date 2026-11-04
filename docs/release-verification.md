@@ -197,6 +197,35 @@ The public key lives inside the installed app, not in this repository:
 defaults read /Applications/NepalKit.app/Contents/Info SUPublicEDKey
 ```
 
+## Verifying a NepalKitCore release
+
+The Swift package at <https://github.com/dibas-np/NepalKitCore> is a mirror of
+this repository's `NepalKitCore/` directory
+([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Its release tags
+are `v<version>`. Each one has a matching `core-v<version>` tag here on the
+source commit. A release passes two checks. Both tags are signed with the key
+from step 2 above, and the mirror's commit is the one this repository's history
+produces.
+
+Build `nepalkit-allowed-signers` as in step 2, then use a full clone of each
+repository (not `--depth`, which `git subtree split` cannot work from):
+
+```sh
+git clone https://github.com/dibas-np/NepalKitCore.git
+git -C NepalKitCore -c gpg.ssh.allowedSignersFile="$PWD/nepalkit-allowed-signers" tag -v v<version>
+mirrored="$(git -C NepalKitCore rev-parse 'v<version>^{commit}')"
+
+git clone https://github.com/dibas-np/NepalKit.git
+git -C NepalKit -c gpg.ssh.allowedSignersFile="$PWD/nepalkit-allowed-signers" tag -v core-v<version>
+test "$(git -C NepalKit subtree split --prefix=NepalKitCore core-v<version>)" = "$mirrored" \
+  && echo "mirror matches" || echo "FAIL: the mirror is not the split of core-v<version>"
+```
+
+Expect the same `Good "git" signature` as in step 2 for both tags, then
+`mirror matches`. The mirror's commits are unsigned, because the split
+rewrites every commit and the signatures cannot survive it. The signed tag
+covers the tree it points at.
+
 ## What this repository automates
 
 Every check above also runs mechanically, so you do not have to:
@@ -208,6 +237,7 @@ Every check above also runs mechanically, so you do not have to:
 | Appcast structure, enclosure lengths, and the EdDSA signature over the real bytes | `scripts/verify-appcast.py`, run by `pages.yml` | Every change to `appcast.xml`, and on demand |
 | Downloaded `.app` identity, version, and `sha256` for the cask | `scripts/update-cask.sh` | Every `v*` tag |
 | Deployment floor agreement across project, script, and built product | `scripts/verify-deployment-floor.py` | Every pull request |
+| NepalKitCore suite on macOS, iOS and watchOS, run in the split that is published | `scripts/release-core.sh` | Every NepalKitCore release |
 | Gatekeeper on a machine that has never trusted the developer | [`docs/release-evidence/fresh-mac-install-procedure.md`](release-evidence/fresh-mac-install-procedure.md) | Before publication |
 
 The last one is the only check that cannot be done from a machine that already

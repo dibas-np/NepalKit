@@ -111,6 +111,16 @@ Bikram Sambat month lengths vary, so conversion uses a bundled table rather than
 
 Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data licensing. For official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
+## Swift package
+
+The calendar engine is published as [NepalKitCore](https://github.com/dibas-np/NepalKitCore), an MIT-licensed Swift package for macOS, iOS and watchOS 26 or later. It is at version 0.x, so its API may change between minor releases ([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md)).
+
+```swift
+.package(url: "https://github.com/dibas-np/NepalKitCore", .upToNextMinor(from: "0.1.0"))
+```
+
+That repository is a mirror of [NepalKitCore/](NepalKitCore/), and development happens here. See [NepalKitCore/README.md](NepalKitCore/README.md) for usage.
+
 ## Development
 
 Use Xcode 27 or later on macOS 27 or later. The app's deployment target remains macOS 26.6.
@@ -145,7 +155,7 @@ xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
 The Watch tests run on a watchOS Simulator, as the directory listing below notes. That exact device and runtime have to be installed, or `xcodebuild` fails with a list of the destinations it can use.
 
 ```text
-NepalKitCore/                 Calendar dataset, conversion, formatting, spoken dates, and Watch display
+NepalKitCore/                 Calendar dataset, conversion, formatting, spoken dates, and Watch display (the published Swift package)
 NepalKit/                     SwiftUI menu-bar app, settings, models, and App Intents
 NepalKitTests/                App-layer tests
 NepalKitWatch Watch App/      SwiftUI Watch app, Today screen, and lifecycle model
@@ -195,4 +205,4 @@ relates to the entry and when an answer goes stale.
 
 ## License
 
-The code is licensed under [GPL-3.0-or-later](LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie; its [complete notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt) is retained. [SOURCES.md](SOURCES.md) documents local corrections, the 2084 projection and provenance limits.
+The code is licensed under [GPL-3.0-or-later](LICENSE), except [NepalKitCore/](NepalKitCore/), which is [MIT](NepalKitCore/LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie; its [complete notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt) is retained. [SOURCES.md](SOURCES.md) documents local corrections, the 2084 projection and provenance limits.

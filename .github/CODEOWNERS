@@ -28,4 +28,6 @@ scripts/check-kathmandu-calendar.py                      @dibas-np
 /NepalKit/UpdateCheckModel.swift                         @dibas-np
 /NepalKit/NepalKit.entitlements                          @dibas-np
 /scripts/package-release.sh                              @dibas-np
+/scripts/release-core.sh                                 @dibas-np
 /LICENSE                                                  @dibas-np
+/NepalKitCore/LICENSE                                     @dibas-np

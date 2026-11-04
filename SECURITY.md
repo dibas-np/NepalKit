@@ -20,6 +20,7 @@ saves.
 | Version | Supported |
 | --- | --- |
 | latest release (see [CHANGELOG.md](CHANGELOG.md)) | yes |
+| NepalKitCore Swift package, latest release (see [its changelog](NepalKitCore/CHANGELOG.md)) | yes |
 | anything older | no |
 
 ## Reporting a vulnerability

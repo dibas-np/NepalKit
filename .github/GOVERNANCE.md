@@ -26,10 +26,11 @@ no governance model beyond this file.
   never trusted the developer, and that is not something a contributor or an
   install guide needs. The README's [Install](../README.md#install) section is what
   a user reads.
-- **Licensing** cannot be changed by a majority vote of contributors. GPL-3.0 is
-  a deliberate choice made for reasons recorded in
-  [SOURCES.md](../SOURCES.md), and relicensing is a decision only the copyright
-  holder can make.
+- **Licensing** cannot be changed by a majority vote of contributors. The app is
+  GPL-3.0-or-later and the NepalKitCore package is MIT, both deliberate choices,
+  recorded in [SOURCES.md](../SOURCES.md) and
+  [ADR-0018](../docs/adr/0018-publish-the-core-as-a-swift-package.md). Relicensing
+  is a decision only the copyright holder can make.
 
 ## Contributing
 
