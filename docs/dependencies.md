@@ -58,7 +58,7 @@ fetched, and neither ships as a file.
 | --- | --- | --- | --- |
 | SwiftLint | 0.65.1 | `.swiftlint-version` | sha256 of the release archive, hard-coded in `scripts/swiftlint.sh` |
 | `actions/checkout` | v7.0.1 | commit SHA in each workflow, with a version comment | GitHub's own signature on the tag |
-| `github/codeql-action` | v4.38.2 | commit SHA in `codeql.yml` | as above |
+| `github/codeql-action` | v4.39.3 | commit SHA in `codeql.yml` | as above |
 | `actions/upload-artifact` | v7.0.1 | commit SHA in `macos26-floor.yml` | as above |
 | `actions/upload-pages-artifact` | v5.0.0 | commit SHA in `pages.yml` | as above |
 | `actions/deploy-pages` | v5.0.1 | commit SHA in `pages.yml` | as above |
