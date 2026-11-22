@@ -14,15 +14,14 @@ struct SiriDiscoverabilityTests {
         )
     }
 
-    @Test("All five registered capabilities are listed with their phrases")
+    @Test("Every registered capability is listed with its phrase")
     func everyCapabilityIsListedWithAPhrase() {
         let capabilities = Strings.siriShortcutCapabilities
 
-        #expect(capabilities.count == 5)
+        #expect(capabilities.count == NepalKitShortcuts.appShortcuts.count)
         #expect(capabilities.map(\.title) == [
             Strings.siriTodayCapability,
-            Strings.siriTomorrowCapability,
-            Strings.siriYesterdayCapability,
+            Strings.siriRelativeDayCapability,
             Strings.siriConvertToBSCapability,
             Strings.siriConvertToGregorianCapability,
         ])
@@ -46,10 +45,9 @@ struct SiriDiscoverabilityTests {
         )
 
         for capability in Strings.siriShortcutCapabilities {
-            let template = capability.phrase.replacing(
-                Strings.appName,
-                with: "\\(.applicationName)"
-            )
+            let template = capability.phrase
+                .replacing(Strings.appName, with: "\\(.applicationName)")
+                .replacing("tomorrow", with: "\\(\\.$day)")
             #expect(
                 source.contains("\"" + template + "\""),
                 "Settings lists a phrase the provider does not register: \(capability.phrase)"
@@ -83,7 +81,9 @@ struct SiriDiscoverabilityTests {
         let strings = try #require(catalog["strings"] as? [String: Any])
 
         for capability in Strings.siriShortcutCapabilities {
-            let key = capability.phrase.replacing(Strings.appName, with: "${applicationName}")
+            let key = capability.phrase
+                .replacing(Strings.appName, with: "${applicationName}")
+                .replacing("tomorrow", with: "${day}")
             #expect(strings[key] != nil, "catalog is missing \(key)")
         }
     }

@@ -3,7 +3,24 @@
 import AppIntents
 import NepalKitCore
 
-nonisolated enum RelativeDay {
+nonisolated enum RelativeDay: String, AppEnum {
+    case tomorrow
+    case yesterday
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Day"
+
+    static let caseDisplayRepresentations: [RelativeDay: DisplayRepresentation] = [
+        .tomorrow: "Tomorrow",
+        .yesterday: "Yesterday",
+    ]
+
+    var offset: Int {
+        switch self {
+        case .tomorrow: 1
+        case .yesterday: -1
+        }
+    }
+
     struct Answer {
         let entity: BikramSambatDateEntity
         let spoken: String
@@ -15,14 +32,13 @@ nonisolated enum RelativeDay {
         return BikramSambatDate(target, in: dataset)
     }
 
-    static func answer(
-        offset: Int,
+    func answer(
         now: Date,
         in dataset: CalendarDataset,
         monthNames: MonthNameStyle = SettingsStore().settings.monthNames,
         timeZone: TimeZone = SettingsStore().timeReference.timeZone
     ) throws -> Answer {
-        guard let bs = bsDay(offset: offset, now: now, timeZone: timeZone, in: dataset) else {
+        guard let bs = Self.bsDay(offset: offset, now: now, timeZone: timeZone, in: dataset) else {
             throw SiriIntentError(dialog: TodayInBikramSambatIntent.beyondRangeDialog(now: now, timeZone: timeZone, in: dataset))
         }
         guard let entity = BikramSambatDateEntity(bsDay: bs, monthNames: monthNames) else {
@@ -37,58 +53,54 @@ nonisolated enum RelativeDay {
     }
 }
 
-nonisolated protocol RelativeDayIntent: AppIntent {
-    static var offset: Int { get }
-    static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource
-}
+struct RelativeDayInBikramSambatIntent: AppIntent {
+    static let title: LocalizedStringResource = "Tomorrow's or yesterday's Bikram Sambat date"
 
-nonisolated extension RelativeDayIntent {
-    static var supportedModes: IntentModes { .background }
+    static var description: IntentDescription {
+        IntentDescription("Speaks tomorrow's or yesterday's date in Bikram Sambat, Nepal's calendar.")
+    }
+
+    static let supportedModes: IntentModes = .background
+
+    @Parameter(title: "Day", default: .tomorrow)
+    var day: RelativeDay
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("\(\.$day)'s Bikram Sambat date")
+    }
+
+    init() {}
+
+    init(day: RelativeDay) {
+        self.day = day
+    }
 
     func perform() async throws -> some IntentResult & ReturnsValue<BikramSambatDateEntity> & ProvidesDialog {
-        let answer = try Self.answer(now: Date(), in: AppData.dataset)
+        let answer = try Self.answer(day, now: Date(), in: AppData.dataset)
         return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
     }
 
     static func answer(
+        _ day: RelativeDay,
         now: Date,
         in dataset: CalendarDataset,
         monthNames: MonthNameStyle = SettingsStore().settings.monthNames,
         timeZone: TimeZone = SettingsStore().timeReference.timeZone
     ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
-        let answer = try RelativeDay.answer(offset: offset, now: now, in: dataset, monthNames: monthNames, timeZone: timeZone)
-        return (answer.entity, dialog(answer.spoken, isProvisional: answer.isProvisional))
-    }
-}
-
-struct TomorrowInBikramSambatIntent: RelativeDayIntent {
-    static let title: LocalizedStringResource = "What is tomorrow's Bikram Sambat date"
-
-    static var description: IntentDescription {
-        IntentDescription("Speaks tomorrow's date in Bikram Sambat, Nepal's calendar.")
+        let answer = try day.answer(now: now, in: dataset, monthNames: monthNames, timeZone: timeZone)
+        return (answer.entity, dialog(day, answer.spoken, isProvisional: answer.isProvisional))
     }
 
-    static let offset = 1
-
-    static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource {
-        isProvisional
-            ? "Tomorrow is \(spoken). That year is a provisional projection, not yet in the official Nepali Patro."
-            : "Tomorrow is \(spoken)."
-    }
-}
-
-struct YesterdayInBikramSambatIntent: RelativeDayIntent {
-    static let title: LocalizedStringResource = "What was yesterday's Bikram Sambat date"
-
-    static var description: IntentDescription {
-        IntentDescription("Speaks yesterday's date in Bikram Sambat, Nepal's calendar.")
-    }
-
-    static let offset = -1
-
-    static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource {
-        isProvisional
-            ? "Yesterday was \(spoken). That year is a provisional projection, not yet in the official Nepali Patro."
-            : "Yesterday was \(spoken)."
+    static func dialog(_ day: RelativeDay, _ spoken: String, isProvisional: Bool) -> LocalizedStringResource {
+        switch (day, isProvisional) {
+        case (.tomorrow, true):
+            "Tomorrow is \(spoken). That year is a provisional projection, not yet in the official Nepali Patro."
+        case (.tomorrow, false):
+            "Tomorrow is \(spoken)."
+        case (.yesterday, true):
+            "Yesterday was \(spoken). That year is a provisional projection, not yet in the official Nepali Patro."
+        case (.yesterday, false):
+            "Yesterday was \(spoken)."
+        }
     }
 }

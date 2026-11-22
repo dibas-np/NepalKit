@@ -138,11 +138,11 @@ struct TimeReferenceModelTests {
     @Test func siriTomorrowAndYesterdayCountFromTheChosenZonesToday() throws {
         let now = try Self.disagreeing()
         let zone = try Self.newYork()
-        let tomorrow = try TomorrowInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
-        let yesterday = try YesterdayInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
+        let tomorrow = try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
+        let yesterday = try RelativeDayInBikramSambatIntent.answer(.yesterday, now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
         #expect(tomorrow.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 11))
         #expect(yesterday.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 9))
-        let nepalTomorrow = try TomorrowInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: .nepal)
+        let nepalTomorrow = try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: .nepal)
         #expect(nepalTomorrow.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 12))
     }
 

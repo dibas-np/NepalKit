@@ -169,7 +169,7 @@ struct TodayIntentTests {
         #expect(String(localized: error.localizedStringResource) == "There is no 31 Kartik 2082 — Kartik 2082 has 30 days.")
     }
 
-    @Test("Shortcuts catalog is valid JSON carrying all sixteen phrase templates")
+    @Test("Shortcuts catalog is valid JSON carrying all fifteen phrase templates")
     func shortcutsCatalogCarriesTodayPhrases() throws {
         let url = Repository.file("NepalKit/AppShortcuts.xcstrings")
         let data = try Data(contentsOf: url)
@@ -185,12 +185,11 @@ struct TodayIntentTests {
             "Convert a Bikram Sambat date to Gregorian with ${applicationName}",
             "Use ${applicationName} to convert from Bikram Sambat",
             "Today's Nepali date",
-            "What is tomorrow's Nepali date with ${applicationName}",
-            "What is tomorrow in Bikram Sambat with ${applicationName}",
-            "What was yesterday's Nepali date with ${applicationName}",
-            "Yesterday's Bikram Sambat date in ${applicationName}",
-            "Tomorrow's Nepali date",
-            "Yesterday's Nepali date",
+            "What is ${day}'s Nepali date with ${applicationName}",
+            "What was ${day}'s Nepali date with ${applicationName}",
+            "What is ${day} in Bikram Sambat with ${applicationName}",
+            "${day}'s Bikram Sambat date in ${applicationName}",
+            "Tomorrow or yesterday",
             "Convert to Bikram Sambat",
             "Convert to Gregorian",
         ] {

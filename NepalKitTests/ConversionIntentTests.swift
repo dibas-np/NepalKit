@@ -170,9 +170,9 @@ struct ConversionIntentTests {
         }
     }
 
-    @Test("Provider carries all five shortcuts")
+    @Test("Provider carries all four shortcuts")
     func providerIsWhole() {
-        #expect(NepalKitShortcuts.appShortcuts.count == 5)
+        #expect(NepalKitShortcuts.appShortcuts.count == 4)
     }
 
     @Test("Gregorian to Bikram Sambat into 2084 adds the provisional clause; 2083 does not")

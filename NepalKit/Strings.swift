@@ -91,8 +91,7 @@ nonisolated enum Strings {
     static let siriShortcutsSection = "Siri & Shortcuts"
     static let siriShortcutsSummary = "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
     static let siriTodayCapability = "Today's date in Bikram Sambat"
-    static let siriTomorrowCapability = "Tomorrow's date in Bikram Sambat"
-    static let siriYesterdayCapability = "Yesterday's date in Bikram Sambat"
+    static let siriRelativeDayCapability = "Tomorrow's or yesterday's date in Bikram Sambat"
     static let siriConvertToBSCapability = "Convert a Gregorian date to Bikram Sambat"
     static let siriConvertToGregorianCapability = "Convert a Bikram Sambat date to Gregorian"
 
@@ -106,16 +105,14 @@ nonisolated enum Strings {
     static var siriShortcutCapabilities: [Capability] {
         [
             Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
-            Capability(title: siriTomorrowCapability, phrase: siriTomorrowPhrase),
-            Capability(title: siriYesterdayCapability, phrase: siriYesterdayPhrase),
+            Capability(title: siriRelativeDayCapability, phrase: siriRelativeDayPhrase),
             Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
             Capability(title: siriConvertToGregorianCapability, phrase: siriConvertToGregorianPhrase),
         ]
     }
 
     static let siriTodayPhrase = "What is today's Nepali date with \(appName)"
-    static let siriTomorrowPhrase = "What is tomorrow's Nepali date with \(appName)"
-    static let siriYesterdayPhrase = "What was yesterday's Nepali date with \(appName)"
+    static let siriRelativeDayPhrase = "What is tomorrow's Nepali date with \(appName)"
     static let siriConvertToBSPhrase = "Convert a date to Bikram Sambat with \(appName)"
     static let siriConvertToGregorianPhrase = "Convert a Bikram Sambat date to Gregorian with \(appName)"
     static let updatesSection = "Software Update"

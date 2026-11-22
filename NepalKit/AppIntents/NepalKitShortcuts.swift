@@ -15,22 +15,15 @@ struct NepalKitShortcuts: AppShortcutsProvider {
             systemImageName: "calendar"
         )
         AppShortcut(
-            intent: TomorrowInBikramSambatIntent(),
+            intent: RelativeDayInBikramSambatIntent(),
             phrases: [
-                "What is tomorrow's Nepali date with \(.applicationName)",
-                "What is tomorrow in Bikram Sambat with \(.applicationName)",
+                "What is \(\.$day)'s Nepali date with \(.applicationName)",
+                "What was \(\.$day)'s Nepali date with \(.applicationName)",
+                "What is \(\.$day) in Bikram Sambat with \(.applicationName)",
+                "\(\.$day)'s Bikram Sambat date in \(.applicationName)",
             ],
-            shortTitle: "Tomorrow's Nepali date",
-            systemImageName: "calendar.badge.plus"
-        )
-        AppShortcut(
-            intent: YesterdayInBikramSambatIntent(),
-            phrases: [
-                "What was yesterday's Nepali date with \(.applicationName)",
-                "Yesterday's Bikram Sambat date in \(.applicationName)",
-            ],
-            shortTitle: "Yesterday's Nepali date",
-            systemImageName: "calendar.badge.minus"
+            shortTitle: "Tomorrow or yesterday",
+            systemImageName: "calendar.badge.clock"
         )
         AppShortcut(
             intent: GregorianToBikramSambatIntent(),

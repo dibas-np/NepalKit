@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "${day}'s Bikram Sambat date in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${day}'s Bikram Sambat date in ${applicationName}"
+          }
+        }
+      }
+    },
     "Convert a Bikram Sambat date to Gregorian with ${applicationName}": {
       "extractionState": "manual",
       "localizations": {
@@ -56,13 +67,13 @@
         }
       }
     },
-    "Tomorrow's Nepali date": {
+    "Tomorrow or yesterday": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tomorrow's Nepali date"
+            "value": "Tomorrow or yesterday"
           }
         }
       }
@@ -85,6 +96,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Use ${applicationName} to convert to Bikram Sambat"
+          }
+        }
+      }
+    },
+    "What is ${day} in Bikram Sambat with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is ${day} in Bikram Sambat with ${applicationName}"
+          }
+        }
+      }
+    },
+    "What is ${day}'s Nepali date with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is ${day}'s Nepali date with ${applicationName}"
           }
         }
       }
@@ -122,57 +155,13 @@
         }
       }
     },
-    "What is tomorrow in Bikram Sambat with ${applicationName}": {
+    "What was ${day}'s Nepali date with ${applicationName}": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What is tomorrow in Bikram Sambat with ${applicationName}"
-          }
-        }
-      }
-    },
-    "What is tomorrow's Nepali date with ${applicationName}": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What is tomorrow's Nepali date with ${applicationName}"
-          }
-        }
-      }
-    },
-    "What was yesterday's Nepali date with ${applicationName}": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What was yesterday's Nepali date with ${applicationName}"
-          }
-        }
-      }
-    },
-    "Yesterday's Bikram Sambat date in ${applicationName}": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yesterday's Bikram Sambat date in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Yesterday's Nepali date": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yesterday's Nepali date"
+            "value": "What was ${day}'s Nepali date with ${applicationName}"
           }
         }
       }

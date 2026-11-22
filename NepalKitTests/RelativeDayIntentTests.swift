@@ -13,13 +13,13 @@ struct RelativeDayIntentTests {
         let before = try TestDates.utc(2025, 4, 13, 18, 14)
         let after = try TestDates.utc(2025, 4, 13, 18, 15)
 
-        let tomorrowBefore = try TomorrowInBikramSambatIntent.answer(now: before, in: dataset, monthNames: .transliterated)
-        let tomorrowAfter = try TomorrowInBikramSambatIntent.answer(now: after, in: dataset, monthNames: .transliterated)
+        let tomorrowBefore = try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: before, in: dataset, monthNames: .transliterated)
+        let tomorrowAfter = try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: after, in: dataset, monthNames: .transliterated)
         #expect(tomorrowBefore.entity.bsDay == BikramSambatDate(year: 2082, month: 1, day: 1))
         #expect(tomorrowAfter.entity.bsDay == BikramSambatDate(year: 2082, month: 1, day: 2))
 
-        let yesterdayBefore = try YesterdayInBikramSambatIntent.answer(now: before, in: dataset, monthNames: .transliterated)
-        let yesterdayAfter = try YesterdayInBikramSambatIntent.answer(now: after, in: dataset, monthNames: .transliterated)
+        let yesterdayBefore = try RelativeDayInBikramSambatIntent.answer(.yesterday, now: before, in: dataset, monthNames: .transliterated)
+        let yesterdayAfter = try RelativeDayInBikramSambatIntent.answer(.yesterday, now: after, in: dataset, monthNames: .transliterated)
         #expect(yesterdayBefore.entity.bsDay == BikramSambatDate(year: 2081, month: 12, day: 30))
         #expect(yesterdayAfter.entity.bsDay == BikramSambatDate(year: 2081, month: 12, day: 31))
     }
@@ -29,9 +29,9 @@ struct RelativeDayIntentTests {
         let lastDayOf2081 = try TestDates.utc(2025, 4, 13, 6, 0)
         let firstDayOf2082 = try TestDates.utc(2025, 4, 14, 6, 0)
 
-        #expect(try TomorrowInBikramSambatIntent.answer(now: lastDayOf2081, in: dataset).entity.bsDay
+        #expect(try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: lastDayOf2081, in: dataset).entity.bsDay
             == BikramSambatDate(year: 2082, month: 1, day: 1))
-        #expect(try YesterdayInBikramSambatIntent.answer(now: firstDayOf2082, in: dataset).entity.bsDay
+        #expect(try RelativeDayInBikramSambatIntent.answer(.yesterday, now: firstDayOf2082, in: dataset).entity.bsDay
             == BikramSambatDate(year: 2081, month: 12, day: 31))
     }
 
@@ -41,9 +41,9 @@ struct RelativeDayIntentTests {
         let lastOfAshar = try TestDates.utc(2025, 7, 16, 6, 0)
         let firstOfShrawan = try TestDates.utc(2025, 7, 17, 6, 0)
 
-        #expect(try TomorrowInBikramSambatIntent.answer(now: lastOfAshar, in: dataset).entity.bsDay
+        #expect(try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: lastOfAshar, in: dataset).entity.bsDay
             == BikramSambatDate(year: 2082, month: 4, day: 1))
-        #expect(try YesterdayInBikramSambatIntent.answer(now: firstOfShrawan, in: dataset).entity.bsDay
+        #expect(try RelativeDayInBikramSambatIntent.answer(.yesterday, now: firstOfShrawan, in: dataset).entity.bsDay
             == BikramSambatDate(year: 2082, month: 3, day: 32))
     }
 
@@ -54,11 +54,11 @@ struct RelativeDayIntentTests {
         let expected = String(localized: TodayInBikramSambatIntent.beyondRangeDialog(now: now, in: dataset))
 
         #expect(BikramSambatDate.today(now: now, in: dataset) != nil)
-        #expect(try YesterdayInBikramSambatIntent.answer(now: now, in: dataset).entity.bsDay.year
+        #expect(try RelativeDayInBikramSambatIntent.answer(.yesterday, now: now, in: dataset).entity.bsDay.year
             == dataset.supportedRange.upperBound)
 
         do {
-            _ = try TomorrowInBikramSambatIntent.answer(now: now, in: dataset)
+            _ = try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: now, in: dataset)
             Issue.record("tomorrow past the supported range should not convert")
         } catch let error as SiriIntentError {
             #expect(String(localized: error.dialog) == expected)
@@ -70,8 +70,8 @@ struct RelativeDayIntentTests {
     func spokenAnswersUseLatinDigits() throws {
         let now = try TestDates.utc(2025, 6, 29, 6, 0)
         for monthNames in [MonthNameStyle.nepali, .transliterated] {
-            let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
-            let yesterday = String(localized: try YesterdayInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
+            let tomorrow = String(localized: try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: now, in: dataset, monthNames: monthNames).dialog)
+            let yesterday = String(localized: try RelativeDayInBikramSambatIntent.answer(.yesterday, now: now, in: dataset, monthNames: monthNames).dialog)
 
             #expect(!tomorrow.contains(where: TestDates.devanagariDigits.contains))
             #expect(!yesterday.contains(where: TestDates.devanagariDigits.contains))
@@ -79,7 +79,7 @@ struct RelativeDayIntentTests {
             #expect(yesterday.hasPrefix("Yesterday was ") && yesterday.contains("14") && yesterday.contains("2082"))
         }
 
-        let english = String(localized: try TomorrowInBikramSambatIntent.answer(now: now, in: dataset, monthNames: .transliterated).dialog)
+        let english = String(localized: try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: now, in: dataset, monthNames: .transliterated).dialog)
         #expect(english.contains("Monday"))
     }
 
@@ -87,8 +87,8 @@ struct RelativeDayIntentTests {
     func performAnswersFromTheRealClock() async throws {
         let zone = SettingsStore().timeReference.timeZone
         let before = Date()
-        let tomorrow = try await TomorrowInBikramSambatIntent().perform()
-        let yesterday = try await YesterdayInBikramSambatIntent().perform()
+        let tomorrow = try await RelativeDayInBikramSambatIntent(day: .tomorrow).perform()
+        let yesterday = try await RelativeDayInBikramSambatIntent(day: .yesterday).perform()
         let after = Date()
         let tomorrows = [before, after].map { RelativeDay.bsDay(offset: 1, now: $0, timeZone: zone, in: dataset) }
         let yesterdays = [before, after].map { RelativeDay.bsDay(offset: -1, now: $0, timeZone: zone, in: dataset) }
@@ -99,9 +99,9 @@ struct RelativeDayIntentTests {
     @Test("Tomorrow into a provisional year carries the projection clause; an attested one does not")
     func provisionalYearClause() throws {
         let lastDayOf2083 = try TestDates.utc(2027, 4, 13, 6, 0)
-        let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
+        let tomorrow = String(localized: try RelativeDayInBikramSambatIntent.answer(.tomorrow, now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
         #expect(tomorrow.contains("provisional projection"))
-        let yesterday = String(localized: try YesterdayInBikramSambatIntent.answer(now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
+        let yesterday = String(localized: try RelativeDayInBikramSambatIntent.answer(.yesterday, now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
         #expect(!yesterday.contains("provisional"))
     }
 }
