@@ -15,7 +15,7 @@ import SwiftUI
 /// Gregorian month names stay English — the month-name setting governs Bikram
 /// Sambat and weekday names only, so a date may carry a Devanagari day and
 /// year, an English Gregorian month name, and a weekday in either language at
-/// once. That combination is intended (CONTEXT.md).
+/// once. That combination is intended (docs/glossary.md).
 ///
 /// The selected destination is ephemeral for the same reason the popover's is:
 /// Settings is not where anyone begins a task, so remembering the last one would

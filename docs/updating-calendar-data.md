@@ -1,7 +1,7 @@
-# Calendar dataset update procedure
+# Updating the calendar data
 
-Current source policy: [ADR-0014](../adr/0014-calendar-base-and-local-exceptions.md).
-Current values, pin, licence notice and exceptions: [SOURCES.md](../../SOURCES.md).
+Current source policy: [ADR-0014](adr/0014-calendar-base-and-local-exceptions.md).
+Current values, pin, licence notice and exceptions: [SOURCES.md](../SOURCES.md).
 
 ## Reconcile provisional 2084 first
 
@@ -61,7 +61,7 @@ schedule automatic checks of a third-party website.
 ## Festivals and public holidays for a new year
 
 Festivals and public holidays are separate from the month lengths and are
-listed one year at a time ([ADR-0016](../adr/0016-festivals-from-the-national-panchanga.md)
+listed one year at a time ([ADR-0016](adr/0016-festivals-from-the-national-panchanga.md)
 and its amendment). Only 2083 is listed. From 1 Baisakh 2084 (14 April 2027)
 the month grid shows no festival marks or red holidays and says "Festivals and
 holidays are listed for 2083 BS only." It does not fail; it says what is missing.

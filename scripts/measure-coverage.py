@@ -15,11 +15,7 @@ Why a script rather than a reading of the number: coverage that is measured by
 hand is coverage that rots. This records a floor and fails when the number drops
 below it, which is the part that stops silently.
 
-**This gate deliberately has no target.** The OpenSSF badge asks for 80% and 90%
-statement coverage; the combined figure is recorded in scripts/coverage-floor.json
-and the gap is not a chore. See docs/coverage.md for why the SwiftUI layer is the blocker and what
-closing it would actually require. A floor that ratchets upward as tests land
-is honest; a target set above the truth is a lie that fails every day.
+The floor in scripts/coverage-floor.json only ratchets upward; there is no target.
 
 Offline and credential-free, like every other gate here: coverage needs a
 toolchain and nothing else.

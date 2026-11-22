@@ -6,7 +6,7 @@ Status: accepted
 ## Context
 
 Since 1.0 the app's rule has been that today follows Nepal Time (UTC+5:45),
-whatever the Mac's own time zone (CONTEXT.md, *Today*). The Bikram Sambat date
+whatever the Mac's own time zone ([glossary](../glossary.md), *Today*). The Bikram Sambat date
 in the menu bar flips at Nepal's midnight, the popover's header shows Nepal
 Time, and a second row shows the Mac's local time when it differs.
 
@@ -64,6 +64,6 @@ Both readings are reasonable, and the app cannot tell which reader it has.
   pickers start on, and a later change does not move a selection the user may
   have made.
 - Dates a user names for conversion are unaffected. They are calendar days, not
-  instants, and no time zone applies to them (CONTEXT.md, *Today*).
+  instants, and no time zone applies to them ([glossary](../glossary.md), *Today*).
 - "Today follows Nepal Time" is now "today follows Nepal Time by default" in
-  README.md and CONTEXT.md.
+  README.md and docs/glossary.md.

@@ -126,7 +126,7 @@ struct MonthGridModelTests {
     }
 
     @Test func previousStopsAtBaisakh1975() throws {
-        // 1 Baisakh 1975 = 13 Apr 1918, the dataset's first day (CONTEXT.md,
+        // 1 Baisakh 1975 = 13 Apr 1918, the dataset's first day (docs/glossary.md,
         // *Supported range*), a Saturday.
         let model = MonthGridModel(now: try TestDates.utc(1918, 4, 13, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 1975, month: 1))
@@ -142,7 +142,7 @@ struct MonthGridModelTests {
     }
 
     @Test func nextStopsAtChaitra2084() throws {
-        // 30 Chaitra 2084 = 12 Apr 2028, the dataset's last day (CONTEXT.md).
+        // 30 Chaitra 2084 = 12 Apr 2028, the dataset's last day (docs/glossary.md).
         let model = MonthGridModel(now: try TestDates.utc(2028, 4, 12, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2084, month: 12))
         #expect(!model.canShowNextMonth)

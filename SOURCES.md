@@ -112,8 +112,7 @@ fixture also does not verify every corrected month in its year.
 
 The one-time amitgaru CSV comparison requested during this cleanup matched the
 retained 2004, 2082 and 2083 rows. It is corroboration, not an additional base or
-an automated source dependency. The pinned comparison is recorded in
-[the cleanup evidence](docs/release-evidence/dataset-source-cleanup.md).
+an automated source dependency.
 
 ### Dharan converter checks
 
@@ -160,8 +159,7 @@ through 2028-04-12.
 
 The projection is retained for development/testing pending official-calendar
 comparison. This cleanup does not authorize public distribution or clear the
-Watch acceptance blocker. See [the original projection decision](docs/watch/provisional-2084-update.md)
-and [ADR-0014](docs/adr/0014-calendar-base-and-local-exceptions.md).
+Watch acceptance blocker. See [ADR-0014](docs/adr/0014-calendar-base-and-local-exceptions.md).
 
 ## Reproduce the comparison
 
@@ -185,7 +183,7 @@ python3 scripts/verify-data-sources.py --update-baseline
 
 For a future candidate, `scripts/verify-candidate-year.py` reports the same
 pinned base's row. Source coverage beyond 2084 does not expand NepalKit's
-supported range automatically. Follow [the update procedure](docs/release-evidence/dataset-extension-procedure.md).
+supported range automatically. Follow [the update procedure](docs/updating-calendar-data.md).
 
 ## Copyright scope
 

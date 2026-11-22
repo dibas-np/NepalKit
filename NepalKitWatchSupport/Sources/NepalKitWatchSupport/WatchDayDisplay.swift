@@ -17,7 +17,7 @@ extension DisplaySettings {
 /// choose composition and layout only. Bikram Sambat pieces use canonical
 /// Nepali names and the settings' digit script; Gregorian month names stay
 /// English while their digits still honor the settings — the intentional mix
-/// CONTEXT.md describes. Speech is independent of the visuals: Latin digits,
+/// docs/glossary.md describes. Speech is independent of the visuals: Latin digits,
 /// transliterated month and weekday names, and the complete year, whatever is
 /// fitted on screen. The first on-device session (2026-10-03) found the
 /// watch's VoiceOver voices skipping Devanagari month names entirely, so

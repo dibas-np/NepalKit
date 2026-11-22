@@ -88,7 +88,7 @@ struct DatasetBoundaryTests {
     }
 
     @Test func boundaryNoticeUsesGlossaryLanguage() {
-        // CONTEXT.md avoids "BS date" as prose for Bikram Sambat.
+        // docs/glossary.md avoids "BS date" as prose for Bikram Sambat.
         #expect(Strings.bsDateUnavailable == "Bikram Sambat date unavailable")
         #expect(!Strings.bsDateUnavailable.contains("BS date"))
     }

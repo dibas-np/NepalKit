@@ -201,8 +201,7 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
 # Check entitlements, Sparkle keys and the embedded Sparkle version on the
 # exported product: ENABLE_* build settings are merged into the entitlements at
 # signing (how 1.6.0 shipped an unrecorded file-access entitlement), and the
-# Sparkle pin is only as good as package resolution on this machine. This is the
-# check docs/dependencies.md refers to.
+# Sparkle pin is only as good as package resolution on this machine.
 python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
     --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
     --entitlements "$ROOT/$APP/$APP.entitlements"

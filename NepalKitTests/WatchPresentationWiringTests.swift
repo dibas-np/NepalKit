@@ -22,8 +22,7 @@ import Testing
 /// unavailable here — this file is read by a SwiftPM harness with no preview or
 /// snapshot harness, and `AGENTS.md` forbids a third-party framework without
 /// asking — so the claim that the announced detail *matches what is drawn*
-/// belongs where it always did: a real device and a real screen reader, recorded
-/// at `docs/watch/physical-validation.md:57`. The parser is line-based and
+/// belongs where it always did: a real device and a real screen reader. The parser is line-based and
 /// follows no indirection; its exemption set covers a shape it cannot read and
 /// is empty today, which is the honest way to say "none" while leaving the
 /// mechanism in place.

@@ -10,11 +10,7 @@ import NepalKitCore
 /// target.** The Watch app and its complication extension each need these
 /// labels, neither can see the other's files, and both link this package — so
 /// it is the one place a helper they must agree on byte for byte can live.
-/// `WatchDayCopy` sits here for the same reason, and `CODING_STANDARDS.md`'s
-/// Watch exception records that reasoning. Left in the extension, the Watch app's copy of a label
-/// is a hand-rolled duplicate of the lines below, and the two drift silently: the
-/// extension's suite keeps passing against its own copy while the app announces
-/// something else.
+/// `WatchDayCopy` sits here for the same reason.
 public enum ComplicationAccessibility {
     /// Includes the weekday and Gregorian date when displayed.
     public static func supportedLabel(

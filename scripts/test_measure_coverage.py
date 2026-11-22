@@ -3,9 +3,7 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Tests for the coverage parser in `measure-coverage.py`.
 
-That script produces the published coverage figures (including the OpenSSF badge
-answers); `docs/coverage.md` records three earlier bugs in it that each gave a
-wrong number. These tests feed it a recorded llvm-cov report table and pin what
+These tests feed it a recorded llvm-cov report table and pin what
 it counts, what it ignores and how it combines suites.
 """
 

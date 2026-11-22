@@ -1,4 +1,4 @@
-# NepalKit
+# Glossary
 
 A macOS menu-bar utility giving quick access to Nepal-specific date, time, and calendar information.
 

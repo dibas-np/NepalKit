@@ -22,7 +22,7 @@ struct MonthGridMonth: Hashable {
 
 /// One filled cell of the month grid: a Bikram Sambat day, the Gregorian day it
 /// falls on, and its weekday, which belongs to the civil day and not to either
-/// calendar (CONTEXT.md, *Weekday*).
+/// calendar (docs/glossary.md, *Weekday*).
 struct MonthGridDay: Hashable {
     let bikramSambat: BikramSambatDate
     let gregorian: GregorianDate

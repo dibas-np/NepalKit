@@ -19,11 +19,8 @@ struct RoundTripTests {
     static func everyBSDay() -> [BikramSambatDate] {
         var days: [BikramSambatDate] = []
         for year in CalendarDataset.v2.supportedRange {
-            // A missing row is the defect these tests exist to catch, so it is
-            // recorded rather than skipped past. A bare `continue` here made the
-            // suite green over a smaller sweep, which is the rule
-            // CODING_STANDARDS.md §Changing a supported-range boundary states and
-            // GregorianWeekdayTests already follows.
+            // A missing row is the defect these tests exist to catch, so record
+            // it rather than silently sweeping a smaller range.
             guard let months = CalendarDataset.v2.monthLengths(for: year) else {
                 Issue.record("No twelve-month table row for \(year); the round-trip sweep is not exhaustive")
                 continue

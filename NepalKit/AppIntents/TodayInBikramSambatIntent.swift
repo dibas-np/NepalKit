@@ -5,7 +5,7 @@ import NepalKitCore
 
 /// Answers today's date in Bikram Sambat. "Today" is the current calendar date
 /// in the zone the user's time reference names: Nepal Time unless they chose
-/// their own (CONTEXT.md's Today entry, ticket 02, ADR-0017).
+/// their own (docs/glossary.md's Today entry, ticket 02, ADR-0017).
 struct TodayInBikramSambatIntent: AppIntent {
     static let title: LocalizedStringResource = "What is today's Nepali date"
 

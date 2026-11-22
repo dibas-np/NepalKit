@@ -59,9 +59,9 @@ the 26 releases of macOS, iOS and watchOS, which excludes most apps.
 
 ## Consequences
 
-- `CODING_STANDARDS.md`'s "BS"/"AD" allowance now covers app identifiers only.
-- The Watch exception in `CODING_STANDARDS.md` names `NepalKitWatchSupport`
-  rather than the core as the shared home for the Watch's copy and labels.
+- "BS"/"AD" in identifiers is now allowed in app code only.
+- `NepalKitWatchSupport`, not the core, is the shared home for the Watch's copy
+  and labels.
 - `check-all.sh` and the macOS 26 floor workflow run the Watch support suite
   as their own gate.
 - The core's tests no longer cover the menu-bar title or the Watch display.

@@ -24,8 +24,7 @@ import NepalKitWatchSupport
 /// and confirming the announced detail matches what is drawn needs either a
 /// rendering harness this repository does not have or a third-party
 /// view-inspection dependency `AGENTS.md` forbids without asking. The real check
-/// is a device and a screen reader, recorded at
-/// `docs/watch/physical-validation.md:57`.
+/// is a device and a screen reader.
 struct ComplicationPresentationTests {
     private let dataset = CalendarDataset.v2
 

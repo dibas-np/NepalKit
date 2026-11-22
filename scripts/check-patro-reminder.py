@@ -7,7 +7,7 @@ The shipped table ends at 2084 BS (2028-04-12), and 2084 is a projection.
 Only the Samiti's published almanac, expected around Magh 2083 BS (January to
 February 2027), attests a year or makes a new one shippable (ADR-0014). Nothing
 machine-readable announces it, so this checks that a person has looked: the
-`last_checked:` line in docs/release-evidence/dataset-extension-procedure.md
+`last_checked:` line in docs/updating-calendar-data.md
 must be no older than 35 days. Quiet before 2027-01-01 and once the shipped
 table reaches 2085.
 
@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PROCEDURE = ROOT / "docs" / "release-evidence" / "dataset-extension-procedure.md"
+PROCEDURE = ROOT / "docs" / "updating-calendar-data.md"
 CHECKS_START = datetime.date(2027, 1, 1)
 MAX_AGE_DAYS = 35
 EXTENDED_YEAR = 2085
@@ -52,7 +52,7 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
     if checked is None:
         return False, ("the monthly Patro check has never been recorded. Read the Samiti's "
                        "notices on npns.gov.np, then set `last_checked:` in "
-                       "docs/release-evidence/dataset-extension-procedure.md")
+                       "docs/updating-calendar-data.md")
     age = (today - checked).days
     if age < -1:
         # A future date would pass forever. One day of slack covers a local

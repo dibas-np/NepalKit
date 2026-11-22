@@ -14,8 +14,7 @@ macOS app. That has two consequences with dates attached:
   February 2027, and if it differs from the provisional row (ADR-0014), Mac
   users get the fix through Sparkle and Watch users get nothing.
 - **Current installs stop working.** The development signing certificate expires
-  on 2027-09-27 and the provisioning profiles on 2027-10-02
-  (`docs/watch/signed-build-refresh-2026-10-03.md`). An app with an expired profile
+  on 2027-09-27 and the provisioning profiles on 2027-10-02. An app with an expired profile
   no longer launches on the device, so every current install needs a store build
   or a re-signed build before then.
 
@@ -36,7 +35,7 @@ readiness spec rules out shipping it behind a warning alone), a decision best
 timed with the 2027 attestation.
 
 **B. Both apps on the App Store, and the Mac app keeps Developer ID too.** The
-Mac App Store variant in `.scratch/mac-app-store-readiness/spec.md`: no Sparkle in
+Mac App Store variant: no Sparkle in
 the store build, opt-in login item, two update models for the Mac app
 permanently. The largest cost, and the roadmap's "permanent tax".
 

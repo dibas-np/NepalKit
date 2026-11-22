@@ -1,15 +1,11 @@
 <div align="center">
   <h1>NepalKit</h1>
   <p>Today's Bikram Sambat date in your Mac's menu bar and on your Apple Watch.</p>
-  <p>Nepal Time, Gregorian date conversion, and Siri and Shortcuts support in a native macOS app and a standalone watchOS app.</p>
 </div>
 
 <p align="center">
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/release/dibas-np/NepalKit?label=version&style=flat-square" alt="Latest release"></a>
-  <a href="https://github.com/dibas-np/NepalKit/releases"><img src="https://img.shields.io/github/downloads/dibas-np/NepalKit/total?label=downloads&style=flat-square" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6 or later">
-  <img src="https://img.shields.io/badge/watchOS-26%2B-black?style=flat-square&logo=apple" alt="watchOS 26 or later">
-  <a href="https://github.com/dibas-np/NepalKit/actions/workflows/macos26-floor.yml"><img src="https://img.shields.io/github/actions/workflow/status/dibas-np/NepalKit/macos26-floor.yml?branch=main&label=build&style=flat-square" alt="Build status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="GPL version 3 or later"></a>
 </p>
 
@@ -19,190 +15,62 @@
 
 ## Features
 
-- Today's Bikram Sambat date in the menu bar, without a Dock icon.
-- Full Bikram Sambat and Gregorian dates with the weekday.
-- A live Nepal Time clock, UTC+5:45, alongside your local time when your time zone differs. Choose **My time zone** in Settings and the two swap places.
-- Conversion between Bikram Sambat and Gregorian, with date pickers that follow each month's actual length.
-- A month calendar under today's date, with the Gregorian dates beside each day, and festivals and public holidays for 2083 from the official Panchanga and the Nepal Gazette. Any day can be copied or added to your calendar.
-- A menu-bar date you can shape: weekday, year, and the time, in 12- or 24-hour form, with or without seconds.
-- Latin or Devanagari digits, with Nepali or transliterated month and weekday names.
-- Today's, tomorrow's and yesterday's Bikram Sambat dates through Siri, and date conversion through Shortcuts.
-- A standalone Apple Watch app with rectangular, inline, circular, and corner complications.
-- Optional launch at login.
+- Today's Bikram Sambat date in the menu bar, with optional weekday, year and clock.
+- A month calendar with Gregorian dates, plus 2083's festivals and public holidays.
+- Nepal Time (UTC+5:45) alongside your local time.
+- Bikram Sambat ↔ Gregorian conversion.
+- Latin or Devanagari digits, Nepali or transliterated names.
+- Siri and Shortcuts: today's, tomorrow's and yesterday's date, and conversion.
+- A standalone Apple Watch app with complications.
 
-Date conversion and clocks work offline. NepalKit has no account, analytics, or telemetry. The app uses network access for updates.
+Works offline. No account, analytics or telemetry; the only network access is the update check.
 
 ## Install
 
-Requires macOS 26.6 or later on Apple silicon (the release is a universal build, but Intel Macs are untested).
-
-[Download the latest release](https://github.com/dibas-np/NepalKit/releases/latest), open the DMG, and drag NepalKit into **Applications**.
-
-You can also install with Homebrew:
+Requires macOS 26.6 or later. [Download the latest release](https://github.com/dibas-np/NepalKit/releases/latest), open the DMG and drag NepalKit into Applications, or:
 
 ```sh
 brew install --cask dibas-np/tap/nepalkit
 ```
 
-Release builds are signed and notarized. NepalKit updates itself through Sparkle, including when installed with Homebrew. The cask declares automatic updates, so a normal `brew upgrade` leaves the app's updates to NepalKit.
-
-If you still use version 1.0, install a newer release once to enable automatic updates.
+Releases are signed and notarized, and the app updates itself through Sparkle.
 
 ## Usage
 
-Click the menu-bar date to open the popover. **Today** shows today's Bikram Sambat date and weekday above a month grid, with each day's Gregorian date beneath it and the Gregorian months it spans beside the title. Click a day to see it in both calendars and how far it is from today, copy it, or add it to your calendar as an all-day event. Scroll over the grid or press the left and right arrow keys to change months. Festivals and national days for 2083 come from Nepal's national Panchanga, plus two national days only the Home Ministry's Nepal Gazette notice lists; they are marked with a dot in the grid, listed in a day's details, and named under today's date. Nationwide public holidays from that Gazette notice are red, like Saturdays; holidays limited to a community, region or group are named in a day's details. **Convert** lets you convert a date in either direction.
+Click the date in the menu bar. **Today** shows the month grid; click a day to copy it or add it to your calendar. **Convert** converts in either direction. Settings (**⌘,**) controls digits, names, the menu-bar format and launch at login.
 
-Open **Settings** with **⌘,** to change the digit script, month and weekday names, time zone, or launch-at-login preference. **Settings → Menu Bar** previews the menu-bar date and can add the day of the week, the year, and the clock (12- or 24-hour, with or without seconds), like the macOS menu-bar clock.
+Today follows Nepal Time by default; choose **Settings → General → Time zone → My time zone** to follow your Mac's time zone instead.
 
-Today's date follows Nepal Time by default, even when your Mac uses another time zone. Set **Settings → General → Time zone** to **My time zone** and today, its midnight, the clocks and Siri's answers follow your Mac's time zone instead ([ADR-0017](docs/adr/0017-today-in-nepal-time-or-the-users-time-zone.md)). The Watch app always follows Nepal Time. The month-name setting applies to Bikram Sambat months and weekdays. Gregorian month names remain in English.
+Ask Siri "What is today's Nepali date with NepalKit". Conversion is available as a Shortcuts action.
 
-## Siri and Shortcuts
-
-Ask Siri:
-
-> What is today's Nepali date with NepalKit
-
-NepalKit answers with today's Bikram Sambat date and weekday using its bundled calendar data.
-
-You can also ask for the days either side:
-
-> What is tomorrow's Nepali date with NepalKit
->
-> What was yesterday's Nepali date with NepalKit
-
-The Shortcuts app includes five NepalKit actions:
-
-- Get today's Bikram Sambat date.
-- Get tomorrow's Bikram Sambat date.
-- Get yesterday's Bikram Sambat date.
-- Convert a Gregorian date to Bikram Sambat.
-- Convert a Bikram Sambat date to Gregorian.
-
-Conversion actions return year, month, day, and weekday fields that you can use in other shortcut steps.
-
-Spoken answers use Latin digits and your chosen month-name language. Dates displayed in Shortcuts follow your display settings, including Devanagari digits.
-
-Date conversions currently work through Shortcuts. Siri cannot yet collect the conversion parameters reliably. Available phrases appear in **Settings → General → Siri & Shortcuts**.
-
-## On the Apple Watch
+## Apple Watch
 
 <p align="center">
-  <img src="docs/img/watch-today.png" alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date under the NepalKit title" width="200" />
-  <img src="docs/img/watch-complications.png" alt="An Infograph watch face with NepalKit corner complications showing १७ असोज २०८३ along the bezel" width="200" />
+  <img src="docs/img/watch-today.png" alt="NepalKit on Apple Watch showing the weekday, today's Bikram Sambat date, and the Gregorian date" width="200" />
+  <img src="docs/img/watch-complications.png" alt="An Infograph watch face with NepalKit corner complications" width="200" />
 </p>
 
-The Watch app offers four complication styles: rectangular, inline, circular, and corner. Tapping a complication opens Today, showing the full Bikram Sambat date with its weekday and the corresponding Gregorian date for the Nepal Time day.
+The Watch app is not on the App Store. Build the **NepalKitWatch Watch App** scheme in Xcode to a watch or simulator. It always follows Nepal Time and needs watchOS 26 or later.
 
-The Watch app works offline, independently of the Mac and iPhone. It follows Nepal Time regardless of the watch's time zone and requires **watchOS 26 or later**.
+## Supported dates
 
-Today refreshes when the app becomes active and schedules a refresh for the next Nepal midnight. Complications have future entries scheduled at Nepal midnight; watchOS controls when they appear on the face.
-
-Large-text layouts preserve the primary date information, and VoiceOver announces dates using Latin digits and transliterated names. Dates outside the supported range show an unavailable state with support context; calculation failures have a separate error state.
-
-The Watch app is a developer preview, built from source; it is not on the App Store ([ADR-0015](docs/adr/0015-watch-app-distribution.md)). To install it, use the **NepalKitWatch Watch App** scheme with a development-signed Watch destination. You can also run it in a watch simulator. See [Development](#development) for setup. A development-signed install stops launching when its provisioning profile expires; build and run it from Xcode again to renew it. Calendar data updates reach the watch only when you rebuild. The Mac DMG installs only the macOS app.
-
-## Supported dates and calendar data
-
-NepalKit supports **1975 through 2084 Bikram Sambat**, corresponding to **April 13, 1918 through April 12, 2028 Gregorian**. Dates outside the bundled dataset are reported as unsupported.
-
-Bikram Sambat month lengths vary, so conversion uses a bundled table rather than a formula. Dataset version 2.0.1 uses [askbuddie's month-length table](https://github.com/askbuddie/bikram-sambat/blob/d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts) as its base, with 14 retained corrections across 1989, 1993, 2004, 2082 and 2083. Tests check every supported New Year boundary in both directions. [SOURCES.md](SOURCES.md) records the corrections and evidence limits.
-
-**2084 Bikram Sambat is NepalKit's own provisional projection.** It follows a reported birthday and Chaitra recurrence and remains development/testing data pending comparison with the officially approved Nepali Patro. It is not an attested calendar or a verified astronomical calculation. Years beyond the supported range are excluded.
-
-Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data licensing. For official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
+1975–2084 BS (13 April 1918 – 12 April 2028). Month lengths come from a bundled table based on [askbuddie/bikram-sambat](https://github.com/askbuddie/bikram-sambat), with a few local corrections. **2084 is a provisional projection** until the official Nepali Patro is published. See [SOURCES.md](SOURCES.md) for provenance.
 
 ## Swift package
 
-The calendar engine is published as [NepalKitCore](https://github.com/dibas-np/NepalKitCore), an MIT-licensed Swift package for macOS 12, iOS 15, watchOS 9, tvOS 15 and visionOS 1 or later. It is at version 0.x, so its API may change between minor releases ([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md), [ADR-0019](docs/adr/0019-a-general-purpose-core-api.md)).
-
-```swift
-.package(url: "https://github.com/dibas-np/NepalKitCore", .upToNextMinor(from: "0.1.0"))
-```
-
-That repository is a mirror of [NepalKitCore/](NepalKitCore/), and development happens here. See [NepalKitCore/README.md](NepalKitCore/README.md) for usage.
+The calendar engine is available as [NepalKitCore](https://github.com/dibas-np/NepalKitCore), an MIT-licensed Swift package mirrored from [NepalKitCore/](NepalKitCore/).
 
 ## Development
 
-Use Xcode 27 or later on macOS 27 or later. The app's deployment target remains macOS 26.6.
+Requires Xcode 27.
 
 ```sh
 git clone https://github.com/dibas-np/NepalKit.git
-cd NepalKit
-open NepalKit.xcodeproj
+open NepalKit/NepalKit.xcodeproj
 ```
 
-Select the **NepalKit** scheme in Xcode and run the app. The Watch app builds and runs the same way from the **NepalKitWatch Watch App** scheme with a watch simulator or device destination.
-
-To build the app and run the local checks from the repository root:
-
-```sh
-./scripts/check-all.sh
-```
-
-The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs eighteen gates, which [CONTRIBUTING.md](.github/CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run. No workflow invokes the script — CI runs the individual gates in the workflow that owns each one, and two gates are local-only for reasons stated in [CONTRIBUTING.md](.github/CONTRIBUTING.md).
-
-To run the three Swift test suites separately:
-
-```sh
-(cd NepalKitCore && swift test)
-./scripts/run-app-tests.sh
-xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
-    -configuration Debug \
-    -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO
-```
-
-The Watch tests run on a watchOS Simulator, as the directory listing below notes. That exact device and runtime have to be installed, or `xcodebuild` fails with a list of the destinations it can use.
-
-```text
-NepalKitCore/                 Calendar dataset, conversion, formatting, spoken dates, and Watch display (the published Swift package)
-NepalKit/                     SwiftUI menu-bar app, settings, models, and App Intents
-NepalKitTests/                App-layer tests
-NepalKitWatch Watch App/      SwiftUI Watch app, Today screen, and lifecycle model
-NepalKitComplications/        Watch complications (WidgetKit extension)
-NepalKitWatch Watch AppTests/ Watch tests, run on a watchOS simulator
-scripts/                      Local checks, release packaging, and verification
-docs/adr/                     Architecture decision records
-```
-
-Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) and [CODING_STANDARDS.md](CODING_STANDARDS.md) before submitting changes.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
-
-## Security
-
-NepalKit has no account, no analytics, and no telemetry. Its only network access
-is checking for updates, and it holds no credentials.
-
-- [SECURITY.md](SECURITY.md) — reporting a vulnerability, and what is supported
-- [docs/release-verification.md](docs/release-verification.md) — how to confirm a
-  downloaded release is ours, and who signed it
-- [docs/threat-model.md](docs/threat-model.md) — the attack surface, and what
-  stands in front of it
-- [docs/secrets-policy.md](docs/secrets-policy.md) — the credential inventory, and
-  why none of it is reachable from a pull request
-
-Contributors should also read
-[docs/dependencies.md](docs/dependencies.md) before adding a dependency, and
-[docs/security-assessment.md](docs/security-assessment.md) for the standing
-policy on static-analysis findings.
-
-Project documentation beyond the README lives in [docs/](docs/):
-[roadmap](docs/roadmap.md), [achievements](docs/achievements.md),
-[assurance case](docs/assurance-case.md), [threat model](docs/threat-model.md),
-[security assessment](docs/security-assessment.md),
-[coverage](docs/coverage.md), and the architecture decision records in
-[docs/adr/](docs/adr/).
-
-NepalKit's [OpenSSF Best Practices](https://bestpractices.dev/en/projects/15209)
-answers are kept in version control at
-[`.bestpractices.json`](.bestpractices.json), so they are reviewed in pull
-requests like anything else.
-[docs/bestpractices-entry.md](docs/bestpractices-entry.md) explains how that file
-relates to the entry and when an answer goes stale.
+Run `./scripts/check-all.sh` to build and run every test suite. See [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 ## License
 
-The code is licensed under [GPL-3.0-or-later](LICENSE), except [NepalKitCore/](NepalKitCore/), which is [MIT](NepalKitCore/LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie; its [complete notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt) is retained. [SOURCES.md](SOURCES.md) documents local corrections, the 2084 projection and provenance limits.
+[GPL-3.0-or-later](LICENSE), except [NepalKitCore/](NepalKitCore/), which is [MIT](NepalKitCore/LICENSE). The calendar base is MIT-licensed, copyright (c) 2023 Ask Buddie ([notice](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt)).

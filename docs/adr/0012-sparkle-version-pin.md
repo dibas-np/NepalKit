@@ -101,7 +101,7 @@ the public key belongs in the repository.
 | Artifact | Needed to | Lives where |
 | --- | --- | --- |
 | Public key | build and ship the app | repository / build settings |
-| Private key | sign a release artifact, generate the appcast | release machine only (never in CI — see docs/secrets-policy.md) |
+| Private key | sign a release artifact, generate the appcast | release machine only (never in CI) |
 
 So the private key is required at exactly one moment — producing or verifying a
 signed update — and never during development, never in the app target, and never
@@ -199,8 +199,7 @@ The second matters more than the first. A backup that has never been restored
 from is indistinguishable from no backup until the moment it is needed, and
 "the file looks right" is not a restore.
 
-**Closing both boxes.** The offline copy is the one exception
-`docs/secrets-policy.md` rule 3 allows, under the rules listed there. On the
+**Closing both boxes.** The offline copy is the one permitted exception. On the
 release machine, after `scripts/check-all.sh` has built the pinned Sparkle
 tools into `DerivedData/`:
 

@@ -31,8 +31,7 @@ Two separate questions, and they have different answers:
 | Homebrew cask | `dibas-np/tap/nepalkit` |
 
 The signing identity and team are **not secret** — they are printed on every
-signed build and are recorded in
-[`docs/watch/readiness-evidence.md`](watch/readiness-evidence.md). An attacker who
+signed build. An attacker who
 controls your download can also print whatever they like here; that is why
 question 2 is answered by Apple's infrastructure and not by this file. See
 "Where the trust actually comes from" below.
@@ -233,10 +232,6 @@ Every check above also runs mechanically, so you do not have to:
 | Downloaded `.app` identity, version, and `sha256` for the cask | `scripts/update-cask.sh` | Every `v*` tag |
 | Deployment floor agreement across project, script, and built product | `scripts/verify-deployment-floor.py` | Every pull request |
 | NepalKitCore suite on macOS, iOS and watchOS, run in the split that is published, and both tags verified against the key above before anything is pushed | `scripts/release-core.sh`, tested by `scripts/test_release_core.py` | Every NepalKitCore release |
-| Gatekeeper on a machine that has never trusted the developer | [`docs/release-evidence/fresh-mac-install-procedure.md`](release-evidence/fresh-mac-install-procedure.md) | Before publication |
-
-The last one is the only check that cannot be done from a machine that already
-has the signing certificate installed, which is exactly why it exists.
 
 ## Where the trust actually comes from
 
@@ -262,8 +257,7 @@ What actually carries the trust:
   is why `update-cask.sh` refuses to compute a digest over bytes that have not
   already passed every other check.
 - **The Ed25519 key**, whose private half is in one machine's keychain and is
-  not in GitHub, in CI, or in this repository. See
-  [secrets-policy.md](secrets-policy.md).
+  not in GitHub, in CI, or in this repository.
 
 If you want independence from this repository entirely, the check to make is
 step 3 and step 4 above — Apple's verdict — plus, if you are technical enough to

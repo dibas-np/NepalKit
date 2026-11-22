@@ -191,7 +191,7 @@ struct ConverterModelTests {
     }
 
     // The supported range is 1975-2084 BS, 13 April 1918 through 12 April 2028
-    // (CONTEXT.md); 30 Chaitra 2084 is its last day (RoundTripTests).
+    // (docs/glossary.md); 30 Chaitra 2084 is its last day (RoundTripTests).
     @Test("Past the supported range, both pickers open on its last day")
     func defaultsPastTheRangeNameTheLastSupportedDay() throws {
         // 06:00 UTC is 11:45 Nepal Time on 13 April 2028, the day after the range.

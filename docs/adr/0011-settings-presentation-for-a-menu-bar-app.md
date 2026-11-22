@@ -154,8 +154,7 @@ already provides the chrome, the lifecycle, and correct reopen behaviour.
 Rejected: this is the failure described above — a window that opens but cannot
 take focus. Keyboard navigation would be broken for every user, and VoiceOver
 correctness is a release gate, checked on a Mac that has never trusted the
-developer: the VoiceOver section of
-`docs/release-evidence/fresh-mac-install-procedure.md`.
+developer.
 
 **Give the app a real menu bar, abandoning `LSUIElement`.** Rejected. The
 menu-bar-only shape is the product. Note that the app menu already exists in the
