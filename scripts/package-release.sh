@@ -54,6 +54,28 @@ trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
 NOTARY_PROFILE="${NOTARY_PROFILE:-NepalKit-notary}"
+RELEASE_BRANCH="${RELEASE_BRANCH:-develop}"
+
+# Build only a pushed commit. NepalKit/ is a synchronized Xcode group, so any
+# file on disk there, tracked or not, would be built into the app.
+cd "$ROOT"
+if [[ -n "$(git status --porcelain)" ]]; then
+    echo "the working tree has uncommitted changes; release a clean checkout" >&2
+    exit 2
+fi
+STRAY="$(git status --porcelain --ignored -- "$APP" ':(exclude,glob)**/.DS_Store')"
+if [[ -n "$STRAY" ]]; then
+    echo "ignored or untracked files under $APP/ would be built into the app:" >&2
+    echo "$STRAY" >&2
+    exit 2
+fi
+git fetch --quiet origin "$RELEASE_BRANCH"
+RELEASE_COMMIT="$(git rev-parse HEAD)"
+if [[ "$RELEASE_COMMIT" != "$(git rev-parse "origin/$RELEASE_BRANCH")" ]]; then
+    echo "HEAD is not origin/$RELEASE_BRANCH; push it, or check out the commit being released" >&2
+    exit 2
+fi
+echo "releasing commit $RELEASE_COMMIT ($RELEASE_BRANCH)"
 
 PROJECT_TEAM="$(grep -o 'DEVELOPMENT_TEAM = [A-Z0-9]*;' "$ROOT/$APP.xcodeproj/project.pbxproj" \
     | sed 's/DEVELOPMENT_TEAM = //; s/;//' | sort -u || true)"
@@ -216,6 +238,7 @@ OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
 chmod 0444 "$OUT_DIR"/*
 
+echo "Built from commit: $RELEASE_COMMIT"
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
 echo "Sparkle enclosure (stapled, zipped): $OUT_DIR/$(basename "$DIST_ZIP")"
 echo "Signed appcast: $OUT_DIR/appcast.xml"
