@@ -29,7 +29,7 @@ jobs:
               echo "::error file=.github/CONTRIBUTING.md::Missing 'Signed-off-by:' in $sha — $subject"
               missing=$((missing + 1))
             fi
-          done < <(git rev-list "${BASE}..${HEAD}" --not origin/main)
+          done < <(git rev-list --no-merges "${BASE}..${HEAD}" --not origin/main)
           if [ "$missing" -gt 0 ]; then
             echo ""
             echo "$missing commit(s) without a DCO certificate."
