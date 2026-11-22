@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for the calendar-table parsers and verify-data-sources' pass/fail decisions."""
 
 from __future__ import annotations
 
@@ -12,7 +11,6 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# The scripts under test import dataset_table, so scripts/ must be on sys.path.
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
@@ -52,15 +50,12 @@ public struct CalendarDataset {
 }
 """
 
-# Rows copied verbatim from
-# NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift (1975-1977).
 SHIPPED_ROWS = {
     1975: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
     1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
     1977: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
 }
 
-# askbuddie/bikram-sambat @d347560, src/data/days-in-month-mapping.ts, 1975-1976.
 ASKBUDDIE_BODY = """\
 /**
  * This includes the number of days in each month for each year from 1975 to 2100 BS.
@@ -80,8 +75,6 @@ class ShippedTableTests(unittest.TestCase):
             return dataset_table.shipped_table(path)
 
     def test_reads_only_the_indented_literal(self):
-        # Both decoys before the data block must be ignored; the doc-comment row
-        # is row-shaped, so a bare `years: [` anchor would pick it up.
         self.assertEqual(self.parse(DATASET_HEADER), SHIPPED_ROWS)
 
     def test_exits_when_no_years_block(self):
@@ -141,7 +134,6 @@ class ShippedRangeTests(unittest.TestCase):
 
 
 def gate_fixture():
-    """Synthetic observations, independent of the real dataset."""
     return {
         "shipped": {"first": 1975, "last": 2084, "years": 110},
         "sources": {
@@ -159,9 +151,6 @@ def gate_fixture():
 
 
 class ProvenanceGateDecisionTests(unittest.TestCase):
-    """verify-data-sources._compare_observations: unchanged observations pass,
-    and any change to range, sources, counts or differing months is reported."""
-
     def test_an_observation_equal_to_the_baseline_reports_no_problem(self):
         expected = gate_fixture()
         observed = gate_fixture()
@@ -195,7 +184,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_source_the_baseline_does_not_record_is_reported(self):
-        # A live source the baseline never recorded.
         expected = gate_fixture()
         observed = gate_fixture()
         del expected["sources"]["partial-fixture"]
@@ -204,7 +192,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_source_the_live_observation_is_missing_is_reported(self):
-        # A failed fetch is not the same as a source that agreed.
         expected = gate_fixture()
         observed = gate_fixture()
         del observed["sources"]["base-fixture"]
@@ -229,7 +216,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_newly_differing_month_is_reported(self):
-        # 2084 BS Baisakh is not a recorded difference.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["diffs"].append([2084, 0])
@@ -238,7 +224,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_vanished_differing_month_is_reported(self):
-        # 1975 BS Bhadra is a recorded difference; it no longer differing is a change too.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["diffs"].remove([1975, 4])
@@ -265,8 +250,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
 
 
 class ProvenanceGateArgvTests(unittest.TestCase):
-    """verify-data-sources._parse_argv: returns (offline, baseline_path, update_path)."""
-
     def test_no_flag_leaves_every_option_unset(self):
         self.assertEqual(vds._parse_argv([]), (False, None, None))
 

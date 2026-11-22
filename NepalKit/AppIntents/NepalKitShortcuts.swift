@@ -2,9 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// NepalKit's App Shortcuts. Conversions use parameterless phrases and let Siri ask
-/// for the date: a `Date` can't appear in a phrase, and a month enum in one would
-/// generate a shortcut per case against the ten-shortcut cap.
 struct NepalKitShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

@@ -4,8 +4,6 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Launch-at-login must default on at first launch and stay user-controllable.
-/// The system boundary is mocked: tests never touch SMAppService.
 @MainActor
 struct LoginItemModelTests {
     final class MockService: LoginItemServicing {
@@ -89,7 +87,6 @@ struct LoginItemModelTests {
 
         model.ensureDefaultOn()
 
-        // The error the fake throws, forwarded unchanged.
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
@@ -99,7 +96,6 @@ struct LoginItemModelTests {
         service.error = Boom()
         LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
 
-        // A refused registration leaves the flag unset so the next launch retries.
         #expect(!defaults.bool(forKey: LoginItemModel.configuredKey))
         #expect(service.registerCalls == 1)
 
@@ -116,8 +112,6 @@ struct LoginItemModelTests {
 
         model.ensureDefaultOn()
 
-        // The throw happens before registering, so the toggle stays off and the
-        // error says why.
         #expect(!model.isOn)
         #expect(model.setupError != nil)
     }
@@ -133,7 +127,6 @@ struct LoginItemModelTests {
         let toggled = LoginItemModel(service: toggle, defaults: try freshDefaults())
         toggled.setOn(true)
 
-        // The same failure must read the same at first launch and from the toggle.
         #expect(launched.setupError != nil)
         #expect(launched.setupError == toggled.setupError)
     }
@@ -149,7 +142,6 @@ struct LoginItemModelTests {
         service.error = nil
         model.ensureDefaultOn()
 
-        // Reached only because the refusal left the flag unset.
         #expect(model.isOn)
         #expect(model.setupError == nil)
         #expect(defaults.bool(forKey: LoginItemModel.configuredKey))
@@ -205,7 +197,6 @@ struct LoginItemModelTests {
         model.setOn(true)
 
         #expect(!model.isOn)
-        // `isOn` follows the system; the error says why the toggle sprang back.
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
@@ -216,9 +207,7 @@ struct LoginItemModelTests {
 
         model.setOn(false)
 
-        // The service throws before unregistering, so the item stays registered.
         #expect(model.isOn)
-        // The only failure test that turns the item off, so it pins the operation.
         #expect(model.setupError == .deregistration(Boom().localizedDescription))
     }
 
@@ -283,8 +272,6 @@ struct LoginItemModelTests {
     }
 
     @Test func approvalHeldBySystemIsSurfacedBesideAnOnToggle() throws {
-        // What the live service reports for `.requiresApproval`: registered,
-        // so the toggle is on, and held, so it must not read as done.
         let service = MockService(registered: true)
         service.requiresApproval = true
         let model = LoginItemModel(service: service, defaults: try freshDefaults())
@@ -304,7 +291,6 @@ struct LoginItemModelTests {
         let model = LoginItemModel(service: service, defaults: try freshDefaults())
         #expect(!model.requiresApproval)
 
-        // register() succeeds, but macOS holds the item for approval.
         service.requiresApproval = true
         model.ensureDefaultOn()
 

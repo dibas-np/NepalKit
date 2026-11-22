@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Pins the identifiers users already have on disk. Written with literals
-/// rather than the constants, because renaming any of these silently resets
-/// every user's settings on upgrade.
 @MainActor
 struct PersistedIdentifierTests {
     private func freshDefaults() throws -> UserDefaults {
@@ -76,7 +73,6 @@ struct PersistedIdentifierTests {
     }
 
     @Test func loginItemConfiguredFlagUsesTheLiteralKey() throws {
-        // A configured user must not be re-registered after they turned it off.
         let defaults = try freshDefaults()
         defaults.set(true, forKey: "loginItemConfigured")
         let service = LoginItemModelTests.MockService()

@@ -3,10 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Unregister app bundles from LaunchServices and check they are gone.
-#
-# Run this before deleting a bundle: `lsregister -u` on a path that no longer
-# exists fails and leaves a stale registration behind. Exits non-zero if a
+# Exits non-zero if a
 # bundle is already deleted or is still registered afterwards.
 #
 # Usage: scripts/unregister-launchservices.sh <bundle> [bundle...]
@@ -25,7 +22,6 @@ if [[ "$#" -eq 0 ]]; then
     exit 2
 fi
 
-# Matches the bundle's path and anything nested in it (e.g. Sparkle's Updater.app).
 registered_paths_under() {
     local dump
     dump=$("$LSREGISTER" -dump) || {
@@ -52,10 +48,8 @@ for bundle in "$@"; do
         continue
     fi
 
-    # One failing path must not stop the others; the re-check below decides.
     "$LSREGISTER" -u "$bundle" >/dev/null 2>&1 || true
 
-    # The database records the resolved path (/var -> /private/var).
     resolved=$(cd "$bundle" 2>/dev/null && pwd -P) || resolved="$bundle"
     if ! remaining=$(registered_paths_under "$resolved"); then
         still_registered+=("$bundle")

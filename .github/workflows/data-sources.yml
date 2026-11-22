@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: "23 5 2 * *"   # monthly; pinned sources are immutable, so this
+    - cron: "23 5 2 * *"
   workflow_dispatch:
 
 permissions:
@@ -46,8 +46,6 @@ jobs:
           PINNED=$(python3 - <<'PY'
           import pathlib, re
           text = pathlib.Path("NepalKit.xcodeproj/project.pbxproj").read_text()
-          # Sparkle's own block only, so another package's requirement is
-          # never read as Sparkle's.
           block = re.search(
               r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
               r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
@@ -63,8 +61,6 @@ jobs:
           print(version.group(1))
           PY
           )
-          # Downloaded to a file, then read from it. Piping the response into an
-          # interpreter hands that response the runner's credentials and its
           RESPONSE="$RUNNER_TEMP/sparkle-latest-release.json"
           curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
             https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \

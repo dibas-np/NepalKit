@@ -5,7 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Display settings must reach every surface uniformly, and persist.
 @MainActor
 struct DisplaySettingsModelTests {
     private func freshModel() throws -> DisplaySettingsModel {
@@ -31,8 +30,6 @@ struct DisplaySettingsModelTests {
 
     @Test("An update awaiting attention marks the menu-bar date")
     func updateMarkerPrefixesTheDateRatherThanReplacingIt() throws {
-        // A windowless app's alert can go unseen, so the reminder goes in the
-        // menu bar, without hiding the date.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -42,7 +39,6 @@ struct DisplaySettingsModelTests {
 
     @Test("The update marker is announced as words, not as the glyph")
     func updateMarkerIsSpokenAsWords() throws {
-        // A voice cannot read "!", so the spoken title says it in words.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -56,7 +52,6 @@ struct DisplaySettingsModelTests {
 
     @Test("The reminder is still announced past the supported range")
     func reminderSurvivesTheRangeBoundary() throws {
-        // The boundary explanation must still carry the reminder.
         let bar = MenuBarModel(
             now: try TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
         )
@@ -68,7 +63,6 @@ struct DisplaySettingsModelTests {
 
     @Test("The marker never appears in the spoken channel of an unmarked menu bar")
     func noMarkerWithoutAnUpdate() throws {
-        // The marker must not leak into the spoken title without an update.
         let bar = try menuBar()
 
         for style in [MonthNameStyle.nepali, .transliterated] {
@@ -92,7 +86,6 @@ struct DisplaySettingsModelTests {
                 Issue.record("no date")
                 return
             }
-            // The menu bar drops the year; the popover keeps it. Same date either way.
             #expect(bar.title(settings: settings) == today.formatted(settings, includesYear: false))
             #expect(today.formatted(settings).hasPrefix(bar.title(settings: settings)))
         }
@@ -127,7 +120,6 @@ struct DisplaySettingsModelTests {
         model.save(digits: .devanagari)
         model.save(monthNames: .nepali)
 
-        // A fresh model over the same store sees the change: a relaunch keeps settings.
         let relaunched = DisplaySettingsModel(store: SettingsStore(defaults: defaults))
         #expect(relaunched.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
     }
@@ -148,8 +140,6 @@ struct DisplaySettingsModelTests {
 
     @Test("Previews read fixed non-default settings")
     func previewSettingsAreFixedAndNonDefault() {
-        // Whatever an earlier preview saved, the next one starts from the
-        // seeded pair, so the canvas never shows a developer's own settings.
         let first = DisplaySettingsModel.preview
         first.save(DisplaySettings(digits: .latin, monthNames: .transliterated))
         #expect(DisplaySettingsModel.preview.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))

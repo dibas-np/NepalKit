@@ -19,13 +19,10 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func aDayKeepsEveryGazetteRowButOneScopeEach() {
-        // 18 Baisakh is three nationwide items.
         #expect(calendar.holidays(on: day(1, 18)).count == 3)
         #expect(calendar.scopes(on: day(1, 18)) == [.nationwide])
-        // 13 Bhadra is Gai Jatra twice, for two different groups.
         #expect(calendar.scopes(on: day(5, 13)) == [.newarCommunity, .kathmanduValley])
         #expect(!calendar.isNationwideHoliday(day(5, 13)))
-        // 19 Bhadra: nationwide first, then where Gaura is observed.
         #expect(calendar.scopes(on: day(5, 19)) == [.nationwide, .gauraRegion])
         #expect(calendar.isNationwideHoliday(day(5, 19)))
     }
@@ -45,9 +42,7 @@ struct PublicHolidayCalendarTests {
             #expect(calendar.scopes(on: day) == [scope], "\(day)")
             #expect(!calendar.isNationwideHoliday(day), "\(day)")
         }
-        // 25 Kartik is Bhai Tika for everyone and Falgunanda Jayanti for the Kirat.
         #expect(calendar.scopes(on: day(7, 25)) == [.nationwide, .kiratCommunity])
-        // 15 Poush: Tamu Lhosar for everyone, Dura Mhaipru Nakuma for the Dura.
         #expect(calendar.scopes(on: day(9, 15)) == [.nationwide, .duraCommunity])
     }
 
@@ -102,8 +97,6 @@ struct PublicHolidayCalendarTests {
         #expect(custom.allEntries.count == 1)
     }
 
-    // MARK: - The bundled table
-
     @Test func twentyEightyThreeHasFortyOneHolidayDays() {
         #expect(calendar.allEntries.count == 41)
         #expect(calendar.allEntries.reduce(0) { $0 + $1.holidays.count } == 47)
@@ -134,7 +127,6 @@ struct PublicHolidayCalendarTests {
     @Test func everyHolidayDayHasAFestivalToNameIt() {
         let missing = calendar.allEntries.map(\.day).filter { holidayDay in
             guard FestivalCalendar.panchanga.festivals(on: holidayDay).isEmpty else { return false }
-            // Dashain and Tihar's days between their named ones.
             return !calendar.isNationwideHoliday(holidayDay)
         }
         #expect(missing.isEmpty, "\(missing)")
@@ -143,7 +135,6 @@ struct PublicHolidayCalendarTests {
     @Test func aHolidayWithNoFestivalIsNamedByTheGazette() {
         let holidays = PublicHolidayCalendar.gazette
         let festivals = FestivalCalendar.panchanga
-        // Dashain and Tihar holiday days with no festival of their own.
         for day in [2, 5, 6] {
             let named = holidays.observances(on: BikramSambatDate(year: 2083, month: 7, day: day), festivals: festivals)
             #expect(named.map(\.nepali) == ["दशैं बिदा"])
@@ -155,7 +146,6 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func aDayWithFestivalsKeepsThem() {
-        // Kartik 4, Vijaya Dashami: the festival names the day, not "Dashain holiday".
         let day = BikramSambatDate(year: 2083, month: 7, day: 4)
         let named = PublicHolidayCalendar.gazette.observances(on: day, festivals: .panchanga)
         #expect(named == FestivalCalendar.panchanga.festivals(on: day))

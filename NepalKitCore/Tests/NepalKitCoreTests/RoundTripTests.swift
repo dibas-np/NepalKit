@@ -2,8 +2,6 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// Every date in the supported range, both directions. The BS side enumerates
-/// the table directly; the AD side iterates with Foundation's calendar.
 struct RoundTripTests {
     static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -76,7 +74,6 @@ struct RoundTripTests {
         }
     }
 
-    /// Guards the sweeps above against silently covering a subset of the table.
     @Test func everyBSDayEnumeratesTheWholeTable() {
         let days = Self.everyBSDay()
         let dataset = CalendarDataset.v2
@@ -92,35 +89,27 @@ struct RoundTripTests {
     }
 
     @Test func leapDays() {
-        // Feb 29 2000 (Tuesday) — ashesh Falgun 2056 grid.
         #expect(BikramSambatDate(GregorianDate(year: 2000, month: 2, day: 29), in: .v2) == BikramSambatDate(year: 2056, month: 11, day: 17))
         #expect(BikramSambatDate(year: 2056, month: 11, day: 17).weekday(in: .v2) == 3)
-        // Feb 29 2024 (Thursday) — Hamro Patro's Poush 2080 grid gives Falgun 17;
-        // its Falgun cells mislabel it 16.
         #expect(BikramSambatDate(GregorianDate(year: 2024, month: 2, day: 29), in: .v2) == BikramSambatDate(year: 2080, month: 11, day: 17))
         #expect(BikramSambatDate(year: 2080, month: 11, day: 17).weekday(in: .v2) == 5)
-        // Provisional 2084 row: Feb 29 2028 is a Tuesday.
         #expect(BikramSambatDate(GregorianDate(year: 2028, month: 2, day: 29), in: .v2) == BikramSambatDate(year: 2084, month: 11, day: 17))
         #expect(BikramSambatDate(year: 2084, month: 11, day: 17).weekday(in: .v2) == 3)
     }
 
     @Test func variableLengthMonthExtremes() {
-        // The 2084 projection has a 32-day Jestha, ending 15 June 2027.
         #expect(GregorianDate(BikramSambatDate(year: 2084, month: 2, day: 32), in: .v2) == GregorianDate(year: 2027, month: 6, day: 15))
-        // 29-day Mangsir 1989 — ashesh grid.
         #expect(GregorianDate(BikramSambatDate(year: 1989, month: 8, day: 29), in: .v2) == GregorianDate(year: 1932, month: 12, day: 14))
         #expect(GregorianDate(BikramSambatDate(year: 2084, month: 3, day: 1), in: .v2) == GregorianDate(year: 2027, month: 6, day: 16))
         #expect(GregorianDate(BikramSambatDate(year: 1989, month: 9, day: 1), in: .v2) == GregorianDate(year: 1932, month: 12, day: 15))
     }
 
     @Test func rangeMinimumBothDirections() {
-        // 1 Baisakh 1975 is 13 April 1918 Gregorian.
         #expect(GregorianDate(BikramSambatDate(year: 1975, month: 1, day: 1), in: .v2) == GregorianDate(year: 1918, month: 4, day: 13))
         #expect(BikramSambatDate(GregorianDate(year: 1918, month: 4, day: 13), in: .v2) == BikramSambatDate(year: 1975, month: 1, day: 1))
     }
 
     @Test func rangeMaximumBothDirections() {
-        // Provisional 2084 row.
         #expect(GregorianDate(BikramSambatDate(year: 2084, month: 12, day: 30), in: .v2) == GregorianDate(year: 2028, month: 4, day: 12))
         #expect(BikramSambatDate(GregorianDate(year: 2028, month: 4, day: 12), in: .v2) == BikramSambatDate(year: 2084, month: 12, day: 30))
     }

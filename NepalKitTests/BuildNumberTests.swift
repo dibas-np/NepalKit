@@ -4,12 +4,8 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Sparkle orders updates on `CFBundleVersion`, so a repeated or malformed
-/// build number silently stops updates. These read the real project
-/// file, and only the Mac configurations; watch products have their own versions.
 @MainActor
 struct BuildNumberTests {
-    /// A file relative to the checkout root, found by walking up from this file.
     private static func checkoutFile(_ relativePath: String) -> URL {
         var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while directory.path != "/" {
@@ -17,17 +13,13 @@ struct BuildNumberTests {
             if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
             directory.deleteLastPathComponent()
         }
-        // Outside a checkout; the assertions then report the file as missing.
         return directory.appendingPathComponent(relativePath)
     }
 
     private static var projectFileURL: URL { checkoutFile("NepalKit.xcodeproj/project.pbxproj") }
 
-    /// The label of a project-level build configuration block. The shorter
-    /// `for PBXProject "NepalKit"` would also match the `XCConfigurationList`.
     private static let configurationMarker = "configuration for PBXProject \"NepalKit\" */ = {"
 
-    /// The body of every configuration block pbxproj labels with `marker`.
     private static func blocks(in text: String, marker: String) -> [String] {
         var found: [String] = []
         var searchStart = text.startIndex
@@ -45,13 +37,11 @@ struct BuildNumberTests {
         return found
     }
 
-    /// Reads the Mac application's effective setting, including target overrides.
     private static func buildSetting(_ key: String) -> String? {
         guard let text = try? String(contentsOf: projectFileURL, encoding: .utf8) else { return nil }
         return effectiveValues(key, target: "NepalKit", in: text).first
     }
 
-    /// Effective values per configuration, falling back to the project level.
     private static func effectiveValues(_ key: String, target: String, in text: String) -> [String] {
         let projectBlocks = blocks(in: text, marker: configurationMarker)
         let targetBlocks = blocks(in: text, marker: "configuration for PBXNativeTarget \"\(target)\" */ = {")
@@ -88,7 +78,6 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberIsAnInteger() {
-        // Sparkle requires a properly formatted, increasing integer.
         let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
 
         #expect(raw.flatMap(Int.init) != nil, "CURRENT_PROJECT_VERSION is not an integer: \(raw ?? "missing")")
@@ -101,8 +90,6 @@ struct BuildNumberTests {
     }
 
     @Test func shortVersionIsSemanticVersion() {
-        // Tags, the enclosure filename and the Homebrew cask all derive
-        // from this, so it must be three numeric components.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let components = short.split(separator: ".")
 
@@ -113,8 +100,6 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberIsDisjointFromTheShortVersion() {
-        // "1.0" and "1" are the same number, so a two-part version
-        // could be confused with the build number by the updater.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let build = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? -1
 
@@ -126,8 +111,6 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberHasNotRegressedBelowTheLastReleased() throws {
-        // A build below the feed's stops updates for every install, and an
-        // unreleased version must be strictly higher or Sparkle offers it to no one.
         let current = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? 0
         let floor = try Self.lastReleasedBuildNumber
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
@@ -150,7 +133,6 @@ struct BuildNumberTests {
         }
     }
 
-    /// Every marketing version the committed feed already offers.
     private static var releasedVersions: Set<String> {
         get throws {
             let appcast = checkoutFile("appcast.xml")
@@ -168,7 +150,6 @@ struct BuildNumberTests {
         }
     }
 
-    /// The highest build number in the committed appcast.
     private static var lastReleasedBuildNumber: Int {
         get throws {
             let appcast = checkoutFile("appcast.xml")

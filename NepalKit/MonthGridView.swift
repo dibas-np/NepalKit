@@ -4,13 +4,10 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// One Bikram Sambat month as a Sunday-first grid. Layout only; state and
-/// strings come from `MonthGridModel`.
 struct MonthGridView: View {
     let model: MonthGridModel
     let settings: DisplaySettings
     let clock: ClockModel
-    /// False while hidden under another destination, so it stops taking keys and scrolls.
     var isActive = true
 
     @State private var selected: MonthGridDay?
@@ -33,8 +30,6 @@ struct MonthGridView: View {
             MonthGridDays(model: model, settings: settings, selected: $selected)
             MonthGridYearNotes(model: model, settings: settings)
 
-            // Under the grid rather than in a popover anchored to a cell, which was torn
-            // down mid-layout when its action switched destination.
             if let day = selected {
                 let detail = model.detail(for: day, settings: settings)
                 MonthGridDayDetailCard(
@@ -48,14 +43,12 @@ struct MonthGridView: View {
         }
         .onChange(of: model.shown) { selected = nil }
         .onChange(of: selected) { calendarFailed = false }
-        // The model outlives the popover, so today is re-read on appear.
         .onAppear { model.refreshToday(now: clock.now) }
         .background { TodayFollower(clock: clock, model: model) }
         // `.edit` makes the grid focusable without Full Keyboard Access.
         .focusable(isActive, interactions: .edit)
         .focusEffectDisabled()
         .focused($isFocused)
-        // Not `isFocused = true` in `onAppear`, which changes first responder mid-layout.
         .defaultFocus($isFocused, true)
         .onKeyPress(.leftArrow) {
             model.page(by: -1)
@@ -69,8 +62,6 @@ struct MonthGridView: View {
     }
 }
 
-/// Pages the grid on scrolling over it. SwiftUI has no scroll-wheel event outside
-/// a scroll view, so this monitors the app's scroll events.
 private struct ScrollPaging: ViewModifier {
     let model: MonthGridModel
     let isActive: Bool
@@ -103,7 +94,6 @@ private struct ScrollPaging: ViewModifier {
     }
 }
 
-/// A separate view so the clock's per-second tick invalidates only this body.
 private struct TodayFollower: View {
     let clock: ClockModel
     let model: MonthGridModel
@@ -136,7 +126,6 @@ private struct MonthGridHeader: View {
 
             Spacer(minLength: 4)
 
-            // No icon: it crowded the title off its row in Devanagari.
             Button(Strings.todayLabel) {
                 model.showToday(now: clock.now)
             }
@@ -157,8 +146,6 @@ private struct MonthGridHeader: View {
     }
 }
 
-/// The shown year's caveats, so a year past the transcribed lists does not read
-/// as one with no festivals.
 private struct MonthGridYearNotes: View {
     let model: MonthGridModel
     let settings: DisplaySettings
@@ -176,7 +163,6 @@ private struct MonthGridYearNotes: View {
     }
 }
 
-/// The weekday row and the weeks, in one `Grid` so the columns share widths.
 private struct MonthGridDays: View {
     let model: MonthGridModel
     let settings: DisplaySettings
@@ -202,7 +188,6 @@ private struct MonthGridDays: View {
                         if let cell, cell.isInShownMonth {
                             dayButton(cell)
                         } else if let cell {
-                            // Context, not a target: the chevrons go there.
                             MonthGridCell(day: cell, model: model, settings: settings)
                         } else {
                             Color.clear
@@ -217,7 +202,6 @@ private struct MonthGridDays: View {
         .accessibilityLabel(Strings.monthGridDaysLabel)
     }
 
-    /// A button rather than a tap gesture so VoiceOver and the keyboard can press it.
     private func dayButton(_ day: MonthGridDay) -> some View {
         Button {
             selected = selected == day ? nil : day
@@ -226,14 +210,12 @@ private struct MonthGridDays: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        // Restated on the button, where VoiceOver lands.
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
         .accessibilityAddTraits(day.isToday || selected == day ? .isSelected : [])
         .accessibilityHint(Strings.monthGridDayHelp)
     }
 }
 
-/// A day's identity is its Gregorian date, so grid identities outlive a month.
 struct GridSlot: Identifiable {
     let id: AnyHashable
     let day: MonthGridDay?
@@ -254,7 +236,6 @@ struct GridSlot: Identifiable {
     }
 }
 
-/// A day: the Bikram Sambat day large, the Gregorian day small beneath it.
 private struct MonthGridCell: View {
     let day: MonthGridDay
     let model: MonthGridModel
@@ -263,7 +244,6 @@ private struct MonthGridCell: View {
 
     private static let festivalMarkSize: CGFloat = 4
 
-    /// Red for a holiday even on today, as on a wall calendar.
     private var dayStyle: AnyShapeStyle {
         if !day.isInShownMonth { return AnyShapeStyle(.tertiary) }
         return day.isMarkedAsHoliday ? AnyShapeStyle(.red) : AnyShapeStyle(.primary)
@@ -282,7 +262,6 @@ private struct MonthGridCell: View {
             Text(model.gregorianDayText(day, settings: settings))
                 .font(.caption2)
                 .foregroundStyle(gregorianStyle)
-            // Drawn in every cell and shown only on festival days, so rows keep one height.
             Circle()
                 .fill(.tint)
                 .frame(width: Self.festivalMarkSize, height: Self.festivalMarkSize)
@@ -299,7 +278,6 @@ private struct MonthGridCell: View {
             }
         }
         .overlay {
-            // Selection is an outline, so it reads over today's fill too.
             if isSelected {
                 RoundedRectangle(cornerRadius: 6)
                     .strokeBorder(.tint, lineWidth: 1.5)
@@ -308,7 +286,6 @@ private struct MonthGridCell: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.spokenLabel(for: day, settings: settings))
         .accessibilityAddTraits(day.isToday ? .isSelected : [])
-        // Read out, neighbouring days would put another month's days in this one's list.
         .accessibilityHidden(!day.isInShownMonth)
     }
 }

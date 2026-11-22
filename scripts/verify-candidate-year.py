@@ -17,7 +17,6 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# verify-data-sources.py imports dataset_table, so scripts/ must be on sys.path.
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
@@ -36,7 +35,6 @@ MONTHS = vds.MONTHS
 
 
 def parse_candidate(text, year):
-    """The candidate row as twelve month lengths, or exit with the reason why."""
     parts = [p for p in text.replace(" ", "").split(",") if p]
     if len(parts) != 12:
         sys.exit("a candidate year has 12 months; got %d from %r"
@@ -48,8 +46,6 @@ def parse_candidate(text, year):
 
 
 def fetch_row(name, year):
-    """One source's row for `year`, or None if it has no such year. Raises on a
-    fetch failure."""
     url, repo = vds.PINS[name]
     body = vds.fetch(name, url, False)
     if body is None:
@@ -124,7 +120,6 @@ def main():
         return 0
 
     print("\nCandidate %d BS: %s  (%d days)" % (year, candidate, sum(candidate)))
-    # Compare whole rows: agreeing on eleven months is not agreement.
     differing = {name: [i for i in range(12) if row[i] != candidate[i]]
                  for name, row in published.items()}
     differing = {name: idxs for name, idxs in differing.items() if idxs}

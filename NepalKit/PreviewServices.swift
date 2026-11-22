@@ -3,8 +3,6 @@
 #if DEBUG
 import Foundation
 
-/// Preview stand-in for the update framework. Pass `reporting:` to reach a state
-/// a canvas cannot otherwise show.
 @MainActor
 final class PreviewUpdateService: UpdateServicing {
     var automaticallyChecksForUpdates = true
@@ -12,8 +10,6 @@ final class PreviewUpdateService: UpdateServicing {
     var onReminder: (@MainActor (Bool) -> Void)?
     var onCycleFinished: (@MainActor () -> Void)?
 
-    /// Reports on assignment: `init` runs before the model installs this closure,
-    /// and `start()` is never called in a canvas.
     var onOutcome: (@MainActor (UpdateOutcome) -> Void)? {
         didSet { if let outcome { onOutcome?(outcome) } }
     }
@@ -28,8 +24,6 @@ final class PreviewUpdateService: UpdateServicing {
     func checkForUpdates() {}
 }
 
-/// Preview stand-in for the login-item service. Nonisolated to match
-/// `LoginItemServicing`.
 final class PreviewLoginService: LoginItemServicing {
     var isRegistered = true
     var requiresApproval = false

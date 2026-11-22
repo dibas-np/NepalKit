@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The two Shortcuts conversions. Expected dates were computed independently:
-/// 15 March 2025 is Saturday 2 Chaitra 2081, 15 Ashar 2082 is Sunday 29 June
-/// 2025, and 1 Baisakh 2082 is Monday 14 April 2025.
 struct ConversionIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
@@ -97,7 +94,6 @@ struct ConversionIntentTests {
         let converted = try #require(GregorianDate(BikramSambatDate(year: 2082, month: 3, day: 15), in: dataset))
         #expect(converted == GregorianDate(year: 2025, month: 6, day: 29))
 
-        // The reverse intent's reader, so a chained conversion lands on the same day.
         let calendar = GregorianToBikramSambatIntent.userGregorian()
         let intent = BikramSambatToGregorianIntent()
         intent.day = 15
@@ -118,8 +114,6 @@ struct ConversionIntentTests {
         arguments: ["Pacific/Auckland", "Pacific/Kiritimati", "America/Los_Angeles"]
     )
     func bikramSambatToGregorianNamesTheSameDayInEveryZone(zone: String) throws {
-        // Auckland is UTC+12 on 29 June 2025 (NZST) and Kiritimati is UTC+14,
-        // so noon UTC is already 30 June there; Los Angeles is UTC-7 (PDT).
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: zone))
         let converted = try #require(GregorianDate(BikramSambatDate(year: 2082, month: 3, day: 15), in: dataset))
@@ -151,7 +145,6 @@ struct ConversionIntentTests {
 
     @Test("Invalid Bikram Sambat day names the month's real length")
     func bikramSambatInvalidDay() async throws {
-        // Ashar 2082 has 32 days, so the invalid example is 31 Kartik.
         #expect(dataset.monthLengths(for: 2082)?[2] == 32)
         #expect(dataset.monthLengths(for: 2082)?[6] == 30)
 
@@ -222,12 +215,9 @@ struct ConversionIntentTests {
         }
     }
 
-    // 22 Bhadra 2084 is 8 September 2027 (Projected2084Tests); 2084 is the
-    // dataset's provisional row.
     @Test("Gregorian to Bikram Sambat into 2084 adds the provisional clause; 2083 does not")
     func gregorianToBikramSambatProvisionalClause() {
         let provisional = String(localized: GregorianToBikramSambatIntent.successDialog(BikramSambatDate(year: 2084, month: 5, day: 22), weekday: 4, in: dataset))
-        // The month name follows the user's month-name setting, so only the year is pinned.
         #expect(provisional.hasSuffix(" 2084. That year is a provisional projection, not yet in the official Nepali Patro."))
         let attested = String(localized: GregorianToBikramSambatIntent.successDialog(BikramSambatDate(year: 2083, month: 6, day: 11), weekday: 1, in: dataset))
         #expect(!attested.contains("provisional"))

@@ -3,7 +3,6 @@
 import Foundation
 import NepalKitCore
 
-/// Marks fixture-built complications; empty outside fixture builds.
 enum ComplicationFixtureMarker {
     static var suffix: String {
         #if NEPALKIT_WATCH_FIXTURES
@@ -15,7 +14,6 @@ enum ComplicationFixtureMarker {
 }
 
 #if NEPALKIT_WATCH_FIXTURES
-/// Debug-only fixture wiring for the complication extension.
 enum ComplicationFixtures {
     nonisolated static func makeProvider(arguments: [String] = ProcessInfo.processInfo.arguments) -> TodayComplicationProvider {
         guard let fixture = WatchFixtureControl.fixture(arguments: arguments) else {

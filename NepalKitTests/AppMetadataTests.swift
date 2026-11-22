@@ -4,7 +4,6 @@ import NepalKitCore
 import Testing
 @testable import NepalKit
 
-/// Pins where each About value comes from, so About describes the running build.
 @MainActor
 struct AppMetadataTests {
     private func info(
@@ -30,14 +29,12 @@ struct AppMetadataTests {
     }
 
     @Test func versionDescriptionCarriesBothNumbers() {
-        // About shows both the short version and the build number.
         let metadata = AppMetadata(info: info(short: "0.9.1", build: "137"), applicationIcon: nil)
 
         #expect(metadata.versionDescription == "0.9.1 (137)")
     }
 
     @Test func repositoryURLIsTheProjectsOwnRemote() {
-        // A link that points somewhere else is worse than none.
         let metadata = AppMetadata(info: info(), applicationIcon: nil)
 
         #expect(metadata.repositoryURL?.absoluteString == "https://github.com/dibas-np/NepalKit")
@@ -50,7 +47,6 @@ struct AppMetadataTests {
     }
 
     @Test func emptyCopyrightBecomesNoLineAtAll() {
-        // An empty string must not reach the surface as a blank line.
         let metadata = AppMetadata(info: info(copyright: ""), applicationIcon: nil)
 
         #expect(metadata.copyright == nil)
@@ -80,8 +76,6 @@ struct AppMetadataTests {
         #expect(metadata.repositoryURL == nil)
     }
 
-    // MARK: - The licence is read, not asserted
-
     private static var repositoryRoot: URL {
         var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0 ..< 8 {
@@ -104,7 +98,6 @@ struct AppMetadataTests {
     }
 
     @Test func licenceComesFromTheShippedFileNotFromAString() throws {
-        // A licence name in About is a legal claim, so it is read from the file.
         let shipped = try #require(
             AppMetadata.licenseIdentifier(in: Self.repositoryRoot),
             "the repository's own LICENSE did not parse"
@@ -113,8 +106,6 @@ struct AppMetadataTests {
     }
 
     @Test func licenceVersionIsTheVersionNotThePublicationYear() throws {
-        // The heading is "Version 3, 29 June 2007"; its last token is the
-        // publication year, not the version.
         let directory = try licenseDirectory(
             """
             GNU GENERAL PUBLIC LICENSE
@@ -126,22 +117,17 @@ struct AppMetadataTests {
     }
 
     @Test func licenceWithoutAVersionLineStillNamesItself() throws {
-        // An MIT licence has no "Version" line and opens with a copyright line.
         let directory = try licenseDirectory("MIT License\n\nCopyright (c) 2026 Someone\n")
         defer { try? FileManager.default.removeItem(at: directory) }
         #expect(AppMetadata.licenseIdentifier(in: directory) == "MIT License")
     }
 
     @Test func anAbsentLicenceIsNilRatherThanAPlaceholder() {
-        // About omits the row when this is nil.
         #expect(AppMetadata.licenseIdentifier(in: nil) == nil)
         #expect(AppMetadata.licenseIdentifier(in: URL(fileURLWithPath: "/nonexistent")) == nil)
     }
 
-    // MARK: - The calendar facts belong to the dataset
-
     @Test func datasetVersionAndRangeComeFromTheDataset() {
-        // A literal in About would go stale with the next dataset release.
         #expect(CalendarDataset.v2.version == "2.0.1")
         #expect(CalendarDataset.v2.supportedRange == 1975 ... 2084)
     }

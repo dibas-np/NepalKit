@@ -10,13 +10,6 @@ struct BuiltTimeline {
     let policy: TimelineReloadPolicy
 }
 
-/// Builds a fourteen-day Today timeline from one clock reading.
-///
-/// Entry zero activates at `now`, later entries at successive Nepal
-/// midnights. If day +13 is the dataset's last day, one boundary entry is
-/// appended for day +14. On the first resolution failure the valid prefix is
-/// kept, an error entry is appended, and WidgetKit is asked to retry after
-/// `errorRetryInterval`.
 struct TodayTimelineBuilder: Sendable {
     static let horizonLastOffset = 13
 
@@ -53,7 +46,6 @@ struct TodayTimelineBuilder: Sendable {
         var entries: [TodayComplicationEntry] = []
         for offset in 0 ... Self.horizonLastOffset {
             guard let activation = activation(forOffset: offset, now: now, &nextActivation) else {
-                // Without a real activation time, fall back to one error at `now`.
                 return .stopped(singleErrorTimeline(at: now, gregorianDay: nil))
             }
             guard let gregorian = today.advanced(byDays: offset) else {

@@ -2,8 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import NepalKitCore
 
-/// Accessibility labels for complications. Compact labels still speak the
-/// full BS date; weekday and Gregorian speech follow what is shown.
 public enum ComplicationAccessibility {
     public static func supportedLabel(
         _ components: WatchDayComponents,

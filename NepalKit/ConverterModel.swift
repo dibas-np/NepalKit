@@ -4,12 +4,9 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// The converter's picker state. Days are clamped to the real month length and
-/// years to the dataset's convertible range, so an invalid date can't be picked.
 @MainActor
 @Observable
 final class ConverterModel {
-    // State is `private(set)` so every write goes through the clamping accessors.
     private(set) var direction: ConverterDirection
 
     private(set) var bsDate: BikramSambatDate
@@ -65,7 +62,6 @@ final class ConverterModel {
 
     private let dataset: CalendarDataset
 
-    /// - Parameter timeZone: the zone "today" is read in.
     init(
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,
@@ -77,8 +73,6 @@ final class ConverterModel {
         self.dataset = dataset
         self.direction = direction
         let todayADDate = GregorianDate.today(now: now, timeZone: timeZone) ?? dataset.anchorGregorian
-        // Today clamped into the convertible span, so past the supported range the
-        // Bikram Sambat side opens on its last day, not its first.
         let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { BikramSambatDate($0, in: dataset) }
         self.bsDate = BikramSambatDate(
             year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,
@@ -94,7 +88,6 @@ final class ConverterModel {
         clampADDate()
     }
 
-    /// The convertible Gregorian day closest to `day`.
     private static func convertibleDay(nearest day: GregorianDate, in dataset: CalendarDataset) -> GregorianDate? {
         guard let first = dataset.gregorianStart, let last = dataset.gregorianEnd else { return nil }
         return min(max(day, first), last)
@@ -122,7 +115,6 @@ final class ConverterModel {
     }
 
     func daysInBSMonth(year: Int, month: Int) -> Int {
-        // Traps rather than inventing a day count for a year outside the table.
         precondition(dataset.supportedRange.contains(year), "BS year \(year) is outside the supported range")
         precondition((1 ... 12).contains(month), "BS month \(month) is outside 1...12")
         guard let months = dataset.monthLengths(for: year) else {
@@ -132,7 +124,6 @@ final class ConverterModel {
     }
 
     func daysInADMonth(year: Int, month: Int) -> Int {
-        // Same contract as `daysInBSMonth`: clamped picker state in.
         precondition((1 ... 12).contains(month), "AD month \(month) is outside 1...12")
         guard let days = GregorianDate.daysInMonth(year: year, month: month) else {
             preconditionFailure("Gregorian month \(month) has no day count for year \(year)")
@@ -150,7 +141,6 @@ final class ConverterModel {
         return Array(lower ... upper)
     }
 
-    /// Writes `bsDate` directly, not through the setters, so the setters can call it.
     private func clampBSDay() {
         let clampedYear = min(max(bsDate.year, dataset.supportedRange.lowerBound), dataset.supportedRange.upperBound)
         let clampedMonth = min(max(bsDate.month, 1), 12)
@@ -162,7 +152,6 @@ final class ConverterModel {
         }
     }
 
-    /// Writes `adDate` directly, not through the setters, so the setters can call it.
     private func clampADDate() {
         guard let minAD, let maxAD else { return }
         var date = adDate
@@ -192,7 +181,6 @@ final class ConverterModel {
         }
     }
 
-    /// No-op when the direction is unchanged.
     func setDirection(_ newDirection: ConverterDirection) {
         guard newDirection != direction else { return }
         toggleDirection()
@@ -212,7 +200,6 @@ final class ConverterModel {
         direction = direction.swapped
     }
 
-    /// Binding target for the direction picker.
     var directionSelection: ConverterDirection {
         get { direction }
         set { setDirection(newValue) }
@@ -225,8 +212,6 @@ final class ConverterModel {
         return name
     }
 
-    /// The shown and spoken result from one conversion, so they always describe the
-    /// same day.
     private func converted(settings: DisplaySettings) -> (shown: String, spoken: String)? {
         switch direction {
         case .bsToAD:
@@ -248,7 +233,6 @@ final class ConverterModel {
         }
     }
 
-    /// Whether the result's Bikram Sambat year is provisional in the dataset.
     var resultIsProvisional: Bool {
         switch direction {
         case .bsToAD:
@@ -258,12 +242,10 @@ final class ConverterModel {
         }
     }
 
-    /// Gregorian months stay English; no Nepali Gregorian month names are defined.
     func convertedText(settings: DisplaySettings) -> String? {
         converted(settings: settings)?.shown
     }
 
-    /// The converted date as VoiceOver should speak it, with the provisional note.
     func spokenResult(settings: DisplaySettings) -> String? {
         guard let spoken = converted(settings: settings)?.spoken else { return nil }
         return resultIsProvisional ? "\(spoken). \(Strings.converterProvisionalNote)" : spoken

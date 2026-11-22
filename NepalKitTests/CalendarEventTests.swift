@@ -5,8 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// "Add to Calendar": the event a day becomes, and the iCalendar file that
-/// carries it to the calendar app.
 @MainActor
 struct CalendarEventTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
@@ -22,7 +20,6 @@ struct CalendarEventTests {
 
     @Test func aFestivalDayIsTitledByItsFestivals() throws {
         let model = try kartik2083()
-        // 4 Kartik 2083: Vijaya Dashami, a Dashain public holiday.
         let event = model.calendarEvent(for: try day(model, 4), settings: latin)
         #expect(event.title.contains("Vijaya Dashami"))
         #expect(event.date == GregorianDate(year: 2026, month: 10, day: 21))
@@ -32,7 +29,6 @@ struct CalendarEventTests {
 
     @Test func aPlainDayIsTitledByItsBikramSambatDate() throws {
         let model = try kartik2083()
-        // 9 Kartik 2083 has no festival and is a working day.
         let event = model.calendarEvent(for: try day(model, 9), settings: latin)
         #expect(event.title == "9 Kartik 2083")
         #expect(!event.notes.contains("\n"))
@@ -54,14 +50,11 @@ struct CalendarEventTests {
         #expect(!ics.contains("DTEND"))
         #expect(ics.contains("\r\nDTSTAMP:20261011T143000Z\r\n"))
         #expect(ics.contains("\r\nUID:nepalkit-2026-10-21@nepalkit\r\n"))
-        // Every line ends in CRLF; no bare LF.
         #expect(!ics.replacingOccurrences(of: "\r\n", with: "").contains("\n"))
     }
 
     @Test func textIsEscaped() {
         #expect(CalendarEvent.escape("a,b;c\\d\ne") == "a\\,b\\;c\\\\d\\ne")
-        // CRLF is one Character in Swift and a bare CR is a line break to a
-        // calendar parser; both must come out as the escaped newline.
         #expect(CalendarEvent.escape("a\r\nb\rc") == "a\\nb\\nc")
     }
 
@@ -72,7 +65,6 @@ struct CalendarEventTests {
         #expect(parts.count > 1)
         #expect(parts.allSatisfy { $0.utf8.count <= 75 })
         #expect(parts.dropFirst().allSatisfy { $0.hasPrefix(" ") })
-        // Unfolding restores the line exactly: no character was split.
         #expect(folded.replacingOccurrences(of: "\r\n ", with: "") == line)
     }
 

@@ -31,8 +31,6 @@ RECORD = re.compile(
 
 
 def month_lengths(days):
-    """Twelve month lengths from {month: {day,...}}, or None unless exactly
-    months 1-12 are present."""
     if set(days) != set(range(1, 13)):
         return None
     return [len(days[m]) for m in range(1, 13)]
@@ -47,7 +45,6 @@ def fetch(year, month, timeout=25):
 
 
 def kmc_year(year):
-    """Month lengths for one BS year, or None if the site has no data for it."""
     days = {}
     for month in range(1, 13):
         try:
@@ -61,7 +58,6 @@ def kmc_year(year):
             if int(record_year) != year:
                 continue
             days.setdefault(int(mo), set()).add(int(day))
-    # Distinct days, so a truncated month is not mistaken for a short one.
     return month_lengths(days)
 
 

@@ -4,15 +4,11 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Public holidays from the gazette on the month grid: which day numbers turn
-/// red, what a cell says, the lines in the day's details, and today's line.
 @MainActor
 struct MonthGridHolidayTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    /// 1 Kartik 2083 = 18 October 2026, a Sunday: Dashain runs 31 Ashoj to
-    /// 6 Kartik and Tihar 22 to 26 Kartik.
     private func kartik2083(holidays: PublicHolidayCalendar = .gazette) throws -> MonthGridModel {
         MonthGridModel(holidays: holidays, now: try TestDates.utc(2026, 10, 18, 6, 0))
     }
@@ -21,29 +17,22 @@ struct MonthGridHolidayTests {
         try #require(model.weeks.flatMap { $0 }.compactMap { $0 }.first { $0.isInShownMonth && $0.bikramSambat.day == day })
     }
 
-    // MARK: - The red rule
-
     @Test func aNationwideHolidayIsRedWhateverItsWeekday() throws {
         let model = try kartik2083()
-        // 2 Kartik: a Monday of Dashain with no festival of its own, so the
-        // gazette's "Dashain holiday" names it and it carries the mark too.
         let day = try shownDay(model, 2)
         #expect(day.weekday == 2)
         #expect(day.holidayScopes == [.nationwide])
         #expect(day.isNationwideHoliday && day.isMarkedAsHoliday)
         #expect(day.showsFestivalMark)
-        // 4 Kartik keeps its festival mark as well as turning red.
         let dashami = try shownDay(model, 4)
         #expect(dashami.isMarkedAsHoliday && dashami.showsFestivalMark)
     }
 
     @Test func aWorkingDayIsNotRedAndASaturdayStillIs() throws {
         let model = try kartik2083()
-        // 8 Kartik, Kojagrat Purnima: a festival, not a holiday.
         let kojagrat = try shownDay(model, 8)
         #expect(kojagrat.holidayScopes.isEmpty)
         #expect(!kojagrat.isMarkedAsHoliday && kojagrat.showsFestivalMark)
-        // 14 Kartik is a Saturday the gazette does not list.
         let saturday = try shownDay(model, 14)
         #expect(saturday.isWeeklyHoliday && saturday.holidayScopes.isEmpty)
         #expect(saturday.isMarkedAsHoliday)
@@ -52,7 +41,6 @@ struct MonthGridHolidayTests {
     @Test func aLimitedHolidayIsNotRed() throws {
         let model = try kartik2083()
         model.showPreviousMonth()
-        // 9 Ashoj, Indra Jatra: a holiday in Kathmandu Valley only.
         let indraJatra = try shownDay(model, 9)
         #expect(indraJatra.weekday != MonthGridDay.weeklyHolidayWeekday)
         #expect(indraJatra.holidayScopes == [.kathmanduValley])
@@ -65,11 +53,8 @@ struct MonthGridHolidayTests {
         #expect(days.allSatisfy { $0.holidayScopes.isEmpty && $0.isMarkedAsHoliday == $0.isWeeklyHoliday })
     }
 
-    // MARK: - Spoken labels and the day's details
-
     @Test func aHolidayCellSaysWhoItIsFor() throws {
         let model = try kartik2083()
-        // 25 Kartik: Bhai Tika for everyone, Falgunanda Jayanti for the Kirat.
         let day = try shownDay(model, 25)
         #expect(model.spokenLabel(for: day, settings: latin) == "25 Kartik 2083, Wednesday, 11 November 2026, "
             + "Bhai Tika, Falgunanda Jayanti, public holiday, public holiday for the Kirat community")
@@ -90,14 +75,11 @@ struct MonthGridHolidayTests {
     }
 
     @Test func repeatedGazetteRowsAreOneLine() throws {
-        // 18 Baisakh 2083 is three nationwide rows in the gazette.
         let model = MonthGridModel(now: try TestDates.utc(2026, 4, 15, 6, 0))
         let day = try shownDay(model, 18)
         #expect(day.bikramSambat == BikramSambatDate(year: 2083, month: 1, day: 18))
         #expect(model.detail(for: day, settings: latin).holidays == ["Public holiday"])
     }
-
-    // MARK: - Strings
 
     @Test func everyScopeHasAPhraseInBothLanguages() {
         let english = PublicHoliday.Scope.allCases.map { Strings.publicHoliday($0, monthNames: .transliterated) }
@@ -131,8 +113,6 @@ struct MonthGridHolidayTests {
             == ["Public holiday for women employees"])
     }
 
-    // MARK: - Today
-
     @Test func todaysLineEndsWithAPublicHoliday() {
         #expect(Strings.todayFestivalLine(["Bhai Tika"], isPublicHoliday: true, monthNames: .transliterated)
             == "Bhai Tika, Public holiday")
@@ -143,15 +123,12 @@ struct MonthGridHolidayTests {
 
     @Test func todaysObservancesReadBothTables() {
         let dashainMonday = TodayObservances(BikramSambatDate(year: 2083, month: 7, day: 2), festivals: .panchanga, holidays: .gazette)
-        // A Dashain holiday with no festival of its own is named by the gazette.
         #expect(dashainMonday.festivals.map(\.english) == ["Dashain holiday"] && dashainMonday.isPublicHoliday)
-        // The gazette's name already says it is a holiday, so it is not said twice.
         #expect(!dashainMonday.saysPublicHoliday)
         #expect(dashainMonday.line(monthNames: .transliterated) == "Dashain holiday")
         #expect(dashainMonday.line(monthNames: .nepali) == "दशैं बिदा")
         let tika = TodayObservances(BikramSambatDate(year: 2083, month: 7, day: 4), festivals: .panchanga, holidays: .gazette)
         #expect(tika.line(monthNames: .nepali) == "विजयादशमी, सार्वजनिक बिदा")
-        // Indra Jatra is a holiday only in the valley: named, not called one.
         let indraJatra = TodayObservances(BikramSambatDate(year: 2083, month: 6, day: 9), festivals: .panchanga, holidays: .gazette)
         #expect(!indraJatra.isPublicHoliday)
         #expect(indraJatra.line(monthNames: .transliterated) == "Indra Jatra")

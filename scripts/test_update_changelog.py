@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for update-changelog.py.
-
-Each test runs a copy of the script in a temporary replica of the repository,
-so the real CHANGELOG.md is never touched.
-"""
 
 from __future__ import annotations
 
@@ -26,13 +21,11 @@ _spec.loader.exec_module(uc)
 REPO = _SCRIPT.parent.parent
 
 NOTE = "<b>Notes:</b><ul><li>a fix</li></ul>"
-# The offset form appcast.xml carries, for 2026-09-29 and 2026-09-30.
 PUBLISHED_0929 = "Tue, 29 Sep 2026 01:04:35 +0545"
 PUBLISHED_0930 = "Wed, 30 Sep 2026 10:00:00 +0545"
 
 
 def feed(*releases: tuple[str, str]) -> str:
-    """A minimal appcast carrying the given (version, pubDate) pairs."""
     items = "".join(
         "<item><title>t</title>"
         f"<pubDate>{published}</pubDate>"
@@ -44,12 +37,10 @@ def feed(*releases: tuple[str, str]) -> str:
 
 
 def changelog(*releases: tuple[str, str]) -> str:
-    """A changelog whose headings already carry dates, as a shipped one does."""
     return "".join(f"## {version} — {date}\n\n{NOTE}\n\n" for version, date in releases)
 
 
 def repo_notes() -> dict[str, str]:
-    """The repository's real release-notes fragments, keyed by version."""
     return {
         path.stem: path.read_text(encoding="utf-8")
         for path in (_SCRIPT.parent / "release-notes").glob("*.html")
@@ -58,8 +49,6 @@ def repo_notes() -> dict[str, str]:
 
 @dataclass
 class Sandbox:
-    """A throwaway replica of the tree the generator resolves its paths from."""
-
     root: Path
     script: Path
     changelog: Path
@@ -80,11 +69,6 @@ def make_sandbox(
     appcast: str | None = None,
     notes: dict[str, str] | None = None,
 ) -> Sandbox:
-    """Build a replica of the tree `update-changelog.py` resolves its paths from.
-
-    The script roots every path at `Path(__file__).parent.parent`, so it is
-    copied into the replica.
-    """
     (root / "scripts").mkdir()
     script = root / "scripts" / _SCRIPT.name
     shutil.copy(_SCRIPT, script)
@@ -108,7 +92,6 @@ def make_sandbox(
 
 class MissingAppcastFails(unittest.TestCase):
     def test_named_appcast_that_does_not_exist_is_an_error(self) -> None:
-        # A missing staged appcast must not mark every release as unreleased.
         with tempfile.TemporaryDirectory() as tmp:
             box = make_sandbox(Path(tmp), changelog=changelog(("1.1", "2026-09-29")))
             result = box.run(str(box.root / "absent.xml"))
@@ -123,7 +106,6 @@ class MissingAppcastFails(unittest.TestCase):
             self.assertEqual(box.changelog.read_text(encoding="utf-8"), shipped)
 
     def test_a_lone_flag_is_rejected_rather_than_treated_as_a_path(self) -> None:
-        # "--help" is not a flag; it is rejected as a missing file.
         shipped = changelog(("1.1", "2026-09-29"))
         with tempfile.TemporaryDirectory() as tmp:
             box = make_sandbox(Path(tmp), changelog=shipped)
@@ -142,7 +124,6 @@ class MissingAppcastFails(unittest.TestCase):
 
 class RenderingStaysDeterministic(unittest.TestCase):
     def test_a_version_without_an_appcast_item_is_listed_unreleased(self) -> None:
-        # 1.2 has notes but no appcast item yet, so it is unreleased.
         with tempfile.NamedTemporaryFile(suffix=".xml") as appcast:
             appcast.write(
                 b'<?xml version="1.0"?><rss version="2.0"><channel><item>'
@@ -157,8 +138,6 @@ class RenderingStaysDeterministic(unittest.TestCase):
             )
 
     def test_running_with_no_arguments_rewrites_nothing(self) -> None:
-        # Regenerating from the real inputs changes nothing. 1.0's date is only
-        # in the changelog, so this also checks that changelog dates are kept.
         shipped = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
         with tempfile.TemporaryDirectory() as tmp:
             box = make_sandbox(
@@ -173,8 +152,6 @@ class RenderingStaysDeterministic(unittest.TestCase):
 
 
 class DatePrecedence(unittest.TestCase):
-    """Which source wins when one version's date is written in several places."""
-
     def _resolve(
         self,
         root: Path,
@@ -188,7 +165,6 @@ class DatePrecedence(unittest.TestCase):
         return uc.resolve_dates(box.appcast, staged_path, box.changelog)
 
     def test_a_written_date_outranks_a_staged_feed_that_disagrees(self) -> None:
-        # A staged pubDate must not overwrite a date already in the changelog.
         with tempfile.TemporaryDirectory() as tmp:
             dates = self._resolve(
                 Path(tmp),
@@ -204,7 +180,6 @@ class DatePrecedence(unittest.TestCase):
         )
 
     def test_a_version_the_changelog_has_never_dated_takes_the_feed(self) -> None:
-        # 1.3.0 has no heading yet, so its date comes from the feed.
         with tempfile.TemporaryDirectory() as tmp:
             dates = self._resolve(
                 Path(tmp),
@@ -215,7 +190,6 @@ class DatePrecedence(unittest.TestCase):
         self.assertEqual(dates, {"1.2": "2026-09-29", "1.3.0": "2026-09-30"})
 
     def test_a_release_the_pruned_feed_forgot_keeps_its_written_date(self) -> None:
-        # generate_appcast prunes old items, so these dates survive only via the changelog.
         with tempfile.TemporaryDirectory() as tmp:
             dates = self._resolve(
                 Path(tmp),

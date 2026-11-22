@@ -25,7 +25,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func outcomeIsNilUntilSomethingIsReported() {
-        // "Not checked" must not read as "up to date".
         let model = UpdateCheckModel(service: FakeUpdateService())
 
         #expect(model.outcome == nil)
@@ -54,8 +53,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func aFinishedCycleWithNoOutcomeRefreshesLastCheckDate() throws {
-        // A scheduled background check can finish without any outcome
-        // callback; the cycle-finished signal still moves the date.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -74,7 +71,6 @@ struct UpdateCheckModelTests {
         let model = UpdateCheckModel(service: service)
 
         #expect(model.automaticallyChecks == false)
-        // Reading at init must not write back.
         #expect(service.automaticWrites == 1)
     }
 
@@ -88,8 +84,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func aFrameworkReasonCannotContradictTheFailure() {
-        // Sparkle's start-failure description can read "You're up to date!", so
-        // the reason is quoted to keep it apart from our failure sentence.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -97,10 +91,8 @@ struct UpdateCheckModelTests {
         let text = model.statusText ?? ""
         #expect(text.contains(Strings.updateStatusFailed))
         #expect(text.contains("You're up to date!"))
-        // The contradiction is marked as foreign text, not asserted by us.
         #expect(text.contains("“"))
         #expect(text.contains("”"))
-        // And it must not read as a bare success claim anywhere in the line.
         #expect(!text.hasSuffix(Strings.updateStatusUpToDate))
     }
 
@@ -144,8 +136,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func theReminderIsIndependentOfTheReportedOutcome() {
-        // An alert from a windowless app can be missed, so the reminder stays
-        // up regardless of later outcomes.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -169,7 +159,6 @@ struct UpdateCheckModelTests {
         let available = UpdateCheckModel(service: PreviewUpdateService(reporting: .updateAvailable))
         #expect(available.isUpdateAvailable)
 
-        // The resting state must not claim an update is waiting.
         let resting = UpdateCheckModel(service: PreviewUpdateService())
         #expect(resting.isUpdateAvailable == false)
         #expect(resting.statusText == Strings.updateStatusNotChecked)
@@ -177,7 +166,6 @@ struct UpdateCheckModelTests {
     #endif
 
     @Test func onlyAFoundUpdateGatesThePopoverButton() {
-        // A failed check is not an offer to install.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -194,8 +182,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func anAvailableUpdateSurvivesTheUserDismissingTheReminder() {
-        // The button follows the outcome, not the reminder, so dismissing the
-        // alert doesn't take away the way to install.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -214,7 +200,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func thePopoverAndSettingsShareOneTriggerForTheInstallFlow() throws {
-        // SwiftUI leaves nothing to inspect at runtime, so read the view sources.
         let appDir = Self.repositoryRoot.appendingPathComponent("NepalKit")
         let names = try Self.appSources(under: appDir)
         #expect(
@@ -222,14 +207,10 @@ struct UpdateCheckModelTests {
             "the walk did not reach the two surfaces this test guards — found \(names.count) files: \(names)"
         )
 
-        // Recursive, so App Intents are covered too.
         let sources = try names.reduce(into: [String: String]()) { result, name in
             result[name] = try String(contentsOf: appDir.appendingPathComponent(name), encoding: .utf8)
         }
 
-        // Both call sites pass a method reference, so there are no parentheses.
-        // Text matching is a tripwire, not enforcement: a key path or a closure
-        // handed down from another view would get past it.
         let callSites = sources.flatMap { name, source -> [InstallCallSite] in
             source
                 .split(separator: "\n")
@@ -243,7 +224,6 @@ struct UpdateCheckModelTests {
                 }
         }
 
-        // Exactly the popover footer and the Settings About tab, one trigger each.
         let surfaces = Dictionary(grouping: callSites, by: \.file)
 
         #expect(
@@ -263,8 +243,6 @@ struct UpdateCheckModelTests {
             )
         }
 
-        // No view may call the framework's check directly. The leading dot skips
-        // the protocol declaration and the preview stand-ins' conformance.
         for (name, source) in sources
             where name != "UpdateCheckModel.swift" && name != "SparkleUpdateService.swift" {
             #expect(
@@ -275,8 +253,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func repeatedReminderTransitionsSettleOnTheLastOne() {
-        // The framework can present an update again after the user returns to
-        // it, and the end of a session repeats the dismissal.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -299,7 +275,6 @@ struct UpdateCheckModelTests {
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     }
 
-    /// Every Swift file under `directory`, as sorted relative paths.
     private static func appSources(under directory: URL) throws -> [String] {
         let root = directory.standardizedFileURL
         guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
@@ -314,8 +289,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func automaticChecksFollowTheServiceWhenItChangesElsewhere() {
-        // Sparkle can change the setting itself (its first-launch prompt);
-        // the model reads it back rather than keeping a copy that drifts.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
         service.automaticallyChecksForUpdates = false

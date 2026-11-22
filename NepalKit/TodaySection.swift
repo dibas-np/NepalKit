@@ -3,12 +3,9 @@
 import SwiftUI
 import NepalKitCore
 
-/// Today's festivals and holiday status, read once so the hero's line and its
-/// announcement cannot disagree.
 struct TodayObservances {
     let festivals: [Festival]
     let isPublicHoliday: Bool
-    /// False when the gazette's own name ("Dashain holiday") already says it.
     let saysPublicHoliday: Bool
 
     init(_ day: BikramSambatDate, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
@@ -26,7 +23,6 @@ struct TodayObservances {
     }
 }
 
-/// Today's date as the hero, with the Gregorian line beneath it.
 struct TodaySection: View {
     let clock: ClockModel
     let settings: DisplaySettings
@@ -34,16 +30,11 @@ struct TodaySection: View {
     var festivals: FestivalCalendar = .panchanga
     var holidays: PublicHolidayCalendar = .gazette
 
-    /// Named in the out-of-range state so a user can tell a data limit from a bug.
     private var lastSupportedBSYear: Int { dataset.supportedRange.upperBound }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // No "Today" heading: the selected tab already says it.
-
             if let todayBS = clock.todayBSDate(in: dataset) {
-                // `largeTitle` rather than a point size so it follows the accessibility text size.
-                // The weekday is a separate `Text` so a long one wraps without breaking the date.
                 let observances = TodayObservances(todayBS, festivals: festivals, holidays: holidays)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -56,7 +47,6 @@ struct TodaySection: View {
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    // A holiday observed only in some places is left to the day's details.
                     if let line = observances.line(monthNames: settings.monthNames) {
                         Text(line)
                             .font(.callout)
@@ -64,12 +54,9 @@ struct TodaySection: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                // The announcement adds the Gregorian date, which is otherwise shown only in the grid.
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(heroAnnouncement(todayBS, observances: observances))
             } else {
-                // Past the supported range. The Gregorian date and clocks still answer, so this is
-                // not styled as an error.
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Strings.bsDateUnavailable)
                         .font(.title3)
@@ -83,7 +70,6 @@ struct TodaySection: View {
                 )
             }
 
-            // In range, the grid already shows today's Gregorian date.
             if clock.todayBSDate(in: dataset) == nil, let todayAD = clock.todayADDate() {
                 let weekday = clock.weekdayString(style: settings.monthNames)
                 HStack(spacing: 4) {

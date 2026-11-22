@@ -5,10 +5,7 @@ import NepalKitCore
 import NepalKitWatchSupport
 import WidgetKit
 
-/// The Today complication's timeline provider. The clock is injected and read
-/// once per operation.
 struct TodayComplicationProvider: TimelineProvider {
-    /// The preview's sample day, resolved through core at render time.
     static let previewSampleDay = GregorianDate(year: 2026, month: 9, day: 27)
 
     private let now: @Sendable () -> Date
@@ -27,7 +24,6 @@ struct TodayComplicationProvider: TimelineProvider {
         }
     }
 
-    /// For tests and fixtures that inject failures into the builder.
     nonisolated init(
         now: @escaping @Sendable () -> Date,
         dataset: CalendarDataset,
@@ -38,7 +34,6 @@ struct TodayComplicationProvider: TimelineProvider {
         self.makeBuilder = makeBuilder
     }
 
-    /// WidgetKit redacts placeholder content, so this does not read the clock.
     func placeholder(in context: Context) -> TodayComplicationEntry {
         placeholderEntry()
     }
@@ -56,7 +51,6 @@ struct TodayComplicationProvider: TimelineProvider {
         TodayComplicationEntry(date: .distantPast, state: .placeholder)
     }
 
-    /// Previews use the fixed sample day; ordinary snapshots resolve Today.
     func snapshot(isPreview: Bool) -> TodayComplicationEntry {
         if isPreview {
             return previewEntry

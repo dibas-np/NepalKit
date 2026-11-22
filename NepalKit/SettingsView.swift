@@ -3,25 +3,18 @@
 import NepalKitCore
 import SwiftUI
 
-/// The Settings window: a sidebar of three destinations over the shared
-/// models, so no setting is writable from two places.
 struct SettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
     let updates: UpdateCheckModel
     let menuBar: MenuBarModel
-    /// The cache, not its value, because this initialiser runs at launch.
     let metadataCache: DeferredAppMetadata
     let dataset: CalendarDataset
 
-    /// Optional because `List(selection:)` needs `Binding<SelectionValue?>`; a
-    /// non-optional binding compiles but leaves the sidebar unresponsive.
     @State private var tab: SettingsTab? = SettingsTab.landingTab
 
     var body: some View {
-        // A system `TabView` sidebar: unlike `NavigationSplitView` it has no collapse
-        // affordance to remove.
         VStack(spacing: 0) {
             TabView(selection: $tab) {
                 ForEach(SettingsTab.allCases) { destination in
@@ -33,11 +26,8 @@ struct SettingsView: View {
             .tabViewStyle(.sidebarAdaptable)
             .toolbar(removing: .sidebarToggle)
 
-            // A layout sibling, not a safe-area inset: an inset on the TabView does not
-            // reach the tab contents' scroll views, so rows scrolled under the strip.
             SettingsIdentityStrip(metadata: metadataCache.value)
         }
-        // Fits About's Devanagari range line and the General form without scrolling.
         .frame(minWidth: 640, minHeight: 440)
         .task { loginItem.refreshStatus() }
         .onChange(of: scenePhase) { _, phase in
@@ -46,8 +36,6 @@ struct SettingsView: View {
             }
         }
     }
-
-    // MARK: - Destinations
 
     @ViewBuilder
     private func content(for destination: SettingsTab) -> some View {
@@ -75,7 +63,6 @@ struct SettingsView: View {
     }
 }
 
-/// The app's icon, name, version and source link along the bottom of the window.
 private struct SettingsIdentityStrip: View {
     let metadata: AppMetadata
 
@@ -103,8 +90,6 @@ private struct SettingsIdentityStrip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        // Glass on a clear layer inside the strip: Liquid Glass only shows where
-        // nothing paints over it, and `.bar` is opaque.
         .background {
             GlassEffectContainer(spacing: 0) {
                 Rectangle()
@@ -112,19 +97,15 @@ private struct SettingsIdentityStrip: View {
                     .glassEffect(.regular, in: .rect)
             }
         }
-        // Separates the strip from the selected tab's content.
         .overlay(alignment: .top) { Divider() }
     }
 }
 
-/// The repository link: a short visible label, announced in full.
 private struct SourceLink: View {
     let repository: URL
 
     var body: some View {
         Link(destination: repository) {
-            // An explicit HStack: `Label` under `.buttonStyle(.glass)` rendered as the
-            // bare glyph.
             HStack(spacing: 4) {
                 Image(systemName: Symbols.repository)
                     .symbolRenderingMode(.monochrome)

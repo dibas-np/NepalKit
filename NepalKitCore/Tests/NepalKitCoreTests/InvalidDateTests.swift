@@ -7,7 +7,6 @@ struct InvalidDateTests {
         (BikramSambatDate(year: 2083, month: 13, day: 1), "no month 13"),
         (BikramSambatDate(year: 2083, month: 6, day: 0), "no day 0"),
         (BikramSambatDate(year: 2083, month: 7, day: 31), "Kartik 2083 has 30 days"),
-        // Valid under dataset 1.0.0; removed in 2.0.0.
         (BikramSambatDate(year: 1974, month: 12, day: 30), "removed in dataset 2.0.0"),
         (BikramSambatDate(year: 1969, month: 12, day: 30), "below supported range"),
         (BikramSambatDate(year: 2085, month: 1, day: 1), "above supported range"),
@@ -16,7 +15,6 @@ struct InvalidDateTests {
     static let invalidADDays: [(day: GregorianDate, label: String)] = [
         (GregorianDate(year: 2024, month: 2, day: 30), "Feb 30 never exists"),
         (GregorianDate(year: 2026, month: 13, day: 1), "no month 13"),
-        // `Calendar` would normalize month 0 into the previous December.
         (GregorianDate(year: 2026, month: 0, day: 1), "no month 0"),
         (GregorianDate(year: 2026, month: 9, day: 0), "no day 0"),
         (GregorianDate(year: 1918, month: 4, day: 12), "day before the range starts"),

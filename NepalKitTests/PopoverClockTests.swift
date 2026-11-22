@@ -5,12 +5,8 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The popover's per-second tick and what it touches: today and the secondary
-/// row's visibility are stored and change only when they really do, and the
-/// menu bar's poll writes only when the day has turned.
 @MainActor
 struct PopoverClockTests {
-    /// One tick of `refreshWhileVisible` at `instant`, then stop.
     private func tick(_ clock: ClockModel) async {
         await clock.refreshWhileVisible()
     }
@@ -25,7 +21,6 @@ struct PopoverClockTests {
     }
 
     @Test func todayMovesAtNepalMidnightAndNotBefore() async throws {
-        // Nepal midnight is 18:15 UTC.
         let clock = try clock(now: try TestDates.utc(2026, 9, 26, 18, 13), tickTo: try TestDates.utc(2026, 9, 26, 18, 14))
         let before = clock.today
         await tick(clock)
@@ -45,7 +40,6 @@ struct PopoverClockTests {
     }
 
     @Test func switchingToLocalTimeMovesTodayAtOnce() throws {
-        // 23:30 UTC on 26 Sep: 27 Sep in Nepal, still 26 Sep in New York.
         let clock = try clock(now: try TestDates.utc(2026, 9, 26, 23, 30), tickTo: try TestDates.utc(2026, 9, 26, 23, 30))
         #expect(clock.today == GregorianDate(year: 2026, month: 9, day: 27))
         clock.setTimeReference(.local)

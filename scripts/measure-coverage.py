@@ -22,9 +22,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FLOOR_FILE = REPO_ROOT / "scripts" / "coverage-floor.json"
 
-# Only product source counts, matched by path relative to the repository root.
 def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
-    """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
     # llvm-cov strips the directory prefix common to every file, which may be
     # part of the repository path, so try every tail of the root, longest first.
@@ -44,9 +42,8 @@ def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
 
 
 def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
-    """Total the raw counts of the subject rows in an llvm-cov report."""
     # Filename then (count, missed, percent) for regions, functions, lines and
-    # branches. Check the shape, since an unquoted path with spaces shifts columns.
+    # branches.
     counts = {
         "regions": 0, "regions_hit": 0,
         "functions": 0, "functions_hit": 0,
@@ -74,10 +71,9 @@ def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
 
 
 def percentages(counts: dict[str, int]) -> dict[str, float]:
-    """Turn raw counts into the percentages the floor file records."""
     return {
         "lines": round(100 * counts["lines_hit"] / counts["lines"], 2) if counts["lines"] else 0.0,
-        # Region coverage. Swift emits no branch data, so llvm-cov's Branches is always 0.
+        # Swift emits no branch data, so llvm-cov's Branches is always 0.
         "regions": round(100 * counts["regions_hit"] / counts["regions"], 2)
         if counts["regions"] else 0.0,
         "functions": round(100 * counts["functions_hit"] / counts["functions"], 2)
@@ -87,14 +83,12 @@ def percentages(counts: dict[str, int]) -> dict[str, float]:
 
 
 def combine(all_counts: list[dict[str, int]]) -> dict[str, int]:
-    """Sum raw counts across suites."""
     return {key: sum(counts[key] for counts in all_counts) for key in all_counts[0]}
 
 
 def regressions(
     totals: dict[str, float], suites: dict[str, dict[str, float]], floor: dict
 ) -> list[str]:
-    """Compare the totals and every suite against the recorded floor."""
     found = []
     for metric in ("lines", "regions", "functions"):
         if totals[metric] < floor["totals"][metric] - 0.005:
@@ -115,9 +109,7 @@ def regressions(
     return found
 
 
-# The app suite's report also includes core rows, which are counted only once.
 SUITES = (
-    # (label, package path, subject prefixes relative to the repository root)
     ("NepalKitCore", "NepalKitCore", ("NepalKitCore/Sources/NepalKitCore/",)),
     ("NepalKit app", "scripts/apptests", ("NepalKit/",)),
 )
@@ -128,14 +120,12 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
 
 
 # Persistent per-checkout build directories outside the repository (llvm-cov's
-# prefix stripping would otherwise break the path filter). Old profiles are
-# deleted before each run so a stale .profdata is never reported.
+# prefix stripping would otherwise break the path filter).
 COVERAGE_BUILD = (Path.home() / "Library" / "Caches" / "nepalkit-coverage"
                   / hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12])
 
 
 def clear_profiles(build_dir: Path) -> int:
-    """Delete every .profraw and .profdata under build_dir; return how many."""
     stale = [p for pattern in ("*.profraw", "*.profdata") for p in build_dir.rglob(pattern)]
     for path in stale:
         path.unlink()
@@ -145,9 +135,7 @@ def clear_profiles(build_dir: Path) -> int:
 def measure(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
-    """Run one suite with coverage and total its subject files."""
     build_dir.mkdir(parents=True, exist_ok=True)
-    # Held until the report is read so a concurrent run cannot delete the profiles.
     with open(build_dir / ".lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         return measure_locked(label, package, prefixes, build_dir)
@@ -156,7 +144,6 @@ def measure(
 def measure_locked(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
-    """measure() with the suite directory's lock held."""
     clear_profiles(build_dir)
     result = run(
         [
@@ -202,7 +189,6 @@ def main() -> int:
               f"regions {result['regions']:6.2f}%  "
               f"functions {result['functions']:6.2f}%  ({result['files']} files)")
 
-    # Weighted by line count, not a mean of the two percentages.
     totals = percentages(combine(list(raw_counts.values())))
 
     print(f"  {'combined':<16} lines {totals['lines']:6.2f}%  "

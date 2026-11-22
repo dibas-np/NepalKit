@@ -5,8 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The tomorrow and yesterday answers: today's Nepal Time civil day, plus or
-/// minus one, in Bikram Sambat.
 struct RelativeDayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
@@ -14,7 +12,6 @@ struct RelativeDayIntentTests {
 
     @Test("Tomorrow and yesterday flip at Nepal Time midnight, not UTC midnight")
     func relativeDaysAreAnchoredToNepalTime() throws {
-        // 14 April NPT begins at 18:15 UTC on 13 April.
         let before = try TestDates.utc(2025, 4, 13, 18, 14)
         let after = try TestDates.utc(2025, 4, 13, 18, 15)
 
@@ -31,8 +28,6 @@ struct RelativeDayIntentTests {
 
     @Test("Tomorrow and yesterday cross the Bikram Sambat year end")
     func relativeDaysCrossYearEnd() throws {
-        // Midday NPT on 13 April 2025 (31 Chaitra 2081) and 14 April 2025
-        // (1 Baisakh 2082, the dataset anchor).
         let lastDayOf2081 = try TestDates.utc(2025, 4, 13, 6, 0)
         let firstDayOf2082 = try TestDates.utc(2025, 4, 14, 6, 0)
 
@@ -45,8 +40,6 @@ struct RelativeDayIntentTests {
     @Test("Tomorrow and yesterday cross a Bikram Sambat month end")
     func relativeDaysCrossMonthEnd() throws {
         #expect(dataset.monthLengths(for: 2082)?[2] == 32)
-        // Midday NPT on 16 July 2025 (32 Ashar 2082) and 17 July 2025
-        // (1 Shrawan 2082).
         let lastOfAshar = try TestDates.utc(2025, 7, 16, 6, 0)
         let firstOfShrawan = try TestDates.utc(2025, 7, 17, 6, 0)
 
@@ -59,8 +52,6 @@ struct RelativeDayIntentTests {
     @Test("Tomorrow past the supported range speaks Today's range-boundary dialog")
     func tomorrowPastRangeUsesBoundaryDialog() throws {
         let end = try #require(dataset.gregorianEnd)
-        // Midday NPT on the dataset's last Gregorian day: today and yesterday
-        // still convert, tomorrow does not.
         let now = try TestDates.utc(end.year, end.month, end.day, 6, 0)
         let expected = String(localized: TodayInBikramSambatIntent.beyondRangeDialog(now: now, in: dataset))
 
@@ -79,7 +70,7 @@ struct RelativeDayIntentTests {
 
     @Test("Spoken answers use Latin digits even with Nepali month names")
     func spokenAnswersUseLatinDigits() throws {
-        let now = try TestDates.utc(2025, 6, 29, 6, 0) // 15 Ashar 2082, Sunday
+        let now = try TestDates.utc(2025, 6, 29, 6, 0)
         for monthNames in [MonthNameStyle.nepali, .transliterated] {
             let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
             let yesterday = String(localized: try YesterdayInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
@@ -96,13 +87,11 @@ struct RelativeDayIntentTests {
 
     @Test("Running the intents answers the days either side of the real today")
     func performAnswersFromTheRealClock() async throws {
-        // perform() reads the stored time reference, so the expectation does too.
         let zone = SettingsStore().timeReference.timeZone
         let before = Date()
         let tomorrow = try await TomorrowInBikramSambatIntent().perform()
         let yesterday = try await YesterdayInBikramSambatIntent().perform()
         let after = Date()
-        // Either clock read may straddle midnight, so accept both.
         let tomorrows = [before, after].map { RelativeDay.bsDay(offset: 1, now: $0, timeZone: zone, in: dataset) }
         let yesterdays = [before, after].map { RelativeDay.bsDay(offset: -1, now: $0, timeZone: zone, in: dataset) }
         #expect(tomorrows.contains(tomorrow.value?.bsDay))
@@ -111,8 +100,6 @@ struct RelativeDayIntentTests {
 
     @Test("Tomorrow into a provisional year carries the projection clause; an attested one does not")
     func provisionalYearClause() throws {
-        // 30 Chaitra 2083 is 13 April 2027; tomorrow is 1 Baisakh 2084, a
-        // provisional year. Today itself (2083) is attested.
         let lastDayOf2083 = try TestDates.utc(2027, 4, 13, 6, 0)
         let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: lastDayOf2083, in: dataset, monthNames: .transliterated).dialog)
         #expect(tomorrow.contains("provisional projection"))

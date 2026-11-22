@@ -201,8 +201,6 @@ jobs:
           fi
           printf '%s\n' "$KEYS" > "$TAP_SSH/known_hosts"
 
-          # Paths quoted, here and in core.sshCommand below, so a RUNNER_TEMP
-          # with a space in it (a self-hosted runner) still names one file.
           cat > "$TAP_SSH/config" <<CONFIG
           Host github-tap
             HostName github.com
@@ -214,7 +212,6 @@ jobs:
             GlobalKnownHostsFile /dev/null
           CONFIG
           chmod 600 "$TAP_SSH/config"
-          # One definition of the directory, for the steps that use it.
           echo "TAP_SSH=$TAP_SSH" >> "$GITHUB_ENV"
 
       - name: Clone the tap over the deploy key

@@ -36,7 +36,6 @@ struct GeneralAPITests {
     }
 
     @Test func formatTimeDefaultsToTwentyFourHoursWithSecondsInNepalTime() throws {
-        // 17:12:07 UTC is 22:57:07 Nepal Time.
         let evening = try UTCDateFixture.utc(2026, 9, 27, 17, 12, 7)
         #expect(DigitScript.latin.formatTime(evening) == "22:57:07")
         #expect(DigitScript.latin.formatTime(evening, twentyFourHour: false) == "10:57:07")
@@ -44,7 +43,6 @@ struct GeneralAPITests {
     }
 
     @Test func midnightAndNoonReadTwelveOnATwelveHourClock() throws {
-        // 18:15 UTC is 00:00 Nepal Time; 06:15 UTC is 12:00.
         #expect(try DigitScript.latin.formatTime(UTCDateFixture.utc(2026, 9, 27, 18, 15), twentyFourHour: false, showsSeconds: false) == "12:00")
         #expect(try DigitScript.latin.formatTime(UTCDateFixture.utc(2026, 9, 27, 6, 15), twentyFourHour: false, showsSeconds: false) == "12:00")
         #expect(try DigitScript.latin.formatTime(UTCDateFixture.utc(2026, 9, 27, 18, 15), showsSeconds: false) == "00:00")

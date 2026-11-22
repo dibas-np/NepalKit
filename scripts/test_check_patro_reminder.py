@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Suite for check-patro-reminder.py: when the monthly Patro check is due."""
 
 from __future__ import annotations
 
@@ -49,7 +48,6 @@ class Verdict(unittest.TestCase):
         self.assertIn("in the future", message)
 
     def test_one_day_ahead_is_tolerated(self):
-        # A local date can be a day ahead of the runner's UTC date.
         ok, _ = cpr.verdict(D(2027, 2, 1), D(2027, 2, 2), 2084)
         self.assertTrue(ok)
 
@@ -92,7 +90,6 @@ class Main(unittest.TestCase):
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
         self._use_procedure("no record")
-        # Pinned to a table ending at 2084, or the reminder would be quiet.
         sys.path.insert(0, str(_SCRIPT.parent))
         import dataset_table
         with mock.patch.object(dataset_table, "shipped_table", return_value={2084: [30] * 12}):

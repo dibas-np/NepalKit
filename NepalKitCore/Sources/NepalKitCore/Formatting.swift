@@ -115,7 +115,6 @@ extension BikramSambatDate {
     /// 1–12 is returned as its number rather than trapping.
     public static func monthName(_ month: Int, style: MonthNameStyle) -> String {
         let names = monthNames(style: style)
-        // Checked before subtracting, which would overflow for `Int.min`.
         guard (1 ... names.count).contains(month) else { return String(month) }
         return names[month - 1]
     }
@@ -170,8 +169,6 @@ extension GregorianDate {
     }
 }
 
-/// Cached Gregorian calendars, one per time zone. Building a `Calendar` per
-/// call dominated formatting cost at clock-tick frequency.
 enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]

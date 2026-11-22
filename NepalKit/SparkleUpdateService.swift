@@ -1,16 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
-// The only file that imports Sparkle, so it is excluded from the app-test harness.
-// The decisions it relies on live in `UpdatePolicy.swift`, which is tested.
 import Sparkle
 
-/// The production `UpdateServicing`, backed by Sparkle.
-/// Uses the standard controller so Sparkle supplies its own update UI. Its user
-/// driver already activates the app before showing a window, so no extra fronting
-/// is needed for an `LSUIElement` app.
 @MainActor
 final class SparkleUpdateService: NSObject, UpdateServicing {
-    /// Assigned after `super.init()` because the controller needs `self` as its delegate.
     private var controller: SPUStandardUpdaterController!
 
     /// Held strongly: `SPUStandardUserDriver` keeps only a weak reference to its delegate.
@@ -20,7 +13,6 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
 
     var onCycleFinished: (@MainActor () -> Void)?
 
-    /// Toggled while a scheduled update waits to be noticed; drives the menu-bar marker.
     var onReminder: (@MainActor (Bool) -> Void)?
 
     var automaticallyChecksForUpdates: Bool {
@@ -45,8 +37,6 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
     }
 
     func start() {
-        // Throwing means the updater never started; surface it rather than report
-        // "up to date" forever.
         do {
             try controller.updater.start()
         } catch {
@@ -60,9 +50,6 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
 }
 
 extension SparkleUpdateService: SPUUpdaterDelegate {
-    /// Refuses scheduled checks on a transient launch (a build directory or a mounted
-    /// DMG), where an in-place update fails. Vetoing per check, rather than changing
-    /// the setting, never persists into the installed copy; manual checks still run.
     nonisolated func updater(
         _ updater: SPUUpdater,
         mayPerformUpdateCheck updateCheck: SPUUpdateCheck,
@@ -87,7 +74,6 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
         MainActor.assumeIsolated { onOutcome?(.updateAvailable) }
     }
 
-    /// Distinguishes "on the latest version" from a feed that could not be fetched or verified.
     nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
         let rawReason = ((error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)?.intValue
         MainActor.assumeIsolated {
@@ -97,7 +83,6 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
         }
     }
 
-    /// Fetch, parse and signature failures arrive here, not in `updaterDidNotFindUpdate`.
     nonisolated func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
         let nsError = error as NSError
         let domain = nsError.domain
@@ -113,7 +98,6 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
         }
     }
 
-    /// Every cycle ends here, including scheduled checks that report no outcome.
     nonisolated func updater(
         _ updater: SPUUpdater,
         didFinishUpdateCycleFor updateCheck: SPUUpdateCheck,
@@ -123,21 +107,17 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     }
 }
 
-/// Shows a menu-bar marker while a scheduled update waits to be noticed. With no
-/// Dock icon, Sparkle's background alert can sit unseen behind other windows.
+/// With no Dock icon, Sparkle's background alert can sit unseen behind other windows.
 private final class SparkleUserDriverDelegate: NSObject, SPUStandardUserDriverDelegate {
     var onReminderChange: (@MainActor (Bool) -> Void)?
 
-    /// Only true because the callbacks below implement the reminder.
     var supportsGentleScheduledUpdateReminders: Bool { true }
 
-    /// Keeps Sparkle's own alert; the marker is additive.
     nonisolated func standardUserDriverShouldHandleShowingScheduledUpdate(
         _ update: SUAppcastItem,
         andInImmediateFocus immediateFocus: Bool
     ) -> Bool { true }
 
-    /// User-initiated checks are skipped: the user is already looking at the result.
     nonisolated func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,
         forUpdate update: SUAppcastItem,
@@ -151,7 +131,6 @@ private final class SparkleUserDriverDelegate: NSObject, SPUStandardUserDriverDe
         MainActor.assumeIsolated { onReminderChange?(false) }
     }
 
-    /// Backstop for sessions that end without user attention, such as a completed install.
     nonisolated func standardUserDriverWillFinishUpdateSession() {
         MainActor.assumeIsolated { onReminderChange?(false) }
     }

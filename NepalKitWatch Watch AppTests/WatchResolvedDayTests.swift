@@ -5,7 +5,6 @@ import Testing
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Spot checks under watchOS; the core suite has the exhaustive coverage.
 struct WatchResolvedDayTests {
     private let dataset = CalendarDataset.v2
 
@@ -27,7 +26,6 @@ struct WatchResolvedDayTests {
     }
 
     @Test func watchOSResolvesTheAnchoredSupportedDay() throws {
-        // 26 September 2026, 18:30 UTC = 11 Ashoj 2083, a Sunday.
         let day = try ResolvedDay(now: try anchoredInstant(2026, 9, 26, 18, 30), in: dataset)
 
         #expect(day.gregorian == GregorianDate(year: 2026, month: 9, day: 27))

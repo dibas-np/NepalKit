@@ -3,7 +3,6 @@
 import SwiftUI
 import WidgetKit
 
-/// The Today complication, in all four accessory families.
 struct TodayComplication: Widget {
     /// Renaming this removes placed complications from users' faces.
     nonisolated static let kind = "NepalKitTodayComplication"

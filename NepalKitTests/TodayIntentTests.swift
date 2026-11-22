@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The today query and the shared App Intents foundation. Expected dates were
-/// computed independently: 1 Baisakh 2082 is Monday 14 April 2025, and
-/// 15 Ashar 2082 is Sunday 29 June 2025.
 struct TodayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
@@ -23,8 +20,6 @@ struct TodayIntentTests {
 
     @Test("Today flips at Nepal Time midnight, not UTC midnight")
     func todayIsAnchoredToNepalTime() throws {
-        // 14 April NPT begins at 18:15 UTC on 13 April. The minute before is
-        // still Chaitra 2081; the minute after is 1 Baisakh 2082.
         let before = try TestDates.utc(2025, 4, 13, 18, 14)
         let after = try TestDates.utc(2025, 4, 13, 18, 16)
 
@@ -79,13 +74,10 @@ struct TodayIntentTests {
 
     @Test("Month tokens match exactly, so near-collisions keep their own months")
     func monthTokensMatchExactly() {
-        // "Aso" is Ashar's synonym; "Asoj"/"Asojh" are Ashoj's, so substring
-        // matching would resolve both to Ashar.
         #expect(BikramSambatDateEntity.parsing("15 Aso 2082")?.month == .ashar)
         #expect(BikramSambatDateEntity.parsing("15 Asoj 2082")?.month == .ashoj)
         #expect(BikramSambatDateEntity.parsing("15 asojh 2082")?.month == .ashoj)
         #expect(BikramSambatDateEntity.parsing("15 SHRAWAN 2082")?.month == .shrawan)
-        // A token that is no title or synonym names no month at all.
         #expect(BikramSambatDateEntity.parsing("15 Ash 2082") == nil)
         #expect(BikramSambatDateEntity.parsing("15 Asharish 2082") == nil)
     }
@@ -193,7 +185,6 @@ struct TodayIntentTests {
         let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let strings = catalog?["strings"] as? [String: Any]
 
-        // The phrase templates and short titles, `$` included.
         for key in [
             "What is today's Nepali date with ${applicationName}",
             "What is my ${applicationName} date",
@@ -203,7 +194,6 @@ struct TodayIntentTests {
             "Convert a Bikram Sambat date to Gregorian with ${applicationName}",
             "Use ${applicationName} to convert from Bikram Sambat",
             "Today's Nepali date",
-            // The parameterless tomorrow and yesterday answers.
             "What is tomorrow's Nepali date with ${applicationName}",
             "What is tomorrow in Bikram Sambat with ${applicationName}",
             "What was yesterday's Nepali date with ${applicationName}",
@@ -215,8 +205,6 @@ struct TodayIntentTests {
         }
     }
 
-    // 1 Baisakh 2084 is 14 April 2027 (Projected2084Tests), the first day of
-    // the dataset's provisional row; 1 Baisakh 2082 is the attested anchor.
     @Test("Today in a provisional year adds the projection clause; an attested year does not")
     func todayDialogNamesTheProjection() {
         let provisional = String(localized: TodayInBikramSambatIntent.successDialog(BikramSambatDate(year: 2084, month: 1, day: 1), weekday: 4, in: dataset))
@@ -229,12 +217,10 @@ struct TodayIntentTests {
 
     @Test("Running the intent answers the real today")
     func performAnswersFromTheRealClock() async throws {
-        // perform() reads the stored time reference, so the expectation does too.
         let zone = SettingsStore().timeReference.timeZone
         let before = Date()
         let result = try await TodayInBikramSambatIntent().perform()
         let after = Date()
-        // Either clock read may straddle midnight, so accept both.
         let todays = [before, after].map { BikramSambatDate.today(now: $0, timeZone: zone, in: dataset) }
         #expect(todays.contains(result.value?.bsDay))
     }

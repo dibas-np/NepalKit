@@ -8,7 +8,6 @@ import WidgetKit
 struct TodayTimelineBuilderTests {
     private let dataset = CalendarDataset.v2
 
-    // 26 Sep 2026, 18:30 UTC = 00:15 NPT on 27 Sep (11 Ashoj 2083).
     private func supportedNow() throws -> Date {
         try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
     }
@@ -20,8 +19,6 @@ struct TodayTimelineBuilderTests {
             nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
         )
     }
-
-    // MARK: The successful horizon
 
     @Test func successfulTimelineHasFourteenEntriesAndAtEnd() throws {
         let built = builder.build(now: try supportedNow())
@@ -40,7 +37,6 @@ struct TodayTimelineBuilderTests {
     @Test func futureEntriesActivateAtSuccessiveNepalMidnights() throws {
         let built = builder.build(now: try supportedNow())
 
-        // Day 1 begins at 00:00 NPT on 28 Sep = 27 Sep 18:15 UTC.
         #expect(try built.entries[1].date == UTCWatchFixture.utc(2026, 9, 27, 18, 15))
         #expect(try built.entries[2].date == UTCWatchFixture.utc(2026, 9, 28, 18, 15))
         #expect(try built.entries[13].date == UTCWatchFixture.utc(2026, 10, 9, 18, 15))
@@ -49,7 +45,6 @@ struct TodayTimelineBuilderTests {
     @Test func onlyFutureEntriesAreTwentyFourHoursApart() throws {
         let built = builder.build(now: try supportedNow())
 
-        // The first interval varies; later ones are one civil day.
         #expect(built.entries[1].date.timeIntervalSince(built.entries[0].date) != 86_400)
         for index in 1 ..< built.entries.count - 1 {
             let spacing = built.entries[index + 1].date.timeIntervalSince(built.entries[index].date)
@@ -69,17 +64,12 @@ struct TodayTimelineBuilderTests {
             Issue.record("Expected a supported final entry")
             return
         }
-        // Day +13 = 10 October 2026 = २४ असोज २०८३ (11 Ashoj + 13 days).
         #expect(last.gregorianDay == "१०")
         #expect(last.gregorianMonthName == "October")
         #expect(last.bikramSambatDay == "२४")
     }
 
-    // MARK: Boundaries inside the horizon
-
     @Test func beforeMinimumTodayEntersSupport() throws {
-        // 10 April 1918 NPT: days 0–2 are before the range; day 3 is
-        // 13 April 1918, 1 Baisakh 1975.
         let now = try UTCWatchFixture.utc(1918, 4, 10, 12, 0)
         let built = builder.build(now: now)
 
@@ -101,7 +91,6 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func afterMaximumTodayProgressesThroughTheHorizon() throws {
-        // 13 April 2028 NPT: the maximum is behind Today, so no terminal entry.
         let now = try UTCWatchFixture.utc(2028, 4, 13, 12, 0)
         let built = builder.build(now: now)
 
@@ -118,13 +107,11 @@ struct TodayTimelineBuilderTests {
             Issue.record("Expected a boundary final entry")
             return
         }
-        // Day +13 = 26 April 2028.
         #expect(last.gregorianDay == "२६")
         #expect(last.gregorianMonthName == "April")
     }
 
     @Test func maximumEarlierInTheHorizonDoesNotDuplicateTheBoundary() throws {
-        // 7 April 2028 NPT: the maximum (12 April) is day +5, so no terminal entry.
         let now = try UTCWatchFixture.utc(2028, 4, 7, 12, 0)
         let built = builder.build(now: now)
 
@@ -138,7 +125,6 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func maximumExactlyAtDayPlusThirteenAppendsTheTerminalBoundary() throws {
-        // 30 March 2028 NPT: day +13 is 12 April 2028, the dataset maximum.
         let now = try UTCWatchFixture.utc(2028, 3, 30, 12, 0)
         let built = builder.build(now: now)
 
@@ -152,8 +138,6 @@ struct TodayTimelineBuilderTests {
         }
         #expect(terminal.side == .after)
     }
-
-    // MARK: Calculation failures
 
     @Test func firstDayFailureAppendsOneErrorAtTheOriginalReadingAndStops() throws {
         let now = try supportedNow()
@@ -179,7 +163,6 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func intermediateFailureRetainsThePrefixAndStops() throws {
-        // Day +3 is 30 September 2026; fail exactly there.
         let failedDay = GregorianDate(year: 2026, month: 9, day: 30)
         let calls = CallCounter()
         let failing = TodayTimelineBuilder(
@@ -210,7 +193,6 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func terminalEntryFailureRetainsTheHorizonAndStops() throws {
-        // Day +14 (13 April 2028) fails after a fully supported horizon.
         let failedDay = GregorianDate(year: 2028, month: 4, day: 13)
         let failing = TodayTimelineBuilder(
             dataset: dataset,
@@ -258,8 +240,6 @@ struct TodayTimelineBuilderTests {
         #expect(calls.value == 1)
         assertErrorPolicy(built, retryAt: now.addingTimeInterval(15 * 60))
     }
-
-    // MARK: Helpers
 
     private func assertErrorPolicy(_ built: BuiltTimeline, retryAt expected: Date) {
         #expect(built.policy == .after(expected), "Expected an .after(\(expected)) reload policy, got \(built.policy)")

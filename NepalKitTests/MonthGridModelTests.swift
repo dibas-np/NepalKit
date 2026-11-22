@@ -10,13 +10,11 @@ struct MonthGridModelTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    /// 1 Baisakh 2082 = 14 April 2025, a Monday. 06:00 UTC is 11:45 Nepal Time.
     private func baisakh2082() throws -> MonthGridModel {
         MonthGridModel(now: try TestDates.utc(2025, 4, 14, 6, 0))
     }
 
     @Test func opensOnTodaysNepalTimeMonth() throws {
-        // 11 Oct 2026 is 25 Ashoj 2083.
         let model = MonthGridModel(now: try TestDates.utc(2026, 10, 11, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2083, month: 6))
         #expect(model.today == BikramSambatDate(year: 2083, month: 6, day: 25))
@@ -25,13 +23,10 @@ struct MonthGridModelTests {
     }
 
     @Test func todayFollowsNepalTimeNotUTC() throws {
-        // 13 Apr 2025 18:30 UTC is 14 Apr 00:15 Nepal Time: already 1 Baisakh 2082.
         let model = MonthGridModel(now: try TestDates.utc(2025, 4, 13, 18, 30))
         #expect(model.today == BikramSambatDate(year: 2082, month: 1, day: 1))
     }
 
-    /// The shown month's own days, without the neighbours that fill the
-    /// first and last weeks.
     private func shownDays(_ model: MonthGridModel) -> [MonthGridDay] {
         model.weeks.flatMap { $0 }.compactMap { $0 }.filter(\.isInShownMonth)
     }
@@ -39,7 +34,6 @@ struct MonthGridModelTests {
     @Test func baisakh2082StartsOnMondayAfterChaitrasLastDay() throws {
         let model = try baisakh2082()
         let weeks = model.weeks
-        // Always six full weeks, so paging months never changes the height.
         #expect(weeks.count == MonthGridModel.weekCount)
         #expect(weeks.allSatisfy { $0.count == 7 })
         #expect(weeks.flatMap { $0 }.allSatisfy { $0 != nil })
@@ -51,20 +45,16 @@ struct MonthGridModelTests {
         let days = shownDays(model)
         #expect(days.count == 31)
         #expect(days.last?.gregorian == GregorianDate(year: 2025, month: 5, day: 14))
-        // 31 Baisakh falls on Wednesday.
         #expect(weeks[4][3]?.bikramSambat.day == 31)
     }
 
     @Test func theNeighbouringMonthsFillTheFirstAndLastWeeks() throws {
         let weeks = try baisakh2082().weeks
-        // The Sunday before 1 Baisakh is Chaitra 2081's last day, 13 April.
         let leading = try #require(weeks[0][0])
         #expect(!leading.isInShownMonth)
         #expect(leading.bikramSambat.year == 2081 && leading.bikramSambat.month == 12)
         #expect(leading.gregorian == GregorianDate(year: 2025, month: 4, day: 13))
         #expect(leading.weekday == 1)
-        // After 31 Baisakh (Wednesday) come 1 to 3 Jestha, then a full week
-        // of Jestha to make the sixth row.
         let trailing = weeks[4][4 ... 6].compactMap { $0 } + weeks[5].compactMap { $0 }
         #expect(trailing.map(\.bikramSambat) == (1 ... 10).map { BikramSambatDate(year: 2082, month: 2, day: $0) })
         #expect(trailing.first?.gregorian == GregorianDate(year: 2025, month: 5, day: 15))
@@ -72,7 +62,6 @@ struct MonthGridModelTests {
     }
 
     @Test func todayInANeighbouringMonthsSpillOverIsNotMarked() throws {
-        // Chaitra 2081's last week spills into Baisakh 2082, today's month.
         let model = try baisakh2082()
         model.showPreviousMonth()
         let cells = model.weeks.flatMap { $0 }.compactMap { $0 }
@@ -94,7 +83,6 @@ struct MonthGridModelTests {
         let model = try baisakh2082()
         #expect((0 ..< 7).filter(model.isWeeklyHolidayColumn) == [6])
         let days = shownDays(model)
-        // 6 Baisakh 2082 = 19 April 2025, a Saturday.
         #expect(days.filter(\.isWeeklyHoliday).map(\.bikramSambat.day) == [6, 13, 20, 27])
         #expect(days.filter(\.isWeeklyHoliday).allSatisfy { $0.weekday == 7 })
     }
@@ -124,7 +112,6 @@ struct MonthGridModelTests {
     }
 
     @Test func previousStopsAtBaisakh1975() throws {
-        // 1 Baisakh 1975 = 13 Apr 1918, the dataset's first day, a Saturday.
         let model = MonthGridModel(now: try TestDates.utc(1918, 4, 13, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 1975, month: 1))
         #expect(!model.canShowPreviousMonth)
@@ -133,32 +120,26 @@ struct MonthGridModelTests {
         let first = try #require(model.weeks[0][6])
         #expect(first.bikramSambat == BikramSambatDate(year: 1975, month: 1, day: 1))
         #expect(first.gregorian == GregorianDate(year: 1918, month: 4, day: 13))
-        // Nothing precedes the dataset's first day, so the cells before it
-        // stay empty rather than inventing a Chaitra 1974.
         #expect(model.weeks[0][0 ..< 6].allSatisfy { $0 == nil })
     }
 
     @Test func nextStopsAtChaitra2084() throws {
-        // 30 Chaitra 2084 = 12 Apr 2028, the dataset's last day (docs/glossary.md).
         let model = MonthGridModel(now: try TestDates.utc(2028, 4, 12, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2084, month: 12))
         #expect(!model.canShowNextMonth)
         model.showNextMonth()
         #expect(model.shown == MonthGridMonth(year: 2084, month: 12))
         let days = shownDays(model)
-        // 1 Chaitra 2084 = 14 Mar 2028, a Tuesday: Falgun's last two days lead.
         #expect(model.weeks[0][0]?.bikramSambat.month == 11 && model.weeks[0][1]?.bikramSambat.month == 11)
         #expect(days.first?.gregorian == GregorianDate(year: 2028, month: 3, day: 14))
         #expect(days.last?.bikramSambat == BikramSambatDate(year: 2084, month: 12, day: 30))
         #expect(days.last?.gregorian == GregorianDate(year: 2028, month: 4, day: 12))
-        // Nothing follows the dataset's last day, so the cells after it are empty.
         let cells = model.weeks.flatMap { $0 }
         let lastIndex = try #require(cells.firstIndex { $0?.bikramSambat == BikramSambatDate(year: 2084, month: 12, day: 30) })
         #expect(cells[(lastIndex + 1)...].allSatisfy { $0 == nil })
     }
 
     @Test func pastTheSupportedRangeOpensOnTheLastMonthAndSaysSo() throws {
-        // 13 Apr 2028 is the first Gregorian day past the dataset.
         let model = MonthGridModel(now: try TestDates.utc(2028, 4, 13, 6, 0))
         #expect(model.isTodayPastSupportedRange)
         #expect(model.today == nil)
@@ -177,7 +158,6 @@ struct MonthGridModelTests {
     @Test func refreshMovesTodayButNotTheShownMonth() throws {
         let model = try baisakh2082()
         model.showNextMonth()
-        // 15 May 2025 is 1 Jestha 2082.
         model.refreshToday(now: try TestDates.utc(2025, 5, 15, 6, 0))
         #expect(model.today == BikramSambatDate(year: 2082, month: 2, day: 1))
         #expect(model.shown == MonthGridMonth(year: 2082, month: 2))
@@ -214,7 +194,6 @@ struct MonthGridModelTests {
     }
 
     @Test func gregorianSpanNamesBothMonths() throws {
-        // Baisakh 2082 runs 14 April to 14 May 2025.
         let model = try baisakh2082()
         #expect(model.gregorianSpan(settings: latin) == "Apr–May 2025")
         #expect(model.gregorianSpan(settings: devanagari) == "Apr–May २०२५")
@@ -222,7 +201,6 @@ struct MonthGridModelTests {
     }
 
     @Test func gregorianSpanCrossingTheYearNamesBothYears() throws {
-        // Poush 2082 starts in December 2025 and ends in January 2026.
         let model = MonthGridModel(now: try TestDates.utc(2025, 12, 25, 6, 0))
         #expect(model.title(settings: latin) == "Poush 2082")
         #expect(model.gregorianSpan(settings: latin) == "Dec 2025 – Jan 2026")
@@ -238,8 +216,6 @@ struct MonthGridModelTests {
     }
 
     @Test func theHeroAnnouncesItsShownWeekdayOnce() throws {
-        // The hero is relabelled with `SpokenDate.today`, which already names
-        // the shown weekday, so the label must say it only once.
         let clock = ClockModel(now: try TestDates.utc(2026, 10, 18, 6, 0), refreshes: false)
         let bs = try #require(clock.todayBSDate())
         let weekday = try #require(clock.weekdayString(style: .transliterated))
@@ -251,7 +227,6 @@ struct MonthGridModelTests {
     @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
 
-        // Read from source because the harness renders no views.
         let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
         let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
         let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))

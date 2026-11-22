@@ -1,10 +1,6 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 -- Copyright (C) 2026 Dibas Sigdel
 --
--- Check that a mounted DMG's Finder window matches the layout JSON. The
--- window is read back from Finder, since .DS_Store bytes can be present
--- and still be ignored.
---
 -- Usage: osascript scripts/verify-dmg-layout.applescript <volume> <app> <layout.json>
 -- Exits 0 if the window matches, 1 with the list of mismatches otherwise.
 
@@ -34,7 +30,6 @@ on run argv
 			set statusBarShown to statusbar visible of container window
 			set arrangementMode to arrangement of viewOptions
 
-			-- Bounds are {left, top, right, bottom}. Only the size is checked.
 			set actualWindowSize to {(item 3 of windowBounds) - item 1 of windowBounds, (item 4 of windowBounds) - item 2 of windowBounds}
 			if actualWindowSize is not expectedWindowSize then
 				set end of mismatches to "window is " & my describe(actualWindowSize) & "pt, expected " & my describe(expectedWindowSize) & "pt"

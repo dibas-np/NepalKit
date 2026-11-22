@@ -5,8 +5,6 @@ import WidgetKit
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Renders a Today entry in the requested accessory family. States are told
-/// apart by text, never color, so every rendering mode works unchanged.
 struct TodayComplicationView: View {
     @Environment(\.widgetFamily) private var family
     let entry: TodayComplicationEntry
@@ -33,15 +31,13 @@ struct TodayComplicationView: View {
 }
 
 /// The watchOS Text Size slider stops below the accessibility sizes, so
-/// `isAccessibilitySize` never fires; xxLarge is where the default layouts
-/// first clip. Duplicated in the Watch app.
+/// `isAccessibilitySize` never fires.
 extension DynamicTypeSize {
     var watchLargeTextFallback: Bool {
         self >= .xxLarge
     }
 }
 
-/// Weekday · year over the Bikram Sambat day and month.
 struct TodayRectangularComplication: View {
     let state: TodayComplicationState
 
@@ -53,7 +49,6 @@ struct TodayRectangularComplication: View {
             Text("NepalKit")
         case .day(.supported(let components)):
             if dynamicTypeSize.watchLargeTextFallback {
-                // Spacing 2: a Modular middle slot fits exactly two lines.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
@@ -63,8 +58,6 @@ struct TodayRectangularComplication: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
             } else {
-                // The weekday shares the year's line: on the day/month line it
-                // truncated the month.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2.weight(.semibold))
@@ -103,7 +96,6 @@ struct TodayRectangularComplication: View {
     }
 }
 
-/// The Bikram Sambat date on one line; large text drops the year visually.
 struct TodayInlineComplication: View {
     let state: TodayComplicationState
 

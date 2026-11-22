@@ -8,9 +8,6 @@ import SwiftUI
 
 @MainActor
 struct TodayModelTests {
-    // MARK: Fixtures
-
-    /// Only the MainActor touches it, so plain storage is safe.
     nonisolated final class MutableClock: @unchecked Sendable {
         var value: Date
         var reads = 0
@@ -42,7 +39,6 @@ struct TodayModelTests {
         }
     }
 
-    /// A clock-change stream the test drives, with a flag set on termination.
     nonisolated final class SignalFixture: @unchecked Sendable {
         let stream: ClockChangeStream
         let continuation: AsyncStream<Void>.Continuation
@@ -82,15 +78,12 @@ struct TodayModelTests {
         )
     }
 
-    /// Lets an in-flight stream event reach the model.
     private func settle() async {
         for _ in 0 ..< 5 {
             await Task.yield()
         }
         try? await Task.sleep(for: .milliseconds(50))
     }
-
-    // MARK: Launch and activation
 
     @Test func activationResolvesTodayWithOneClockRead() throws {
         let clock = MutableClock(try anchoredInstant())
@@ -118,15 +111,12 @@ struct TodayModelTests {
         model.activate()
         model.activate()
 
-        // A duplicated subscription would read the clock twice for the event.
         signals.continuation.yield()
         await settle()
 
         #expect(clock.reads == 2)
         model.deactivate()
     }
-
-    // MARK: Active clock-change handling
 
     @Test func clockChangeSignalRecomputesFromCurrentTime() async throws {
         let clock = MutableClock(try anchoredInstant())
@@ -169,7 +159,6 @@ struct TodayModelTests {
         model.activate()
         let displayAtDeactivation = model.display
 
-        // No suspension lets the observer run before the task is cancelled.
         clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
         signals.continuation.yield()
         model.deactivate()
@@ -178,8 +167,6 @@ struct TodayModelTests {
         #expect(clock.reads == 1)
         #expect(model.display == displayAtDeactivation)
     }
-
-    // MARK: The active-midnight refresh
 
     @Test func scheduledMidnightRefreshResolvesFromCurrentTime() async throws {
         let clock = MutableClock(try anchoredInstant())
@@ -199,7 +186,6 @@ struct TodayModelTests {
             Issue.record("Expected a supported display after the wake")
             return
         }
-        // Resolved from the current reading, not the instant scheduled from.
         #expect(components.bikramSambatDay == "१२")
         model.deactivate()
     }
@@ -220,8 +206,6 @@ struct TodayModelTests {
         #expect(clock.reads == 1)
     }
 
-    // MARK: Scene phase
-
     @Test func onlyTheBackgroundPhaseDeactivates() {
         #expect(shouldStayActive(in: .active))
         #expect(shouldStayActive(in: .inactive))
@@ -229,7 +213,6 @@ struct TodayModelTests {
     }
 
     @Test func inactivePhaseKeepsTheMidnightRefresh() async throws {
-        // Always On: a dimmed screen is still visible.
         let clock = MutableClock(try anchoredInstant())
         let signals = SignalFixture()
         let model = makeModel(
@@ -247,8 +230,6 @@ struct TodayModelTests {
         model.deactivate()
     }
 
-    // MARK: Inactive resume
-
     @Test func multiDayResumeRecomputesImmediately() throws {
         let clock = MutableClock(try anchoredInstant())
         let signals = SignalFixture()
@@ -256,7 +237,6 @@ struct TodayModelTests {
         model.activate()
         model.deactivate()
 
-        // Two inactive days later, reactivation recomputes at once.
         clock.value = try UTCWatchFixture.utc(2026, 9, 28, 18, 30)
         model.activate()
 
@@ -268,8 +248,6 @@ struct TodayModelTests {
         #expect(components.bikramSambatDay == "१३")
         model.deactivate()
     }
-
-    // MARK: States
 
     @Test func pastTheMaximumTodayRendersTheAfterBoundary() throws {
         let clock = MutableClock(try UTCWatchFixture.utc(2028, 4, 13, 12, 0))
@@ -305,12 +283,9 @@ struct TodayModelTests {
             Issue.record("Expected a calculation error display")
             return
         }
-        // The NPT day was derived before the table failed.
         #expect(components.gregorianDay == "२७")
         model.deactivate()
     }
-
-    // MARK: Helpers
 
     private func waitUntil(timeout: Duration, _ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + timeout
@@ -321,11 +296,8 @@ struct TodayModelTests {
     }
 }
 
-// MARK: Always On
-
 extension TodayModelTests {
     @Test func displayAtAnInstantPastNepalMidnightIsTheNewDay() throws {
-        // `display(at:)` alone must cross midnight (18:15 UTC).
         let clock = MutableClock(try anchoredInstant())
         let model = makeModel(clock: clock, signals: SignalFixture())
 

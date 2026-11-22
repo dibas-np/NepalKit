@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
-// Public holidays for 2083 BS from the Home Ministry's notice in the Nepal
-// Gazette (खण्ड ७५ संख्या ६७, भाग ५, 2082-11-18), one row per item with its
-// section in a trailing comment. Undated items (Eid, Siruwa Pawani, Bhoto
-// Jatra, Mohammad Jayanti) are left out; Guru Nanak Jayanti uses the
-// Panchanga's date.
-
 let publicHolidays2083: [BikramSambatDate: [PublicHoliday]] = [
     BikramSambatDate(year: 2083, month: 1, day: 1): [
         PublicHoliday(scope: .nationwide, nepali: "नव वर्ष"), // 2.1(क)

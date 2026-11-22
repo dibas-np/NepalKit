@@ -4,12 +4,9 @@ import Foundation
 import NepalKitCore
 
 extension DisplaySettings {
-    /// The Watch's only display configuration: Nepali names, Devanagari digits.
     public static let watch = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 }
 
-/// The display pieces of one supported day, plus speech strings.
-///
 /// Speech uses Latin digits and transliterated names: watchOS VoiceOver voices
 /// skip Devanagari month names entirely.
 public struct WatchDayComponents: Sendable, Hashable {
@@ -26,7 +23,6 @@ public struct WatchDayComponents: Sendable, Hashable {
     public let spokenGregorian: String
 }
 
-/// The display pieces of a day outside the supported range.
 public struct WatchBoundaryComponents: Sendable, Hashable {
     public enum Side: Sendable, Hashable {
         case before
@@ -35,10 +31,8 @@ public struct WatchBoundaryComponents: Sendable, Hashable {
 
     public let side: Side
 
-    /// The first or last supported BS year, in display digits.
     public let contextYear: String
 
-    /// For example, `Supported from १९७५ BS`.
     public let contextLine: String
 
     public var compactContextLine: String {
@@ -72,14 +66,12 @@ public struct WatchErrorComponents: Sendable, Hashable {
     }
 }
 
-/// What a Watch surface renders for one day.
 public enum WatchDayDisplay: Sendable, Hashable {
     case supported(WatchDayComponents)
     case rangeBoundary(WatchBoundaryComponents)
     case calculationError(WatchErrorComponents)
 }
 
-/// Builds the complete display meaning of a resolved day.
 public func watchDayDisplay(
     for day: ResolvedDay,
     settings: DisplaySettings,
@@ -128,7 +120,6 @@ public func watchDayDisplay(
     }
 }
 
-/// Resolves a Gregorian civil day and builds its display.
 public func watchDayDisplay(
     for civilDay: GregorianDate,
     settings: DisplaySettings,
@@ -147,7 +138,6 @@ public func watchDayDisplay(
     }
 }
 
-/// Builds a calculation-error display.
 public func watchCalculationErrorDisplay(
     gregorianDay: GregorianDate?,
     settings: DisplaySettings
@@ -191,14 +181,9 @@ private func boundary(
     )
 }
 
-/// Status copy for the Watch's boundary and failure states.
 public enum WatchDayCopy {
-    /// Range boundary, full presentation.
     public static let boundaryFull = "Bikram Sambat unavailable"
-    /// Range boundary, compact presentation.
     public static let boundaryCompact = "Unavailable"
-    /// Calculation failure, full presentation.
     public static let failureFull = "Date calculation failed"
-    /// Calculation failure, compact presentation.
     public static let failureCompact = "Error"
 }

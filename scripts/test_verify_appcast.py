@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for verify-appcast.py, mostly that each check rejects bad input."""
 
 from __future__ import annotations
 
@@ -38,7 +37,6 @@ RSS_OPEN = (
 RSS_CLOSE = "</channel></rss>"
 
 
-# Distinct per-version builds, since the newest build must be the highest.
 _DERIVED = object()
 
 
@@ -100,7 +98,6 @@ def write_plist(tmp: Path) -> Path:
 
 
 def write_plist_with_key(tmp: Path, key_b64: str) -> Path:
-    """An Info.plist carrying a specific SUPublicEDKey."""
     plist = tmp / "keyed-Info.plist"
     plist.write_text(
         '<?xml version="1.0"?><plist><dict><key>SUPublicEDKey</key>'
@@ -110,9 +107,6 @@ def write_plist_with_key(tmp: Path, key_b64: str) -> Path:
     return plist
 
 
-# Feed-signing fixtures use a throwaway Ed25519 key. GOLDEN_SIGNED_FEED is real
-# `sign_update` output, so the signed-bytes format is checked against Sparkle
-# itself rather than against this file's own signer.
 GOLDEN_SIGNED_FEED_B64 = (
     "PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJ5ZXMiPz4KPHJzcyB4bWxuczpzcGFya2xl"
     "PSJodHRwOi8vd3d3LmFuZHltYXR1c2NoYWsub3JnL3htbC1uYW1lc3BhY2VzL3NwYXJrbGUiIHZl"
@@ -134,7 +128,6 @@ GOLDEN_SIGNED_FEED_KEY_B64 = "y9S6PPgQ+ObSuKALymgxuJ5vFxP3qjQOgb5Qmh7aBAc="
 
 
 def ed25519_keypair(tmp: Path, name: str = "feed") -> tuple[str, Path]:
-    """Return (public key base64, private key PEM path) for a throwaway key."""
     priv = tmp / f"{name}-priv.pem"
     pub_der = tmp / f"{name}-pub.der"
     subprocess.run(
@@ -166,12 +159,6 @@ def ed25519_sign(priv: Path, tmp: Path, data: bytes) -> bytes:
 def sign_feed(tmp: Path, body: str, priv: Path, *, signature: bytes | None = None,
               sign: bool = True, declared_length: int | None = None,
               name: str = "signed-feed.xml") -> Path:
-    """Write `body` as a feed, signed the way sign_update signs one.
-
-    `signature` overrides the real signature (for the malformed cases);
-    `sign=False` leaves the block off entirely; `declared_length` overrides the
-    byte count written into the block.
-    """
     content = (RSS_OPEN + body + RSS_CLOSE).encode("utf-8")
     if not sign:
         path = tmp / name
@@ -202,10 +189,6 @@ def run_verify(test: unittest.TestCase, feed: Path, plist: Path,
 def capture_verify(feed: Path, plist: Path,
                    minimum_system_version: str | None = None,
                    enclosure: Path | None = None) -> str:
-    """Run `verify` in-process and return what it printed.
-
-    Without an `enclosure` it passes `skip_crypto`, which is a reported skip.
-    """
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         va.verify(feed, plist, enclosure, enclosure is None, minimum_system_version)
@@ -213,13 +196,11 @@ def capture_verify(feed: Path, plist: Path,
 
 
 def run_cli(*args: str, cwd: str | None = None) -> subprocess.CompletedProcess:
-    """Run the verifier as a subprocess, so the exit code is real."""
     return subprocess.run(
         [sys.executable, str(_MODULE), *args], capture_output=True, text=True, cwd=cwd
     )
 
 def write_notes_dir(tmp: Path, notes: dict[str, str]) -> Path:
-    """A scratch release-notes directory: `notes` maps version to HTML body."""
     notes_dir = tmp / "release-notes"
     notes_dir.mkdir(exist_ok=True)
     for version, body in notes.items():
@@ -227,8 +208,6 @@ def write_notes_dir(tmp: Path, notes: dict[str, str]) -> Path:
     return notes_dir
 
 def make_generated_item(version: str, description: str | None = None) -> str:
-    """An item shaped the way generate_appcast writes one, with the enclosure
-    on its own 12-space-indented line."""
     parts = [
         "        <item>\n",
         f"            <title>{version}</title>\n",
@@ -244,7 +223,6 @@ def make_generated_item(version: str, description: str | None = None) -> str:
     return "".join(parts)
 
 def run_embed(test: unittest.TestCase, feed: Path, notes_dir: Path) -> str:
-    """Call embed_notes expecting SystemExit; return its message."""
     with test.assertRaises(SystemExit) as ctx:
         with contextlib.redirect_stdout(io.StringIO()):
             va.embed_notes(feed, notes_dir)
@@ -252,14 +230,12 @@ def run_embed(test: unittest.TestCase, feed: Path, notes_dir: Path) -> str:
     return ctx.exception.code
 
 def capture_embed(feed: Path, notes_dir: Path) -> str:
-    """Embed for real, returning what it printed."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         va.embed_notes(feed, notes_dir)
     return buf.getvalue()
 
 class VerifyAppcastTest(unittest.TestCase):
-    # Fixtures aimed at checks after the feed signature have to be signed.
     @classmethod
     def setUpClass(cls) -> None:
         cls._keys = tempfile.TemporaryDirectory()
@@ -432,8 +408,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertEqual(va.deployment_floor("15.0"), "15.0")
 
     def test_feed_floor_must_match_the_apps_floor(self) -> None:
-        # Sparkle 2.10 suggests 12.0 in the feed, which would offer the update to
-        # systems the app cannot run on.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = self.feed(tmp_path, make_item(minimum_system_version="12.0"))
@@ -521,17 +495,12 @@ class VerifyAppcastTest(unittest.TestCase):
                 self.assertIn("exactly one feed item", result.stdout)
 
     def test_generation_seeds_the_staging_dir_with_the_live_feed(self) -> None:
-        # generate_appcast only merges into an appcast found in its archives
-        # directory; without a seeded copy it writes a feed with one release.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         seed = script.index('cp "$ROOT/appcast.xml"')
-        # Match the invocation; the variable is also used earlier.
         generate = script.index('"$GENERATE_APPCAST" \\')
         self.assertLess(seed, generate, "the feed must be seeded before generate_appcast runs")
         self.assertIn('"$ARCHIVES_DIR/appcast.xml"', script)
 
-    # Run the scripts' own lines with bash, each with a control that omits the
-    # chmod, so the test cannot pass without it.
     @staticmethod
     def _seed_block(drop_chmod: bool = False) -> str:
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
@@ -555,7 +524,6 @@ class VerifyAppcastTest(unittest.TestCase):
         return tmp / "archives" / "appcast.xml"
 
     def test_a_read_only_committed_feed_is_seeded_writable(self) -> None:
-        # The signed feed is copied read-only; generate_appcast rewrites it in place.
         self.assertTrue(os.access(self._run_seed(self._seed_block()), os.W_OK))
 
     def test_without_the_chmod_the_seeded_feed_stays_read_only(self) -> None:
@@ -599,11 +567,8 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertGreaterEqual(items, 2, "the committed feed has lost release history")
 
     def test_the_feed_is_signed_after_everything_that_rewrites_it(self) -> None:
-        # sign_update must run after generate_appcast and --embed-notes, and
-        # nothing may write to the feed afterwards.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         generate = script.index('"$GENERATE_APPCAST" \\')
-        # Match the invocation; the flag also appears in a comment.
         embed = script.index('python3 "$PY" "$APPCAST" --embed-notes')
         sign = script.index('"$SIGN_UPDATE" "$APPCAST"')
         first_verify = script.index('python3 "$PY" "$APPCAST" --info-plist')
@@ -651,8 +616,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertIn("FAIL line above", stopped.stderr)
 
     def test_signing_is_skipped_when_the_private_key_is_absent(self) -> None:
-        # CI has no signing key, so signing is skipped there, but the staleness
-        # check still runs.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         sign = script.index('"$SIGN_UPDATE" "$APPCAST"')
         conditional = script.rindex("if [[ -x \"$SIGN_UPDATE\" ]]", 0, sign)
@@ -660,13 +623,11 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertIn("no sign_update", script, "the skip has to say so, not fail quietly")
 
     def test_the_signing_binary_is_derived_from_the_one_already_found(self) -> None:
-        # SPARKLE_BIN is unset on the discovery path, so derive from GENERATE_APPCAST.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         self.assertIn('SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"', script)
         self.assertNotIn('SIGN_UPDATE="$SPARKLE_BIN/sign_update"', script)
 
     def test_generation_links_to_the_release_page_not_the_repository(self) -> None:
-        # Sparkle shows <link> as "Learn More", so it must point at the release tag.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         self.assertIn('RELEASE_LINK="$REPO_URL/releases/tag/$TAG"', script)
         self.assertIn('--link "$RELEASE_LINK"', script)
@@ -682,7 +643,6 @@ class VerifyAppcastTest(unittest.TestCase):
             if not version or not link:
                 mismatched.append("item without version or link")
                 continue
-            # Tags have a `v` from 1.3.0 on; earlier tags are left as published.
             acceptable = (
                 f"/releases/tag/{version.group(1)}",
                 f"/releases/tag/v{version.group(1)}",
@@ -692,8 +652,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertEqual(mismatched, [], f"feed items not pointing at their release page: {mismatched}")
 
     def test_the_download_prefix_keeps_its_trailing_slash(self) -> None:
-        # Foundation replaces a base URL's last path component when it has no
-        # trailing slash, so the download prefix must end in one.
         script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
         self.assertIn('URL_PREFIX="${URL_PREFIX%/}/"', script)
         self.assertIn('--download-url-prefix "$URL_PREFIX"', script)
@@ -755,7 +713,6 @@ class VerifyAppcastTest(unittest.TestCase):
 
 
     def test_a_skipped_item_fails_the_run(self) -> None:
-        # An item whose bytes were never checked is a skip, and the exit code says so.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key_b64, priv = ed25519_keypair(tmp_path, "skipped")
@@ -783,7 +740,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertIn("Appcast is sound.", result.stdout)
 
     def test_a_skipped_item_never_reports_the_appcast_as_sound(self) -> None:
-        # A skip must not also print the success line.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key_b64, priv = ed25519_keypair(tmp_path, "skipped")
@@ -794,8 +750,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertIn("skip  version 1.0: no enclosure bytes available to verify", result.stdout)
 
     def test_a_partial_release_run_is_named_but_does_not_fail(self) -> None:
-        # At release time only the new archive is on disk. --allow-partial
-        # accepts that; the default still refuses to call it a pass.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             payload = b"the real bytes of the archive"
@@ -822,8 +776,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertNotEqual(default.returncode, 0, default.stdout)
 
 class FeedSignatureTest(unittest.TestCase):
-    """The feed's own signature, checked independently of the archives'."""
-
     def test_signed_feed_passes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -842,7 +794,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("Appcast is sound.", output)
 
     def test_unsigned_feed_fails(self) -> None:
-        # Valid archive signatures do not make an unsigned feed acceptable.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item())
@@ -870,7 +821,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("feed signature does NOT verify", output)
 
     def test_tampered_version_string_fails(self) -> None:
-        # A validly signed feed edited to claim a different version.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
@@ -882,7 +832,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("feed signature does NOT verify", output)
 
     def test_broken_enclosure_still_fails_when_the_feed_is_signed(self) -> None:
-        # A valid feed signature does not excuse a missing archive signature.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
@@ -913,8 +862,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("feed signature is 3 bytes, expected 64", output)
 
     def test_misdeclared_block_length_fails(self) -> None:
-        # Sparkle only uses `length` in error messages, but a mismatch means the
-        # block was not written by sign_update.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             key, priv = ed25519_keypair(tmp_path)
@@ -923,7 +870,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("The block was not written by sign_update", output)
 
     def test_unsigned_feed_fails_under_skip_crypto(self) -> None:
-        # --skip-crypto only skips archives; the feed signature is still checked.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item())
@@ -931,8 +877,6 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("the feed is not signed", output)
 
     def test_canonical_form_matches_sparkle_sign_update(self) -> None:
-        # Real sign_update output: fails if this verifier's idea of the signed
-        # bytes drifts from Sparkle's.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             raw = base64.b64decode(GOLDEN_SIGNED_FEED_B64)
@@ -959,8 +903,6 @@ class FeedSignatureTest(unittest.TestCase):
 
 
 class EmbedNotesTest(unittest.TestCase):
-    """The release-notes injection (`--embed-notes`)."""
-
     def test_an_undescribed_item_gets_the_notes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -969,7 +911,6 @@ class EmbedNotesTest(unittest.TestCase):
             capture_embed(feed, write_notes_dir(tmp_path, {"0.0": GOOD_NOTES}))
             out = feed.read_text(encoding="utf-8")
         self.assertIn(f"<description><![CDATA[\n{GOOD_NOTES}\n]]></description>", out)
-        # Removing the block gives back the input byte for byte.
         inserted = f"\n            <description><![CDATA[\n{GOOD_NOTES}\n]]></description>\n            "
         self.assertEqual(out.count(inserted), 1)
         self.assertEqual(out.replace(inserted, ""), original)
@@ -992,7 +933,6 @@ class EmbedNotesTest(unittest.TestCase):
                                      f"]]></description>\n            <enclosure ", "\n            <enclosure "), original)
 
     def test_an_item_with_no_enclosure_is_left_byte_for_byte(self) -> None:
-        # No enclosure means nothing to splice before; verification rejects it later.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item(description=None, include_enclosure=False,
@@ -1004,7 +944,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertEqual(out, original)
 
     def test_the_notes_land_before_the_first_of_several_enclosures(self) -> None:
-        # Only the first enclosure is spliced.
         item = (
             "<item>\n"
             "    <title>t</title>\n"
@@ -1036,8 +975,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertEqual(twice, once)
 
     def test_an_already_described_item_is_left_alone(self) -> None:
-        # An existing description wins over a different notes file, and an item
-        # with no notes file is left alone too.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             described = write_feed(tmp_path, make_item(version="1.0"))
@@ -1060,7 +997,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertTrue(reported.startswith("  ok    "), reported)
 
     def test_the_notes_file_is_trimmed_before_it_is_embedded(self) -> None:
-        # Notes files end with a newline, which must not end up in the feed.
         body = "\n  <p>one</p>\n\n"
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -1081,7 +1017,6 @@ class EmbedNotesTest(unittest.TestCase):
             message = run_embed(self, feed, notes_dir)
             self.assertIn(f"no release notes for version 0.0: expected {notes_dir / '0.0.html'}", message)
             after = feed.read_bytes()
-        # A failed embed leaves the file untouched.
         self.assertEqual(after, original)
 
     def test_notes_containing_cdata_end_are_refused(self) -> None:
@@ -1097,7 +1032,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertEqual(after, original)
 
     def test_one_missing_file_aborts_the_whole_pass_without_writing(self) -> None:
-        # The first item has notes and the second does not: nothing is written.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(
@@ -1113,7 +1047,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertEqual(after, original)
 
     def test_the_embed_needs_no_info_plist_and_runs_no_check(self) -> None:
-        # Embedding needs no Info.plist; the control shows verifying still does.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item(description=None, version="0.0"))
@@ -1130,7 +1063,6 @@ class EmbedNotesTest(unittest.TestCase):
         self.assertIn(
             'python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"', script
         )
-        # Must run before verification, as its own step, so a failure stops the release.
         embed_at = script.index('--embed-notes "${0:A:h}/release-notes"')
         verify_at = script.index('--enclosure "$archive"')
         self.assertLess(embed_at, verify_at)
@@ -1173,8 +1105,6 @@ class FeedHistory(unittest.TestCase):
 
 
 class UntrustedFeedInputTest(unittest.TestCase):
-    """What the verifier does with a feed it has not authenticated yet."""
-
     def test_a_path_shaped_version_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -1192,7 +1122,6 @@ class UntrustedFeedInputTest(unittest.TestCase):
         self.assertIn("not a numeric release version", message)
 
     def test_unclosed_item_markers_are_scanned_in_linear_time(self) -> None:
-        # Must finish in linear time; a quadratic regex took ~40s on this input.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             feed = write_feed(tmp_path, make_item() + "<!--" + "<item>" * 50000 + "-->")

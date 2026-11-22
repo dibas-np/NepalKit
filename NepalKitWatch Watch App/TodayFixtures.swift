@@ -5,9 +5,7 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Debug-only fixture wiring for the Today screen.
 enum TodayFixtures {
-    /// The on-screen fixture banner, or nil when no fixture is active.
     static var bannerNote: String? {
         guard let fixture = WatchFixtureControl.current else { return nil }
         var parts: [String] = []

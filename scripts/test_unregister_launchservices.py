@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for `unregister-launchservices.sh`.
-
-These register real throwaway bundles with LaunchServices and check the
-database afterwards, including the delete-before-unregister mistake the script
-must report.
-"""
 
 from __future__ import annotations
 
@@ -44,8 +38,6 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 def registered(path: str) -> bool:
-    """Whether any LaunchServices registration names this path or its resolved
-    form (the database stores /private/var/... for /var/...)."""
     candidates = {path, str(Path(path).resolve())}
     dump = subprocess.run(
         [LSREGISTER, "-dump"], capture_output=True, text=True, check=True
@@ -62,15 +54,12 @@ def registered(path: str) -> bool:
 
 
 class UnregisterLaunchServices(unittest.TestCase):
-    """Drives the real `lsregister` against throwaway bundles."""
-
     def setUp(self) -> None:
         self.workspace = Path(tempfile.mkdtemp(prefix="nk-ls-test."))
         self.addCleanup(self._remove_workspace)
         self._bundle_ids: list[str] = []
 
     def _remove_workspace(self) -> None:
-        # Unregister before deleting, or the fixtures themselves leave stale entries.
         for bundle in self.workspace.glob("*.app"):
             if bundle.exists():
                 subprocess.run(
@@ -92,7 +81,6 @@ class UnregisterLaunchServices(unittest.TestCase):
         )
         if register:
             subprocess.run([LSREGISTER, "-f", str(bundle)], check=True)
-            # Registration is asynchronous, so wait for the dump to show it.
             for _ in range(20):
                 if self._bundle_id_registered(self._bundle_ids[-1]):
                     break
@@ -119,7 +107,6 @@ class UnregisterLaunchServices(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_a_deleted_bundle_is_reported_rather_than_passed(self) -> None:
-        # The bundle is already gone, so its entry cannot be removed: must fail.
         bundle = self.make_bundle("Gone.app")
         bundle_id = self._bundle_ids[0]
         backup = self.workspace / "deleted-bundle-backup"
@@ -150,7 +137,6 @@ class UnregisterLaunchServices(unittest.TestCase):
         self.assertFalse(self._bundle_id_registered(second_id))
 
     def test_one_unremovable_bundle_does_not_hide_the_others(self) -> None:
-        # A deleted path must not stop the live ones being cleaned up.
         live = self.make_bundle("Live.app")
         missing = self.workspace / "Missing.app"
 
@@ -175,8 +161,6 @@ class UnregisterLaunchServices(unittest.TestCase):
 
 
 class PackageReleaseWiring(unittest.TestCase):
-    """package-release.sh's final unregistration gate must be able to fail."""
-
     def function_body(self, name: str = "unregister_launchservices") -> str:
         source = (Path(__file__).resolve().parent / "package-release.sh").read_text()
         match = re.search(

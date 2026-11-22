@@ -3,8 +3,6 @@
 import NepalKitCore
 import SwiftUI
 
-/// The Menu Bar tab: a live preview of the menu-bar item and its format options.
-/// Digit script and month names stay in General because they affect the popover too.
 struct MenuBarSettingsView: View {
     @Bindable var menuBar: MenuBarModel
     let settings: DisplaySettings
@@ -13,13 +11,11 @@ struct MenuBarSettingsView: View {
 
     var body: some View {
         Form {
-            // Its own view so the clock's tick re-evaluates only the preview.
             MenuBarPreview(menuBar: menuBar, settings: settings, updateAvailable: updateAvailable)
             Section {
                 Toggle(Strings.menuBarShowsWeekday, isOn: $menuBar.showsWeekday)
                 Toggle(Strings.menuBarShowsYear, isOn: $menuBar.showsYear)
                 Toggle(Strings.menuBarShowsTime, isOn: $menuBar.showsTime)
-                // Disabled rather than hidden while the time is off, as in the system clock's settings.
                 Group {
                     Toggle(Strings.menuBarUsesTwentyFourHourClock, isOn: $menuBar.usesTwentyFourHourClock)
                     Toggle(Strings.menuBarShowsSeconds, isOn: $menuBar.showsSeconds)
@@ -38,8 +34,6 @@ struct MenuBarSettingsView: View {
     }
 }
 
-/// The Menu Bar tab's preview: what the menu-bar item shows and how it is
-/// announced.
 private struct MenuBarPreview: View {
     let menuBar: MenuBarModel
     let settings: DisplaySettings
@@ -47,8 +41,6 @@ private struct MenuBarPreview: View {
 
     var body: some View {
         Section {
-            // Glass on the value itself: a grouped `Form` section paints over anything
-            // behind it, so `.glassEffect` on the window was invisible (and swallowed clicks).
             Text(preview)
                 .font(.body.monospacedDigit())
                 .textSelection(.enabled)
@@ -75,7 +67,6 @@ private struct MenuBarPreview: View {
         )
     }
 
-    /// Reuses `spokenTitle` so the preview cannot drift from what the menu bar announces.
     private var spokenPreview: String {
         menuBar.spokenTitle(
             settings: settings,

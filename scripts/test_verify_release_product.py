@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for verify-release-product.py, with codesign stubbed."""
 
 import base64
 import contextlib
@@ -90,7 +89,6 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertNotIn("FAIL", out)
 
     def test_a_failed_codesign_run_is_a_failure_even_with_xml(self):
-        # The stub still prints a valid plist; only the exit code signals failure.
         code, out = self.run_case(codesign_exit=1)
         self.assertEqual(code, 1, out)
         self.assertIn("codesign exited 1", out)

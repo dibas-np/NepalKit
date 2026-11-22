@@ -4,19 +4,15 @@ import AppKit
 import Foundation
 import NepalKitCore
 
-/// An all-day event handed to the calendar app as an iCalendar file, which needs
-/// no calendar access or extra sandbox entitlement.
 struct CalendarEvent: Equatable {
     let title: String
     let notes: String
     let date: GregorianDate
 
-    /// One identifier per day, so adding a day twice offers the same event.
     var uid: String {
         "nepalkit-\(date.year)-\(date.month)-\(date.day)@nepalkit"
     }
 
-    /// The event as an RFC 5545 document; `stamp` is the DTSTAMP.
     func ics(stamp: Date) -> String {
         let lines = [
             "BEGIN:VCALENDAR",
@@ -36,7 +32,6 @@ struct CalendarEvent: Equatable {
         return lines.map(Self.fold).joined(separator: "\r\n") + "\r\n"
     }
 
-    /// Writes the file and opens it in the default calendar app. False on failure.
     func open(
         stamp: Date = .now,
         in directory: URL = FileManager.default.temporaryDirectory,
@@ -51,14 +46,10 @@ struct CalendarEvent: Equatable {
         return opener(url)
     }
 
-    // MARK: - Format
-
-    /// "20261018".
     static func basic(_ day: GregorianDate) -> String {
         padded(day.year, 4) + padded(day.month, 2) + padded(day.day, 2)
     }
 
-    /// "20261011T143000Z".
     static func utcStamp(_ date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt

@@ -13,14 +13,12 @@ struct TodayDisplayTests {
     }
 
     @Test func nptClockShowsNPTTime() throws {
-        // 18:30 UTC on 26 Sep is 00:15 NPT on 27 Sep.
         let now = try UTCDateFixture.utc(2026, 9, 26, 18, 30)
         #expect(DigitScript.latin.formatTime(now, in: .nepal) == "00:15:00")
     }
 
     @Test func clockHonorsDevanagariDigits() throws {
         let now = try UTCDateFixture.utc(2026, 9, 27, 12, 0)
-        // 12:00 UTC is 17:45 NPT.
         #expect(DigitScript.devanagari.formatTime(now, in: .nepal) == "१७:४५:००")
     }
 

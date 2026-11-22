@@ -5,12 +5,9 @@ import Testing
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Label wording only. Which family passes which flags is covered by
-/// `NepalKitTests/WatchPresentationWiringTests`.
 struct ComplicationPresentationTests {
     private let dataset = CalendarDataset.v2
 
-    /// 27 September 2026 resolves to 11 Ashoj 2083, a Sunday.
     private var supportedComponents: WatchDayComponents {
         get throws {
             let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
@@ -20,8 +17,6 @@ struct ComplicationPresentationTests {
             return components
         }
     }
-
-    // MARK: Supported labels
 
     @Test func rectangularAnnouncesWeekdayFullDateAndGregorian() throws {
         let components = try supportedComponents
@@ -40,8 +35,6 @@ struct ComplicationPresentationTests {
                 == "11 Ashoj 2083"
         )
     }
-
-    // MARK: Boundary and error labels
 
     @Test func boundaryLabelRetainsTheSupportContext() throws {
         let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
@@ -79,10 +72,7 @@ struct ComplicationPresentationTests {
         #expect(components.spokenDescription == "Date calculation failed")
     }
 
-    // MARK: Longest canonical month representation
-
     @Test func cornerLabelCarriesTheLongestMonthNameWithCombiningMarks() throws {
-        // Kartik 1, 2083 is 18 October 2026.
         let kartikDay = try ResolvedDay(GregorianDate(year: 2026, month: 10, day: 18), in: dataset)
         guard case .supported(let components) = watchDayDisplay(for: kartikDay, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported Kartik display")

@@ -3,9 +3,7 @@
 import NepalKitCore
 import SwiftUI
 
-/// The About tab: app and dataset versions, the supported range, and software update.
 struct AboutSettingsView: View {
-    /// `automaticChecksSetting` writes through to the service, which stays the authority.
     @Bindable var updates: UpdateCheckModel
     let metadata: AppMetadata
     let dataset: CalendarDataset
@@ -38,7 +36,6 @@ struct AboutSettingsView: View {
             }
 
             Section(Strings.updatesSection) {
-                // The ellipsis is dropped from the spoken label.
                 Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
                     .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
 
@@ -53,7 +50,6 @@ struct AboutSettingsView: View {
                 }
 
                 if let lastCheck = updates.lastCheckDate {
-                    // Nil before the first check.
                     Text(Strings.updateLastChecked(lastCheck.formatted(date: .abbreviated, time: .shortened)))
                         .font(.footnote)
                         .foregroundStyle(.secondary)

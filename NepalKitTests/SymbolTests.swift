@@ -4,8 +4,6 @@ import AppKit
 import Testing
 @testable import NepalKit
 
-/// An unresolvable SF Symbol name renders as nothing, with no error, so these
-/// tests make a typo fail the suite.
 @MainActor
 struct SymbolTests {
     @Test func everySymbolResolves() {
@@ -18,14 +16,10 @@ struct SymbolTests {
     }
 
     @Test func symbolsAreDistinct() {
-        // Two names for one glyph would lose the distinction they exist to make.
         #expect(Set(Symbols.all).count == Symbols.all.count)
     }
 
     @Test func everySymbolIsReachableFromTheApp() throws {
-        // A name no view renders still passes the other tests. Sources are read
-        // from disk because SwiftUI leaves nothing to inspect at runtime, and
-        // matched on the constant name, since views write `Symbols.name`.
         let sources = try Self.appSources()
         #expect(!sources.isEmpty, "found no app sources at all — the path walk is broken")
 
@@ -50,7 +44,6 @@ struct SymbolTests {
             .map { try String(contentsOf: appDir.appendingPathComponent($0), encoding: .utf8) }
     }
 
-    /// Constants declared on `Symbols`, parsed from its source.
     private static func declaredConstants() throws -> [String] {
         let text = try String(
             contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Symbols.swift"),
@@ -62,14 +55,12 @@ struct SymbolTests {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard trimmed.hasPrefix("static let ") else { return nil }
                 let rest = trimmed.dropFirst("static let ".count)
-                // `all` is the index of symbols, not a symbol.
                 if rest.hasPrefix("all:") { return nil }
                 let name = rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }
                 return name.isEmpty ? nil : String(name)
             }
     }
 
-    /// The names in `Symbols.all`, read from the same source.
     private static let constants: Set<String> = {
         guard let text = try? String(
             contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Symbols.swift"),
@@ -88,7 +79,6 @@ struct SymbolTests {
         )
     }()
 
-    /// Searched upward because `#filePath` may be the symlinked harness path.
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()

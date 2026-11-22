@@ -69,7 +69,6 @@ extension GregorianDate {
     /// The number of days in a Gregorian month, or nil if `month` is outside
     /// 1–12.
     public static func daysInMonth(year: Int, month: Int) -> Int? {
-        // `Calendar` would normalize month 0 into the previous December.
         guard (1 ... 12).contains(month) else { return nil }
         var components = DateComponents()
         components.year = year
@@ -80,7 +79,6 @@ extension GregorianDate {
         return range.count
     }
 
-    /// The UTC civil day of an instant.
     init?(utcDate date: Date) {
         let components = utcGregorian.dateComponents([.year, .month, .day], from: date)
         guard let year = components.year, let month = components.month, let day = components.day else { return nil }

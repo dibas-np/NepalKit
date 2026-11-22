@@ -3,8 +3,6 @@
 import Foundation
 import NepalKitCore
 
-/// Persists display settings, the time reference and the menu-bar format in
-/// UserDefaults. `nonisolated` because the Siri intents read it off the main actor.
 nonisolated struct SettingsStore {
     static let digitScriptKey = "digitScript"
     static let monthNameStyleKey = "monthNameStyle"
@@ -17,8 +15,6 @@ nonisolated struct SettingsStore {
 
     private let defaults: UserDefaults
 
-    /// - Parameter defaults: `.standard` in production. A versioned suite or key
-    ///   would silently reset every user's settings on upgrade.
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
@@ -34,7 +30,6 @@ nonisolated struct SettingsStore {
         defaults.set(settings.monthNames.rawValue, forKey: Self.monthNameStyleKey)
     }
 
-    /// Nepal Time when nothing (or an unknown value) is stored.
     var timeReference: TimeReference {
         TimeReference(rawValue: defaults.string(forKey: Self.timeReferenceKey) ?? "") ?? .nepal
     }
@@ -43,7 +38,6 @@ nonisolated struct SettingsStore {
         defaults.set(reference.rawValue, forKey: Self.timeReferenceKey)
     }
 
-    /// One Boolean key per option, so a new option never breaks an older stored value.
     var menuBarFormat: MenuBarFormat {
         MenuBarFormat(
             showsWeekday: defaults.bool(forKey: Self.menuBarShowsWeekdayKey),

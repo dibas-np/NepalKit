@@ -3,8 +3,6 @@
 import AppIntents
 import NepalKitCore
 
-/// A Bikram Sambat date as Shortcuts sees it. The title uses the user's display
-/// settings; the spoken dialog stays in `SpokenDate` form.
 nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     private let date: BikramSambatDate
     private let calendarMonth: BikramSambatMonth
@@ -43,7 +41,6 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
 
     var bsDay: BikramSambatDate { date }
 
-    /// Validates the calendar day and supplies its weekday for every query path.
     init?(bsDay: BikramSambatDate, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) {
         guard let month = BikramSambatMonth(rawValue: bsDay.month),
               let gregorian = GregorianDate(bsDay, in: AppData.dataset) else { return nil }
@@ -52,15 +49,12 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         self.weekdayValue = IntentAnswers.weekdayNameString(gregorian.weekday, monthNames: monthNames)
     }
 
-    /// Today's date in the user's time reference, or nil past the supported range.
     static func today() -> BikramSambatDateEntity? {
         let timeZone = SettingsStore().timeReference.timeZone
         guard let bs = BikramSambatDate.today(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
         return BikramSambatDateEntity(bsDay: bs)
     }
 
-    /// Best-effort parse of text like "15 Ashar 2082". Months match a title or
-    /// synonym exactly; only Latin digits are parsed.
     static func parsing(_ string: String) -> BikramSambatDateEntity? {
         var month: BikramSambatMonth?
         var numbers: [Int] = []
@@ -75,20 +69,16 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
             }
         }
         guard let month, numbers.count == 2 else { return nil }
-        // Day before year: the four-digit number is the Bikram Sambat year.
         let year = numbers.first(where: { $0 >= 1000 }) ?? numbers[1]
         let day = numbers.first(where: { $0 != year }) ?? numbers[0]
         return BikramSambatDateEntity(bsDay: BikramSambatDate(year: year, month: month.rawValue, day: day))
     }
 
-    /// Exact matching, never containment: synonyms like "Aso" (Ashar) and "Asoj"
-    /// (Ashoj) would otherwise resolve to the wrong month.
     private static func caseMatches(_ month: BikramSambatMonth, token: String) -> Bool {
         month.candidateStrings.contains { $0.caseInsensitiveCompare(token) == .orderedSame }
     }
 }
 
-/// Resolves Bikram Sambat dates from typed text and identifiers.
 nonisolated struct BikramSambatDateQuery: EntityStringQuery {
     typealias Entity = BikramSambatDateEntity
 

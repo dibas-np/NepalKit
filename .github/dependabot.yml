@@ -1,4 +1,3 @@
-# Sparkle is pinned through Xcode, which Dependabot can't read; data-sources.yml checks it instead.
 version: 2
 updates:
   - package-ecosystem: "github-actions"

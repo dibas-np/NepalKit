@@ -8,10 +8,7 @@ import NepalKitWatchSupport
 struct WatchDayDisplayTests {
     private let dataset = CalendarDataset.v2
 
-    // MARK: Supported days
-
     @Test func supportedComponentsCarryTheCanonicalPresentation() throws {
-        // 27 September 2026 NPT = 11 Ashoj 2083, a Sunday.
         let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
@@ -36,7 +33,6 @@ struct WatchDayDisplayTests {
             return
         }
 
-        // Watch voices skip Devanagari month names, so speech is transliterated.
         #expect(components.spokenBikramSambat == "11 Ashoj 2083")
         #expect(components.spokenWeekdayName == "Sunday")
         #expect(components.spokenGregorian == "27 September 2026")
@@ -60,8 +56,6 @@ struct WatchDayDisplayTests {
         #expect(components.gregorianYear == "2026")
         #expect(components.spokenBikramSambat == "11 Ashoj 2083")
     }
-
-    // MARK: Range boundaries
 
     @Test func beforeBoundaryNamesTheFirstSupportedYear() throws {
         let day = try ResolvedDay(GregorianDate(year: 1918, month: 4, day: 12), in: dataset)
@@ -107,8 +101,6 @@ struct WatchDayDisplayTests {
         #expect(WatchDayCopy.failureFull == "Date calculation failed")
         #expect(WatchDayCopy.failureCompact == "Error")
     }
-
-    // MARK: Calculation errors
 
     @Test func calculationErrorCarriesResolvedGregorianContext() {
         let display = watchCalculationErrorDisplay(

@@ -1,11 +1,8 @@
 import Testing
 import NepalKitCore
 
-/// Month starts from published Patro calendars, independent of the table's
-/// sources. Disputed months are in `ArbitratedDisputeTests`.
 struct MonthStartTests {
     static let bsToADCases: [MonthStartFixture] = [
-        // KMC government calendar grids, 2083.
         .init(bs: BikramSambatDate(year: 2083, month: 5, day: 1), ad: GregorianDate(year: 2026, month: 8, day: 17), label: "Bhadra 2083"),
         .init(bs: BikramSambatDate(year: 2083, month: 6, day: 1), ad: GregorianDate(year: 2026, month: 9, day: 17), label: "Ashoj 2083"),
     ]

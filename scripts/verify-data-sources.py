@@ -2,13 +2,7 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Compare NepalKit's dataset with its sole pinned base, askbuddie.
-
-All differences are explicit NepalKit corrections or the local 2084 projection.
-A passing baseline check establishes that the recorded comparison still holds,
-not that either table is officially attested. See SOURCES.md.
-
-Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
+"""Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
 
 --offline reads the pinned source cached in ~/.cache/nepalkit-data-sources/.
 --baseline compares with the committed observation and fails on any change.
@@ -36,15 +30,10 @@ PINS = {
 
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
 
-# Parse warnings, printed after the source's heading so they are attributed to it.
 NOTES = []
 
 
 def cache_dir():
-    """Per-user cache for fetched tables (NEPAKIT_DATA_CACHE overrides).
-
-    Not /tmp, since --offline trusts whatever is cached there.
-    """
     root = os.environ.get("NEPAKIT_DATA_CACHE") or str(Path.home() / ".cache" / "nepalkit-data-sources")
     path = Path(root)
     path.mkdir(parents=True, exist_ok=True)
@@ -69,7 +58,6 @@ def fetch(name, url, offline):
 
 
 def check_impossible(rows):
-    """Flag year totals that cannot occur. Applies to every source, not one."""
     for year, values in sorted(rows.items()):
         if sum(values) not in (365, 366):
             NOTES.append("  note: %d BS sums to %d days, which is impossible; "
@@ -236,7 +224,6 @@ def main():
             print("  no differing months")
         print()
 
-    # Fail if no source could be compared at all.
     if compared == 0:
         sys.exit("nothing was compared — no source was reachable or none overlap the shipped range")
     print("%d month values in the shipped table across %d years; %d year(s) were checked."

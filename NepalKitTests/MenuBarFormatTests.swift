@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The menu-bar title's optional parts. Anchors: 27 Sep 2026 is a Sunday and
-/// 11 Ashoj 2083, 28 Sep 2026 a Monday and 12 Ashoj 2083. Nepal Time is
-/// UTC+5:45, so 05:12:07 UTC reads 10:57:07.
 struct MenuBarFormatTests {
     private static let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private static let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
@@ -64,7 +61,6 @@ struct MenuBarFormatTests {
     }
 
     @Test func twelveAndTwentyFourHourClocks() throws {
-        // 17:12:07 UTC is 22:57:07 Nepal Time.
         let evening = try Self.utc(27, 17, 12, 7)
         #expect(title(evening, MenuBarFormat(showsTime: true)) == "11 Ashoj 10:57")
         #expect(title(evening, MenuBarFormat(showsTime: true, usesTwentyFourHourClock: true)) == "11 Ashoj 22:57")
@@ -73,15 +69,11 @@ struct MenuBarFormatTests {
     }
 
     @Test func twelveHourClockHasNoLeadingZeroAndTwentyFourHourDoes() throws {
-        // 03:20 UTC is 09:05 Nepal Time.
         let morning = try Self.utc(27, 3, 20, 0)
         #expect(title(morning, MenuBarFormat(showsTime: true)) == "11 Ashoj 9:05")
         #expect(title(morning, MenuBarFormat(showsTime: true, usesTwentyFourHourClock: true)) == "11 Ashoj 09:05")
     }
 
-    /// 18:15:30 UTC on 27 Sep is 00:00:30 on 28 Sep in Nepal Time: the UTC (and
-    /// any western) clock still says Sunday the 27th, Nepal is on Monday,
-    /// 12 Ashoj. Every part must follow Nepal Time, and do so together.
     @Test func everyPartFollowsNepalTimeAcrossMidnight() throws {
         let justAfter = try Self.utc(27, 18, 15, 30)
         #expect(title(justAfter, Self.everything) == "Mon 12 Ashoj 2083 12:00")
@@ -92,7 +84,6 @@ struct MenuBarFormatTests {
     }
 
     @Test func beyondTheSupportedRangeThereIsNoTitle() {
-        // 26 Jul 2028, past the table's 12 April 2028 end.
         let beyond = Date(timeIntervalSince1970: 1_848_096_000)
         #expect(title(beyond, Self.everything) == nil)
         #expect(SpokenDate.menuBarDate(now: beyond, format: Self.everything, monthNames: .transliterated, in: .v2) == nil)
@@ -116,18 +107,14 @@ struct MenuBarFormatTests {
 
     @Test func spokenTwelveHourTimeSaysWhichHalfOfTheDay() throws {
         let time = MenuBarFormat(showsTime: true)
-        // 06:12 UTC is 11:57 in Nepal; 06:15 UTC is 12:00 noon, the first PM minute.
         #expect(SpokenDate.menuBarDate(now: try Self.utc(27, 6, 12, 0), format: time, monthNames: .transliterated, in: .v2)
             == "11 Ashoj 2083, 11:57 AM")
         #expect(SpokenDate.menuBarDate(now: try Self.utc(27, 6, 15, 0), format: time, monthNames: .transliterated, in: .v2)
             == "11 Ashoj 2083, 12:00 PM")
-        // The screen keeps no marker.
         let shown = DigitScript.latin.formatTime(try Self.utc(27, 6, 15, 0), twentyFourHour: false, showsSeconds: false)
         #expect(shown == "12:00")
     }
 
-    /// 23:30 UTC on 26 Sep 2026 is Sunday 27 Sep in Nepal but Saturday 26 Sep,
-    /// 19:30, in New York.
     @Test func menuBarTitleReadsEveryPartInTheGivenZone() throws {
         let now = try TestDates.utc(2026, 9, 26, 23, 30)
         let newYork = try #require(TimeZone(identifier: "America/New_York"))

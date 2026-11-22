@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Every surface that reads today, read in the user's own zone.
-/// Anchor: 23:30 UTC on 26 Sep 2026 is 05:15 NPT on Sunday 27 Sep, 11 Ashoj
-/// 2083, but 19:30 EDT on Saturday 26 Sep, 10 Ashoj 2083.
 @MainActor
 struct TimeReferenceModelTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
@@ -19,8 +16,6 @@ struct TimeReferenceModelTests {
     private static func disagreeing() throws -> Date {
         try TestDates.utc(2026, 9, 26, 23, 30)
     }
-
-    // MARK: - Menu bar
 
     private func menuBar(timeZone: TimeZone = .nepal) throws -> MenuBarModel {
         MenuBarModel(now: try Self.disagreeing(), refreshes: false, schedulesMidnightFire: false, timeZone: timeZone)
@@ -43,20 +38,14 @@ struct TimeReferenceModelTests {
     }
 
     @Test func midnightFireIsScheduledForTheChosenZonesMidnight() throws {
-        // 19:30 EDT: New York's midnight is 4h30m away, +1s guard.
         #expect(try MenuBarModel.midnightFireInterval(after: Self.disagreeing(), in: Self.newYork()) == TimeInterval(4 * 3600 + 30 * 60 + 1))
-        // 05:15 NPT: Nepal's is 18h45m away.
         #expect(try MenuBarModel.midnightFireInterval(after: Self.disagreeing()) == TimeInterval(18 * 3600 + 45 * 60 + 1))
     }
 
     @Test func timeTickAlignsToTheChosenZonesMinute() throws {
-        // A zone 30 seconds off UTC moves the minute boundary: 05:12:07 UTC is
-        // 05:12:37 there, so the next minute is 23 seconds away.
         let offset = try #require(TimeZone(secondsFromGMT: 30))
         #expect(MenuBarModel.timeTickInterval(after: try TestDates.utc(2026, 9, 27, 5, 12, 7), showsSeconds: false, in: offset) == 23)
     }
-
-    // MARK: - Popover clock
 
     private func clock(_ reference: TimeReference, local: String = "America/New_York") throws -> ClockModel {
         let zone = try #require(TimeZone(identifier: local))
@@ -107,8 +96,6 @@ struct TimeReferenceModelTests {
         #expect(model.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 10))
     }
 
-    // MARK: - Month grid and converter
-
     @Test func monthGridMarksTheChosenZonesToday() throws {
         let model = MonthGridModel(now: try Self.disagreeing(), timeZone: try Self.newYork())
         #expect(model.today == BikramSambatDate(year: 2083, month: 6, day: 10))
@@ -116,9 +103,6 @@ struct TimeReferenceModelTests {
     }
 
     @Test func movingTheGridsZoneMovesTodayButNotTheShownMonth() throws {
-        // 18:30 UTC on 13 Apr 2025 is 00:15 NPT on 14 Apr, 1 Baisakh 2082,
-        // but 14:30 EDT on 13 Apr, 31 Chaitra 2081: the zones disagree about
-        // the year.
         let now = try TestDates.utc(2025, 4, 13, 18, 30)
         let model = MonthGridModel(now: now)
         #expect(model.shown == MonthGridMonth(year: 2082, month: 1))
@@ -144,8 +128,6 @@ struct TimeReferenceModelTests {
             == "10 Ashoj 2083")
     }
 
-    // MARK: - Siri
-
     @Test func siriTodayAnswersInTheChosenZone() throws {
         let nepal = try TodayInBikramSambatIntent.answer(now: Self.disagreeing(), in: AppData.dataset, timeZone: .nepal)
         let local = try TodayInBikramSambatIntent.answer(now: Self.disagreeing(), in: AppData.dataset, timeZone: Self.newYork())
@@ -165,8 +147,6 @@ struct TimeReferenceModelTests {
     }
 
     @Test func relativeDayCountsCivilDaysAcrossDaylightSaving() throws {
-        // 00:30 EDT on Sunday 1 Nov 2026, the 25-hour day the clocks go back.
-        // 24 hours later is 23:30 EST, still the 1st; tomorrow is the 2nd.
         let tomorrow = RelativeDay.bsDay(offset: 1, now: try TestDates.utc(2026, 11, 1, 4, 30), timeZone: try Self.newYork(), in: AppData.dataset)
         #expect(tomorrow.flatMap { GregorianDate($0, in: AppData.dataset) } == GregorianDate(year: 2026, month: 11, day: 2))
     }

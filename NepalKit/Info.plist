@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  NepalKit's Info.plist, in full. It is authoritative for every key, including
+  It is authoritative for every key, including
   the Apple-defined ones, and `GENERATE_INFOPLIST_FILE` stays off: with it on,
   the generator owns Apple-known keys and silently overwrites this file's
   values for them. `INFOPLIST_KEY_*` settings are consumed by that same
   generator, and a name outside its allowlist builds green while producing no
   key at all — Sparkle's keys (SUPublicEDKey, SUFeedURL) exist nowhere else, so
-  a silently lost key is an updater that can verify nothing. InfoPlistKeysTests
-  reads the built product for exactly this reason. (With the generator on, this
-  file is also copied into Contents/Resources as a stray second Info.plist.)
-
-  Versions and the bundle identifier are substituted from the build settings
-  rather than duplicated here, so there is still exactly one place to change
-  them.
+  a silently lost key is an updater that can verify nothing.
 -->
 <plist version="1.0">
 <dict>
@@ -41,22 +35,15 @@
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 
-	<!-- Menu-bar-only: no Dock icon, no menu bar of its own. The regression this
-	     guards against is losing LSUIElement, which would silently turn the app
-	     into a Dock app; InfoPlistKeysTests asserts it reaches the product. -->
 	<key>LSUIElement</key>
 	<true/>
 
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 
-	<!-- Spotlight/App Store category. Omitting it is a build warning, and
-	     "utilities" is what this is: a menu-bar date and time tool. -->
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 
-	<!-- Rendered by both About surfaces via AppMetadata, which omits the line
-	     entirely when this is absent rather than showing a blank. -->
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright (C) 2026 Dibas Sigdel</string>
 
@@ -80,64 +67,25 @@
 	  means the app is *able* to verify a signature; on its own it does not
 	  insist on one, so an attacker who can rewrite the feed in transit does
 	  not have to forge anything — deleting the sparkle-signatures block is
-	  enough, and the app accepts the result. A signature nobody requires is a
-	  comment. The two halves are separate controls: CI
-	  (scripts/verify-appcast.py) keeps the producer honest by failing the
-	  build when the feed is unsigned; this key makes the consumer strict.
-
-	  The dependency runs one way. This key is safe *only because* the
-	  published feed is signed — with an unsigned feed it would not weaken
-	  anything, it would break updating outright, since Sparkle would reject
-	  every fetch and users could not update at all. That is why the feed was
-	  signed (commit f7de4d0) before this key was set: if you ever see this
-	  flipped before a feed is re-signed by a maintainer, users on the
-	  current release cannot update.
+	  enough, and the app accepts the result.
 	-->
 	<key>SURequireSignedFeed</key>
 	<true/>
 
 	<!--
-	  SUVerifyUpdateBeforeExtraction makes Sparkle verify a downloaded update's
-	  EdDSA signature *before* it unpacks it, not only after. Without it a
-	  malicious archive is extracted to disk and only then judged.
-
-	  It is also a hard prerequisite. Sparkle refuses to check for updates at
+	  Sparkle refuses to check for updates at
 	  all unless this is enabled whenever SURequireSignedFeed is on, and says so:
 
 	    "For security reasons, SUVerifyUpdateBeforeExtraction needs to also be
 	     enabled if SURequireSignedFeed is enabled"
 
 	  That is a total loss of updating, not a weakened setting - the updater
-	  reports the error instead of checking. The two keys are one decision, not
-	  two. Found in the field: the key above shipped without it, and every user
-	  who tried to check for updates got that error instead of an update.
-
-	  The tradeoff Sparkle documents for both keys is real and belongs to the
-	  maintainer, not to this file: verification this strict means losing access
-	  to the EdDSA private key costs you updates, because every feed would then
-	  fail validation, so an offline copy of the key is kept. Existing installs cannot survive losing the key: a feed signed by any
-	  other key is rejected before Sparkle reads an item, so the Apple
-	  code-signing fallback never runs and users must reinstall by hand or
-	  through Homebrew. Key custody is the only mitigation.
+	  reports the error instead of checking.
 	-->
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>
 
-	<!--
-	  The update feed, served from this repository via GitHub Pages so the URL
-	  never changes between releases — a feed URL that moved would strand every
-	  existing installation. HTTPS, as Sparkle requires.
-
-	  Chosen over `releases/latest/download/appcast.xml`, which is also stable:
-	  Pages keeps the appcast in version control next to the code that signs it,
-	  where CI can regenerate it on release, rather than re-attaching an asset to
-	  every release by hand and hoping it matches the artifacts.
-	-->
 	<key>SUFeedURL</key>
 	<string>https://dibas-np.github.io/NepalKit/appcast.xml</string>
-
-	<!-- Rendered by both About surfaces via AppMetadata, which omits the line
-	     entirely when this is absent rather than showing a blank.
-	     InfoPlistKeysTests asserts it reaches the product. -->
 </dict>
 </plist>

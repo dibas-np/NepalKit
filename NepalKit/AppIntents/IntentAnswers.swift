@@ -2,8 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import NepalKitCore
 
-/// Spoken text for intent dialogs: always `SpokenDate` form (Latin digits),
-/// never the on-screen display form.
 nonisolated enum IntentAnswers {
     static func spoken(_ bs: BikramSambatDate, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) -> String {
         SpokenDate.bikramSambat(bs, monthNames: monthNames)
@@ -13,7 +11,6 @@ nonisolated enum IntentAnswers {
         SpokenDate.gregorian(ad)
     }
 
-    /// The `<weekday>, ` prefix, or "" when the lookup fails.
     static func weekdayPrefix(_ weekday: Int?, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) -> String {
         guard let weekday,
               let name = BikramSambatDate.weekdayName(weekday, style: monthNames)

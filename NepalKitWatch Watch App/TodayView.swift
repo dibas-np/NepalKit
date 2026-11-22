@@ -4,7 +4,6 @@ import SwiftUI
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// The Watch app's only screen: today's Bikram Sambat and Gregorian dates.
 struct TodayView: View {
     #if NEPALKIT_WATCH_FIXTURES
     @State private var model = TodayFixtures.makeModel()
@@ -74,7 +73,6 @@ struct TodayStateView: View {
     }
 }
 
-/// `content`, or `content` in a scroll view where it does not fit.
 struct TodayFittingView<Content: View>: View {
     let content: Content
 
@@ -105,8 +103,6 @@ func shouldStayActive(in phase: ScenePhase) -> Bool {
     }
 }
 
-/// The supported day. At large text sizes, or wherever the hero does not fit,
-/// it falls back to scrolling date lines rather than truncating.
 struct TodaySupportedView: View {
     let components: WatchDayComponents
 
@@ -163,8 +159,6 @@ extension WatchDayComponents {
     }
 }
 
-/// Matches the complication extension's threshold; duplicated because the
-/// shared package does not import SwiftUI.
 extension DynamicTypeSize {
     var watchLargeTextFallback: Bool {
         self >= .xxLarge

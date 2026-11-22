@@ -2,8 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
-/// Turns scrolling over the grid into whole-month steps. A trackpad gesture
-/// pages once after `threshold` points and ignores momentum; each wheel notch pages once.
 struct MonthScrollPager {
     enum Phase {
         case began, changed, ended, momentum
@@ -30,7 +28,6 @@ struct MonthScrollPager {
     private var travel = 0.0
     private var hasPaged = false
 
-    /// Scrolling down (negative delta) moves forward, as in a document.
     mutating func step(deltaY: Double, phase: Phase) -> Int {
         switch phase {
         case .began:

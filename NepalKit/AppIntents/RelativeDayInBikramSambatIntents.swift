@@ -3,8 +3,6 @@
 import AppIntents
 import NepalKitCore
 
-/// The Bikram Sambat date a whole number of civil days from today.
-/// Advances the Gregorian day rather than adding seconds, which breaks across DST.
 nonisolated enum RelativeDay {
     struct Answer {
         let entity: BikramSambatDateEntity
@@ -17,7 +15,6 @@ nonisolated enum RelativeDay {
         return BikramSambatDate(target, in: dataset)
     }
 
-    /// The day's answer, or the range-boundary error once it leaves the supported range.
     static func answer(
         offset: Int,
         now: Date,
@@ -40,10 +37,8 @@ nonisolated enum RelativeDay {
     }
 }
 
-/// Shared shape of the tomorrow and yesterday intents.
 nonisolated protocol RelativeDayIntent: AppIntent {
     static var offset: Int { get }
-    /// Two literals rather than an interpolated clause so each stays a whole localizable sentence.
     static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource
 }
 
@@ -66,8 +61,6 @@ nonisolated extension RelativeDayIntent {
     }
 }
 
-/// Answers tomorrow's date in Bikram Sambat. One parameterless intent per offset,
-/// since voice only works for parameterless intents on macOS 26.
 struct TomorrowInBikramSambatIntent: RelativeDayIntent {
     static let title: LocalizedStringResource = "What is tomorrow's Bikram Sambat date"
 

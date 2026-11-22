@@ -2,9 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Update the Homebrew cask in the tap to an already-published release. The
-# release's DMG is downloaded and checked before its sha256 is pinned.
-#
 # Usage: scripts/update-cask.sh [version]
 #
 # With no argument, uses the newest release on GitHub.
@@ -27,7 +24,6 @@ if [[ -z "$VERSION" ]]; then
     VERSION=$(gh api "repos/$REPO/releases/latest" --jq .tag_name)
     echo "using the newest release: $VERSION"
 fi
-# Tags have a `v` from v1.3.0 on; the cask records the version without it.
 VERSION="${VERSION#v}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
     echo "'$VERSION' is not a three-component version." >&2
@@ -50,25 +46,18 @@ trap cleanup EXIT
 trap 'cleanup; exit 129' HUP
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
-# `--proto '=https'` keeps `-L` from following a redirect out of TLS.
 curl -fsSL --proto '=https' --tlsv1.2 -o "$TMP/NepalKit.dmg" "$DMG_URL" || {
     echo "could not download the DMG for $VERSION." >&2
     echo "Is the release tagged and does it have NepalKit.dmg attached?" >&2
     exit 1
 }
 
-# A 404 page would hash fine, so check it is a disk image. `file` misreports
-# UDZO images as zlib, hence `hdiutil verify`.
 hdiutil verify "$TMP/NepalKit.dmg" >/dev/null 2>&1 || {
     echo "the download is not a valid disk image." >&2
     echo "That usually means the asset name or tag is wrong." >&2
     exit 1
 }
 
-# The sha256 is the only check a Homebrew install makes, so verify the
-# downloaded bytes (signature, notarization, team, identity) before pinning them.
-
-# A private mount point rather than a guessable /Volumes path.
 MOUNT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-cask-mount.XXXXXXXX")
 if ! ATTACH_ERR=$(hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT_DIR" \
         "$TMP/NepalKit.dmg" 2>&1 >/dev/null); then
@@ -87,7 +76,6 @@ if [[ ! -d "$DMG_APP" ]]; then
     exit 1
 fi
 
-# `-vv` shows whether the app is notarized, not just signed.
 if ! SPCL_OUT=$(spctl -a -t execute -vv "$DMG_APP" 2>&1); then
     echo "Gatekeeper rejected the app inside the published DMG." >&2
     echo "$SPCL_OUT" >&2
@@ -97,14 +85,12 @@ if ! SPCL_OUT=$(spctl -a -t execute -vv "$DMG_APP" 2>&1); then
 fi
 printf '%s\n' "$SPCL_OUT" | sed 's/^/==> /'
 
-# The producer stapled its own copy; check the file users actually download.
 if ! STAPLE_OUT=$(xcrun stapler validate "$DMG_APP" 2>&1); then
     echo "the app inside the published DMG has no stapled notarization ticket." >&2
     echo "$STAPLE_OUT" >&2
     exit 1
 fi
 
-# The expected team comes from the project file; every configuration must agree.
 EXPECTED_TEAM=$(grep -o 'DEVELOPMENT_TEAM = [A-Z0-9]*;' "$PBXPROJ" 2>/dev/null \
     | sed 's/DEVELOPMENT_TEAM = //; s/;//' | sort -u || true)
 if [[ -z "$EXPECTED_TEAM" ]]; then
@@ -120,8 +106,6 @@ if [[ "$TEAM_COUNT" -ne 1 ]]; then
     exit 1
 fi
 
-# package-release.sh signs with $TEAM_ID, so a TEAM_ID that disagrees with the
-# project is reported separately from a signature mismatch.
 if [[ -n "${TEAM_ID:-}" && "$TEAM_ID" != "$EXPECTED_TEAM" ]]; then
     echo "TEAM_ID=$TEAM_ID does not match the project's DEVELOPMENT_TEAM=$EXPECTED_TEAM." >&2
     echo "The release was signed by \$TEAM_ID, so this script cannot say which" >&2
@@ -143,7 +127,6 @@ if [[ "$SIGNED_TEAM" != "$EXPECTED_TEAM" ]]; then
 fi
 echo "==> signed by team $SIGNED_TEAM, Gatekeeper-clean and stapled"
 
-# The bundle identifier and version must match the project before pinning bytes.
 python3 - "$PBXPROJ" "$DMG_APP/Contents/Info.plist" "$APP" "$VERSION" <<'PYTHON'
 import json
 import plistlib
@@ -183,19 +166,16 @@ except (OSError, ValueError, KeyError, TypeError, plistlib.InvalidFileException,
 print(f"==> app identity and version match {expected_identifier} {version}")
 PYTHON
 
-# Hash only after every check above has passed.
 SHA256=$(shasum -a 256 "$TMP/NepalKit.dmg" | awk '{print $1}')
 echo "==> sha256 $SHA256"
 
 CURRENT=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$CASK")
 echo "==> cask is at $CURRENT, moving it to $VERSION"
 
-# An unmatched sed would leave the old version in place and look successful.
 grep -q '^  version "' "$CASK" || { echo "no version stanza in $CASK" >&2; exit 1; }
 grep -q '^  sha256 "' "$CASK" || { echo "no sha256 stanza in $CASK" >&2; exit 1; }
 grep -q '^  url ".*releases/download/' "$CASK" || { echo "no release-download url stanza in $CASK" >&2; exit 1; }
 
-# The url's tag segment has a `v` that `#{version}` cannot express.
 perl -pi -e 's/^  version ".*"$/  version "'"$VERSION"'"/' "$CASK"
 perl -pi -e 's/^  sha256 ".*"$/  sha256 "'"$SHA256"'"/' "$CASK"
 perl -pi -e 's{^(  url ".*)/releases/download/v?[^/]+(/.*)$}{$1/releases/download/v#{version}$2}' "$CASK"

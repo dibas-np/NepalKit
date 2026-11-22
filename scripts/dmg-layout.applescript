@@ -1,9 +1,6 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 -- Copyright (C) 2026 Dibas Sigdel
 --
--- Lay out the drag-install Finder window on a mounted DMG, using the layout
--- JSON printed by make-dmg-artwork.swift.
---
 -- Usage: osascript scripts/dmg-layout.applescript <volume> <app> <background.png> <layout.json>
 
 use framework "Foundation"
@@ -19,7 +16,6 @@ on run argv
 	set appIconCentre to layout's appIconCentre
 	set applicationsIconCentre to layout's applicationsIconCentre
 
-	-- Only the window size matters; Finder remembers the position per user.
 	set windowOrigin to {200, 150}
 	set windowBounds to {item 1 of windowOrigin, item 2 of windowOrigin, ¬
 		(item 1 of windowOrigin) + item 1 of windowSize, ¬
@@ -42,7 +38,6 @@ on run argv
 			set position of item (appName & ".app") of container window to appIconCentre
 			set position of item "Applications" of container window to applicationsIconCentre
 
-			-- Close, reopen and update so Finder writes .DS_Store to the volume.
 			close
 			open
 			update without registering applications

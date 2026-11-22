@@ -4,7 +4,6 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// Noon UTC keeps the civil day from UTC−12 through UTC+12 exclusive.
 struct NoonUTCTests {
     private static var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)

@@ -4,12 +4,10 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// One Bikram Sambat month.
 struct MonthGridMonth: Hashable {
     let year: Int
     let month: Int
 
-    /// The month before, without bounds: the model checks the supported range.
     var previous: MonthGridMonth {
         month == 1 ? MonthGridMonth(year: year - 1, month: 12) : MonthGridMonth(year: year, month: month - 1)
     }
@@ -19,36 +17,26 @@ struct MonthGridMonth: Hashable {
     }
 }
 
-/// One filled cell of the month grid. The weekday belongs to the civil day,
-/// not to either calendar (docs/glossary.md, *Weekday*).
 struct MonthGridDay: Hashable {
     let bikramSambat: BikramSambatDate
     let gregorian: GregorianDate
-    /// 1 (Sunday) through 7 (Saturday), as the core reports it.
     let weekday: Int
     let isToday: Bool
-    /// False for neighbouring months' days that pad the first and last weeks.
     let isInShownMonth: Bool
-    /// Empty for a year whose Panchanga has not been read.
     let festivals: [Festival]
     let holidayScopes: [PublicHoliday.Scope]
 
-    /// Saturday, Nepal's weekly public holiday.
     static let weeklyHolidayWeekday = 7
 
     var isWeeklyHoliday: Bool { weekday == Self.weeklyHolidayWeekday }
 
     var isNationwideHoliday: Bool { holidayScopes.contains(.nationwide) }
 
-    /// A limited holiday (one community or region) stays black, as on a wall calendar.
     var isMarkedAsHoliday: Bool { isWeeklyHoliday || isNationwideHoliday }
 
     var showsFestivalMark: Bool { isInShownMonth && !festivals.isEmpty }
 }
 
-/// The month grid's state: the shown month, bounded navigation, and the weeks.
-/// Today is read in `timeZone`; `refreshToday(now:)` moves the today
-/// marking without changing the shown month.
 @MainActor
 @Observable
 final class MonthGridModel {
@@ -56,7 +44,6 @@ final class MonthGridModel {
 
     private(set) var today: BikramSambatDate?
 
-    /// Kept beside `today` because it survives the range boundary.
     private(set) var todayGregorian: GregorianDate?
 
     private(set) var isTodayPastSupportedRange: Bool
@@ -69,7 +56,6 @@ final class MonthGridModel {
 
     @ObservationIgnored private var scrollPager = MonthScrollPager()
 
-    /// - Parameter timeZone: The zone today is read in; moved later with `setTimeZone(_:now:)`.
     init(dataset: CalendarDataset = AppData.dataset, festivals: FestivalCalendar = .panchanga,
          holidays: PublicHolidayCalendar = .gazette, now: Date = .now, timeZone: TimeZone = .nepal) {
         self.dataset = dataset
@@ -82,8 +68,6 @@ final class MonthGridModel {
         self.isTodayPastSupportedRange = state.isPastRange
         self.shown = Self.month(containing: state.today, in: dataset, pastRange: state.isPastRange)
     }
-
-    // MARK: - Navigation
 
     private var first: MonthGridMonth { MonthGridMonth(year: dataset.supportedRange.lowerBound, month: 1) }
     private var last: MonthGridMonth { MonthGridMonth(year: dataset.supportedRange.upperBound, month: 12) }
@@ -103,7 +87,6 @@ final class MonthGridModel {
         shown = shown.next
     }
 
-    /// Arrow keys and scrolling page through here, so they stop where the chevrons do.
     func page(by step: Int) {
         if step > 0 { showNextMonth() } else if step < 0 { showPreviousMonth() }
     }
@@ -117,7 +100,6 @@ final class MonthGridModel {
         shown = Self.month(containing: today, in: dataset, pastRange: isTodayPastSupportedRange)
     }
 
-    /// Assigns only what changed, so an unchanged day does not invalidate observers.
     func refreshToday(now: Date) {
         let state = Self.todayState(now: now, timeZone: timeZone, in: dataset)
         if today != state.today { today = state.today }
@@ -146,7 +128,6 @@ final class MonthGridModel {
         return TodayState(today: today, todayAD: todayGregorian, isPastRange: isPastRange)
     }
 
-    /// A today before the range is unreachable with this dataset but must not trap.
     private static func month(containing today: BikramSambatDate?, in dataset: CalendarDataset, pastRange: Bool) -> MonthGridMonth {
         if let today { return MonthGridMonth(year: today.year, month: today.month) }
         return pastRange
@@ -154,12 +135,8 @@ final class MonthGridModel {
             : MonthGridMonth(year: dataset.supportedRange.lowerBound, month: 1)
     }
 
-    // MARK: - Grid
-
-    /// The most a month can need, so the popover's height holds still while paging.
     static let weekCount = 6
 
-    /// Sunday-first weeks padded with neighbouring days. A nil cell is outside the dataset.
     var weeks: [[MonthGridDay?]] {
         let length = monthLength(shown)
         let firstBS = BikramSambatDate(year: shown.year, month: shown.month, day: 1)
@@ -170,7 +147,6 @@ final class MonthGridModel {
         let previous = canShowPreviousMonth ? shown.previous : nil
         let next = canShowNextMonth ? shown.next : nil
         let cells: [MonthGridDay?] = (0 ..< Self.weekCount * 7).map { index in
-            // 0 is the previous month's last day, length + 1 the next month's first.
             let offset = index - leading + 1
             let bs: BikramSambatDate?
             if offset < 1 {
@@ -198,13 +174,10 @@ final class MonthGridModel {
         return lengths[month.month - 1]
     }
 
-    // MARK: - Text
-
     func title(settings: DisplaySettings) -> String {
         "\(BikramSambatDate.monthName(shown.month, style: settings.monthNames)) \(settings.digits.format(shown.year))"
     }
 
-    /// "Oct–Nov 2026" or "Dec 2026 – Jan 2027".
     func gregorianSpan(settings: DisplaySettings) -> String? {
         guard let (first, last) = gregorianBounds() else { return nil }
         let short = { (month: Int) in String(GregorianDate.monthName(month).prefix(3)) }
@@ -242,7 +215,6 @@ final class MonthGridModel {
         "\(BikramSambatDate.monthName(shown.month, style: settings.monthNames)) \(SpokenDate.number(shown.year))"
     }
 
-    /// Short forms: seven full names do not fit the popover.
     func weekdayHeaders(settings: DisplaySettings) -> [String] {
         (1 ... 7).map { Self.shortWeekdayName($0, style: settings.monthNames) }
     }
@@ -278,7 +250,6 @@ final class MonthGridModel {
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
 
-    /// Provisional-year and missing-list notes for the shown year.
     func yearNotes(digits: DigitScript) -> [String] {
         let year = shown.year
         let festivals = festivalCalendar.years

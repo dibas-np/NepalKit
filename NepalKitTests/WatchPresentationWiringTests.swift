@@ -3,12 +3,8 @@
 import Foundation
 import Testing
 
-/// Which weekday and Gregorian detail each complication family announces, and
-/// that the two copies of the large-text threshold agree. Call sites are parsed
-/// from source, so a new or changed site can't slip through unchecked.
 struct WatchPresentationWiringTests {
     @Test func everySupportedStateCallSiteMatchesTheFamilyThatMakesIt() throws {
-        // Each family announces the weekday exactly where it draws one.
         let expected: [String: (weekday: Bool?, gregorian: Bool)] = [
             "TodayRectangularComplication.standard": (true, false),
             "TodayRectangularComplication.largeText": (false, false),
@@ -27,7 +23,6 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func everyBoundaryCallSiteMatchesTheFamilyThatMakesIt() throws {
-        // Only the corner family draws a Gregorian day/month past the range.
         let expected: [String: (weekday: Bool?, gregorian: Bool)] = [
             "TodayRectangularComplication.standard": (nil, false),
             "TodayInlineComplication.standard": (nil, false),
@@ -44,8 +39,6 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func everyErrorStateAnnouncesItsSpokenDescription() throws {
-        // A family whose error branch loses its label reads out as a bare
-        // "Date calculation failed".
         let file = ComplicationWiringSource.complicationSource
         var owners: [String: [Int]] = [:]
         for call in try ComplicationWiringSource.spokenDescriptionCalls() {
@@ -70,8 +63,6 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func bothCopiesOfTheLargeTextThresholdAgree() throws {
-        // Declared once per module because the two watchOS products can't share
-        // a framework target, so the copies have to be kept in step here.
         let complication = ComplicationWiringSource.complicationSource
         let today = ComplicationWiringSource.todaySource
         var offenders: [String] = []
@@ -91,7 +82,6 @@ struct WatchPresentationWiringTests {
     }
 }
 
-/// One call site read out of `TodayComplicationView.swift`.
 struct WiringCall {
     let path: String
     let type: String
@@ -101,25 +91,20 @@ struct WiringCall {
     let gregorian: Bool?
     var site: String { "\(path):\(line)" }
 
-    /// The family, qualified by the large-text side where the family has one.
     var key: String {
         branch.map { "\(type).\($0.rawValue)" } ?? type
     }
 }
 
-/// Which side of a family's large-text conditional a call sits on.
 enum Branch: String {
     case largeText
     case standard
 }
 
-/// Reads the complication wiring out of source, line by line. A call it can't
-/// read is reported rather than guessed at.
 enum ComplicationWiringSource {
     static let complicationSource = "NepalKitComplications/TodayComplicationView.swift"
     static let todaySource = "NepalKitWatch Watch App/TodayView.swift"
 
-    /// The families `TodayComplicationView` dispatches to.
     static let families: Set<String> = [
         "TodayRectangularComplication",
         "TodayInlineComplication",
@@ -129,7 +114,6 @@ enum ComplicationWiringSource {
     private static let dispatcher = "TodayComplicationView"
     static let flagShapesTheParserCannotRead: Set<String> = []
 
-    /// Families present in source but not declared here, and vice versa.
     static func undeclaredFamilies() throws -> [String] {
         var offenders: [String] = []
         var found: Set<String> = []
@@ -147,8 +131,6 @@ enum ComplicationWiringSource {
         return offenders
     }
 
-    /// Every call site whose flags disagree with its family's expectation, plus
-    /// expectations with no call site and keys shared by two sites.
     static func wiringOffenders(
         label: String,
         expected: [String: (weekday: Bool?, gregorian: Bool)],
@@ -180,7 +162,6 @@ enum ComplicationWiringSource {
         return offenders
     }
 
-    /// The weekday clause of a message, omitted where the call has no such flag.
     private static func weekdayFragment(_ value: Bool?) -> String {
         value == nil ? "" : " weekday: \(flagFragment(value)),"
     }
@@ -191,7 +172,6 @@ enum ComplicationWiringSource {
 
     static func supportedLabelCalls() throws -> [WiringCall] {
         try calls(marker: "ComplicationAccessibility.supportedLabel(") { arguments in
-            // `components, weekday: <bool>, gregorian: <bool>`
             let parts = split(arguments)
             guard parts.count == 3,
                   let weekday = boolean(parts[1], named: "weekday"),
@@ -203,8 +183,6 @@ enum ComplicationWiringSource {
 
     static func boundaryLabelCalls() throws -> [WiringCall] {
         try calls(marker: "ComplicationAccessibility.boundaryLabel(") { arguments in
-            // `boundaryLabel(boundary)` means no Gregorian context, so a missing
-            // flag is `false`; any other shape is unreadable.
             let parts = split(arguments)
             switch parts.count {
             case 1: return (nil, false)
@@ -218,8 +196,6 @@ enum ComplicationWiringSource {
         try calls(marker: ".accessibilityLabel(components.spokenDescription)") { _ in (nil, nil) }
     }
 
-    /// Every line carrying `marker`, classified by its enclosing
-    /// `struct …: View` and by the large-text side within that struct's body.
     private static func calls(
         marker: String,
         flags: (String) -> (weekday: Bool?, gregorian: Bool?)
@@ -250,7 +226,6 @@ enum ComplicationWiringSource {
         return name.isEmpty ? nil : String(name)
     }
 
-    /// The nearest `struct …: View` above `index`: the call site's family.
     private static func enclosingDeclaration(
         before index: Int,
         in lines: [String]
@@ -271,8 +246,6 @@ enum ComplicationWiringSource {
         return nil
     }
 
-    /// The text between a call marker and the parenthesis closing it, or an
-    /// empty string when the call wraps across lines.
     private static func arguments(in line: String, marker: String) -> String {
         guard !marker.hasSuffix(")") else { return "" }
         guard let opening = line.range(of: marker),
@@ -298,7 +271,6 @@ enum ComplicationWiringSource {
         lines.map(String.init).joined(separator: ", ")
     }
 
-    /// The body of every `watchLargeTextFallback` in `path`, trimmed.
     static func largeTextThresholdBodies(in path: String) throws -> [String] {
         let lines = try sourceLines(path)
         var bodies: [String] = []
@@ -315,7 +287,6 @@ enum ComplicationWiringSource {
             .components(separatedBy: "\n")
     }
 
-    /// Searched upward because `#filePath` may be the symlinked harness path.
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()

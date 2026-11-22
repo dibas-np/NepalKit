@@ -5,9 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The Display section's live preview: today's date rendered with the picked
-/// settings, nil when today has no Bikram Sambat answer. Noon UTC on
-/// 29 June 2025 is 15 Ashar 2082 in Nepal Time.
 struct DisplayPreviewTests {
     private var dataset: CalendarDataset { AppData.dataset }
     private var now: Date {
@@ -29,7 +26,6 @@ struct DisplayPreviewTests {
 
     @Test("The two pickers change independently")
     func axesAreIndependent() throws {
-        // The digit setting governs numerals only.
         let devanagariTransliterated = DisplayPreview.todayText(
             now: try now, in: dataset,
             settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)
@@ -37,7 +33,6 @@ struct DisplayPreviewTests {
         #expect(devanagariTransliterated?.contains(where: Self.devanagariDigits.contains) == true)
         #expect(devanagariTransliterated?.contains("Ashar") == true)
 
-        // The month-name setting governs Bikram Sambat month names only.
         let latinNepali = DisplayPreview.todayText(
             now: try now, in: dataset,
             settings: DisplaySettings(digits: .latin, monthNames: .nepali)
@@ -59,7 +54,6 @@ struct DisplayPreviewTests {
 
     @Test("A day with no Bikram Sambat answer previews as nothing")
     func outOfRangeIsNil() throws {
-        // Past the dataset's end: the row hides rather than inventing a date.
         var utc = Calendar(identifier: .gregorian)
         utc.timeZone = .gmt
         let century2090 = try #require(utc.date(from: DateComponents(year: 2090, month: 1, day: 1)))
@@ -67,7 +61,6 @@ struct DisplayPreviewTests {
 
         #expect(DisplayPreview.todayText(now: past, in: dataset, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == nil)
 
-        // Before the anchor is the same no-answer case, not a clamped one.
         let before = try #require(utc.date(from: DateComponents(year: 1910, month: 1, day: 1)))
         #expect(DisplayPreview.todayText(now: before, in: dataset, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == nil)
     }

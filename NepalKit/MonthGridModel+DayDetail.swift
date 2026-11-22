@@ -4,12 +4,9 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// A day's details, shown and spoken. Built by the model from one date so the
-/// two channels cannot describe different days.
 struct MonthGridDayDetail: Hashable {
     let bikramSambat: String
     let gregorian: String
-    /// "Today", "In 5 days"; nil only if today's Gregorian day could not be read.
     let relative: String?
     let spokenBikramSambat: String
     let spokenGregorian: String
@@ -20,15 +17,12 @@ struct MonthGridDayDetail: Hashable {
 }
 
 extension MonthGridModel {
-    /// Whole civil days from today to `day`: 0 for today, negative before it.
     func daysFromToday(_ day: MonthGridDay) -> Int? {
-        // Both instants are noon UTC, so rounding only absorbs floating point.
         guard let todayGregorian, let from = todayGregorian.noonUTC, let to = day.gregorian.noonUTC
         else { return nil }
         return Int((to.timeIntervalSince(from) / 86_400).rounded())
     }
 
-    /// Shown as configured and spoken with Latin digits.
     func detail(for day: MonthGridDay, settings: DisplaySettings) -> MonthGridDayDetail {
         let weekday = BikramSambatDate.weekdayName(day.weekday, style: settings.monthNames)
         let gregorian = day.gregorian.formatted(digits: settings.digits)
@@ -51,7 +45,6 @@ extension MonthGridModel {
         pasteboard.setString(detail.bikramSambat, forType: .string)
     }
 
-    /// An all-day event titled by the day's festivals, else its Bikram Sambat date.
     func calendarEvent(for day: MonthGridDay, settings: DisplaySettings) -> CalendarEvent {
         let detail = detail(for: day, settings: settings)
         let title = detail.festivals.isEmpty ? detail.bikramSambat : detail.festivals.joined(separator: ", ")
@@ -59,7 +52,6 @@ extension MonthGridModel {
         return CalendarEvent(title: title, notes: notes, date: day.gregorian)
     }
 
-    /// A failure is also announced, since the card's message is not where VoiceOver focus is.
     func addToCalendar(
         _ day: MonthGridDay, settings: DisplaySettings,
         open: (CalendarEvent) -> Bool = { $0.open() },

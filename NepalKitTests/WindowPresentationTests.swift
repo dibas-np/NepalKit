@@ -4,9 +4,6 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Opening a window doesn't front a menu-bar-only app, so
-/// `WindowPresentation` activates explicitly once the open returns, retrying a
-/// refused request a bounded number of times.
 @MainActor
 struct WindowPresentationTests {
     @Test func opensBeforeItActivates() {
@@ -20,7 +17,6 @@ struct WindowPresentationTests {
     }
 
     @Test func activationIsDeferredUntilAfterTheOpenReturns() {
-        // If `activate` ran inline, `open` would still be in progress.
         var openInProgress = false
         var activatedWhileOpenInProgress = false
         WindowPresentation.present(
@@ -47,7 +43,6 @@ struct WindowPresentationTests {
     }
 
     @Test func stopsRetryingOnceActivationSucceeds() {
-        // Retrying after success would yank focus repeatedly.
         var activations = 0
         WindowPresentation.present(
             open: {},
@@ -59,7 +54,6 @@ struct WindowPresentationTests {
     }
 
     @Test func retriesWhileTheAppIsNotYetActive() {
-        // `false` means the app is still not frontmost, so it is retried.
         var activations = 0
         WindowPresentation.present(
             open: {},
@@ -74,7 +68,6 @@ struct WindowPresentationTests {
     }
 
     @Test func retryIsBounded() {
-        // A user who walked away shouldn't leave the app fighting for focus.
         var activations = 0
         WindowPresentation.present(
             open: {},

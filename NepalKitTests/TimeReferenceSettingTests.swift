@@ -5,8 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The time-reference setting itself: what it names, how it is
-/// stored, and who hears that it changed.
 @MainActor
 struct TimeReferenceSettingTests {
     private func freshDefaults() throws -> UserDefaults {

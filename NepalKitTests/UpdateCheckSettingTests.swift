@@ -3,7 +3,6 @@
 import Testing
 @testable import NepalKit
 
-/// The automatic-checks toggle's binding on `UpdateCheckModel`.
 @MainActor
 struct UpdateCheckSettingTests {
     @Test func theToggleBindingReadsTheCopyAndWritesThroughTheService() {

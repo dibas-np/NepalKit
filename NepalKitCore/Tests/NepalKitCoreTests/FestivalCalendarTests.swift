@@ -50,7 +50,6 @@ struct FestivalCalendarTests {
         #expect(names(7, 25) == ["Bhai Tika", "Falgunanda Jayanti"])
         #expect(names(9, 9) == ["Udhauli", "Yomari Punhi", "Jyapu Diwas"])
         #expect(names(9, 15) == ["Tamu Lhosar", "Dura Mhaipru Nakuma"])
-        // Prithvi Jayanti comes first, as the gazette pairs them.
         #expect(names(9, 27) == ["Prithvi Jayanti", "Rashtriya Ekata Diwas (National Unity Day)"])
     }
 
@@ -97,8 +96,6 @@ struct FestivalCalendarTests {
         let dashami = Festival(nepali: "विजयादशमी", english: "Vijaya Dashami")
         #expect(SpokenDate.festival(dashami, monthNames: .nepali) == "विजयादशमी")
     }
-
-    // MARK: - The bundled table
 
     @Test func everyEntryIsARealDayInAYearWithData() {
         var offenders: [String] = []

@@ -3,7 +3,6 @@ import NepalKitCore
 
 struct GregorianWeekdayTests {
     @Test func knownWeekdays() {
-        // 2026-09-27 Sunday, 2026-09-28 Monday, 2028-04-13 Thursday.
         #expect(GregorianDate(year: 2026, month: 9, day: 27).weekday == 1)
         #expect(GregorianDate(year: 2026, month: 9, day: 28).weekday == 2)
         #expect(GregorianDate(year: 2028, month: 4, day: 13).weekday == 5)

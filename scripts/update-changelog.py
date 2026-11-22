@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate CHANGELOG.md from scripts/release-notes/<version>.html.
-
-Dates come from each appcast item's pubDate, but a date already in
-CHANGELOG.md is kept. Versions with no date are listed as unreleased.
-
-Usage: update-changelog.py [appcast.xml]
+"""Usage: update-changelog.py [appcast.xml]
 
 Without an argument the repository's appcast.xml is read; pass the staged
 appcast while packaging so the new version gets its pubDate.
@@ -33,12 +28,6 @@ the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
 
 class FragmentParser(HTMLParser):
-    """Renders one release-notes fragment as markdown blocks.
-
-    Only `<b>Heading:</b>`, `<ul><li>` and `<p>` are allowed; any other tag
-    is an error.
-    """
-
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.blocks: list[str] = []
@@ -89,10 +78,6 @@ def version_key(stem: str) -> tuple:
 
 
 def release_dates(appcast: Path) -> dict[str, str]:
-    """Version → YYYY-MM-DD, from each item's pubDate."""
-    # NOSONAR, for the reason recorded in scripts/verify-appcast.py: the feed is
-    # the argument, the caller is the operator or the release script, and
-    # confining the path to a base directory would break the staged-feed run.
     raw = appcast.read_text(encoding="utf-8")  # NOSONAR
     dates: dict[str, str] = {}
     for item in re.findall(r"<item>.*?</item>", raw, flags=re.S):
@@ -105,7 +90,6 @@ def release_dates(appcast: Path) -> dict[str, str]:
 
 
 def resolve_dates(committed: Path, staged: Path, changelog: Path) -> dict[str, str]:
-    """Version → YYYY-MM-DD. Dates already in the changelog win over both feeds."""
     dates: dict[str, str] = {}
     if committed.exists():
         dates.update(release_dates(committed))
@@ -132,7 +116,6 @@ def main() -> int:
     explicit = len(sys.argv) == 2
     appcast = Path(sys.argv[1]) if explicit else DEFAULT_APPCAST
     if explicit and not appcast.exists():
-        # Fail rather than rewrite every release as "unreleased".
         print(f"error: no appcast at {appcast}", file=sys.stderr)
         return 1
     dates = resolve_dates(DEFAULT_APPCAST, appcast, CHANGELOG)

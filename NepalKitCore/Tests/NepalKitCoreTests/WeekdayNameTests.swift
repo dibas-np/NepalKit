@@ -18,7 +18,6 @@ struct WeekdayNameTests {
 
     @Test("All seven days resolve end-to-end through weekday()")
     func allSevenDaysEndToEnd() {
-        // 27 Sep – 3 Oct 2026 are Sunday–Saturday; Ashoj 11–17, 2083.
         let expected = ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"]
         for offset in 0 ... 6 {
             let bs = BikramSambatDate(year: 2083, month: 6, day: 11 + offset)

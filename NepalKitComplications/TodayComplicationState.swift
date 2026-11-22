@@ -3,7 +3,6 @@
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// What one complication entry renders.
 enum TodayComplicationState: Sendable, Hashable {
     case placeholder
     case day(WatchDayDisplay)

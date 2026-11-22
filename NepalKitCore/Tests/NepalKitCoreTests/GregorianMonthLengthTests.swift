@@ -5,7 +5,6 @@ import NepalKitCore
 
 struct GregorianMonthLengthTests {
     @Test func lengthsMatchThePublishedCalendar() {
-        // 2026: September 30, December 31; February 28 (2023) and 29 (2024, leap).
         #expect(GregorianDate.daysInMonth(year: 2026, month: 9) == 30)
         #expect(GregorianDate.daysInMonth(year: 2026, month: 12) == 31)
         #expect(GregorianDate.daysInMonth(year: 2023, month: 2) == 28)

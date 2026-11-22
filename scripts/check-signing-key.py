@@ -3,15 +3,10 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Prove a Sparkle EdDSA private key matches the public key the app ships.
 
-Signs a scratch file with the pinned `sign_update` and verifies the signature
-against `SUPublicEDKey` in NepalKit/Info.plist. --key-file signs with a backup
-copy instead of the login keychain, so a restore can be tested without
-importing anything.
-
     scripts/check-signing-key.py                      # the keychain key
     scripts/check-signing-key.py --key-file PATH      # a backup copy
 
-Output never includes key material. SPARKLE_BIN overrides where sign_update
+SPARKLE_BIN overrides where sign_update
 is found, as for scripts/verify-appcast.sh.
 """
 
@@ -29,7 +24,6 @@ from pathlib import Path
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
-# This checkout's build of the pinned Sparkle, unless SPARKLE_BIN is set.
 SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
                else ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update")
 
@@ -43,10 +37,6 @@ SIGN_TIMEOUT_SECONDS = 120
 
 def sparkle_signer(sign_update: Path, key_file: Path | None,
                    timeout: float = SIGN_TIMEOUT_SECONDS) -> Callable[[Path], str]:
-    """A signer that runs `sign_update -p`, which prints only the base64 signature.
-
-    The timeout turns an unanswered keychain prompt into a failure.
-    """
     def sign(path: Path) -> str:
         command = [str(sign_update), "-p", str(path)]
         if key_file is not None:
@@ -63,7 +53,6 @@ def sparkle_signer(sign_update: Path, key_file: Path | None,
     return sign
 
 
-# Long enough to be (most of) a 44-character Ed25519 seed.
 _KEY_LIKE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 
@@ -81,7 +70,6 @@ def withhold_key_material(text: str, key_file: Path | None) -> str:
 
 
 def check(info_plist: Path, sign: Callable[[Path], str]) -> tuple[bool, str]:
-    """(ok, message): does the signer's key match the shipped public key?"""
     public_key = _va.load_public_key(info_plist)
     with tempfile.TemporaryDirectory() as tmp:
         scratch = Path(tmp) / "scratch.bin"

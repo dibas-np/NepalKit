@@ -3,8 +3,6 @@
 import Testing
 import NepalKitCore
 
-/// Pins the provisional 2084 projection, which is not attested calendar data.
-/// Reconcile against the official Patro when available.
 struct Projected2084Tests {
     static let monthStarts: [MonthStartFixture] = [
         .init(bs: BikramSambatDate(year: 2084, month: 1, day: 1), ad: GregorianDate(year: 2027, month: 4, day: 14), label: "Baisakh"),

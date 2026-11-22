@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Check the exported app's entitlements, Sparkle keys and Sparkle version.
-
-Xcode merges ``ENABLE_*`` build settings into the entitlements at signing, so
-the signed entitlements are compared with ``NepalKit/NepalKit.entitlements``.
-The embedded Sparkle version is compared with the project's pin.
-
-Run by ``package-release.sh`` on the exported app. Prints ``ok`` or ``FAIL``
-for each check and exits 1 if any failed.
-"""
+"""Check the exported app's entitlements, Sparkle keys and Sparkle version."""
 
 import argparse
 import base64
@@ -20,22 +12,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-# NOSONAR: the four opens below take CLI-argument paths. package-release.sh runs
-# this inside a private `mktemp -d` workspace outside the repo, so confining paths
-# to a base directory would break every release (see scripts/verify-appcast.py).
-# NOSONAR is line-scoped, so each marker sits on the flagged call alone.
-
 FEED_URL = "https://dibas-np.github.io/NepalKit/appcast.xml"
 SPARKLE_FRAMEWORK_PLIST = "Contents/Frameworks/Sparkle.framework/Resources/Info.plist"
 
 
 def signed_entitlements(app, run=subprocess.run):
-    """The entitlements actually signed into ``app``, as a dict."""
     result = run(
         ["codesign", "-d", "--entitlements", "-", "--xml", str(app)],
         capture_output=True,
     )
-    # A failed codesign run is a failure even if it printed XML.
     if result.returncode != 0:
         detail = (getattr(result, "stderr", b"") or b"").decode("utf-8", "replace").strip()
         raise ValueError(f"codesign exited {result.returncode}" + (f": {detail}" if detail else ""))
@@ -99,7 +84,6 @@ def check_sparkle_keys(info):
 
 
 def check_sparkle_version(app, pbxproj_text):
-    # Only Sparkle's own block, up to the next package reference.
     block = re.search(
         r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
         r'(?P<body>(?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',

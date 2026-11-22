@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Suite for check-signing-key.py, using throwaway keys only: never the real one."""
 
 from __future__ import annotations
 
@@ -19,7 +18,6 @@ _spec.loader.exec_module(csk)
 
 
 def keypair(directory: Path, name: str) -> tuple[Path, bytes]:
-    """A throwaway Ed25519 key in PEM, and its raw 32-byte public key."""
     pem = directory / f"{name}.pem"
     subprocess.run(["openssl", "genpkey", "-algorithm", "ed25519", "-out", str(pem)], check=True)
     der = subprocess.run(["openssl", "pkey", "-in", str(pem), "-pubout", "-outform", "DER"],
@@ -85,7 +83,6 @@ class Check(unittest.TestCase):
         self.assertIn("did not finish", message)
 
     def test_a_key_sign_update_echoes_back_is_not_printed(self):
-        # sign_update echoes a key it cannot decode; a mistyped seed is most of the real one.
         _, public = keypair(self.dir, "a")
         seed = base64.b64encode(bytes(range(32))).decode()
         for typed in (seed, seed.rstrip("="), seed[:10] + seed[12:]):
@@ -122,7 +119,6 @@ class SparkleBin(unittest.TestCase):
             os.environ.update(saved)
 
     def test_sparkle_bin_overrides_where_sign_update_is_found(self):
-        """As verify-appcast.sh does: SPARKLE_BIN names the tools' directory."""
         module = self._load({"SPARKLE_BIN": "/opt/sparkle/bin"})
         self.assertEqual(module.SIGN_UPDATE, Path("/opt/sparkle/bin/sign_update"))
 

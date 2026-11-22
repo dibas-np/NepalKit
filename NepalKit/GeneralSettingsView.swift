@@ -3,12 +3,10 @@
 import NepalKitCore
 import SwiftUI
 
-/// The General tab: display options, time zone, login item and Siri shortcuts.
 struct GeneralSettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
     let dataset: CalendarDataset
-    /// From the environment so the label redraws when the zone or locale changes.
     @Environment(\.timeZone) private var timeZone
     @Environment(\.locale) private var locale
 
@@ -16,13 +14,11 @@ struct GeneralSettingsView: View {
         Form {
             Section(Strings.displaySection) {
                 Picker(Strings.digitScriptLabel, selection: $settings.digits) {
-                    // Spoken with a plain hyphen; VoiceOver reads the en dash unpredictably.
                     Text(Strings.digitsLatin)
                         .tag(DigitScript.latin)
                         .accessibilityLabel(Strings.digitsLatinSpoken)
                     Text(Strings.digitsDevanagari)
                         .tag(DigitScript.devanagari)
-                        // Announced with Latin digits so the option stays identifiable aloud.
                         .accessibilityLabel(Strings.digitsDevanagariSpoken)
                 }
                 .pickerStyle(.segmented)
@@ -33,7 +29,6 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                // Redrawn at each midnight in the chosen zone so it never shows yesterday.
                 TimelineView(MidnightSchedule(timeZone: settings.timeZone)) { _ in
                     if let preview = DisplayPreview.todayText(
                         now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
@@ -65,7 +60,6 @@ struct GeneralSettingsView: View {
                     Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
                         .symbolRenderingMode(.monochrome)
                 }
-                // Named without the symbol, which some voices would otherwise announce.
                 .accessibilityLabel(Strings.launchAtLoginLabel)
 
                 if loginItem.requiresApproval {
@@ -78,7 +72,6 @@ struct GeneralSettingsView: View {
                 }
 
                 if let failure = loginItem.setupError {
-                    // The toggle springs back on failure without saying why; this line does.
                     Text(Strings.loginItemFailureReason(failure))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -86,8 +79,6 @@ struct GeneralSettingsView: View {
             }
 
             Section(Strings.siriShortcutsSection) {
-                // Voice parameter-filling for the conversions doesn't work on macOS 26,
-                // so the summary states what does: the same intents from Shortcuts.
                 Text(Strings.siriShortcutsSummary)
                     .font(.footnote)
                     .foregroundStyle(.secondary)

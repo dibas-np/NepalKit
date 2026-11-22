@@ -3,17 +3,11 @@
 import Foundation
 import NepalKitCore
 
-/// Optional parts of the menu-bar title, after the macOS menu-bar clock's options.
 nonisolated struct MenuBarFormat: Sendable, Hashable {
-    /// The short weekday name before the date ("Mon", "सोम").
     var showsWeekday: Bool
-    /// The Bikram Sambat year after the month ("25 Ashoj 2083").
     var showsYear: Bool
-    /// The clock at the end of the title, in the zone the title is read in.
     var showsTime: Bool
-    /// "22:57" rather than "10:57". Only meaningful with `showsTime`.
     var usesTwentyFourHourClock: Bool
-    /// Seconds on the clock. Only meaningful with `showsTime`.
     var showsSeconds: Bool
 
     init(
@@ -33,8 +27,6 @@ nonisolated struct MenuBarFormat: Sendable, Hashable {
     static let standard = MenuBarFormat()
 }
 
-/// The menu-bar title for `now`, or nil outside the supported range. Every part is
-/// read from the one instant so they cannot disagree around midnight.
 nonisolated func formatMenuBarTitle(
     now: Date,
     timeZone: TimeZone = .nepal,
@@ -59,14 +51,11 @@ nonisolated func formatMenuBarTitle(
     return parts.joined(separator: " ")
 }
 
-/// Today's weekday in `timeZone`, 1 (Sunday) through 7 (Saturday).
 nonisolated private func todayWeekday(now: Date, timeZone: TimeZone) -> Int? {
     GregorianDate.today(now: now, timeZone: timeZone).flatMap { ($0).weekday }
 }
 
 extension SpokenDate {
-    /// The spoken form of `formatMenuBarTitle`. Always includes the year:
-    /// `showsYear` only saves menu-bar width.
     nonisolated static func menuBarDate(
         now: Date,
         timeZone: TimeZone = .nepal,
@@ -87,7 +76,6 @@ extension SpokenDate {
                 twentyFourHour: format.usesTwentyFourHourClock,
                 showsSeconds: format.showsSeconds
             )
-            // A listener cannot glance to tell AM from PM.
             if format.usesTwentyFourHourClock {
                 parts.append(time)
             } else {

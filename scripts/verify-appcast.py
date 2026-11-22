@@ -31,21 +31,12 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-# The NOSONAR markers silence path-injection findings on paths taken from CLI
-# arguments. The release stages its files in a temp directory outside the
-# repository, so confining paths to a base directory would break it.
-
-# An XML namespace identifier, never fetched.
 SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # NOSONAR
 NS = {"sparkle": SPARKLE_NS}
 
-# Must match update-changelog.py. The <description> is not covered by the
-# EdDSA signature, so it is checked against these tags instead.
 NOTES_TAGS = {"b", "li", "p", "ul"}
 MAX_NOTES_CHARS = 8192
 
-# Release and minimumSystemVersion strings. Also keeps a feed-supplied version
-# from naming a file outside the notes directory.
 NUMERIC_VERSION = r"[0-9]+\.[0-9]+(?:\.[0-9]+)?"
 
 
@@ -86,7 +77,6 @@ def ok(message: str) -> None:
 
 
 def load_public_key(info_plist: Path) -> bytes:
-    """Read SUPublicEDKey out of Info.plist and return raw 32-byte Ed25519 key."""
     text = info_plist.read_text(encoding="utf-8")  # NOSONAR
     marker = "SUPublicEDKey</key>"
     if marker not in text:
@@ -107,7 +97,6 @@ def load_public_key(info_plist: Path) -> bytes:
 
 
 def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
-    """Verify an Ed25519 signature over `data` with stock openssl."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         (tmp_path / "spki.der").write_bytes(ED25519_SPKI_PREFIX + public_key)
@@ -128,8 +117,6 @@ def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
 
 
 class _HTTPSOnlyRedirects(urllib.request.HTTPRedirectHandler):
-    """Apply the enclosure url's https rule to every redirect hop too."""
-
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         if urlparse(newurl).scheme != "https":
             raise urllib.error.URLError(f"refusing redirect to non-https url {newurl}")
@@ -148,8 +135,7 @@ def fetch(url: str, timeout: int = 60) -> bytes:
 def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
     """Split a feed's signing block off, the way Sparkle's client does.
 
-    Returns `(content, ed_signature_base64, declared_length)`. The search runs
-    backwards, as Sparkle's does. A feed with no block yields `None, None`.
+    The search runs backwards, as Sparkle's does.
     """
     start = raw.rfind(FEED_SIGNING_PREFIX)
     if start == -1:
@@ -171,10 +157,6 @@ def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
 
 
 def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
-    """Require the feed itself to be signed, and check the signature.
-
-    Runs even with `--skip-crypto`, which only skips the archive checks.
-    """
     content, signature_b64, declared_length = extract_feed_signature(raw)
 
     if signature_b64 is None:
@@ -198,8 +180,6 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
         fail(f"feed signature is {len(signature_bytes)} bytes, expected 64")
 
     if declared_length is not None and declared_length != len(content):
-        # Sparkle only uses this length in error messages, but a mismatch means
-        # the block was not written by `sign_update`.
         fail(
             f"feed signature block declares {declared_length} bytes of signed "
             f"content but {len(content)} bytes precede it. The block was not "
@@ -219,12 +199,6 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
 
 
 def deployment_floor(override: str | None = None) -> str | None:
-    """The macOS deployment target the app ships with, as a dotted string.
-
-    Read from package-release.sh: Info.plist's LSMinimumSystemVersion is the
-    unexpanded $(MACOSX_DEPLOYMENT_TARGET), so the source tree records the
-    floor nowhere else.
-    """
     if override:
         return override
     script = Path(__file__).resolve().parent / "package-release.sh"
@@ -237,9 +211,7 @@ def deployment_floor(override: str | None = None) -> str | None:
 
 
 def replace_items(raw: str, replace: Callable[[str], str]) -> str:
-    """Replace each `<item>...</item>` block in `raw` with `replace(block)`.
-
-    Equivalent to `re.sub(r"<item>.*?</item>", ...)` without its quadratic
+    """Equivalent to `re.sub(r"<item>.*?</item>", ...)` without its quadratic
     rescan from an unclosed <item>.
     """
     parts: list[str] = []
@@ -256,11 +228,6 @@ def replace_items(raw: str, replace: Callable[[str], str]) -> str:
 
 
 def embed_notes(appcast: Path, notes_dir: Path) -> None:
-    """Embed scripts/release-notes/<version>.html into each item's <description>.
-
-    Items that already have a description are left alone, and the rest of the
-    file is not reserialised.
-    """
     raw = appcast.read_text(encoding="utf-8")  # NOSONAR
 
     def describe(block: str) -> str:
@@ -287,7 +254,6 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
         return (f"{prefix}\n            <description><![CDATA[\n{body}\n]]></description>\n"
                 f"            {marker}{block[index + len(marker):]}")
 
-    # Nothing is written unless every item succeeded.
     described = replace_items(raw, describe)
     appcast.write_text(described, encoding="utf-8")  # NOSONAR
     ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
@@ -300,8 +266,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     if floor:
         print(f"App deployment floor: {floor}")
 
-    # --- 1. Well-formedness and required fields -----------------------------
-    # Parse only the signed bytes, so what is checked is what the signature covers.
     feed_bytes = appcast.read_bytes()  # NOSONAR
     signed_content, _, _ = extract_feed_signature(feed_bytes)
     try:
@@ -311,7 +275,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     if not root.tag.endswith("rss"):
         fail(f"root element is <{root.tag}>, expected an RSS document")
 
-    # --- 2. The feed's own signature ----------------------------------------
     verify_feed_signature(feed_bytes, info_plist)
 
     items = root.findall("./channel/item")
@@ -331,8 +294,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("cannot identify a unique newest release")
     current_item = items[release_versions.index(latest_version)]
 
-    # Sparkle only offers a higher build number, so the newest item's build must
-    # increase. Earlier items are already published and left alone.
     builds = []
     for item in items:
         raw = item.findtext("sparkle:version", default="", namespaces=NS).strip()
@@ -422,10 +383,8 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                      f"({', '.join(sorted(set(checker.offenses)))}); allowed: b, li, p, ul")
             ok(f"version {version}: release notes match the notes contract ({len(description)} chars)")
 
-        # --- 3. Enclosure bytes match the declared length -------------------
         payload: bytes | None = None
         if enclosure is not None:
-            # The feed has every release; only the item naming this file can be checked.
             if Path(parsed.path).name == enclosure.name:
                 payload = enclosure.read_bytes()  # NOSONAR
         elif fetching:
@@ -445,7 +404,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                 )
             ok(f"version {version}: enclosure length matches ({actual} bytes)")
 
-            # --- 4. Cryptographic verification ---------------------------
             if skip_crypto:
                 skipped.append(version)
                 print(f"  skip  version {version}: signature not checked (--skip-crypto)")
@@ -513,7 +471,6 @@ def main() -> int:
         print(f"  FAIL  {args.appcast} does not exist")
         return 1
     if args.embed_notes is not None:
-        # A mutation, not a check, so it runs before the key or enclosures are read.
         embed_notes(args.appcast, args.embed_notes)
         return 0
     if not args.info_plist.is_file():
@@ -527,7 +484,7 @@ def main() -> int:
         raise
     except Exception as exc:  # noqa: BLE001
         fail(f"unexpected error: {exc}")
-    return 1  # unreachable: fail() exits
+    return 1
 
 
 if __name__ == "__main__":

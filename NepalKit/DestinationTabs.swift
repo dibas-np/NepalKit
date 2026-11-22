@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The popover's destinations as the system segmented control.
 struct DestinationTabs: View {
     @Binding var selection: PopoverDestination
 

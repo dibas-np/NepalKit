@@ -4,18 +4,13 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// Ticks while the popover is visible so its clocks stay live and the date
-/// flips at midnight in the chosen time reference.
 @MainActor
 @Observable
 final class ClockModel {
     private(set) var now: Date
-    /// Assigned only on a change, so day-level views are not invalidated every tick.
     private(set) var today: GregorianDate?
-    /// False when both clocks read the same; assigned only on a change, like `today`.
     private(set) var showsSecondaryClock = false
     private(set) var timeReference: TimeReference
-    /// nil follows the system zone, resolved per read so travel shows without a relaunch.
     private let injectedLocalTimeZone: TimeZone?
     /// Injected so tests can change the system zone mid-session: mutating
     /// `NSTimeZone.default` does not move `TimeZone.current` on this platform.
@@ -26,7 +21,6 @@ final class ClockModel {
     private let refreshes: Bool
     private let sleep: @MainActor (Duration) async throws -> Void
 
-    /// Schedules no work; the popover owns the refresh task.
     init(
         now: Date = .now,
         localTimeZone: TimeZone? = nil,
@@ -49,7 +43,6 @@ final class ClockModel {
         self.showsSecondaryClock = !localTimeIsRedundant
     }
 
-    /// Refreshes immediately, then once per interval until the view cancels its task.
     func refreshWhileVisible() async {
         guard refreshes else { return }
         while !Task.isCancelled {
@@ -67,7 +60,6 @@ final class ClockModel {
         injectedLocalTimeZone ?? systemZone()
     }
 
-    /// Nothing to schedule: the popover's tick re-reads both clocks every second.
     func setTimeReference(_ timeReference: TimeReference) {
         self.timeReference = timeReference
         refreshToday()
@@ -80,7 +72,6 @@ final class ClockModel {
         if differs != showsSecondaryClock { showsSecondaryClock = differs }
     }
 
-    /// Uses `localTimeZone` so a test's injected zone governs both the day and the clocks.
     var timeZone: TimeZone {
         switch timeReference {
         case .nepal: TimeZone.nepal
@@ -96,7 +87,6 @@ final class ClockModel {
         today
     }
 
-    /// Derived from the Gregorian day, so it survives past the supported range.
     func weekdayString(style: MonthNameStyle) -> String? {
         guard let day = todayADDate(), let weekday = day.weekday else { return nil }
         return BikramSambatDate.weekdayName(weekday, style: style)
@@ -110,15 +100,10 @@ final class ClockModel {
         digits.formatTime(now, in: localTimeZone)
     }
 
-    /// Compared by UTC offset at this instant, not zone identity: another zone can
-    /// share Nepal's offset.
     var localTimeIsRedundant: Bool {
         localTimeZone.secondsFromGMT(for: now) == TimeZone.nepal.secondsFromGMT(for: now)
     }
 
-    // MARK: - The two clocks
-
-    /// The clock today follows, since the date beneath it was read from that clock.
     var headerClockLabel: String {
         switch timeReference {
         case .nepal: Strings.nepalTimeLabel

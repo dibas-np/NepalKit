@@ -9,7 +9,6 @@ struct TodayComplicationProviderTests {
     private let dataset = CalendarDataset.v2
 
     @Test func widgetKindIsPinned() {
-        // Renaming the kind removes placed complications on upgrade.
         #expect(TodayComplication.kind == "NepalKitTodayComplication")
     }
 
@@ -52,14 +51,12 @@ struct TodayComplicationProviderTests {
             Issue.record("Expected the preview sample to resolve as a supported day")
             return
         }
-        // 27 September 2026 is 11 Ashoj 2083.
         #expect(components.bikramSambatDay == "११")
         #expect(components.bikramSambatMonthName == "असोज")
         #expect(components.bikramSambatYear == "२०८३")
     }
 
     @Test func actualSnapshotResolvesTodayThroughCore() throws {
-        // 26 Sep 2026, 18:30 UTC = 11 Ashoj 2083 in Nepal Time.
         let now = try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
         let provider = TodayComplicationProvider(now: { now })
 
@@ -82,7 +79,6 @@ struct TodayComplicationProviderTests {
             anchorGregorian: GregorianDate(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
-        // 26 Sep 2026, 18:30 UTC is 27 Sep in Nepal Time.
         let now = try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
         let provider = TodayComplicationProvider(now: { now }, dataset: broken)
 

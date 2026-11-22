@@ -3,7 +3,6 @@
 import SwiftUI
 import NepalKitCore
 
-/// A day's details under the grid. Layout only; every string is the model's.
 struct MonthGridDayDetailCard: View {
     let detail: MonthGridDayDetail
     let copy: () -> Void
@@ -14,7 +13,6 @@ struct MonthGridDayDetailCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                // Close shares the title's row so a long date wraps before it.
                 HStack(alignment: .firstTextBaseline) {
                     Text(detail.bikramSambat)
                         .font(.title3.weight(.semibold))
@@ -34,7 +32,6 @@ struct MonthGridDayDetailCard: View {
                         .foregroundStyle(.secondary)
                         .accessibilityLabel(detail.spokenRelative ?? relative)
                 }
-                // Tint only on the dot: tinted text over Liquid Glass loses contrast.
                 ForEach(Array(zip(detail.festivals, detail.spokenFestivals)), id: \.0) { shown, spoken in
                     HStack(alignment: .firstTextBaseline) {
                         Circle().fill(.tint).frame(width: 5, height: 5).accessibilityHidden(true)
@@ -45,7 +42,6 @@ struct MonthGridDayDetailCard: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(spoken)
                 }
-                // Secondary, not red, for the same contrast reason.
                 ForEach(detail.holidays, id: \.self) { holiday in
                     Text(holiday)
                         .font(.callout)
@@ -75,7 +71,6 @@ struct MonthGridDayDetailCard: View {
 }
 
 #if DEBUG
-/// 1 Kartik 2083 (Maha Ashtami, a Dashain public holiday).
 #Preview("Day details, festival") {
     let model = MonthGridModel(now: AppData.previewInstant)
     let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)

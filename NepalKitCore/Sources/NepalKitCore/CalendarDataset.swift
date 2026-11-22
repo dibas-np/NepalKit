@@ -205,7 +205,6 @@ public struct CalendarDataset: Sendable {
         anchorBikramSambat: BikramSambatDate(year: 2082, month: 1, day: 1),
         anchorGregorian: GregorianDate(year: 2025, month: 4, day: 14),
         supportedRange: 1975 ... 2084,
-        // Projected, not attested (SOURCES.md).
         provisionalYears: [2084]
     )
 }

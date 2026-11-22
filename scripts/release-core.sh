@@ -3,19 +3,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Publishes NepalKitCore as a Swift package release.
-#
 #   scripts/release-core.sh --dry-run 0.2.0   # every check, nothing pushed
 #   scripts/release-core.sh 0.2.0
 #
 # SwiftPM needs a package at a repository root, so releases go to the
 # dibas-np/NepalKitCore mirror, whose main is `git subtree split
-# --prefix=NepalKitCore` of this repository. Tags are signed and verified
-# against the key in docs/release-verification.md, the core suite runs on the
-# split, and nothing is pushed until every check passes. Reruns are safe.
-#
-# Tags are staged under refs/release-core/ because a v* tag in this repository
-# starts an app release.
+# --prefix=NepalKitCore` of this repository.
 #
 # Overrides: CORE_RELEASE_BRANCH, CORE_MIRROR_REPO, CORE_MIRROR_URL,
 # CORE_IOS_DESTINATION, CORE_WATCHOS_DESTINATION, CORE_SIGNING_FINGERPRINT.
@@ -26,7 +19,6 @@ PREFIX=NepalKitCore
 MIRROR_REPO="${CORE_MIRROR_REPO:-dibas-np/NepalKitCore}"
 MIRROR_URL="${CORE_MIRROR_URL:-https://github.com/$MIRROR_REPO.git}"
 BRANCH="${CORE_RELEASE_BRANCH:-develop}"
-# Runtimes on the release machine; older floors are only compile-checked.
 IOS_DESTINATION="${CORE_IOS_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=27.0}"
 WATCHOS_DESTINATION="${CORE_WATCHOS_DESTINATION:-platform=watchOS Simulator,name=Apple Watch SE 3 (44mm),OS=26.0}"
 EXPECTED_FINGERPRINT="${CORE_SIGNING_FINGERPRINT:-SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik}"
@@ -50,7 +42,6 @@ fail() {
     exit 1
 }
 
-# Fatal for a release; a warning in a dry run.
 fail_unless_dry_run() {
     if (( DRY_RUN )); then
         print -u2 "release-core: warning (dry run): $1"
@@ -63,8 +54,6 @@ step() {
     print "\n==> $1"
 }
 
-# Prints "<object> <commit>" for a remote ref, or nothing if absent; fails if
-# the remote is unreachable. Call as `x="$(remote_ref …)" || exit 1`.
 remote_ref() {
     local url="$1" ref="$2" out="" object="" peeled=""
     local -i code=0
@@ -79,7 +68,6 @@ remote_ref() {
     print -r -- "$object ${peeled:-$object}"
 }
 
-# Only a 404 means no; any other error stops the run.
 release_exists() {
     local out=""
     if out="$(gh api "repos/$MIRROR_REPO/releases/tags/$TAG" --jq .tag_name 2>&1)"; then
@@ -90,7 +78,6 @@ release_exists() {
     fail "cannot ask GitHub whether $MIRROR_REPO has a $TAG release: $out"
 }
 
-# Copies user.* and gpg.* settings into a private repository so it signs the same way.
 inherit_signing_config() {
     local repo="$1" key="" value=""
     { git config --get-regexp '^(user|gpg)\.' || true; } | while read -r key value; do
@@ -105,7 +92,6 @@ inherit_signing_config() {
     done
 }
 
-# Requires an annotated tag named $name, on $commit, signed by the expected key.
 verify_tag() {
     local ref="$1" name="$2" commit="$3" report=""
     [[ "$(git cat-file -t "$ref")" == tag ]] || fail "$name is not an annotated tag, so it carries no signature"
@@ -151,7 +137,6 @@ git config user.signingkey > /dev/null || fail "no user.signingkey; release tags
 git config gpg.ssh.allowedSignersFile > /dev/null \
     || fail "no gpg.ssh.allowedSignersFile, so the tags could not be verified before they are pushed"
 
-# The "## <version> — " section of HEAD's changelog becomes the release notes.
 NOTES="$WORK/notes.md"
 git show "HEAD:$PREFIX/CHANGELOG.md" > "$WORK/CHANGELOG.md" 2>/dev/null \
     || fail "HEAD has no $PREFIX/CHANGELOG.md"
@@ -177,7 +162,6 @@ SPLIT_REPO="$WORK/split.git"
 git init --quiet --bare --initial-branch=main "$SPLIT_REPO"
 git push --quiet "$SPLIT_REPO" "${SPLIT_SHA}:refs/heads/main"
 
-# A published tag must name the commit this run would publish.
 state="$(remote_ref "$MIRROR_URL" refs/heads/main)" || exit 1
 read -r _ MIRROR_MAIN <<< "$state"
 state="$(remote_ref "$MIRROR_URL" "refs/tags/$TAG")" || exit 1
@@ -236,7 +220,6 @@ git clone --quiet --no-tags "$SPLIT_REPO" "$CHECKOUT"
 step "Core suite on macOS"
 (cd "$CHECKOUT" && swift test --quiet)
 
-# Require a test count too: a destination that runs nothing must not pass.
 run=0
 for destination in "$IOS_DESTINATION" "$WATCHOS_DESTINATION"; do
     step "Core suite on $destination"
@@ -247,7 +230,6 @@ for destination in "$IOS_DESTINATION" "$WATCHOS_DESTINATION"; do
     grep -E "Test run with [1-9][0-9]* tests" "$log" || fail "no tests ran on $destination"
 done
 
-# No simulator runtimes for these here, so they are built, not tested.
 for platform in tvOS visionOS; do
     step "Core build for $platform"
     log="$WORK/xcodebuild-$(( ++run )).log"

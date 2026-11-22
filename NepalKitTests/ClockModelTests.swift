@@ -26,7 +26,6 @@ struct ClockModelTests {
         let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
         let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-        // Through the same formatters the views use.
         let bs = try #require(clock.todayBSDate())
         #expect(bs.formatted(latin) == "11 Ashoj 2083")
         #expect(bs.formatted(devanagari) == "११ असोज २०८३")
@@ -36,14 +35,12 @@ struct ClockModelTests {
     }
 
     @Test func weekdayHonorsMonthNameSetting() throws {
-        // 27 Sep 2026 is a Sunday.
         let clock = try model(at: try TestDates.utc(2026, 9, 27, 12, 0))
         #expect(clock.weekdayString(style: .transliterated) == "Sunday")
         #expect(clock.weekdayString(style: .nepali) == "आइत")
     }
 
     @Test func nptClockTicksInNPTWithLocalAsReference() throws {
-        // 18:30 UTC = 00:15 NPT next day, 14:30 in New York (EDT, UTC-4).
         let clock = try model(at: try TestDates.utc(2026, 9, 26, 18, 30))
         #expect(clock.nptTimeString(digits: .latin) == "00:15:00")
         #expect(clock.localTimeString(digits: .latin) == "14:30:00")
@@ -51,19 +48,16 @@ struct ClockModelTests {
     }
 
     @Test func localTimeIsRedundantOnlyWhenTheReadingWouldRepeat() throws {
-        // In Nepal, a second clock showing the same reading is noise.
         let inNepal = try model(at: try TestDates.utc(2026, 9, 27, 12, 0), local: "Asia/Kathmandu")
         #expect(inNepal.localTimeIsRedundant)
         #expect(inNepal.localTimeString(digits: .latin) == inNepal.nptTimeString(digits: .latin))
 
         #expect(try !model(at: try TestDates.utc(2026, 9, 27, 12, 0)).localTimeIsRedundant)
 
-        // Asia/Kolkata is UTC+5:30, a half hour from Nepal.
         #expect(try !model(at: try TestDates.utc(2026, 9, 27, 12, 0), local: "Asia/Kolkata").localTimeIsRedundant)
     }
 
     @Test func redundancyIsComparedByOffsetNotZoneIdentity() throws {
-        // A fixed-offset +05:45 zone shares Nepal's offset under another identifier.
         let zone = try #require(TimeZone(secondsFromGMT: 20700))
         let offsetZone = ClockModel(
             now: try TestDates.utc(2026, 9, 27, 12, 0),
@@ -74,9 +68,6 @@ struct ClockModelTests {
     }
 
     @Test func noForeignZoneEverSharesNepalsOffset() throws {
-        // No other zone shares +05:45, so the only redundant readings are
-        // Nepal's own. Its two spellings are distinct `TimeZone` values, which
-        // is why the comparison is by offset.
         let katmandu = try #require(TimeZone(identifier: "Asia/Katmandu"))
         let london = try #require(TimeZone(identifier: "Europe/London"))
         #expect(ClockModel(now: .now, localTimeZone: katmandu, refreshes: false).localTimeIsRedundant)
@@ -155,7 +146,6 @@ struct ClockModelTests {
         #expect(sleeps == 2)
         #expect(clock.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
 
-        // Simulate a long closed interval; reopening reads the new instant.
         instant = try TestDates.utc(2026, 9, 28, 12, 0)
         task = Task { await clock.refreshWhileVisible() }
         await task?.value

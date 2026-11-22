@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Runs the app-layer test suite through the SwiftPM harness in scripts/apptests.
-#
 # Usage: scripts/run-app-tests.sh [extra swift test args]
 
 set -euo pipefail
@@ -12,7 +10,6 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 harness="$repo_root/scripts/apptests"
 
-# The harness must symlink the real app sources; copies drift silently.
 for pair in "Sources/NepalKit:NepalKit" "Tests/NepalKitTests:NepalKitTests"; do
     link="${pair%%:*}"
     expected="${pair##*:}"
@@ -31,11 +28,8 @@ for pair in "Sources/NepalKit:NepalKit" "Tests/NepalKitTests:NepalKitTests"; do
     fi
 done
 
-# InfoPlistKeysTests check a built product. Use the newest NepalKit.app found,
-# unless it is older than its sources, in which case those tests skip. The
-# executable's mtime is used because Xcode does not always rewrite Info.plist.
+# The executable's mtime is used because Xcode does not always rewrite Info.plist.
 if [[ -z "${NEPAKIT_BUILT_PLIST:-}" ]]; then
-    # Inputs that affect the built Info.plist and bundled resources.
     newest_input="$(find "$repo_root/NepalKit" "$repo_root/NepalKit.xcodeproj/project.pbxproj" \
         "$repo_root/LICENSE" -type f -not -name .DS_Store -exec stat -f '%m %N' {} + | sort -rn)"
     newest_line="${newest_input%%$'\n'*}"

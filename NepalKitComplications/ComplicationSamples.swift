@@ -4,15 +4,12 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Sample states for previews, resolved through the dataset.
 enum ComplicationSamples {
-    /// 27 September 2026, 11 Ashoj 2083.
     static func supportedState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         let provider = TodayComplicationProvider(now: { .distantPast }, dataset: dataset)
         return provider.snapshot(isPreview: true).state
     }
 
-    /// 13 April 2028, the first day past the dataset's end.
     static func boundaryState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         dayState(for: GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
     }
@@ -32,7 +29,6 @@ enum ComplicationSamples {
         .placeholder
     }
 
-    /// Kartik, the widest month name, for checking corner and row fit.
     static func longestMonthState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         dayState(for: GregorianDate(year: 2026, month: 10, day: 20), in: dataset)
     }

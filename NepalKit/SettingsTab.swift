@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The Settings window's destinations, in sidebar order.
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case menuBar
@@ -26,6 +25,5 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The tab Settings opens on.
     static let landingTab: SettingsTab = .general
 }

@@ -7,8 +7,6 @@ import NepalKitCore
 import NepalKitWatchSupport
 @testable import NepalKitWatchApp
 
-/// The short heights are below any real screen (the xLarge hero is 104 pt; a
-/// 40 mm screen is 197 pt) so the scrolling fallback is exercised.
 @MainActor
 struct TodayLayoutTests {
     nonisolated private static let cramped = 40.0
@@ -23,7 +21,6 @@ struct TodayLayoutTests {
     }
 
     @Test func everyStateKeepsItsOwnCompositionWhereItFits() throws {
-        // A scroll view fills the offered height; a composition takes its own.
         for state in try states() {
             let own = try renderedHeight(state.composition, proposed: nil)
             let rendered = try renderedHeight(TodayStateView(display: state.display), proposed: Self.roomy)
@@ -39,14 +36,12 @@ struct TodayLayoutTests {
     }
 
     private func renderedHeight(_ view: some View, proposed height: Double?) throws -> CGFloat {
-        // The largest size below the large-text fallback.
         let renderer = ImageRenderer(content: view.environment(\.dynamicTypeSize, .xLarge))
         renderer.proposedSize = ProposedViewSize(width: 162, height: height.map { CGFloat($0) })
         let image = try #require(renderer.cgImage)
         return CGFloat(image.height) / renderer.scale
     }
 
-    /// The widest hero measured, a day past the range, and an error with its date.
     private func states() throws -> [State] {
         let today = GregorianDate(year: 2026, month: 12, day: 17)
         let past = GregorianDate(year: 2030, month: 1, day: 1)

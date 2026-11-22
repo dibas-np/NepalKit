@@ -9,7 +9,6 @@ __pycache__/
 xcuserdata/
 .env
 
-# Agent workflow (local-only, never committed)
 AGENTS.md
 docs/agents/
 .zcode/

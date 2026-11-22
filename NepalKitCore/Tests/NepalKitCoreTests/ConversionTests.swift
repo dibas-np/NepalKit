@@ -11,7 +11,6 @@ struct ConversionTests {
     }
 
     @Test func weekdayOfKnownDateIsSunday() {
-        // 27 September 2026 is a Sunday; weekday 1 is Sunday.
         #expect(BikramSambatDate(year: 2083, month: 6, day: 11).weekday(in: .v2) == 1)
     }
 }

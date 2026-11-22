@@ -3,7 +3,6 @@
 import Foundation
 import Testing
 
-/// Builds UTC instants for the app tests.
 enum TestDates {
     static func utc(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int, _ second: Int = 0) throws -> Date {
         var calendar = Calendar(identifier: .gregorian)

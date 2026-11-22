@@ -4,30 +4,14 @@
 import Foundation
 import NepalKitCore
 
-/// Debug-only fixtures for the Watch targets, compiled only under
-/// `NEPALKIT_WATCH_FIXTURES` (Debug configurations). Fixtures come from launch
-/// arguments and last one launch; they pick inputs and failure points, never
-/// calendar answers.
-///
-/// Launch arguments:
-///
-///     -NepalKitFixtureInstant <ISO-8601 instant with Z>
-///     -NepalKitFixtureScenario <boundaryBefore|boundaryAfter|projected2084|
-///                               terminal|midnightApproach>
-///     -NepalKitFixtureFailAt <horizon offset, e.g. 3>
-///     -NepalKitFixtureError <today|withoutContext>
 struct WatchFixture: Sendable, Equatable {
-    /// The fixed instant the injected clock returns; nil for the real clock.
     var instant: Date?
 
-    /// The horizon offset (0 = today) whose resolution fails. Requires a fixed
-    /// instant.
     var failAtHorizonOffset: Int?
 
     var failTodayWithContext: Bool?
     var failTodayWithoutContext: Bool?
 
-    /// Makes the next-midnight calculation fail.
     var failActivation: Bool
 
     nonisolated init() {
@@ -44,8 +28,6 @@ enum WatchFixtureControl {
         fixture(arguments: ProcessInfo.processInfo.arguments)
     }
 
-    /// Parses the fixture launch arguments. Any unknown name or value discards
-    /// the whole fixture rather than half-applying it.
     nonisolated static func fixture(arguments: [String]) -> WatchFixture? {
         guard arguments.contains(where: \.hasFixturePrefix) else { return nil }
         var fixture = WatchFixture()
@@ -98,7 +80,6 @@ enum WatchFixtureControl {
         return true
     }
 
-    /// `terminal` is the day whose timeline horizon ends at the dataset maximum.
     nonisolated private static func scenarioInstant(_ name: String) -> Date? {
         switch name {
         case "boundaryBefore": try? Date("1918-04-12T06:15:00Z", strategy: .iso8601)

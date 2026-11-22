@@ -36,8 +36,6 @@ struct FormattingTests {
         #expect(DigitScript.latin.formatTime(epoch, in: utcPlusOne) == "01:00:00")
     }
 
-    /// Switching digit script changes the glyphs, never the value: a minus
-    /// sign must survive.
     @Test(arguments: [-1, -42, -2084, 0, 7, 2084, 999_999])
     func digitScriptPreservesValueAndLength(value: Int) {
         let latin = DigitScript.latin.format(value)
@@ -60,8 +58,6 @@ struct FormattingTests {
         #expect(GregorianDate.monthName(month) == expectedAD)
     }
 
-    /// An out-of-range month renders as its number instead of trapping;
-    /// `Int.min` would overflow a guard that subtracts first.
     @Test(arguments: [
         (0, "0", "no month 0"),
         (-1, "-1", "below the first month"),

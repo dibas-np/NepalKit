@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 
-/// Time-reference strings.
 nonisolated extension Strings {
     static let timeZoneSection = "Time"
     static let timeZoneLabel = "Time zone"

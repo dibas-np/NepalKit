@@ -17,7 +17,6 @@ if [[ ! -x "$tool" ]]; then
     trap 'rm -rf "$temporary_dir"' EXIT
     archive="$temporary_dir/SwiftLintBinary.artifactbundle.zip"
     url="https://github.com/realm/SwiftLint/releases/download/$version/SwiftLintBinary.artifactbundle.zip"
-    # `--proto '=https'` keeps `--location` from following a redirect out of TLS.
     curl --fail --location --proto '=https' --tlsv1.2 --silent --show-error "$url" --output "$archive"
     actual_checksum="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
     if [[ "$actual_checksum" != "$expected_checksum" ]]; then

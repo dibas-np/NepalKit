@@ -4,20 +4,15 @@ import Foundation
 import Observation
 import ServiceManagement
 
-/// The system login-item service, injectable for tests.
 protocol LoginItemServicing {
     var isRegistered: Bool { get }
-    /// Registered, but held by macOS until the user allows it in System Settings.
     var requiresApproval: Bool { get }
     func openLoginItemsSettings()
     func register() throws
     func unregister() throws
 }
 
-/// Login-item service backed by `SMAppService`.
 struct LiveLoginItemService: LoginItemServicing {
-    // A registration awaiting approval counts as registered: `register()` succeeded,
-    // and reporting it as off would flip the toggle back with no explanation.
     var isRegistered: Bool {
         let status = SMAppService.mainApp.status
         return status == .enabled || status == .requiresApproval
@@ -40,15 +35,11 @@ struct LiveLoginItemService: LoginItemServicing {
     }
 }
 
-/// A failed login-item change, carrying the system's own message. The errors are
-/// opaque, so the operation is the only distinction worth keeping.
 enum LoginItemFailure: Equatable {
     case registration(String)
     case deregistration(String)
 }
 
-/// The launch-at-login toggle. The system owns the on/off state; only the
-/// "default already applied" flag is persisted.
 @MainActor
 @Observable
 final class LoginItemModel {
@@ -56,17 +47,13 @@ final class LoginItemModel {
 
     private(set) var isOn: Bool
 
-    /// The last failure from the service, shown so a refused change isn't silent.
     private(set) var setupError: LoginItemFailure?
 
-    /// Registered, but macOS won't launch the app at login until the user allows it.
     private(set) var requiresApproval: Bool
 
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
 
-    /// Defaults are built in the body: a default argument is evaluated in a
-    /// nonisolated context.
     init(service: (any LoginItemServicing)? = nil, defaults: UserDefaults? = nil) {
         let service = service ?? LiveLoginItemService()
         let defaults = defaults ?? .standard
@@ -76,8 +63,6 @@ final class LoginItemModel {
         self.requiresApproval = service.requiresApproval
     }
 
-    /// Registers at first launch. The flag is set only after a confirmed registration,
-    /// so a failure retries next launch; after that the user's choice is never overridden.
     func ensureDefaultOn() {
         guard !defaults.bool(forKey: Self.configuredKey) else { return }
         do {
@@ -125,7 +110,6 @@ final class LoginItemModel {
                   : .deregistration(error.localizedDescription)
     }
 
-    /// Binding target for the Settings toggle.
     var launchAtLogin: Bool {
         get { isOn }
         set { setOn(newValue) }

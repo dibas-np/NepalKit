@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
-// Festivals and national days for 2083 BS from the national Panchanga
-// (pinned and with its selection rule in SOURCES.md), in the Panchanga's wording
-// with outer brackets dropped. Every gazetted day is included; the two the
-// Panchanga does not print are marked `source: .gazette`.
-
 let festivals2083: [BikramSambatDate: [Festival]] = [
     BikramSambatDate(year: 2083, month: 1, day: 1): [
         Festival(nepali: "नववर्षारम्भ", english: "Nepali New Year"),

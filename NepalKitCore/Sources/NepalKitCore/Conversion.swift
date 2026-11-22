@@ -19,7 +19,6 @@ extension TimeZone {
     }
 }
 
-/// Conversion is civil-day math, so it runs in UTC.
 let utcGregorian: Calendar = {
     // Not `TimeZone.gmt`, which needs macOS 13.
     guard let utc = TimeZone(secondsFromGMT: 0) else {
@@ -30,8 +29,7 @@ let utcGregorian: Calendar = {
     return calendar
 }()
 
-/// A Gregorian date as a UTC civil day, or nil if the components do not name a
-/// real day. `Calendar` normalizes February 30 to March 1, so anything that
+/// `Calendar` normalizes February 30 to March 1, so anything that
 /// does not round-trip is rejected.
 func utcDate(from date: GregorianDate) -> Date? {
     guard (1 ... 12).contains(date.month) else { return nil }
@@ -45,10 +43,7 @@ func utcDate(from date: GregorianDate) -> Date? {
     return instant
 }
 
-/// Month lengths for a Bikram Sambat date after range and component
-/// validation, or nil if the date is invalid or outside the table.
 func validatedMonths(for date: BikramSambatDate, in dataset: CalendarDataset) -> [Int]? {
-    // A corrupt non-positive length would otherwise build a reversed range and trap.
     guard dataset.supportedRange.contains(date.year),
           let months = dataset.monthLengths(for: date.year),
           months.allSatisfy({ $0 >= 1 }),
@@ -58,7 +53,6 @@ func validatedMonths(for date: BikramSambatDate, in dataset: CalendarDataset) ->
     return months
 }
 
-/// Days since the first day of the supported range, or nil if invalid or outside.
 func absoluteDayIndex(_ date: BikramSambatDate, in dataset: CalendarDataset) -> Int? {
     guard let yearStart = dataset.yearStartIndices[date.year],
           let months = validatedMonths(for: date, in: dataset)
@@ -66,7 +60,6 @@ func absoluteDayIndex(_ date: BikramSambatDate, in dataset: CalendarDataset) -> 
     return yearStart + months.prefix(date.month - 1).reduce(0, +) + date.day - 1
 }
 
-/// The inverse of `absoluteDayIndex`.
 func bikramSambatDate(at index: Int, in dataset: CalendarDataset) -> BikramSambatDate? {
     guard index >= 0 else { return nil }
     for year in dataset.supportedRange {

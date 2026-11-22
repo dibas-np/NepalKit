@@ -3,7 +3,6 @@
 import Foundation
 @testable import NepalKit
 
-/// A stand-in for the Sparkle-backed service, which the test harness doesn't link.
 @MainActor
 final class FakeUpdateService: UpdateServicing {
     private(set) var startCount = 0
@@ -20,12 +19,9 @@ final class FakeUpdateService: UpdateServicing {
     func start() { startCount += 1 }
     func checkForUpdates() { checkCount += 1 }
 
-    /// Simulate the framework reporting a result.
     func report(_ outcome: UpdateOutcome) { onOutcome?(outcome) }
 
-    /// Simulate the framework finishing an update cycle.
     func finishCycle() { onCycleFinished?() }
 
-    /// Simulate the framework raising or clearing the gentle reminder.
     func remind(_ showing: Bool) { onReminder?(showing) }
 }

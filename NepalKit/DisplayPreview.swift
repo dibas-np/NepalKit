@@ -3,9 +3,7 @@
 import Foundation
 import NepalKitCore
 
-/// Today's date rendered with the given settings, for the Display section's preview.
 enum DisplayPreview {
-    /// Nil when today is outside the supported range.
     static func todayText(
         now: Date,
         timeZone: TimeZone = .nepal,

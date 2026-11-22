@@ -5,7 +5,6 @@ struct CalendarDatasetTests {
     @Test func bundledDatasetDeclaresVersionAndRange() {
         let dataset = CalendarDataset.v2
 
-        // 2.0.0 dropped 1970–1974, which had no corroborating second source.
         #expect(dataset.version == "2.0.1")
         #expect(dataset.supportedRange == 1975 ... 2084)
     }

@@ -1,8 +1,6 @@
 import Testing
 import NepalKitCore
 
-/// Every New Year in the supported range, from an independent anchor list
-/// (with single-day typos corrected for 1975 and 2089).
 struct NewYearBoundaryTests {
     static let newYears: [(bs: Int, ad: GregorianDate)] = [
         (1975, GregorianDate(year: 1918, month: 4, day: 13)),

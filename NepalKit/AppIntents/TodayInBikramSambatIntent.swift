@@ -3,8 +3,6 @@
 import AppIntents
 import NepalKitCore
 
-/// Answers today's date in Bikram Sambat, in the user's time reference: Nepal Time
-/// unless they chose their own.
 struct TodayInBikramSambatIntent: AppIntent {
     static let title: LocalizedStringResource = "What is today's Nepali date"
 
@@ -21,7 +19,6 @@ struct TodayInBikramSambatIntent: AppIntent {
         return .result(value: answer.entity, dialog: IntentDialog(answer.dialog))
     }
 
-    /// Takes the instant and zone so tests don't depend on the wall clock or preferences.
     static func answer(
         now: Date,
         in dataset: CalendarDataset,
@@ -43,8 +40,6 @@ struct TodayInBikramSambatIntent: AppIntent {
         return "Today is \(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs))."
     }
 
-    /// Past the supported range: names the last supported year and still answers
-    /// today's Gregorian date.
     static func beyondRangeDialog(
         now: Date,
         timeZone: TimeZone = .nepal,

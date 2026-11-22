@@ -4,20 +4,15 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// Observable display settings, persisted through `SettingsStore`.
 @MainActor
 @Observable
 final class DisplaySettingsModel {
     private(set) var settings: DisplaySettings
-    /// Whether today follows Nepal Time or the Mac's own zone.
     private(set) var timeReference: TimeReference
 
     private let store: SettingsStore
-    /// Models that schedule against the zone and must be re-armed when it changes.
     @ObservationIgnored private var timeReferenceObservers: [@MainActor (TimeReference) -> Void] = []
 
-    /// The default store is built in the body: a default argument is evaluated
-    /// nonisolated, so constructing a main-actor type there is fragile.
     init(store: SettingsStore? = nil) {
         let store = store ?? SettingsStore()
         self.store = store
@@ -68,8 +63,6 @@ final class DisplaySettingsModel {
     }
 
     #if DEBUG
-    /// A model over a throwaway preferences domain seeded with Devanagari digits and
-    /// Nepali month names, so previews don't depend on the developer's own settings.
     static var preview: DisplaySettingsModel {
         let suite = "NepalKit.PreviewSettings"
         guard let defaults = UserDefaults(suiteName: suite) else {

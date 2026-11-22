@@ -34,7 +34,6 @@ struct ConverterModelTests {
     @Test func outputHonorsDevanagariAndNepali() {
         let model = bsModel()
         let settings = DisplaySettings(digits: .devanagari, monthNames: .nepali)
-        // Gregorian months stay English; digits and weekday honor settings.
         #expect(model.convertedText(settings: settings) == "२७ September २०२६ · आइत")
     }
 
@@ -67,8 +66,6 @@ struct ConverterModelTests {
             direction: .bsToAD, bsYear: 2084, bsMonth: 2, bsDay: 32,
             adYear: 2026, adMonth: 9, adDay: 27
         )
-        // Projected Jestha has 32 days; Ashar has 31. Changing only
-        // the month must clamp the previously valid day 32 down to 31.
         model.bsMonth = 3
         #expect(model.bsDay == 31)
     }
@@ -82,7 +79,6 @@ struct ConverterModelTests {
 
     @Test func adPickersBoundedToConvertibleSpan() {
         let model = bsModel()
-        // Dataset 2.0.0: 1975-01-01 ↔ 1918-04-13, 2084-12-30 ↔ 2028-04-12.
         #expect(model.minAD == GregorianDate(year: 1918, month: 4, day: 13))
         #expect(model.maxAD == GregorianDate(year: 2028, month: 4, day: 12))
         #expect(model.adMonths(year: 1918).first == 4)
@@ -91,8 +87,6 @@ struct ConverterModelTests {
     }
 
     @Test func adDateClampsIntoConvertibleSpan() {
-        // 1 January 1913 is before the range, so `init` clamps it forward to
-        // the first convertible day.
         let model = ConverterModel(
             direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11,
             adYear: 1913, adMonth: 1, adDay: 1
@@ -100,19 +94,14 @@ struct ConverterModelTests {
         #expect((model.adYear, model.adMonth, model.adDay) == (1918, 4, 13))
     }
 
-    // The setters must clamp the stored date themselves: `bsDate`/`adDate` are
-    // read back directly, not through the clamping accessors.
-
     @Test func bsYearAboveTheSupportedRangeClampsToItsUpperBound() {
         let model = bsModel()
-        // 1975...2084 is supported, so 3000 clamps back to 2084.
         model.bsYear = 3000
         #expect(model.bsDate.year == 2084)
     }
 
     @Test func bsDayBeyondTheRealMonthLengthClampsToThatMonth() {
         let model = bsModel()
-        // Projected Jestha 2084 has 32 days, so day 40 clamps to 32.
         model.bsYear = 2084
         model.bsMonth = 2
         model.bsDay = 40
@@ -121,14 +110,12 @@ struct ConverterModelTests {
 
     @Test func adYearAboveTheConvertibleSpanClampsToItsLastDay() {
         let model = bsModel()
-        // The convertible span ends on 12 April 2028.
         model.adYear = 3000
         #expect(model.adDate == GregorianDate(year: 2028, month: 4, day: 12))
     }
 
     @Test func adDayBeyondTheRealMonthLengthClampsToThatMonth() {
         let model = bsModel()
-        // January 2026 runs 31 days, so the 40th has to come back as the 31st.
         model.adYear = 2026
         model.adMonth = 1
         model.adDay = 40
@@ -149,8 +136,6 @@ struct ConverterModelTests {
         #expect(model.adDate == GregorianDate(year: 2026, month: 9, day: 27))
     }
 
-    /// Picker bounds come from the dataset, not a constant. The
-    /// fixture's dates follow from its anchor, 1 Baisakh 2000, and a 365-day year.
     @Test func pickerSpanFollowsTheDatasetNotAConstant() {
         let narrow = CalendarDataset(
             version: "test",
@@ -169,11 +154,8 @@ struct ConverterModelTests {
         #expect(model.adMonths(year: 1944) == Array(1 ... 4))
     }
 
-    // The supported range is 1975-2084 BS, 13 April 1918 through 12 April 2028
-    // (docs/glossary.md); 30 Chaitra 2084 is its last day (RoundTripTests).
     @Test("Past the supported range, both pickers open on its last day")
     func defaultsPastTheRangeNameTheLastSupportedDay() throws {
-        // 06:00 UTC is 11:45 Nepal Time on 13 April 2028, the day after the range.
         for now in [try TestDates.utc(2028, 4, 13, 6, 0), try TestDates.utc(2030, 5, 12, 6, 0)] {
             let model = ConverterModel(now: now)
             #expect(model.adDate == GregorianDate(year: 2028, month: 4, day: 12))
@@ -192,15 +174,12 @@ struct ConverterModelTests {
 
     @Test("Inside the supported range, both pickers open on today in Nepal Time")
     func defaultsInsideTheRangeNameToday() throws {
-        // 27 September 2026 is 11 Ashoj 2083 (see `bsToADKnownDateWithWeekday`).
         let model = ConverterModel(now: try TestDates.utc(2026, 9, 27, 12, 0))
         #expect(model.adDate == GregorianDate(year: 2026, month: 9, day: 27))
         #expect(model.bsDate == BikramSambatDate(year: 2083, month: 6, day: 11))
         #expect(GregorianDate(model.bsDate, in: AppData.dataset) == model.adDate)
     }
 
-    // 22 Bhadra 2084 is 8 September 2027 (Projected2084Tests); 2084 is the
-    // dataset's provisional row, 2083 is attested (SOURCES.md).
     @Test("A Bikram Sambat to Gregorian result from 2084 is provisional, shown and spoken")
     func bsToADResultInAProvisionalYear() {
         let model = ConverterModel(direction: .bsToAD, bsYear: 2084, bsMonth: 5, bsDay: 22, adYear: 2027, adMonth: 9, adDay: 8)
@@ -224,7 +203,6 @@ struct ConverterModelTests {
         let bsSide = bsModel()
         #expect(!bsSide.resultIsProvisional)
         #expect(bsSide.spokenResult(settings: settings) == "27 September 2026, Sunday")
-        // 13 April 2027 is the last day of 2083 (Chaitra 30); 2084 starts the next day.
         let adSide = ConverterModel(direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11, adYear: 2027, adMonth: 4, adDay: 13)
         #expect(!adSide.resultIsProvisional)
         #expect(adSide.spokenResult(settings: settings)?.contains("Provisional") == false)

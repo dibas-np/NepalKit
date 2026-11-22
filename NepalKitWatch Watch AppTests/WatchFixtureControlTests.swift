@@ -40,7 +40,6 @@ struct WatchFixtureControlTests {
         let afterDay = try ResolvedDay(now: afterInstant, in: dataset)
         #expect(afterDay.bikramSambat == .afterSupportedRange)
 
-        // The terminal scenario's day +13 is the dataset maximum.
         let terminalInstant = try #require(terminal.instant)
         let terminalToday = try #require(GregorianDate.today(now: terminalInstant))
         #expect(terminalToday.advanced(byDays: 13) == dataset.gregorianEnd)
@@ -94,8 +93,6 @@ struct WatchFixtureControlTests {
         #expect(fixture.failAtHorizonOffset == 3)
         #expect(fixture.instant == (try Date("2026-09-26T18:10:00Z", strategy: .iso8601)))
     }
-
-    // MARK: The harness exercises production paths
 
     @Test func fixtureModelRendersTheAfterBoundaryThroughProductionCode() async throws {
         let model = TodayFixtures.makeModel(arguments: ["-NepalKitFixtureScenario", "boundaryAfter"])

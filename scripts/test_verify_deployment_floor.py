@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for `verify-deployment-floor.py`."""
 
 from __future__ import annotations
 
@@ -54,16 +53,10 @@ PACKAGE_SW = (
     ")\n"
 )
 
-# A watchOS floor used in no other fixture block, so its absence is checkable.
 QUIET = "26.9"
 
 
 def watch_pbxproj(*blocks: tuple[str, str | None, str]) -> str:
-    """A project file whose blocks are exactly ``blocks``.
-
-    Each block is ``(name, sdkroot, floor)``; ``sdkroot`` of ``None`` inherits
-    SDKROOT from the project level, like the macOS app target.
-    """
     text = (
         "// !$*UTF8*$!\n"
         "{ objects = 1A2B3C /* Begin XCBuildConfiguration section */\n"
@@ -81,13 +74,10 @@ def watch_pbxproj(*blocks: tuple[str, str | None, str]) -> str:
 
 
 def floor_lines(text: str, value: str) -> list[int]:
-    """Line numbers of every ``WATCHOS_DEPLOYMENT_TARGET = <value>;`` in ``text``."""
     needle = f"WATCHOS_DEPLOYMENT_TARGET = {value};"
     return [n for n, line in enumerate(text.splitlines(), start=1) if needle in line]
 
 
-# The block shapes in the real project: two watchOS blocks, the macOS app
-# target (inherits macosx) and the iOS-side watch container.
 THREE_SHAPES = watch_pbxproj(
     ("Watch App Debug", "watchos", "26.6"),
     ("NepalKitComplications Debug", "watchos", "26.0"),
@@ -111,7 +101,6 @@ class ProjectFloorParsingTests(unittest.TestCase):
                              f"line {_} does not contain the value reported for it")
 
     def test_a_block_without_the_key_is_not_a_floor(self) -> None:
-        # An absent key means "inherit", not a floor.
         no_key = PBXPROJ.replace("\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 26.6;\n", "")
         remaining = vdf.project_floors(no_key)
         self.assertEqual([value for _, value in remaining], ["26.0"],
@@ -119,8 +108,6 @@ class ProjectFloorParsingTests(unittest.TestCase):
 
 
 class WatchOSProjectFloorParsingTests(unittest.TestCase):
-    """Only blocks with their own ``SDKROOT = watchos`` declare a watchOS floor."""
-
     def test_only_blocks_that_declare_their_own_watchos_sdkroot_are_floors(self) -> None:
         found = vdf.watchos_project_floors(THREE_SHAPES)
         self.assertEqual(
@@ -142,13 +129,11 @@ class WatchOSProjectFloorParsingTests(unittest.TestCase):
                              f"line {line} does not contain the value reported for it")
 
     def test_an_inherited_sdkroot_block_does_not_declare_a_watchos_floor(self) -> None:
-        # Like the macOS app target, which inherits macosx but carries the key.
         only_inherited = watch_pbxproj(("NepalKit Mac App Debug", None, QUIET))
         self.assertEqual(vdf.watchos_project_floors(only_inherited), [],
                          "no SDKROOT of its own means no watchOS floor")
 
     def test_the_watch_container_does_not_declare_a_watchos_floor(self) -> None:
-        # The iOS-side watch container.
         only_container = watch_pbxproj(("NepalKitWatch Debug", "iphoneos", QUIET))
         self.assertEqual(vdf.watchos_project_floors(only_container), [],
                          "SDKROOT = iphoneos is not a watchOS floor")
@@ -169,8 +154,6 @@ class WatchOSProjectFloorParsingTests(unittest.TestCase):
 
 
 class PackageManifestFloorParsingTests(unittest.TestCase):
-    """``.watchOS(...)`` out of NepalKitCore/Package.swift's platforms list."""
-
     def test_reads_the_declared_platform(self) -> None:
         line, value = vdf.package_watchos_floor(PACKAGE_SW)
         self.assertEqual(value, "26")
@@ -201,7 +184,6 @@ class ReleaseScriptFloorParsingTests(unittest.TestCase):
         self.assertIn("DEPLOYMENT_TARGET", RELEASE_SH.splitlines()[line - 1])
 
     def test_a_target_inside_a_comment_is_not_the_declaration(self) -> None:
-        # `#DEPLOYMENT_TARGET=26.0` commented out above the real one must not win.
         commented = "#DEPLOYMENT_TARGET=26.0\n" + RELEASE_SH
         line, value = vdf.release_script_floor(commented)
         self.assertEqual(value, "26.6", "the commented-out line must not be read")
@@ -220,7 +202,6 @@ class BuiltProductFloorTests(unittest.TestCase):
         self.assertEqual(vdf.product_floor(self._plist("26.6")), "26.6")
 
     def test_an_unexpanded_token_is_not_mistaken_for_a_floor(self) -> None:
-        # plistlib returns the unexpanded token too; the comparison must reject it.
         self.assertEqual(vdf.product_floor(self._plist("$(MACOSX_DEPLOYMENT_TARGET)")),
                          "$(MACOSX_DEPLOYMENT_TARGET)")
 
@@ -232,8 +213,6 @@ class BuiltProductFloorTests(unittest.TestCase):
 
 
 class GateHarness:
-    """Points the module's path constants at temp files and restores them."""
-
     def _run(self, project: str, release: str, built: str | None,
              package: str = PACKAGE_SW) -> tuple[int, str]:
         captured = io.StringIO()
@@ -259,7 +238,6 @@ class GateHarness:
         package_path.write_text(package, encoding="utf-8")
         vdf.PROJECT, vdf.RELEASE_SCRIPT = project_path, release_path
         vdf.PACKAGE = package_path
-        # Patch both, or the built-product path is never exercised.
         vdf._locate_built_product = (
             (lambda: Path("/fake/NepalKit.app/Contents/Info.plist"))
             if built is not None else (lambda: None)
@@ -278,8 +256,6 @@ class GateHarness:
             vdf.product_floor = original_plist
 
 class DriftDetectionTests(GateHarness, unittest.TestCase):
-    """One source out of step must give a non-zero exit."""
-
     def test_all_sources_agreeing_passes(self) -> None:
         code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, "26.6")
         self.assertEqual(code, 0, output)
@@ -315,7 +291,6 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
         self.assertIn("DEPLOYMENT_TARGET", output)
 
     def test_the_format_xcode_27_writes_is_the_one_ci_can_read(self) -> None:
-        # Xcode 27 writes 110, so the ceiling must accept it.
         self.assertEqual(vdf.MAX_OBJECT_VERSION, 110)
         self.assertIsNone(vdf._project_format_problem("\tobjectVersion = 110;\n"))
 
@@ -335,7 +310,6 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
         self.assertIsNone(vdf._project_format_problem("\tobjectVersion = 100;\n"))
 
     def test_the_probe_the_other_tests_use_is_one_this_gate_can_actually_parse(self) -> None:
-        # Make sure the probe is actually parsed, so the assertIsNone tests mean something.
         self.assertEqual(
             vdf._project_format_problem("\tobjectVersion = 111;\n") is not None,
             True,
@@ -363,7 +337,6 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
                           "an agreeing watchOS block must still be reported")
 
     def test_a_package_floor_above_the_app_exits_one(self) -> None:
-        # The package may be at or below the app's floor, never above it.
         agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
         higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
         code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
@@ -374,7 +347,6 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
                       "the message must say which way the two floors disagree")
 
     def test_the_package_floor_failure_does_not_claim_the_appcast_would_lie(self) -> None:
-        # appcast.xml is the Mac app's feed, so the message must not mention it.
         agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
         higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
         _code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
@@ -446,7 +418,6 @@ class RealRepositoryTests(unittest.TestCase):
         self.assertEqual(code, 0, captured.getvalue())
 
     def test_the_repository_project_format_is_one_the_floor_job_can_read(self) -> None:
-        # Xcode 26 cannot open an objectVersion 110 project.
         with contextlib.redirect_stdout(io.StringIO()):
             problem = vdf._project_format_problem(
                 vdf.PROJECT.read_text(encoding="utf-8"))
@@ -467,8 +438,6 @@ class RealRepositoryTests(unittest.TestCase):
                          f"watchOS blocks disagree in the real project: {sorted(values)}")
 
     def test_the_repository_watchos_blocks_declare_26_0(self) -> None:
-        # The tests are the one place a watchOS version is hard-coded. Update it
-        # together with every WATCHOS_DEPLOYMENT_TARGET in the project.
         values = {value for _, value in
                   vdf.watchos_project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
         self.assertEqual(values, {"26.0"},
@@ -493,7 +462,6 @@ class RealRepositoryTests(unittest.TestCase):
         )
 
     def test_the_release_script_floor_is_what_the_verifier_reads(self) -> None:
-        # verify-appcast.py must read its floor from the file this gate checks.
         verifier = (vdf.REPO_ROOT / "scripts" / "verify-appcast.py").read_text(encoding="utf-8")
         self.assertIn("package-release.sh", verifier)
         self.assertIn("DEPLOYMENT_TARGET", verifier)

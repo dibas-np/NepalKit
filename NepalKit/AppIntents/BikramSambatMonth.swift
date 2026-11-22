@@ -2,9 +2,8 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// The twelve Bikram Sambat months as Siri resolves them. Raw values are the
-/// dataset's month numbers. Every string is a literal because App Intents metadata
-/// is extracted from source; the Devanagari synonyms serve typed matching only.
+/// Every string is a literal because App Intents metadata
+/// is extracted from source.
 nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
     case baisakh = 1
     case jestha = 2
@@ -74,8 +73,6 @@ nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
             ),
     ]
 
-    /// Every string a typed query can name this month by. Match exactly, never by
-    /// substring: the table contains near-collisions like "Aso" and "Asoj".
     var candidateStrings: [String] {
         let representation = Self.caseDisplayRepresentations[self]
         return [representation?.title.key ?? ""] + (representation?.synonyms.map { $0.key } ?? [])

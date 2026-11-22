@@ -3,16 +3,13 @@
 import SwiftUI
 import NepalKitCore
 
-/// Bikram Sambat ↔ Gregorian converter with a direction toggle and bounded pickers.
 struct ConverterView: View {
     @Bindable var model: ConverterModel
     let settings: DisplaySettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Named so VoiceOver says what the segments govern.
             Picker(Strings.converterDirectionLabel, selection: $model.directionSelection) {
-                // Abbreviated on screen, spoken in full: full names clipped at 340pt.
                 Text(Strings.bsToAD)
                     .accessibilityLabel(Strings.bsToADSpoken)
                     .tag(ConverterDirection.bsToAD)
@@ -31,17 +28,13 @@ struct ConverterView: View {
             }
 
             if let output = model.convertedText(settings: settings) {
-                // "Result" is spoken only: read aloud, the date alone doesn't say which calendar
-                // it is in.
                 Text(output)
                     .font(.headline)
-                    // Label only: `children: .ignore` would drop the static-text role.
                     .accessibilityLabel(
                         [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")
                     )
                 if model.resultIsProvisional {
-                    // Hidden from VoiceOver: the result's label already speaks it.
                     Text(Strings.converterProvisionalNote)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -55,7 +48,6 @@ struct ConverterView: View {
     }
 }
 
-/// One picker column: the values, the selection, and the shown and spoken text.
 private struct PickerColumn {
     let label: String
     let minWidth: CGFloat
@@ -65,8 +57,6 @@ private struct PickerColumn {
     let spoken: (Int) -> String
 }
 
-/// Layout shared by both directions' pickers. Minimum widths stop the pickers
-/// collapsing in the 340pt popover.
 private struct DatePickers: View {
     let year: PickerColumn
     let month: PickerColumn
@@ -75,14 +65,11 @@ private struct DatePickers: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
             column(year)
-            // Widest: month names, especially in Devanagari, are the longest values.
             column(month)
             column(day)
         }
     }
 
-    /// A caption above an untitled picker: a titled macOS `Picker` puts its title on
-    /// the value's line and clips it. The caption is the accessibility label.
     private func column(_ column: PickerColumn) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(column.label)

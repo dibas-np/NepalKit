@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Behavioural suite for scripts/release-core.sh.
-
-Run: python3 scripts/test_release_core.py
-
-Each test builds a throwaway repository, origin, mirror and SSH key, with gh,
-swift and xcodebuild stubbed. git is real, so the assertions are about real
-refs. Needs zsh, git and ssh-keygen; no network, no real key.
-"""
 
 from __future__ import annotations
 
@@ -60,8 +52,6 @@ def git(*args: str, cwd: Path, check: bool = True) -> str:
 
 
 class World:
-    """A repository, its origin, a mirror, a signing key and the tool stubs."""
-
     def __init__(self, root: Path) -> None:
         self.root = root
         self.repo = root / "repo"
@@ -149,7 +139,6 @@ class ReleaseCoreTest(unittest.TestCase):
     def setUp(self) -> None:
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
-        # No system or global git config, for the World's git calls and the script's.
         isolated = mock.patch.dict(os.environ, {
             "HOME": str(Path(scratch.name) / "home"),
             "GIT_CONFIG_NOSYSTEM": "1",
@@ -202,7 +191,6 @@ class ReleaseCoreTest(unittest.TestCase):
             )
             self.assertIn(f'Good "git" signature for release@example.com with ED25519 key '
                           f'{self.world.fingerprint}', verified.stderr)
-        # A v* tag here would read as an app release.
         self.assertEqual(git("tag", "--list", "v*", cwd=self.world.repo), "")
         self.assertEqual(self.world.staged(), "")
         releases = self.world.releases()
@@ -294,13 +282,11 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertEqual(second.returncode, 0, second.stderr)
         self.assertIn("v0.1.0 is already on example/NepalKitCore; verifying it", second.stdout)
         self.assertIn("core-v0.1.0 is already on origin; verifying it", second.stdout)
-        # The published tag is the same object, not a re-signed replacement.
         self.assertEqual(self.world.refs(self.world.mirror), published)
         self.assertEqual(self.world.releases().count("create"), 2)
         self.assertTrue((self.world.root / "released").exists())
 
     def test_an_unsigned_published_tag_is_not_adopted(self) -> None:
-        # A lightweight tag at the right commit, as a hand push would leave.
         git("push", "--quiet", str(self.world.mirror), f"{self.world.split()}:refs/heads/main",
             f"{self.world.split()}:refs/tags/v0.1.0", cwd=self.world.repo)
         result = self.world.run("0.1.0")
@@ -362,7 +348,6 @@ class ReleaseCoreTest(unittest.TestCase):
             self.assertEqual(self.world.refs(repository)["refs/tags/core-v0.1.0^{}"], self.world.head())
 
     def test_the_mirror_push_is_atomic(self) -> None:
-        # Refuse the tag alone; an atomic push must then refuse main too.
         hook = self.world.mirror / "hooks" / "update"
         hook.write_text('#!/bin/sh\ncase "$1" in refs/tags/*) exit 1 ;; esac\n', encoding="utf-8")
         hook.chmod(0o755)

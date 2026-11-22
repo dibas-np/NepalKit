@@ -6,8 +6,6 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 APP=NepalKit
-# A private mktemp directory, not fixed /tmp paths that could be pre-planted
-# with a symlink or collide with a concurrent run.
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
 DEPLOYMENT_TARGET=26.6
 ARCHIVE="$WORK/$APP.xcarchive"
@@ -18,19 +16,14 @@ NOTARY_ZIP="$WORK/${APP}-for-notary.zip"
 
 BACKGROUND=dmg-background@2x.png
 DMG_LAYOUT="$WORK/${APP}-layout.dmg"
-# Unique per run: Finder identifies a mounted disk by its mount path, so a
-# name already in use would script the wrong volume.
 DMG_LAYOUT_MOUNT="/Volumes/${APP}-layout-${WORK:t}"
 DMG_LAYOUT_SIZE=300m
 DMG_LAYOUT_DEVICE=
 MNT="/Volumes/${APP}-release-check-${WORK:t}"
 
-# Set once the export exists; the version comes from its Info.plist.
 DIST_ZIP=
 LS_CLEANUP_FAILED=0
 
-# Unregister every bundle this run creates before deleting it: `lsregister -u`
-# fails on a path that no longer exists and leaves a stale registration behind.
 unregister_launchservices() {
     local bundle unregister_result=0
     for bundle in "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app" "$MNT/$APP.app" \
@@ -41,9 +34,6 @@ unregister_launchservices() {
     return "$unregister_result"
 }
 
-# Runs on EXIT and on HUP/INT/TERM so attached images are always released.
-# Always returns 0 so every unmount runs; a LaunchServices failure keeps the
-# workspace for recovery and is reported by the final gate.
 cleanup() {
     if ! unregister_launchservices; then
         LS_CLEANUP_FAILED=1
@@ -64,7 +54,6 @@ trap 'cleanup; exit 129' HUP
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
-# Notary credentials come from a keychain profile only, so no secret is in argv.
 NOTARY_PROFILE="${NOTARY_PROFILE:-NepalKit-notary}"
 
 if [[ -z "${TEAM_ID:-}" ]]; then
@@ -77,8 +66,6 @@ NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
 echo "notary credentials: keychain profile '$NOTARY_PROFILE'"
 
 
-# Require a Developer ID Application certificate for this team. awk rather
-# than `head -1`, which can SIGPIPE grep on a large keychain and look like no match.
 IDENTITY="$(security find-identity -v -p codesigning \
     | grep -o "Developer ID Application: .* ($TEAM_ID)" | awk 'NR == 1 { print }' || true)"
 [[ -n "$IDENTITY" ]] || {
@@ -100,7 +87,6 @@ cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 </plist>
 EOF
 
-# generic/platform=macOS builds universal; platform=macOS picks one arch arbitrarily.
 MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
     -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
@@ -115,14 +101,10 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
     exit 1
 }
 
-# ENABLE_* build settings are merged into the entitlements at signing, so
-# check the exported product, not the source file.
 python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
     --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
     --entitlements "$ROOT/$APP/$APP.entitlements"
 
-# Notarize and staple the app itself, not only the DMG: Sparkle installs the
-# .app from the zip, so a ticket stapled only to the DMG is lost on update.
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$APP_PATH"
@@ -132,8 +114,7 @@ echo "app notarized and stapled: $APP_PATH"
 
 # Finder only writes the window layout (.DS_Store) onto a mounted, writable
 # volume, so the layout is built on a read-write HFS+ image and then converted
-# to UDZO. Only `hdiutil convert` can do that conversion; its deprecation
-# warnings are filtered out.
+# to UDZO.
 HDIUTIL_LOG="$WORK/${APP}-hdiutil.log"
 hdiutil_run() {
     hdiutil "$@" 2>"$HDIUTIL_LOG" || {
@@ -144,7 +125,6 @@ hdiutil_run() {
     grep -v "is deprecated" "$HDIUTIL_LOG" >&2 || true
 }
 
-# Error -1743 means this terminal may not control Finder yet.
 finder_run() {
     osascript "$@" || {
         echo "$1 failed." >&2
@@ -156,7 +136,6 @@ finder_run() {
 
 rm -f "$DMG_LAYOUT"
 hdiutil_run create -size "$DMG_LAYOUT_SIZE" -fs HFS+ -volname "$APP" "$DMG_LAYOUT"
-# `diskutil image attach` prints the volume, not the device that must be ejected.
 DMG_LAYOUT_DEVICE=$(diskutil image attach "$DMG_LAYOUT" --mountPoint "$DMG_LAYOUT_MOUNT" --plist \
     | plutil -extract system-entities.0.dev-entry raw -o - -)
 
@@ -179,7 +158,6 @@ hdiutil_run convert "$DMG_LAYOUT" -format UDZO -o "$DMG"
 xcrun notarytool submit "$DMG" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$DMG"
 
-# A DMG carries no code signature, so check its stapled ticket and the app inside.
 xcrun stapler validate "$DMG"
 
 # Not mounted with nobrowse: Finder cannot read the window of a hidden volume.
@@ -187,7 +165,6 @@ diskutil image attach "$DMG" --mountPoint "$MNT" >/dev/null
 
 finder_run "$ROOT/scripts/verify-dmg-layout.applescript" "${MNT:t}" "$APP" "$LAYOUT"
 
-# AppleScript cannot read back the background picture, so check .DS_Store for it.
 strings -a "$MNT/.DS_Store" | grep -q "$BACKGROUND" || {
     echo "the DMG window has no background picture: .DS_Store never names $BACKGROUND"
     exit 1
@@ -208,7 +185,6 @@ done
 [[ $launched == 1 ]] || { echo "app did not launch from mounted DMG"; exit 1; }
 pkill -f "$MNT/$APP.app/Contents/MacOS/$APP" || true
 
-# Zip the app again after stapling so the Sparkle enclosure carries the ticket.
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
     "$APP_PATH/Contents/Info.plist")
 DIST_ZIP="$WORK/${APP}-${VERSION}.zip"
@@ -216,11 +192,9 @@ rm -f "$DIST_ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ZIP"
 unzip -qo "$DIST_ZIP" -d "$WORK/${APP}-dist-verify"
 spctl -a -t execute -vv "$WORK/${APP}-dist-verify/$APP.app"
-# Unregistered before the extraction is deleted; fatal here, unlike in the trap.
 "${0:A:h}/unregister-launchservices.sh" "$WORK/${APP}-dist-verify/$APP.app"
 rm -rf "$WORK/${APP}-dist-verify"
 
-# Signing the appcast needs the keychain, so this never runs in CI.
 APPCAST_DIR="$WORK/${APP}-appcast-$VERSION"
 rm -rf "$APPCAST_DIR"
 mkdir -p "$APPCAST_DIR"
@@ -234,8 +208,6 @@ python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 
 OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
-# Read-only: the feed's signature covers every byte, and editors can rewrite
-# a file that was only opened.
 chmod 0444 "$OUT_DIR"/*
 
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
@@ -243,7 +215,6 @@ echo "Sparkle enclosure (stapled, zipped): $OUT_DIR/$(basename "$DIST_ZIP")"
 echo "Signed appcast: $OUT_DIR/appcast.xml"
 echo "Changelog updated: $ROOT/CHANGELOG.md"
 
-# Last gate, after the outputs are printed: a stale registration fails the release.
 unregister_launchservices || {
     LS_CLEANUP_FAILED=1
     echo "release hygiene failed: a run bundle is still registered with LaunchServices" >&2

@@ -3,14 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 //
-// Draws the DMG window background and prints the Finder window layout that
-// matches it, so package-release.sh positions the icons from the same numbers.
-//
-// Finder centres the background in the window's content area at its logical
-// size (a `@2x` file counts as half its pixels), and places icons by their
-// centres in y-down content coordinates. With the path bar hidden the content
-// area is taller and the icons sit slightly above the arrow.
-//
 // Usage:
 //   scripts/make-dmg-artwork.swift <output.png> <app name>
 //
@@ -20,8 +12,6 @@
 
 import AppKit
 import Foundation
-
-// MARK: - Layout
 
 let contentWidth: CGFloat = 560
 
@@ -41,7 +31,6 @@ let captionGap: CGFloat = 44
 let captionFont = NSFont.systemFont(ofSize: 13, weight: .medium)
 let captionColor = NSColor(red: 0.17, green: 0.14, blue: 0.13, alpha: 1)
 
-/// The midpoint of the app icon's crimson gradient (#DC143C to #7A0A26).
 let arrowColor = NSColor(
     red: (0xDC / 255.0 + 0x7A / 255.0) / 2,
     green: (0x14 / 255.0 + 0x0A / 255.0) / 2,
@@ -49,17 +38,12 @@ let arrowColor = NSColor(
     alpha: 1
 )
 
-/// Fixed rather than appearance-dependent, since the caption and arrow are dark.
 let backgroundColor = NSColor(red: 0.969, green: 0.953, blue: 0.945, alpha: 1)
 
-/// Finder's window chrome on macOS 26/27: 4pt side borders, a 32pt title bar
-/// and a 32pt path bar.
 let windowBorder: CGFloat = 8
 let windowChrome: CGFloat = 64
 
 let scale: CGFloat = 2
-
-// MARK: - Arguments
 
 let arguments = CommandLine.arguments
 guard arguments.count == 3 else {
@@ -73,8 +57,6 @@ let outputPath = arguments[1]
 let appName = arguments[2]
 
 let centreY = contentHeight / 2
-
-// MARK: - Drawing
 
 let pixelWidth = Int(contentWidth * scale)
 let pixelHeight = Int(contentHeight * scale)
@@ -93,7 +75,6 @@ guard let context = CGContext(
 }
 
 context.scaleBy(x: scale, y: scale)
-// Flip to Finder's y-down content coordinates.
 context.translateBy(x: 0, y: contentHeight)
 context.scaleBy(x: 1, y: -1)
 
@@ -134,8 +115,6 @@ NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = appKitContext
 (caption as NSString).draw(at: captionOrigin, withAttributes: captionAttributes)
 NSGraphicsContext.restoreGraphicsState()
-
-// MARK: - Output
 
 guard let image = context.makeImage(),
     let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])

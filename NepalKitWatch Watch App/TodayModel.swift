@@ -4,22 +4,15 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// The Watch's Today state: resolves the current Nepal Time day and keeps it
-/// current without polling.
-///
-/// While active, it refreshes at each Nepal midnight and on system clock
-/// changes; every activation recomputes immediately.
 @MainActor
 @Observable
 final class TodayModel {
-    /// The current day's display, or nil before the first resolution.
     private(set) var display: WatchDayDisplay?
 
     private let now: @Sendable () -> Date
     private let dataset: CalendarDataset
     private let clockChanges: @Sendable () -> ClockChangeStream
     private let nextMidnight: @Sendable (Date) -> Date?
-    /// Injectable so fixtures can force resolution failures.
     private let displayFor: @Sendable (Date) -> WatchDayDisplay
 
     private var midnightTask: Task<Void, Never>?
@@ -50,13 +43,10 @@ final class TodayModel {
         }
     }
 
-    /// The display for an arbitrary instant. Always On renders through this,
-    /// since a dimmed scene may never see the midnight refresh.
     func display(at instant: Date) -> WatchDayDisplay {
         displayFor(instant)
     }
 
-    /// Idempotent while already active.
     func activate() {
         guard clockChangeTask == nil else { return }
         refresh()
@@ -76,11 +66,9 @@ final class TodayModel {
         scheduleMidnightRefresh(after: instant)
     }
 
-    /// Re-reads the clock at wake rather than trusting the scheduled instant.
     private func scheduleMidnightRefresh(after instant: Date) {
         midnightTask?.cancel()
         guard let next = nextMidnight(instant) else {
-            // The display stays as is until the next activation or clock change.
             return
         }
         let interval = next.timeIntervalSince(instant)
@@ -91,7 +79,6 @@ final class TodayModel {
         }
     }
 
-    /// Cancelling the task ends the stream, which removes the observer.
     private func observeClockChanges() {
         guard clockChangeTask == nil else { return }
         let stream = clockChanges()

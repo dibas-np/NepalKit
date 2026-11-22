@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// An intent failure that carries the exact dialog to speak.
 nonisolated struct SiriIntentError: Error, LocalizedError, CustomLocalizedStringResourceConvertible {
     let dialog: LocalizedStringResource
 

@@ -11,7 +11,6 @@ struct MidnightFireIntervalTests {
     }
 
     @Test func intervalOneSecondBeforeMidnightIsTwoSeconds() throws {
-        // 18:14:59 UTC: next midnight is 18:15:00, +1s guard makes 2.
         let interval = MenuBarModel.midnightFireInterval(after: try TestDates.utc(2026, 9, 26, 18, 14, 59))
         #expect(interval == 2)
     }
@@ -22,7 +21,6 @@ struct MidnightFireIntervalTests {
     }
 }
 
-/// Counts observers added and removed, so a leak shows up as an imbalance.
 nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable {
     private(set) var added = 0
     private(set) var removed = 0
@@ -43,12 +41,8 @@ nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable
     }
 }
 
-/// Timers don't advance while the Mac sleeps, so wake and clock changes are
-/// observed directly. These tests post on private notification centers.
 @MainActor
 struct ClockDiscontinuityTests {
-    // Before the dataset range ends and long before any run of this suite, so
-    // a refresh is visible as `now` moving forward.
     private static func stale() throws -> Date { try TestDates.utc(2026, 9, 27, 12, 0) }
 
     @Test func refreshAfterClockDiscontinuityRereadsTheClock() throws {
@@ -136,20 +130,17 @@ struct ClockDiscontinuityTests {
                 systemNotifications: system
             )
             released = model
-            // Wake on the workspace; clock and time zone changes on the system center.
             #expect(workspace.added == 1 && system.added == 2)
         }
 
         #expect(released == nil)
         #expect(workspace.removed == workspace.added)
         #expect(system.removed == system.added)
-        // A post after release reaches no block, and nothing traps.
         workspace.post(name: NSWorkspace.didWakeNotification, object: nil)
         system.post(name: .NSSystemClockDidChange, object: nil)
     }
 }
 
-/// The menu bar's timers must keep firing in the event-tracking run loop mode.
 @MainActor
 struct MainActorTimerModeTests {
     @Test func timerFiresInTheEventTrackingMode() {

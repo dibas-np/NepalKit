@@ -4,7 +4,6 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// Which of the popover's two destinations is showing.
 enum PopoverDestination: String, CaseIterable {
     case today
     case convert
@@ -17,9 +16,6 @@ enum PopoverDestination: String, CaseIterable {
     }
 }
 
-/// The popover: a header, the Today and Convert destinations, and the footer.
-/// Live-clock reads sit in their own view types so a per-second tick only
-/// re-evaluates them.
 struct PopoverView: View {
     let settings: DisplaySettingsModel
     let clock: ClockModel
@@ -28,10 +24,8 @@ struct PopoverView: View {
     @Environment(\.openSettings) private var openSettings
     let dataset: CalendarDataset
     let updates: UpdateCheckModel
-    /// Not persisted: the popover always reopens on Today.
     @State private var destination: PopoverDestination = .today
 
-    /// Fixed so switching tabs never resizes the popover under the pointer.
     private static let popoverWidth: CGFloat = 340
 
     var body: some View {
@@ -40,9 +34,6 @@ struct PopoverView: View {
 
             DestinationTabs(selection: $destination)
 
-            // Both destinations stay laid out and cross-fade. Swapping views in a
-            // `switch` resized the window inside SwiftUI's commit, which AppKit rejects
-            // ("transaction during CA commit").
             ZStack(alignment: .topLeading) {
                 VStack(alignment: .leading, spacing: 8) {
                     TodaySection(clock: clock, settings: settings.settings, dataset: dataset)
@@ -71,8 +62,6 @@ struct PopoverView: View {
 }
 
 extension View {
-    /// One destination in the popover's stack: drawn, hit-testable, focusable
-    /// and read out only while it is the one showing.
     fileprivate func destinationLayer(isShowing: Bool) -> some View {
         opacity(isShowing ? 1 : 0)
             .allowsHitTesting(isShowing)
@@ -107,10 +96,6 @@ extension View {
 }
 #endif
 
-// MARK: - Header Bar
-
-/// Identity on the left, the live clock on the right: Nepal Time, or the
-/// Mac's own time when the user chose it.
 private struct HeaderBar: View {
     let clock: ClockModel
     let settings: DisplaySettings
@@ -121,8 +106,6 @@ private struct HeaderBar: View {
                 .font(.subheadline.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            // Sized by a constant monospaced template with the time in an overlay: a
-            // ticking `Text` in the stack made SwiftUI re-measure the popover every second.
             Text(settings.digits.formatTime(.distantPast, in: .gmt))
                 .hidden()
                 .overlay(alignment: .trailing) {
@@ -135,7 +118,6 @@ private struct HeaderBar: View {
     }
 }
 
-/// The header's only clock read, so the tick re-evaluates this and not the row.
 private struct HeaderClockTime: View {
     let clock: ClockModel
     let digits: DigitScript
@@ -148,17 +130,12 @@ private struct HeaderClockTime: View {
     }
 }
 
-// MARK: - Clocks
-
-/// The other clock: the Mac's local time beside Nepal Time, or the reverse.
-/// VoiceOver reads it in Latin digits so a time is never misheard.
 private struct ClocksSection: View {
     let clock: ClockModel
     let settings: DisplaySettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Hidden when both readings match, as they do for every user in Nepal.
             if clock.showsSecondaryClock {
                 Divider()
                 Label {
@@ -182,7 +159,6 @@ private struct ClocksSection: View {
     }
 }
 
-/// The secondary row's only clock read, as `HeaderClockTime` is the header's.
 private struct SecondaryClockTime: View {
     let clock: ClockModel
     let digits: DigitScript

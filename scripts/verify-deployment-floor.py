@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Check that the deployment floor is the same everywhere it is written.
-
-macOS: every MACOSX_DEPLOYMENT_TARGET in the Xcode project, DEPLOYMENT_TARGET
-in scripts/package-release.sh, and LSMinimumSystemVersion in a built product
-if one is available. The appcast is checked by verify-appcast.py.
-
-watchOS: every WATCHOS_DEPLOYMENT_TARGET in a block with its own
-`SDKROOT = watchos` must agree, and NepalKitCore/Package.swift's watchOS
-platform must not exceed it.
-
-Usage: python3 scripts/verify-deployment-floor.py
+"""Usage: python3 scripts/verify-deployment-floor.py
 """
 
 from __future__ import annotations
@@ -31,8 +21,6 @@ WATCHOS_TARGET = re.compile(r"WATCHOS_DEPLOYMENT_TARGET = ([0-9.]+);")
 
 
 def _configuration_blocks(text: str) -> list[tuple[int, list[str]]]:
-    """(index of the ``isa`` line, the block's lines) for each
-    XCBuildConfiguration block, up to the ``};`` closing ``buildSettings``."""
     lines = text.splitlines()
     blocks: list[tuple[int, list[str]]] = []
     index = 0
@@ -49,8 +37,6 @@ def _configuration_blocks(text: str) -> list[tuple[int, list[str]]]:
 
 
 def project_floors(text: str) -> list[tuple[int, str]]:
-    """Every ``MACOSX_DEPLOYMENT_TARGET`` in an XCBuildConfiguration block,
-    as (line number, value). Blocks without the key inherit and are skipped."""
     found: list[tuple[int, str]] = []
     for start, body in _configuration_blocks(text):
         for offset, line in enumerate(body, start=start):
@@ -61,12 +47,6 @@ def project_floors(text: str) -> list[tuple[int, str]]:
 
 
 def watchos_project_floors(text: str) -> list[tuple[int, str]]:
-    """Every ``WATCHOS_DEPLOYMENT_TARGET`` in a block declaring ``SDKROOT = watchos``.
-
-    Only blocks with their own ``SDKROOT = watchos`` count: the macOS app target
-    carries a leftover template key, and the iOS-side watch container is not a
-    watchOS target. This assumes every watchOS target sets its own ``SDKROOT``.
-    """
     found: list[tuple[int, str]] = []
     for start, body in _configuration_blocks(text):
         if not any(WATCHOS_SDKROOT.search(line) for line in body):
@@ -79,8 +59,6 @@ def watchos_project_floors(text: str) -> list[tuple[int, str]]:
 
 
 def package_watchos_floor(text: str) -> tuple[int, str] | None:
-    """The watchOS platform version in ``NepalKitCore/Package.swift``, as
-    (line number, version), or None. ``//`` comments are ignored."""
     for number, line in enumerate(text.splitlines(), start=1):
         code = line.split("//", 1)[0]
         match = re.search(r"\.watchOS\(\.v([0-9.]+)\)", code)
@@ -90,12 +68,10 @@ def package_watchos_floor(text: str) -> tuple[int, str] | None:
 
 
 def _version(value: str) -> tuple[int, ...]:
-    """A dotted version as a comparable tuple: ``26.6`` -> ``(26, 6)``."""
     return tuple(int(part) for part in value.split("."))
 
 
 def release_script_floor(text: str) -> tuple[int, str] | None:
-    """``DEPLOYMENT_TARGET`` from package-release.sh, the value the build uses."""
     for number, line in enumerate(text.splitlines(), start=1):
         match = re.match(r"^DEPLOYMENT_TARGET=(\S+)", line)
         if match:
@@ -104,7 +80,6 @@ def release_script_floor(text: str) -> tuple[int, str] | None:
 
 
 def product_floor(plist_path: Path) -> str | None:
-    """``LSMinimumSystemVersion`` from a built product, or None if unreadable."""
     try:
         with plist_path.open("rb") as handle:
             info = plistlib.load(handle)
@@ -115,7 +90,6 @@ def product_floor(plist_path: Path) -> str | None:
 
 
 def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
-    """(every macOS floor, problem); a problem string means the check cannot run."""
     declared: list[tuple[str, str]] = []
     for line, value in project_floors(PROJECT.read_text(encoding="utf-8")):
         declared.append((f"{PROJECT.name}:{line}", value))
@@ -137,10 +111,6 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
 
 
 def watchos_declared_floors() -> tuple[list[tuple[str, str]], tuple[int, str] | None, str | None]:
-    """(watchOS floors, package's watchOS floor, problem).
-
-    The package floor only has to be <= the app's, not equal to it.
-    """
     text = PROJECT.read_text(encoding="utf-8")
     declared = [(f"{PROJECT.name}:{line}", value)
                 for line, value in watchos_project_floors(text)]
@@ -161,14 +131,10 @@ def watchos_declared_floors() -> tuple[list[tuple[str, str]], tuple[int, str] | 
     return declared, package, None
 
 
-# The newest project format CI's Xcode can read. Older toolchains fail with an
-# unhelpful "future Xcode project file format" error, so it is checked here.
-# Raise it together with CI's Xcode.
 MAX_OBJECT_VERSION = 110
 
 
 def _project_format_problem(text: str) -> str | None:
-    """A message if the project file is newer than CI's toolchain can read."""
     match = re.search(r"^\s*objectVersion = (\d+);", text, re.M)
     if match is None:
         return None
@@ -186,7 +152,6 @@ def _project_format_problem(text: str) -> str | None:
 
 
 def _locate_built_product() -> Path | None:
-    """A built Info.plist from ``NEPAKIT_BUILT_PLIST``, or check-all.sh's build."""
     import os
 
     from_env = os.environ.get("NEPAKIT_BUILT_PLIST")
@@ -200,7 +165,6 @@ def _locate_built_product() -> Path | None:
 
 
 def _display_path(path: Path) -> str:
-    """Repo-relative when the path is inside the repo, else as given."""
     try:
         return str(path.relative_to(REPO_ROOT))
     except ValueError:

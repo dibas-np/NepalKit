@@ -4,8 +4,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The month grid's view identity: days by date, weeks by their first day,
-/// never by position, so an identity outlives the month it was drawn in.
 @MainActor
 struct GridSlotTests {
     @Test func everyIdentityIsUniqueWithinAMonth() throws {
@@ -23,7 +21,6 @@ struct GridSlotTests {
             let day = try #require(slot.day)
             #expect(slot.id == AnyHashable(day.gregorian))
         }
-        // Kartik 2083 starts on Sunday 18 October 2026, the first week's id.
         #expect(GridSlot.weeks(model.weeks).first?.id == AnyHashable(GregorianDate(year: 2026, month: 10, day: 18)))
     }
 

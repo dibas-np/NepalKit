@@ -34,7 +34,6 @@ struct SettingsStoreTests {
             DisplaySettings(digits: .devanagari, monthNames: .transliterated)
         )
 
-        // A fresh instance over the same domain simulates a relaunch.
         #expect(
             SettingsStore(defaults: defaults).settings
                 == DisplaySettings(digits: .devanagari, monthNames: .transliterated)
@@ -77,7 +76,4 @@ struct SettingsStoreTests {
 
         #expect(store.menuBarFormat == MenuBarFormat(showsTime: true))
     }
-
-    // Surviving an in-place update is `SettingsStore.init`'s contract; testing
-    // it directly would overwrite the developer's own `UserDefaults.standard`.
 }

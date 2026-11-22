@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Exercise the cask updater with isolated download and authentication stubs."""
 
 import os
 from pathlib import Path

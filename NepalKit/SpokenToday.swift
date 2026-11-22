@@ -3,8 +3,6 @@
 import NepalKitCore
 
 extension SpokenDate {
-    /// Today's date as one announcement: both calendars, then festivals and any
-    /// nationwide public holiday.
     static func today(
         _ bs: BikramSambatDate, gregorian: GregorianDate?, weekday: String?, monthNames: MonthNameStyle, festivals: [Festival] = [],
         isPublicHoliday: Bool = false

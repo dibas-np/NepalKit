@@ -2,12 +2,6 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-#
-# Builds the app and runs every local check. The build runs first because the
-# app-layer suite reads the built Info.plist.
-#
-# Not run here: scripts/verify-data-sources.py (needs network) and the
-# release-time scripts.
 
 set -euo pipefail
 
@@ -72,8 +66,6 @@ gate "app-layer tests (scripts/apptests)" "$repo_root/scripts/run-app-tests.sh"
 gate "dataset parser suite" python3 "$repo_root/scripts/test_dataset_parsers.py"
 gate "cask updater suite" python3 "$repo_root/scripts/test_update_cask.py"
 gate "changelog suite" python3 "$repo_root/scripts/test_update_changelog.py"
-# Registers and unregisters throwaway bundles in this session's LaunchServices
-# database, so it needs a logged-in macOS session and does not run in CI.
 gate "LaunchServices unregistration suite" python3 "$repo_root/scripts/test_unregister_launchservices.py"
 gate "appcast verification suite" python3 "$repo_root/scripts/test_verify_appcast.py"
 gate "release product verifier suite" python3 "$repo_root/scripts/test_verify_release_product.py"
@@ -86,7 +78,6 @@ gate "deployment floor consistency" bash -c '
 ' _ "$repo_root"
 gate "package release script suite" python3 "$repo_root/scripts/test_release_core.py"
 gate "Watch support tests (NepalKitWatchSupport)" bash -c 'cd "$1" && swift test' _ "$repo_root/NepalKitWatchSupport"
-# Needs this exact simulator; xcodebuild lists the available ones if it is missing.
 gate "Watch suite (watchOS Simulator)" xcodebuild test \
     -project "$repo_root/NepalKit.xcodeproj" \
     -scheme "NepalKitWatch Watch App" \

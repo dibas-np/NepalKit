@@ -2,8 +2,6 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 
-/// The menu-bar item's label. A separate view so the clock's tick invalidates only
-/// this label.
 struct MenuBarLabel: View {
     let menuBar: MenuBarModel
     let settings: DisplaySettingsModel
