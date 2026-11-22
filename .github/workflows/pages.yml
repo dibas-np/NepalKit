@@ -5,9 +5,7 @@ on:
     paths:
       - appcast.xml
       - site/**
-      - docs/img/popover.png
-      - docs/img/watch-today.png
-      - docs/img/watch-complications.png
+      - docs/img/**
     branches: [main]
   workflow_dispatch:
 
@@ -23,22 +21,8 @@ jobs:
     name: verify appcast
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      publish: ${{ steps.check.outputs.publish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-
-      - name: Check the appcast is present
-        id: check
-        run: |
-          set -euo pipefail
-          if [ ! -f appcast.xml ]; then
-            echo "::notice::no committed appcast.xml; nothing to publish."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "publish=true" >> "$GITHUB_OUTPUT"
-          wc -c appcast.xml
 
       - name: Appcast verifier self-test
         run: |
@@ -56,43 +40,21 @@ jobs:
           python3 scripts/test_verify_deployment_floor.py
 
       - name: Verify the appcast
-        if: steps.check.outputs.publish == 'true'
         run: |
           set -euo pipefail
           python3 scripts/verify-appcast.py appcast.xml \
             --info-plist NepalKit/Info.plist
 
-      - name: Confirm the committed key is well-formed
-        if: steps.check.outputs.publish == 'true'
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import base64
-          import re
-          from pathlib import Path
-
-          plist = Path("NepalKit/Info.plist").read_text()
-          match = re.search(r"SUPublicEDKey</key>\s*<string>([^<]+)</string>", plist)
-          if not match:
-              raise SystemExit("no SUPublicEDKey in Info.plist")
-          raw = base64.b64decode(match.group(1).strip(), validate=True)
-          if len(raw) != 32:
-              raise SystemExit(f"public key is {len(raw)} bytes, expected 32")
-          print(f"  ok    committed public key is well-formed ({len(raw)} bytes)")
-          PY
-
       - name: Stage the Pages artifact
-        if: steps.check.outputs.publish == 'true'
         run: |
           set -euo pipefail
           mkdir -p _site/img
           cp -R site/. _site/
-          cp docs/img/popover.png docs/img/watch-today.png docs/img/watch-complications.png _site/img/
+          cp docs/img/*.png _site/img/
           cp appcast.xml _site/
           ls -la _site
 
       - name: Upload Pages artifact
-        if: steps.check.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: _site
@@ -100,7 +62,7 @@ jobs:
   deploy:
     name: deploy to Pages
     needs: verify
-    if: needs.verify.outputs.publish == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

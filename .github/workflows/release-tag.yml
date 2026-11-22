@@ -10,9 +10,6 @@ concurrency:
 
 permissions: {}
 
-env:
-  RELEASE_OWNER: dibas-np
-
 jobs:
   preflight:
     name: verify trusted release ref

@@ -1,4 +1,4 @@
-# Script suites that need OpenSSL 3 for Ed25519, which macOS's LibreSSL lacks.
+# Script self-tests that run on Linux; the appcast and signing-key suites need OpenSSL 3, which macOS LibreSSL lacks.
 name: Script tests
 
 on:

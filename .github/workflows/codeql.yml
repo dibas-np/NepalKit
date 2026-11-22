@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
   schedule:
     - cron: '23 15 * * 6'
   workflow_dispatch:
@@ -51,7 +50,7 @@ jobs:
           set -euo pipefail
           candidate="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
           if [ ! -d "$candidate" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner. Almost certainly toolchain retirement rather than a regression - GitHub removes old Xcode versions from the image. Raising the pin is a re-evaluation of the analysis's own claim, not a routine bump; macos26-floor.yml's header carries the policy, and this pin is chosen so the two do not drift."
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner; GitHub has likely removed it from the image."
             echo "Installed:"; ls -d /Applications/Xcode*.app || true
             exit 1
           fi
