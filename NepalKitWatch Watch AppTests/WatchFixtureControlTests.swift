@@ -106,6 +106,27 @@ struct WatchFixtureControlTests {
         model.deactivate()
     }
 
+    @Test func fixtureModelDisplaysFixtureTimeWhateverInstantItIsAsked() {
+        let model = TodayFixtures.makeModel(arguments: ["-NepalKitFixtureScenario", "boundaryAfter"])
+
+        guard case .rangeBoundary(let boundary) = model.display(at: .now) else {
+            Issue.record("Expected the fixture instant, not the wall clock, to decide the display")
+            return
+        }
+        #expect(boundary.side == .after)
+    }
+
+    @Test func fixtureClockAdvancesFromTheFixtureInstant() async throws {
+        let fixture = try #require(WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureScenario", "midnightApproach"]))
+        let instant = try #require(fixture.instant)
+        let clock = WatchFixtureControl.clock(for: fixture)
+
+        let first = clock()
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(first >= instant && first < instant.addingTimeInterval(60))
+        #expect(clock() > first)
+    }
+
     @Test func fixtureProviderInjectsTheTimelineFailureAtTheRequestedOffset() throws {
         let provider = ComplicationFixtures.makeProvider(arguments: [
             "-NepalKitFixtureFailAt", "3",

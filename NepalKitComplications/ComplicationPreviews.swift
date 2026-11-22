@@ -70,5 +70,5 @@ import WidgetKit
 #Preview("Placeholder", as: .accessoryRectangular) {
     TodayComplication()
 } timeline: {
-    TodayComplicationEntry(date: .now, state: ComplicationSamples.placeholderState())
+    TodayComplicationEntry(date: .now, state: .placeholder)
 }

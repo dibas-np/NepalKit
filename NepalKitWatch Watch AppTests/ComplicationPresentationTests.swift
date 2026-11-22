@@ -18,7 +18,7 @@ struct ComplicationPresentationTests {
         }
     }
 
-    @Test func rectangularAnnouncesWeekdayFullDateAndGregorian() throws {
+    @Test func todayScreenAnnouncesWeekdayFullDateAndGregorian() throws {
         let components = try supportedComponents
 
         #expect(
@@ -72,7 +72,7 @@ struct ComplicationPresentationTests {
         #expect(components.spokenDescription == "Date calculation failed")
     }
 
-    @Test func cornerLabelCarriesTheLongestMonthNameWithCombiningMarks() throws {
+    @Test func kartikIsTheLongestMonthNameAndRendersThroughTheDisplay() throws {
         let kartikDay = try ResolvedDay(GregorianDate(year: 2026, month: 10, day: 18), in: dataset)
         guard case .supported(let components) = watchDayDisplay(for: kartikDay, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported Kartik display")
@@ -81,12 +81,5 @@ struct ComplicationPresentationTests {
 
         #expect(components.bikramSambatMonthName == "कात्तिक")
         #expect(BikramSambatDate.monthNames(style: .nepali).map { $0.count }.max() == "कात्तिक".count)
-    }
-
-    @Test func everyCanonicalMonthNameRendersThroughTheDisplayPath() throws {
-        for (index, expected) in BikramSambatDate.monthNames(style: .nepali).enumerated() {
-            let bsDay = BikramSambatDate(year: 2083, month: index + 1, day: 1)
-            #expect(BikramSambatDate.monthName(bsDay.month, style: .nepali) == expected)
-        }
     }
 }

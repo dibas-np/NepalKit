@@ -23,13 +23,8 @@ enum ComplicationFixtures {
     }
 
     nonisolated private static func provider(for fixture: WatchFixture) -> TodayComplicationProvider {
-        let dataset = CalendarDataset.v2
-        let nextMidnight: @Sendable (Date) -> Date?
-        if fixture.failActivation {
-            nextMidnight = { _ in nil }
-        } else {
-            nextMidnight = { TimeZone.nepal.nextMidnight(after: $0) }
-        }
+        let dataset = CalendarDataset.bundled
+        let nextMidnight = WatchFixtureControl.nextMidnight(for: fixture)
         return TodayComplicationProvider(
             now: WatchFixtureControl.clock(for: fixture),
             dataset: dataset,

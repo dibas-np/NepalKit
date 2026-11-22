@@ -12,7 +12,7 @@ struct TodayComplicationProvider: TimelineProvider {
     private let dataset: CalendarDataset
     private let makeBuilder: @Sendable () -> TodayTimelineBuilder
 
-    nonisolated init(now: @escaping @Sendable () -> Date = { Date.now }, dataset: CalendarDataset = .v2) {
+    nonisolated init(now: @escaping @Sendable () -> Date = { Date.now }, dataset: CalendarDataset = .bundled) {
         self.now = now
         self.dataset = dataset
         self.makeBuilder = {
@@ -65,12 +65,7 @@ struct TodayComplicationProvider: TimelineProvider {
     }
 
     private var previewEntry: TodayComplicationEntry {
-        let state: TodayComplicationState
-        if let day = try? ResolvedDay(Self.previewSampleDay, in: dataset) {
-            state = .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
-        } else {
-            state = .day(watchCalculationErrorDisplay(gregorianDay: Self.previewSampleDay, settings: .watch))
-        }
+        let state = TodayComplicationState.day(watchDayDisplay(for: Self.previewSampleDay, settings: .watch, in: dataset))
         return TodayComplicationEntry(date: Self.previewSampleDay.noonUTC ?? .distantPast, state: state)
     }
 }

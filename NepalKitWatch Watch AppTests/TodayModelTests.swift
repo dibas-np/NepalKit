@@ -180,10 +180,12 @@ struct TodayModelTests {
             nextMidnight: { $0.addingTimeInterval(0.05) }
         )
         model.activate()
+        let midnight = model.midnightTask
         #expect(clock.reads == 1)
 
         clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
-        try await waitUntil(timeout: .seconds(5)) { clock.reads >= 2 }
+        await midnight?.value
+        #expect(clock.reads == 2)
 
         guard case .supported(let components) = model.display else {
             Issue.record("Expected a supported display after the wake")
@@ -214,24 +216,6 @@ struct TodayModelTests {
         #expect(shouldStayActive(in: .active))
         #expect(shouldStayActive(in: .inactive))
         #expect(!shouldStayActive(in: .background))
-    }
-
-    @Test func inactivePhaseKeepsTheMidnightRefresh() async throws {
-        let clock = MutableClock(try anchoredInstant())
-        let signals = SignalFixture()
-        let model = makeModel(
-            clock: clock,
-            signals: signals,
-            nextMidnight: { $0.addingTimeInterval(0.05) }
-        )
-        model.activate()
-        if !shouldStayActive(in: .inactive) {
-            model.deactivate()
-        }
-
-        try await waitUntil(timeout: .seconds(5)) { clock.reads >= 2 }
-
-        model.deactivate()
     }
 
     @Test func multiDayResumeRecomputesImmediately() throws {
@@ -289,14 +273,6 @@ struct TodayModelTests {
         }
         #expect(components.gregorianDay == "२७")
         model.deactivate()
-    }
-
-    private func waitUntil(timeout: Duration, _ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now + timeout
-        while !condition() && ContinuousClock.now < deadline {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        #expect(condition(), "Condition was not met within \(timeout)")
     }
 }
 

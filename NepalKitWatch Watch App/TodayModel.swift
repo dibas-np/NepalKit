@@ -10,7 +10,6 @@ final class TodayModel {
     private(set) var display: WatchDayDisplay?
 
     private let now: @Sendable () -> Date
-    private let dataset: CalendarDataset
     private let clockChanges: @Sendable () -> ClockChangeStream
     private let nextMidnight: @Sendable (Date) -> Date?
     private let displayFor: @Sendable (Date) -> WatchDayDisplay
@@ -20,13 +19,11 @@ final class TodayModel {
 
     init(
         now: @escaping @Sendable () -> Date = { Date.now },
-        dataset: CalendarDataset = .v2,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
         nextMidnight: @escaping @Sendable (Date) -> Date? = { TimeZone.nepal.nextMidnight(after: $0) },
         displayFor: @escaping @Sendable (Date) -> WatchDayDisplay
     ) {
         self.now = now
-        self.dataset = dataset
         self.clockChanges = clockChanges
         self.nextMidnight = nextMidnight
         self.displayFor = displayFor
@@ -34,11 +31,11 @@ final class TodayModel {
 
     convenience init(
         now: @escaping @Sendable () -> Date = { Date.now },
-        dataset: CalendarDataset = .v2,
+        dataset: CalendarDataset = .bundled,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
         nextMidnight: @escaping @Sendable (Date) -> Date? = { TimeZone.nepal.nextMidnight(after: $0) }
     ) {
-        self.init(now: now, dataset: dataset, clockChanges: clockChanges, nextMidnight: nextMidnight) { instant in
+        self.init(now: now, clockChanges: clockChanges, nextMidnight: nextMidnight) { instant in
             watchDayDisplay(now: instant, settings: .watch, in: dataset)
         }
     }

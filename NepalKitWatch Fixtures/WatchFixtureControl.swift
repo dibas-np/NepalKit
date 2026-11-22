@@ -9,16 +9,19 @@ struct WatchFixture: Sendable, Equatable {
 
     var failAtHorizonOffset: Int?
 
-    var failTodayWithContext: Bool?
-    var failTodayWithoutContext: Bool?
+    enum TodayError: Sendable, Equatable {
+        case withContext
+        case withoutContext
+    }
+
+    var todayError: TodayError?
 
     var failActivation: Bool
 
     nonisolated init() {
         self.instant = nil
         self.failAtHorizonOffset = nil
-        self.failTodayWithContext = nil
-        self.failTodayWithoutContext = nil
+        self.todayError = nil
         self.failActivation = false
     }
 }
@@ -61,7 +64,7 @@ enum WatchFixtureControl {
             guard let instant = scenarioInstant(value) else { return false }
             fixture.instant = instant
         case "-NepalKitFixtureFailAt":
-            guard let offset = Int(value), offset >= 0 else { return false }
+            guard let offset = Int(value) else { return false }
             fixture.failAtHorizonOffset = offset
         case "-NepalKitFixtureError":
             guard applyError(value, to: &fixture) else { return false }
@@ -73,8 +76,8 @@ enum WatchFixtureControl {
 
     nonisolated private static func applyError(_ value: String, to fixture: inout WatchFixture) -> Bool {
         switch value {
-        case "today": fixture.failTodayWithContext = true
-        case "withoutContext": fixture.failTodayWithoutContext = true
+        case "today": fixture.todayError = .withContext
+        case "withoutContext": fixture.todayError = .withoutContext
         default: return false
         }
         return true
@@ -99,7 +102,15 @@ enum WatchFixtureControl {
 extension WatchFixtureControl {
     nonisolated static func clock(for fixture: WatchFixture) -> @Sendable () -> Date {
         guard let instant = fixture.instant else { return { Date.now } }
-        return { instant }
+        let start = Date.now
+        return { instant.addingTimeInterval(Date.now.timeIntervalSince(start)) }
+    }
+
+    nonisolated static func nextMidnight(for fixture: WatchFixture) -> @Sendable (Date) -> Date? {
+        if fixture.failActivation {
+            return { _ in nil }
+        }
+        return { TimeZone.nepal.nextMidnight(after: $0) }
     }
 }
 

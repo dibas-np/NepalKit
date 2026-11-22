@@ -8,25 +8,8 @@ import NepalKitWatchSupport
 struct WatchResolvedDayTests {
     private let dataset = CalendarDataset.v2
 
-    private let utcGregorian: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar
-    }()
-
-    private func anchoredInstant(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) throws -> Date {
-        var components = DateComponents()
-        components.year = year
-        components.month = month
-        components.day = day
-        components.hour = hour
-        components.minute = minute
-        components.timeZone = TimeZone(secondsFromGMT: 0)
-        return try #require(utcGregorian.date(from: components))
-    }
-
     @Test func watchOSResolvesTheAnchoredSupportedDay() throws {
-        let day = try ResolvedDay(now: try anchoredInstant(2026, 9, 26, 18, 30), in: dataset)
+        let day = try ResolvedDay(now: try UTCWatchFixture.utc(2026, 9, 26, 18, 30), in: dataset)
 
         #expect(day.gregorian == GregorianDate(year: 2026, month: 9, day: 27))
         #expect(day.weekday == 1)
@@ -50,7 +33,7 @@ struct WatchResolvedDayTests {
     }
 
     @Test func watchOSRendersTheCanonicalDisplayAndSpeech() throws {
-        let day = try ResolvedDay(now: try anchoredInstant(2026, 9, 26, 18, 30), in: dataset)
+        let day = try ResolvedDay(now: try UTCWatchFixture.utc(2026, 9, 26, 18, 30), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported display")
