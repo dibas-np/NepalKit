@@ -110,8 +110,8 @@ codesign --verify --deep --strict --verbose=2 /Volumes/NepalKit/NepalKit.app
 codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | grep -E 'TeamIdentifier|Authority|flags'
 ```
 
-The first command must report the app valid on disk: the signature verifies, so
-the app is unmodified.
+`codesign --verify` must report the app valid on disk: the signature verifies,
+so the app is unmodified.
 
 Expect `TeamIdentifier=CA89X9954L`; that is the value to match. The Authority
 line names the organisation that holds the team: 1.6.0 prints
