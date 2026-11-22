@@ -108,6 +108,20 @@ struct ConversionIntentTests {
         #expect(BikramSambatDate(roundTrip, in: dataset) == BikramSambatDate(year: 2082, month: 3, day: 15))
     }
 
+    @Test("A month with no days in the dataset is an error, not a crash")
+    func aZeroLengthMonthIsOutOfRange() {
+        let broken = CalendarDataset(
+            version: "zero-month-test",
+            years: [2081: [31, 0, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30]],
+            anchorBikramSambat: BikramSambatDate(year: 2081, month: 1, day: 1),
+            anchorGregorian: GregorianDate(year: 2024, month: 4, day: 13),
+            supportedRange: 2081 ... 2081
+        )
+        #expect(throws: SiriIntentError.self) {
+            try BikramSambatToGregorianIntent.gregorian(day: 1, month: .jestha, year: 2081, in: broken)
+        }
+    }
+
     @Test("A Gregorian day the calendar would normalize builds no instant")
     func noonInUserCalendarRejectsAnImpossibleDay() {
         #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GregorianDate(year: 2025, month: 2, day: 30), calendar: TestDates.utcCalendar) == nil)

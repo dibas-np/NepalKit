@@ -31,22 +31,32 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ReturnsValue<Date> & ProvidesDialog {
         let dataset = AppData.dataset
-        guard dataset.supportedRange.contains(year) else {
-            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
-        }
-        let lengths = dataset.monthLengths(for: year)
-        let monthLength = lengths.flatMap { month.rawValue <= $0.count ? $0[month.rawValue - 1] : nil }
-        guard let monthLength, (1 ... monthLength).contains(day) else {
-            let name = BikramSambatDate.monthName(month.rawValue, style: SettingsStore().settings.monthNames)
-            throw SiriIntentError(dialog: "There is no \(day) \(name) \(IntentAnswers.number(year)) — \(name) \(IntentAnswers.number(year)) has \(monthLength ?? 0) days.")
-        }
-        guard let ad = GregorianDate(BikramSambatDate(year: year, month: month.rawValue, day: day), in: dataset) else {
-            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
-        }
+        let ad = try Self.gregorian(day: day, month: month, year: year, in: dataset)
         guard let instant = Self.noonInUserCalendar(for: ad) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
         return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad, fromProvisionalYear: dataset.isProvisional(year))))
+    }
+
+    static func gregorian(day: Int, month: BikramSambatMonth, year: Int, in dataset: CalendarDataset) throws -> GregorianDate {
+        guard dataset.supportedRange.contains(year) else {
+            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
+        }
+        guard let lengths = dataset.monthLengths(for: year),
+              month.rawValue <= lengths.count,
+              lengths[month.rawValue - 1] >= 1
+        else {
+            throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
+        }
+        let monthLength = lengths[month.rawValue - 1]
+        guard (1 ... monthLength).contains(day) else {
+            let name = BikramSambatDate.monthName(month.rawValue, style: SettingsStore().settings.monthNames)
+            throw SiriIntentError(dialog: "There is no \(day) \(name) \(IntentAnswers.number(year)) — \(name) \(IntentAnswers.number(year)) has \(monthLength) days.")
+        }
+        guard let ad = GregorianDate(BikramSambatDate(year: year, month: month.rawValue, day: day), in: dataset) else {
+            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
+        }
+        return ad
     }
 
     static func noonInUserCalendar(
