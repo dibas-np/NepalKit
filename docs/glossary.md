@@ -1,6 +1,6 @@
 # Glossary
 
-A macOS menu-bar utility giving quick access to Nepal-specific date, time, and calendar information.
+A macOS menu-bar app and Apple Watch app giving quick access to Nepal-specific date, time, and calendar information.
 
 ## Language
 
@@ -47,7 +47,7 @@ The current calendar date in Nepal Time — an event on Nepal's clock, and the o
 _Avoid_: current date, named-date conversion
 
 **Supported range**:
-The span of Bikram Sambat years the bundled dataset converts in both directions. Declared by the dataset, never extrapolated past it. The bundled dataset is 1975–2084 BS, 1918-04-13 through 2028-04-12 Gregorian.
+The span of Bikram Sambat years the bundled dataset converts in both directions. Declared by the dataset, never extrapolated past it.
 _Avoid_: Product boundary, date range, supported years
 
 **Range boundary state**:

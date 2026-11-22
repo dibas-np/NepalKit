@@ -2,13 +2,12 @@
 
 NepalKit's dataset 2.0.1 supports 1975–2084 Bikram Sambat. Its current reference
 is one pinned base table, with explicit NepalKit corrections and a local 2084
-projection. Conversion remains offline. This source cleanup changes no month
-length, Gregorian anchor, supported range or dataset version.
+projection. Conversion remains offline.
 
 ## Base reference
 
 - Repository: [askbuddie/bikram-sambat](https://github.com/askbuddie/bikram-sambat).
-- Requested file: [days-in-month-mapping.ts](https://github.com/askbuddie/bikram-sambat/blob/main/src/data/days-in-month-mapping.ts).
+- File: [days-in-month-mapping.ts](https://github.com/askbuddie/bikram-sambat/blob/main/src/data/days-in-month-mapping.ts).
 - Reproducible pin: [`d3475606084141352d3bf4472c80f9051968551a`](https://github.com/askbuddie/bikram-sambat/blob/d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts).
 - Source coverage: 1975–2100; NepalKit uses 1975–2083 as its historical base.
 - Licence: [MIT](https://github.com/askbuddie/bikram-sambat/blob/d3475606084141352d3bf4472c80f9051968551a/LICENSE), copyright (c) 2023 Ask Buddie.
@@ -115,16 +114,6 @@ lists "on the day" with no date are left out. For 2083 that is खण्ड ७�
 The data is in
 [`PublicHolidays2083.swift`](NepalKitCore/Sources/NepalKitCore/PublicHolidays2083.swift).
 
-The 2082 and 2083 descriptions preserve earlier evidence; those sources were
-not freshly checked during this cleanup. A maintainer-supplied claim of
-Parliamentary Portal or MOHA Gazette verification has no exact record or decree
-attached here and is not presented as independently verified. A single date
-fixture also does not verify every corrected month in its year.
-
-The one-time amitgaru CSV comparison requested during this cleanup matched the
-retained 2004, 2082 and 2083 rows. It is corroboration, not an additional base or
-an automated source dependency.
-
 ### Dharan converter checks
 
 Verification reference: [Dharan e-BPS converter](https://ebps.dharan.gov.np/Hom/Converter).
@@ -167,10 +156,6 @@ Projected2084Tests asserts this provisional contract, including Bhadra 22 mappin
 to 8 September 2027. These tests establish implementation consistency, not
 independent accuracy. The supported Gregorian interval remains 1918-04-13
 through 2028-04-12.
-
-The projection is retained for development/testing pending official-calendar
-comparison. This cleanup does not authorize public distribution or clear the
-Watch acceptance blocker.
 
 ## Reproduce the comparison
 

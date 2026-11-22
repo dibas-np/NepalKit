@@ -4,9 +4,7 @@ Current values, pin, licence notice and exceptions: [SOURCES.md](../SOURCES.md).
 
 ## Reconcile provisional 2084 first
 
-The current 2084 row is NepalKit's own 365-day development/testing projection:
-
-`[31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30]`
+The 2084 row in SOURCES.md is NepalKit's provisional 365-day projection.
 
 When the officially approved annual Nepali Patro is available, record its exact
 publication and approval details. Compare all twelve month lengths and New
@@ -32,7 +30,8 @@ Do not describe 2084 as attested until that comparison is complete.
    consistent with the data contract; narrow the range when evidence requires
    it.
 6. Derive the Gregorian bounds through CalendarDataset. Update boundary fixtures,
-   README and SOURCES.md when the supported contract changes.
+   README, NepalKitCore/README.md, site/index.html and SOURCES.md when the
+   supported contract changes.
 7. Regenerate the comparison baseline deliberately in the same change:
 
    ```sh
@@ -53,9 +52,9 @@ The release notes of any release that changes calendar data must say that the
 Watch app gets the correction only when it is rebuilt from source:
 Sparkle updates the Mac app, and nothing updates a Watch install.
 
-The current last supported Gregorian day is 2028-04-12. An extension should
-ship before that boundary. This procedure does not set a publication date or
-schedule automatic checks of a third-party website.
+An extension should ship before the dataset's last supported day. This
+procedure does not set a publication date or schedule automatic checks of a
+third-party website.
 
 ## Festivals and public holidays for a new year
 
