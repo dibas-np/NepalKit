@@ -59,7 +59,10 @@ struct TodayIntentTests {
             let representation = BikramSambatMonth.caseDisplayRepresentations[month]
             return [representation?.title.key ?? ""] + (representation?.synonyms.map { $0.key } ?? [])
         }
-        #expect(!allStrings.contains { $0.localizedStandardContains("Manxsir") || "Manxsir".localizedStandardContains($0) })
+        let rejectedMangsirSpelling = "Manxsir"
+        #expect(!allStrings.contains {
+            $0.localizedStandardContains(rejectedMangsirSpelling) || rejectedMangsirSpelling.localizedStandardContains($0)
+        })
     }
 
     @Test("Month tokens match exactly, so near-collisions keep their own months")
@@ -168,7 +171,7 @@ struct TodayIntentTests {
         #expect(String(localized: error.localizedStringResource) == "There is no 31 Kartik 2082 — Kartik 2082 has 30 days.")
     }
 
-    @Test("Shortcuts catalog is valid JSON carrying the phrase templates")
+    @Test("Shortcuts catalog is valid JSON carrying all sixteen phrase templates")
     func shortcutsCatalogCarriesTodayPhrases() throws {
         let url = Repository.file("NepalKit/AppShortcuts.xcstrings")
         let data = try Data(contentsOf: url)
@@ -190,6 +193,8 @@ struct TodayIntentTests {
             "Yesterday's Bikram Sambat date in ${applicationName}",
             "Tomorrow's Nepali date",
             "Yesterday's Nepali date",
+            "Convert to Bikram Sambat",
+            "Convert to Gregorian",
         ] {
             #expect(strings?[key] != nil, "catalog is missing \(key)")
         }

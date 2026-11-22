@@ -12,8 +12,6 @@ struct SiriDiscoverabilityTests {
             Strings.siriShortcutsSummary
                 == "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
         )
-        #expect(Strings.siriShortcutsSummary.contains("Ask Siri"))
-        #expect(Strings.siriShortcutsSummary.contains("Shortcuts"))
     }
 
     @Test("All five registered capabilities are listed with their phrases")
@@ -88,11 +86,6 @@ struct SiriDiscoverabilityTests {
             let key = capability.phrase.replacing(Strings.appName, with: "${applicationName}")
             #expect(strings[key] != nil, "catalog is missing \(key)")
         }
-    }
-
-    @Test("The provider stays within the ten-shortcut cap")
-    func providerStaysUnderTheShortcutCap() {
-        #expect(NepalKitShortcuts.appShortcuts.count <= 10)
     }
 
     @Test("The popover carries no Siri hint")

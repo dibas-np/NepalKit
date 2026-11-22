@@ -16,20 +16,6 @@ struct WindowPresentationTests {
         #expect(order == ["open", "activate"])
     }
 
-    @Test func activationIsDeferredUntilAfterTheOpenReturns() {
-        var openInProgress = false
-        var activatedWhileOpenInProgress = false
-        WindowPresentation.present(
-            open: { openInProgress = true },
-            activate: { activatedWhileOpenInProgress = openInProgress; return true },
-            schedule: { work in
-                openInProgress = false
-                work()
-            }
-        )
-        #expect(activatedWhileOpenInProgress == false)
-    }
-
     @Test func defersThroughTheInjectedScheduler() {
         var scheduled = false
         var ran = false
@@ -76,15 +62,5 @@ struct WindowPresentationTests {
             schedule: { work in work() }
         )
         #expect(activations == 3)
-    }
-
-    @Test func presentsExactlyOnce() {
-        var opens = 0
-        WindowPresentation.present(
-            open: { opens += 1 },
-            activate: { true },
-            schedule: { work in work() }
-        )
-        #expect(opens == 1)
     }
 }

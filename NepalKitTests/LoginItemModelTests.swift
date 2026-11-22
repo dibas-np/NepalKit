@@ -66,20 +66,6 @@ struct LoginItemModelTests {
         #expect(service.registerCalls == 0)
     }
 
-    @Test func failedFirstLaunchRetriesOnNextLaunch() throws {
-        let defaults = try freshDefaults()
-        let failing = MockService()
-        failing.error = Boom()
-        LoginItemModel(service: failing, defaults: defaults).ensureDefaultOn()
-
-        let retry = MockService()
-        let relaunched = LoginItemModel(service: retry, defaults: defaults)
-        relaunched.ensureDefaultOn()
-
-        #expect(retry.registerCalls == 1)
-        #expect(relaunched.isOn)
-    }
-
     @Test func failedFirstLaunchRecordsTheRegistrationError() throws {
         let service = MockService()
         service.error = Boom()
@@ -100,9 +86,11 @@ struct LoginItemModelTests {
         #expect(service.registerCalls == 1)
 
         let retry = MockService()
-        LoginItemModel(service: retry, defaults: defaults).ensureDefaultOn()
+        let relaunched = LoginItemModel(service: retry, defaults: defaults)
+        relaunched.ensureDefaultOn()
 
         #expect(retry.registerCalls == 1)
+        #expect(relaunched.isOn)
     }
 
     @Test func anExplicitChoiceAfterAFailedFirstLaunchEndsTheDefault() throws {

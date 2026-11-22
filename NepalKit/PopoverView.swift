@@ -26,7 +26,7 @@ struct PopoverView: View {
     let updates: UpdateCheckModel
     @State private var destination: PopoverDestination = .today
 
-    private static let popoverWidth: CGFloat = 340
+    static let popoverWidth: CGFloat = 340
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

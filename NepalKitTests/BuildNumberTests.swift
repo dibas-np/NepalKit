@@ -67,16 +67,10 @@ struct BuildNumberTests {
         }
     }
 
-    @Test func buildNumberIsAnInteger() {
+    @Test func buildNumberIsAPositiveInteger() {
         let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
 
-        #expect(raw.flatMap(Int.init) != nil, "CURRENT_PROJECT_VERSION is not an integer: \(raw ?? "missing")")
-    }
-
-    @Test func buildNumberIsPositive() {
-        let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
-
-        #expect((raw.flatMap(Int.init) ?? 0) >= 1)
+        #expect((raw.flatMap(Int.init) ?? 0) >= 1, "CURRENT_PROJECT_VERSION is not a positive integer: \(raw ?? "missing")")
     }
 
     @Test func shortVersionIsSemanticVersion() {
@@ -91,9 +85,7 @@ struct BuildNumberTests {
 
     @Test func buildNumberIsDisjointFromTheShortVersion() {
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
-        let build = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? -1
 
-        #expect(build >= 1, "CURRENT_PROJECT_VERSION is not a positive integer: \(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "missing")")
         #expect(
             Int(short) == nil,
             "MARKETING_VERSION is \(short), which reads as the build number — the updater orders on the latter and About shows the former"

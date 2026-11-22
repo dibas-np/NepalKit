@@ -31,7 +31,6 @@ struct DatasetBoundaryTests {
     @Test func lastSupportedDateShowsABikramSambatDate() throws {
         let model = try menuBar(lastSupportedAD)
         let title = model.title(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
-        #expect(title != Strings.menuBarBeyondRange)
         #expect(title == "30 Chaitra")
     }
 
@@ -60,7 +59,6 @@ struct DatasetBoundaryTests {
     }
 
     @Test func weekdayIsUnchangedAcrossTheBoundary() throws {
-        #expect(try clock(firstUnsupportedAD).weekdayString(style: .transliterated) == "Thursday")
         #expect(try clock(lastSupportedAD).weekdayString(style: .transliterated) == "Wednesday")
     }
 

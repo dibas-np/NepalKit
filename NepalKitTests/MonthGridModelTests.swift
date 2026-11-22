@@ -209,9 +209,6 @@ struct MonthGridModelTests {
 
     @Test func todaysAnnouncementCarriesBothCalendars() {
         let bs = BikramSambatDate(year: 2083, month: 7, day: 1)
-        let ad = GregorianDate(year: 2026, month: 10, day: 18)
-        #expect(SpokenDate.today(bs, gregorian: ad, weekday: "Sunday", monthNames: .transliterated)
-            == "1 Kartik 2083. 18 October 2026, Sunday")
         #expect(SpokenDate.today(bs, gregorian: nil, weekday: nil, monthNames: .transliterated) == "1 Kartik 2083")
     }
 

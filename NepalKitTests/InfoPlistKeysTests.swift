@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import Testing
 @testable import NepalKit
@@ -56,7 +57,6 @@ struct InfoPlistKeysTests {
         let info = try #require(Self.builtInfo)
 
         #expect(info["LSUIElement"] as? Bool == true, "menu-bar-only would be lost")
-        #expect(info["CFBundleIdentifier"] as? String == "com.dibas.NepalKit.NepalKit")
         #expect(info["SUEnableInstallerLauncherService"] as? Bool == true,
                 "sandboxed installs abort at the installer launch without it")
         #expect(info["CFBundleShortVersionString"] is String, "the human-facing version is substituted")

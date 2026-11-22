@@ -5,6 +5,8 @@ import SwiftUI
 import NepalKitCore
 
 struct MonthGridView: View {
+    static let gridSpacing: CGFloat = 2
+
     let model: MonthGridModel
     let settings: DisplaySettings
     let clock: ClockModel
@@ -171,7 +173,7 @@ private struct MonthGridDays: View {
     var body: some View {
         let headers = model.weekdayHeaders(settings: settings)
         let spokenHeaders = model.spokenWeekdayHeaders(settings: settings)
-        Grid(horizontalSpacing: 2, verticalSpacing: 2) {
+        Grid(horizontalSpacing: MonthGridView.gridSpacing, verticalSpacing: MonthGridView.gridSpacing) {
             GridRow {
                 ForEach(0 ..< 7, id: \.self) { column in
                     Text(headers[column])

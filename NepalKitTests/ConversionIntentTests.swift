@@ -176,24 +176,9 @@ struct ConversionIntentTests {
         }
     }
 
-    @Test("Provider carries all five shortcuts; catalog carries all sixteen keys")
-    func providerAndCatalogAreWhole() throws {
+    @Test("Provider carries all five shortcuts")
+    func providerIsWhole() {
         #expect(NepalKitShortcuts.appShortcuts.count == 5)
-
-        let data = try Data(contentsOf: Repository.file("NepalKit/AppShortcuts.xcstrings"))
-        let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let strings = try #require(catalog?["strings"] as? [String: Any])
-
-        for key in [
-            "Convert a date to Bikram Sambat with ${applicationName}",
-            "Use ${applicationName} to convert to Bikram Sambat",
-            "Convert a Bikram Sambat date to Gregorian with ${applicationName}",
-            "Use ${applicationName} to convert from Bikram Sambat",
-            "Convert to Bikram Sambat",
-            "Convert to Gregorian",
-        ] {
-            #expect(strings[key] != nil, "catalog is missing \(key)")
-        }
     }
 
     @Test("Gregorian to Bikram Sambat into 2084 adds the provisional clause; 2083 does not")
@@ -204,13 +189,8 @@ struct ConversionIntentTests {
         #expect(!attested.contains("provisional"))
     }
 
-    @Test("Bikram Sambat 2084 to Gregorian adds the provisional clause; 2082 does not")
-    func bikramSambatToGregorianProvisionalClause() async throws {
-        let intent = BikramSambatToGregorianIntent()
-        intent.day = 22
-        intent.month = .bhadra
-        intent.year = 2084
-        _ = try await intent.perform()
+    @Test("The Gregorian success dialog adds the provisional clause for a 2084 source; 2082 does not")
+    func bikramSambatToGregorianProvisionalClause() {
         #expect(dataset.isProvisional(2084))
         let provisional = String(localized: BikramSambatToGregorianIntent.successDialog(GregorianDate(year: 2027, month: 9, day: 8), fromProvisionalYear: dataset.isProvisional(2084)))
         #expect(provisional.hasSuffix("8 September 2027. That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."))

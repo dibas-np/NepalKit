@@ -7,9 +7,16 @@ import Testing
 
 @MainActor
 struct ConverterLayoutTests {
-    private static let popoverContentWidth: CGFloat = 316
+    /// SwiftUI's default `.padding()` on macOS, which no API reports.
+    private static let defaultPadding: CGFloat = 12
+    private static let popoverContentWidth = PopoverView.popoverWidth - 2 * defaultPadding
 
     private static let controlChrome: CGFloat = 28
+    private static let textButtonPadding: CGFloat = 16
+    private static let bodySizeScale: CGFloat = 1.5
+    private static let headlineScale: CGFloat = 1.2
+    private static let latinAdvance: CGFloat = 7
+    private static let devanagariAdvance: CGFloat = 9
 
     @Test func directionSegmentsFitThePopover() {
         let segments = [Strings.bsToAD, Strings.adToBS]
@@ -59,7 +66,7 @@ struct ConverterLayoutTests {
     }
 
     @Test func monthGridColumnsFitThePopover() {
-        let column = (Self.popoverContentWidth - 6 * 2) / 7
+        let column = (Self.popoverContentWidth - 6 * MonthGridView.gridSpacing) / 7
         for style in [MonthNameStyle.nepali, .transliterated] {
             for weekday in 1 ... 7 {
                 let name = MonthGridModel.shortWeekdayName(weekday, style: style)
@@ -68,17 +75,17 @@ struct ConverterLayoutTests {
         }
         for digits in [DigitScript.latin, .devanagari] {
             let day = digits.format(32)
-            #expect(Self.width(of: day) * 1.5 <= column, "\(day) does not fit a \(Int(column))pt column")
+            #expect(Self.width(of: day) * Self.bodySizeScale <= column, "\(day) does not fit a \(Int(column))pt column")
         }
     }
 
     @Test func monthGridHeaderFitsThePopover() {
         let chevrons = 2 * Self.controlChrome
-        let today = Self.controlChrome + 16 + Self.width(of: Strings.todayLabel)
+        let today = Self.controlChrome + Self.textButtonPadding + Self.width(of: Strings.todayLabel)
         for style in [MonthNameStyle.nepali, .transliterated] {
             for month in 1 ... 12 {
                 let title = "\(BikramSambatDate.monthName(month, style: style)) \(DigitScript.devanagari.format(2084))"
-                let demanded = Self.width(of: title) * 1.2 + today + chevrons + 3 * 4
+                let demanded = Self.width(of: title) * Self.headlineScale + today + chevrons + 3 * 4
                 #expect(demanded <= Self.popoverContentWidth, "'\(title)' header needs ~\(Int(demanded))pt")
             }
         }
@@ -87,6 +94,6 @@ struct ConverterLayoutTests {
     private static func width(of string: String) -> CGFloat {
         let devanagariScalars = string.unicodeScalars.filter { (0x0900 ... 0x097F).contains($0.value) }.count
         let other = string.count - devanagariScalars
-        return CGFloat(other) * 7.0 + CGFloat(devanagariScalars) * 9.0
+        return CGFloat(other) * latinAdvance + CGFloat(devanagariScalars) * devanagariAdvance
     }
 }
