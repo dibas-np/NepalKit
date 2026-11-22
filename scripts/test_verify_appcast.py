@@ -10,6 +10,7 @@ import importlib.util
 import io
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1191,6 +1192,17 @@ class UntrustedFeedInputTest(unittest.TestCase):
             handler.redirect_request(request, None, 302, "Found", {}, "http://example.com/a.zip")
         followed = handler.redirect_request(request, None, 302, "Found", {}, "https://cdn.example.com/a.zip")
         self.assertEqual(followed.full_url, "https://cdn.example.com/a.zip")
+
+class ShellEntryTest(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("zsh"), "verify-appcast.sh is a zsh script")
+    def test_the_script_reads_the_repository_url(self) -> None:
+        script = Path(__file__).resolve().parent / "verify-appcast.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / "absent"
+            result = subprocess.run(["zsh", str(script), str(missing)], capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no such archives directory", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

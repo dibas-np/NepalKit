@@ -6,8 +6,8 @@
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
-REPO_URL="$(sed -n 's/.*defaultRepositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | awk 'NR == 1 { print }')"
-[[ -n "$REPO_URL" ]] || { echo "could not read defaultRepositoryURL from NepalKit/AppMetadata.swift" >&2; exit 1; }
+REPO_URL="$(sed -n 's/.*repositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | awk 'NR == 1 { print }')"
+[[ -n "$REPO_URL" ]] || { echo "could not read repositoryURL from NepalKit/AppMetadata.swift" >&2; exit 1; }
 ARCHIVES_DIR="${1:?usage: $0 <archives-dir> [download-url-prefix]}"
 URL_PREFIX="${2:-}"
 
