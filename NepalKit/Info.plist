@@ -72,6 +72,14 @@
 	<true/>
 
 	<!--
+	  Without this, Sparkle accepts a feed whose signature has kept failing for
+	  20 days, in a restricted mode (SUAppcastDriver.m). Zero keeps the
+	  signature requirement absolute.
+	-->
+	<key>SUSignedFeedFailureExpirationInterval</key>
+	<real>0</real>
+
+	<!--
 	  Sparkle refuses to check for updates at
 	  all unless this is enabled whenever SURequireSignedFeed is on, and says so:
 

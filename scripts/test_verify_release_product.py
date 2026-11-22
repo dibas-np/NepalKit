@@ -39,6 +39,7 @@ GOOD_INFO = {
     "SURequireSignedFeed": True,
     "SUVerifyUpdateBeforeExtraction": True,
     "SUEnableInstallerLauncherService": True,
+    "SUSignedFeedFailureExpirationInterval": 0.0,
     "SUPublicEDKey": base64.b64encode(bytes(range(32))).decode(),
     "SUFeedURL": "https://dibas-np.github.io/NepalKit/appcast.xml",
 }
@@ -120,6 +121,12 @@ class VerifyReleaseProductTests(unittest.TestCase):
         code, out = self.run_case(info={"SURequireSignedFeed": False})
         self.assertEqual(code, 1)
         self.assertIn("SURequireSignedFeed", out)
+
+    def test_a_signed_feed_failure_expiry_fails(self):
+        for value in (1728000.0, True):
+            code, out = self.run_case(info={"SUSignedFeedFailureExpirationInterval": value})
+            self.assertEqual(code, 1, value)
+            self.assertIn("SUSignedFeedFailureExpirationInterval", out)
 
     def test_wrong_length_public_key_fails(self):
         code, out = self.run_case(info={"SUPublicEDKey": base64.b64encode(b"short").decode()})

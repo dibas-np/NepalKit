@@ -75,12 +75,16 @@ def check_sparkle_keys(info):
         length = None
     if length != 32:
         results.append(("FAIL", f"SUPublicEDKey is not base64 of 32 bytes (decoded length {length})"))
+    interval = info.get("SUSignedFeedFailureExpirationInterval")
+    if isinstance(interval, bool) or not isinstance(interval, (int, float)) or interval != 0:
+        results.append(("FAIL", f"SUSignedFeedFailureExpirationInterval is {interval!r}, expected 0"))
     feed = info.get("SUFeedURL")
     if feed != FEED_URL:
         results.append(("FAIL", f"SUFeedURL is {feed!r}, expected {FEED_URL}"))
     if not results:
         results.append(("ok", "Sparkle keys present: signed feed, verify-before-extraction, "
-                              "installer launcher, 32-byte public key, pinned feed URL"))
+                              "installer launcher, no signed-feed expiry, 32-byte public key, "
+                              "pinned feed URL"))
     return results
 
 

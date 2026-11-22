@@ -85,6 +85,9 @@ struct InfoPlistKeysTests {
 
         #expect(info["SURequireSignedFeed"] as? Bool == true,
                 "the built app reads an unsigned feed unauthenticated: SURequireSignedFeed is \(value)")
+        // Sparkle falls back to an unverified feed after this interval; zero disables that.
+        #expect((info["SUSignedFeedFailureExpirationInterval"] as? NSNumber)?.doubleValue == 0,
+                "the built app trusts a failing feed after a grace period")
     }
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
