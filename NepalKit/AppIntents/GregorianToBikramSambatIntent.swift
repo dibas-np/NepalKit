@@ -29,11 +29,11 @@ struct GregorianToBikramSambatIntent: AppIntent {
         guard let ad = Self.namedDay(for: date) else {
             throw SiriIntentError(dialog: "NepalKit couldn't read that date.")
         }
-        if let bs = adToBS(ad, in: dataset) {
+        if let bs = BikramSambatDate(ad, in: dataset) {
             guard let entity = BikramSambatDateEntity(bsDay: bs) else {
                 throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
             }
-            return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: weekday(of: ad), in: dataset)))
+            return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: ad.weekday, in: dataset)))
         }
         // No table row: either the day does not exist, or the date sits
         // outside the table. Both wordings speak dataset numbers only.
@@ -57,31 +57,31 @@ struct GregorianToBikramSambatIntent: AppIntent {
     /// time-of-day discarded. Conversions are day-granular: only *today* is
     /// Nepal-Time-anchored; a named conversion input is a calendar day as
     /// spoken, independent of Nepal Time.
-    static func namedDay(for date: Date, calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()) -> GADay? {
+    static func namedDay(for date: Date, calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()) -> GregorianDate? {
         let components = calendar.dateComponents([.year, .month, .day], from: date)
         guard let year = components.year, let month = components.month, let day = components.day else {
             return nil
         }
-        return GADay(year: year, month: month, day: day)
+        return GregorianDate(year: year, month: month, day: day)
     }
 
     /// The month-length statement for a Gregorian input that names no civil
     /// day (30 February), or nil when the day exists. Checked before the
     /// range, so an impossible day is never reported as out-of-range.
-    static func invalidDayDialog(_ ad: GADay) -> LocalizedStringResource? {
-        guard let length = daysInGregorianMonth(year: ad.year, month: ad.month), length < ad.day else {
+    static func invalidDayDialog(_ ad: GregorianDate) -> LocalizedStringResource? {
+        guard let length = GregorianDate.daysInMonth(year: ad.year, month: ad.month), length < ad.day else {
             return nil
         }
-        let name = gregorianMonthName(ad.month)
+        let name = GregorianDate.monthName(ad.month)
         return "There is no \(ad.day) \(name) \(IntentAnswers.number(ad.year)) — \(name) \(IntentAnswers.number(ad.year)) has \(length) days."
     }
 
     /// The boundary dates come from the dataset — never a literal.
-    static func outOfRangeDialog(_ ad: GADay, in dataset: CalendarDataset) -> LocalizedStringResource {
+    static func outOfRangeDialog(_ ad: GregorianDate, in dataset: CalendarDataset) -> LocalizedStringResource {
         if let end = dataset.gregorianEnd, ad > end {
             return "NepalKit's Bikram Sambat data covers \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — up to \(IntentAnswers.spoken(end)). That date is outside it."
         }
-        guard let start = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
+        guard let start = GregorianDate(BikramSambatDate(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
             preconditionFailure("Calendar dataset must convert its first supported day")
         }
         return "NepalKit's Bikram Sambat data covers \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — back to \(IntentAnswers.spoken(start)). That date is outside it."
@@ -91,7 +91,7 @@ struct GregorianToBikramSambatIntent: AppIntent {
     /// failure dialogs so the wording is testable without running the intent.
     /// A provisional year (the dataset's flag, never a literal) adds the
     /// projection clause.
-    static func successDialog(_ bs: BSDay, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
+    static func successDialog(_ bs: BikramSambatDate, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
         if dataset.isProvisional(bs.year) {
             return "\(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs)). That year is a provisional projection, not yet in the official Nepali Patro."
         }

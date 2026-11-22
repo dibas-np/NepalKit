@@ -30,18 +30,18 @@ struct TodayInBikramSambatIntent: AppIntent {
         in dataset: CalendarDataset,
         timeZone: TimeZone = SettingsStore().timeReference.timeZone
     ) throws -> (entity: BikramSambatDateEntity, dialog: LocalizedStringResource) {
-        guard let bs = todayBS(now: now, timeZone: timeZone, in: dataset) else {
+        guard let bs = BikramSambatDate.today(now: now, timeZone: timeZone, in: dataset) else {
             throw SiriIntentError(dialog: beyondRangeDialog(now: now, timeZone: timeZone, in: dataset))
         }
         guard let entity = BikramSambatDateEntity(bsDay: bs) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        return (entity, successDialog(bs, weekday: weekday(of: bs, in: dataset), in: dataset))
+        return (entity, successDialog(bs, weekday: bs.weekday(in: dataset), in: dataset))
     }
 
     /// The spoken answer for today, extracted so the wording (including the
     /// provisional clause) is testable without the wall clock.
-    static func successDialog(_ bs: BSDay, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
+    static func successDialog(_ bs: BikramSambatDate, weekday: Int?, in dataset: CalendarDataset) -> LocalizedStringResource {
         if dataset.isProvisional(bs.year) {
             return "Today is \(IntentAnswers.weekdayPrefix(weekday))\(IntentAnswers.spoken(bs)). This year is a provisional projection, not yet in the official Nepali Patro."
         }
@@ -54,11 +54,11 @@ struct TodayInBikramSambatIntent: AppIntent {
     /// dataset; none is hard-coded.
     static func beyondRangeDialog(
         now: Date,
-        timeZone: TimeZone = nepalTimeZone,
+        timeZone: TimeZone = .nepal,
         in dataset: CalendarDataset
     ) -> LocalizedStringResource {
-        let gregorianToday = todayAD(now: now, timeZone: timeZone)
-        let prefix = IntentAnswers.weekdayPrefix(gregorianToday.flatMap { weekday(of: $0) })
+        let gregorianToday = GregorianDate.today(now: now, timeZone: timeZone)
+        let prefix = IntentAnswers.weekdayPrefix(gregorianToday.flatMap { ($0).weekday })
         let spokenToday = gregorianToday.map { IntentAnswers.spoken($0) } ?? ""
         // Years interpolate as strings: a bare Int formats with locale
         // grouping ("2,084"), which is wrong in a spoken year.

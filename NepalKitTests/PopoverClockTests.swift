@@ -33,8 +33,8 @@ struct PopoverClockTests {
 
         let later = try self.clock(now: try TestDates.utc(2026, 9, 26, 18, 14), tickTo: try TestDates.utc(2026, 9, 26, 18, 16))
         await tick(later)
-        #expect(later.today == GADay(year: 2026, month: 9, day: 27))
-        #expect(later.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
+        #expect(later.today == GregorianDate(year: 2026, month: 9, day: 27))
+        #expect(later.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
     }
 
     @Test func theSecondaryRowIsStoredAndFollowsTheReference() throws {
@@ -47,9 +47,9 @@ struct PopoverClockTests {
     @Test func switchingToLocalTimeMovesTodayAtOnce() throws {
         // 23:30 UTC on 26 Sep: 27 Sep in Nepal, still 26 Sep in New York.
         let clock = try clock(now: try TestDates.utc(2026, 9, 26, 23, 30), tickTo: try TestDates.utc(2026, 9, 26, 23, 30))
-        #expect(clock.today == GADay(year: 2026, month: 9, day: 27))
+        #expect(clock.today == GregorianDate(year: 2026, month: 9, day: 27))
         clock.setTimeReference(.local)
-        #expect(clock.today == GADay(year: 2026, month: 9, day: 26))
+        #expect(clock.today == GregorianDate(year: 2026, month: 9, day: 26))
     }
 
     @Test func theMenuBarPollWritesOnlyWhenTheDayHasTurned() throws {

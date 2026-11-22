@@ -42,7 +42,7 @@ struct MonthGridFestivalTests {
 
     @Test func aNeighbouringMonthsFestivalIsNotMarked() throws {
         // 1 Mangsir 2083 follows Kartik's last day in the grid's last weeks.
-        let mangsir1 = BSDay(year: 2083, month: 8, day: 1)
+        let mangsir1 = BikramSambatDate(year: 2083, month: 8, day: 1)
         let festival = Festival(nepali: "परीक्षण", english: "Test Day")
         let model = try kartik2083(festivals: FestivalCalendar(years: [2083], entries: [mangsir1: [festival]]))
         let spill = try #require(cells(model).first { $0.bikramSambat == mangsir1 })
@@ -89,8 +89,8 @@ struct MonthGridFestivalTests {
     }
 
     @Test func todaysAnnouncementEndsWithTodaysFestivals() {
-        let bs = BSDay(year: 2083, month: 7, day: 24)
-        let ad = GADay(year: 2026, month: 11, day: 10)
+        let bs = BikramSambatDate(year: 2083, month: 7, day: 24)
+        let ad = GregorianDate(year: 2026, month: 11, day: 10)
         let festivals = FestivalCalendar.panchanga.festivals(on: bs)
         #expect(SpokenDate.today(bs, gregorian: ad, weekday: "Tuesday", monthNames: .transliterated, festivals: festivals)
             == "24 Kartik 2083. 10 November 2026, Tuesday. Govardhan Puja, Mha Puja, Nepal Sambat New Year 1147")

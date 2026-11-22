@@ -87,8 +87,8 @@ struct TodayComplicationProviderTests {
         let broken = CalendarDataset(
             version: "broken-snapshot-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
-            anchorBS: BSDay(year: 1975, month: 1, day: 1),
-            anchorAD: GADay(year: 1918, month: 4, day: 13),
+            anchorBikramSambat: BikramSambatDate(year: 1975, month: 1, day: 1),
+            anchorGregorian: GregorianDate(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
         // 26 Sep 2026, 18:30 UTC: the NPT day 2026-09-27 is derived before
@@ -109,8 +109,8 @@ struct TodayComplicationProviderTests {
         let broken = CalendarDataset(
             version: "broken-timeline-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
-            anchorBS: BSDay(year: 1975, month: 1, day: 1),
-            anchorAD: GADay(year: 1918, month: 4, day: 13),
+            anchorBikramSambat: BikramSambatDate(year: 1975, month: 1, day: 1),
+            anchorGregorian: GregorianDate(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
         let now = try UTCWatchFixture.utc(2026, 9, 26, 18, 30)

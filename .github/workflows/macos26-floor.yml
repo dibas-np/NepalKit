@@ -237,6 +237,10 @@ jobs:
         working-directory: NepalKitCore
         run: swift test
 
+      - name: Watch support suite
+        working-directory: NepalKitWatchSupport
+        run: swift test
+
       # Signing is disabled: the project sets a development team target-wide, and
       # a pull-request job must need no credentials and be unable to reach any.
       #

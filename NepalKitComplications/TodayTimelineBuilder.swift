@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import NepalKitCore
+import NepalKitWatchSupport
 import WidgetKit
 
 /// The timeline a complication request receives: ordered entries and the
@@ -17,7 +18,7 @@ struct BuiltTimeline {
 /// Pure and deterministic. The clock is read once by the caller; the day
 /// resolver and the midnight seam are injected so tests can pin failures at
 /// exact offsets without touching the system clock. Production wires the core
-/// resolver and `nextNPTMidnight(after:)` — nothing here maintains a second
+/// resolver and `TimeZone.nepal.nextMidnight(after:)` — nothing here maintains a second
 /// calendar oracle or re-reads the clock.
 ///
 /// The contract, from the accepted handoff: entry zero activates at the
@@ -45,13 +46,13 @@ struct TodayTimelineBuilder: Sendable {
     static let errorRetryInterval: TimeInterval = 15 * 60
 
     let dataset: CalendarDataset
-    var resolveDay: @Sendable (GADay) throws -> ResolvedDay
+    var resolveDay: @Sendable (GregorianDate) throws -> ResolvedDay
     var nextMidnight: @Sendable (Date) -> Date?
 
     /// Builds the timeline for the supplied instant — the one clock reading
     /// this whole construction is anchored to.
     func build(now: Date) -> BuiltTimeline {
-        guard let today = todayAD(now: now) else {
+        guard let today = GregorianDate.today(now: now) else {
             // The instant itself is unreadable: no prefix exists and no
             // Gregorian context may be invented.
             return singleErrorTimeline(at: now, gregorianDay: nil)
@@ -77,7 +78,7 @@ struct TodayTimelineBuilder: Sendable {
     /// Resolves Today through day +13, one independently resolved day per
     /// entry.
     private func horizonEntries(
-        from today: GADay,
+        from today: GregorianDate,
         now: Date,
         _ nextActivation: inout Date
     ) -> HorizonOutcome {
@@ -122,7 +123,7 @@ struct TodayTimelineBuilder: Sendable {
     /// behind Today need no extra entry. Returns the timeline to return as-is
     /// when the terminal entry fails, or nil when the horizon stands.
     private func terminalEntries(
-        from today: GADay,
+        from today: GregorianDate,
         now: Date,
         prefix: [TodayComplicationEntry],
         _ nextActivation: inout Date
@@ -155,7 +156,7 @@ struct TodayTimelineBuilder: Sendable {
     /// asked to retry fifteen minutes later.
     private func prefixRetainingError(
         at activation: Date,
-        gregorianDay: GADay?,
+        gregorianDay: GregorianDate?,
         prefix: [TodayComplicationEntry]
     ) -> BuiltTimeline {
         var entries = prefix
@@ -166,14 +167,14 @@ struct TodayTimelineBuilder: Sendable {
         )
     }
 
-    private func errorEntry(at activation: Date, gregorianDay: GADay?) -> TodayComplicationEntry {
+    private func errorEntry(at activation: Date, gregorianDay: GregorianDate?) -> TodayComplicationEntry {
         TodayComplicationEntry(
             date: activation,
             state: .day(watchCalculationErrorDisplay(gregorianDay: gregorianDay, settings: .watch))
         )
     }
 
-    private func singleErrorTimeline(at instant: Date, gregorianDay: GADay?) -> BuiltTimeline {
+    private func singleErrorTimeline(at instant: Date, gregorianDay: GregorianDate?) -> BuiltTimeline {
         BuiltTimeline(
             entries: [errorEntry(at: instant, gregorianDay: gregorianDay)],
             policy: .after(instant.addingTimeInterval(Self.errorRetryInterval))

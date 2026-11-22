@@ -47,9 +47,9 @@ public struct PublicHolidayCalendar: Sendable {
     /// Years with holiday data. A year outside this set has none yet, which is
     /// a gap, not a year without holidays.
     public let years: Set<Int>
-    let entries: [BSDay: [PublicHoliday]]
+    let entries: [BikramSambatDate: [PublicHoliday]]
 
-    public init(years: Set<Int>, entries: [BSDay: [PublicHoliday]]) {
+    public init(years: Set<Int>, entries: [BikramSambatDate: [PublicHoliday]]) {
         self.years = years
         self.entries = entries
     }
@@ -57,27 +57,27 @@ public struct PublicHolidayCalendar: Sendable {
     /// The gazette's rows for `day`, in its order. A day can have several rows
     /// of one scope (18 Baisakh has three nationwide), so display wants
     /// `scopes(on:)`.
-    public func holidays(on day: BSDay) -> [PublicHoliday] {
+    public func holidays(on day: BikramSambatDate) -> [PublicHoliday] {
         entries[day] ?? []
     }
 
     /// The distinct scopes of `day`'s holidays, in the order they first
     /// appear: what to show, since three nationwide rows are one day off.
-    public func scopes(on day: BSDay) -> [PublicHoliday.Scope] {
+    public func scopes(on day: BikramSambatDate) -> [PublicHoliday.Scope] {
         var seen: Set<PublicHoliday.Scope> = []
         return holidays(on: day).map(\.scope).filter { seen.insert($0).inserted }
     }
 
     /// Whether `day` is a holiday for everyone, as opposed to one limited to
     /// a community, region or group.
-    public func isNationwideHoliday(_ day: BSDay) -> Bool {
+    public func isNationwideHoliday(_ day: BikramSambatDate) -> Bool {
         holidays(on: day).contains { $0.scope == .nationwide }
     }
 
     /// What to name `day` by: its festivals, or, on a holiday that has none
     /// (the middle days of Dashain, the last of Tihar), the gazette's name for
     /// the holiday, so a red day is never an unnamed one.
-    public func observances(on day: BSDay, festivals: FestivalCalendar) -> [Festival] {
+    public func observances(on day: BikramSambatDate, festivals: FestivalCalendar) -> [Festival] {
         let own = festivals.festivals(on: day)
         guard own.isEmpty else { return own }
         var seen: Set<String> = []
@@ -88,7 +88,7 @@ public struct PublicHolidayCalendar: Sendable {
     }
 
     /// Every entry, for checks that sweep the table.
-    public var allEntries: [(day: BSDay, holidays: [PublicHoliday])] {
+    public var allEntries: [(day: BikramSambatDate, holidays: [PublicHoliday])] {
         entries.map { ($0.key, $0.value) }
     }
 

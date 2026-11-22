@@ -18,7 +18,7 @@ nonisolated enum TimeReference: String, CaseIterable, Sendable {
     /// held to the zone it launched in.
     var timeZone: TimeZone {
         switch self {
-        case .nepal: nepalTimeZone
+        case .nepal: TimeZone.nepal
         case .local: .autoupdatingCurrent
         }
     }

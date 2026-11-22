@@ -85,7 +85,7 @@ struct TodayModelTests {
         clock: MutableClock,
         signals: SignalFixture,
         dataset: CalendarDataset = .v2,
-        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) }
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { TimeZone.nepal.nextMidnight(after: $0) }
     ) -> TodayModel {
         TodayModel(
             now: { clock.read() },
@@ -315,8 +315,8 @@ struct TodayModelTests {
         let broken = CalendarDataset(
             version: "broken-today-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
-            anchorBS: BSDay(year: 1975, month: 1, day: 1),
-            anchorAD: GADay(year: 1918, month: 4, day: 13),
+            anchorBikramSambat: BikramSambatDate(year: 1975, month: 1, day: 1),
+            anchorGregorian: GregorianDate(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
         let clock = MutableClock(try anchoredInstant())

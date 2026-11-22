@@ -42,7 +42,7 @@ enum ComplicationFixtures {
         if fixture.failActivation {
             nextMidnight = { _ in nil }
         } else {
-            nextMidnight = { nextNPTMidnight(after: $0) }
+            nextMidnight = { TimeZone.nepal.nextMidnight(after: $0) }
         }
         return TodayComplicationProvider(
             now: WatchFixtureControl.clock(for: fixture),
@@ -56,7 +56,7 @@ enum ComplicationFixtures {
         dataset: CalendarDataset,
         nextMidnight: @escaping @Sendable (Date) -> Date?
     ) -> TodayTimelineBuilder {
-        let today = fixture.instant.flatMap { todayAD(now: $0) }
+        let today = fixture.instant.flatMap { GregorianDate.today(now: $0) }
         let failDay = fixture.failAtHorizonOffset.flatMap { offset in
             today.flatMap { $0.advanced(byDays: offset) }
         }
@@ -66,7 +66,7 @@ enum ComplicationFixtures {
                 if let failDay, day == failDay {
                     throw DayResolutionError.datasetAssumptionFailure(day)
                 }
-                return try resolvedDay(for: day, in: dataset)
+                return try ResolvedDay(day, in: dataset)
             },
             nextMidnight: nextMidnight
         )

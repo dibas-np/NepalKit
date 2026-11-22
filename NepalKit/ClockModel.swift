@@ -18,7 +18,7 @@ final class ClockModel {
     /// Today's Gregorian day in `timeZone`, stored apart from `now` and assigned
     /// only when it changes, so views that show the day (the Today hero) are
     /// invalidated once a day rather than on every per-second tick.
-    private(set) var today: GADay?
+    private(set) var today: GregorianDate?
     /// Whether the secondary clock row shows: the two clocks read differently,
     /// whichever is the header's (so never on a Mac set to Nepal's offset).
     /// Stored and assigned only on a change, like `today`, so the row is not
@@ -61,7 +61,7 @@ final class ClockModel {
         self.refreshes = refreshes
         self.currentTime = currentTime
         self.sleep = sleep
-        self.today = todayAD(now: now, timeZone: timeZone)
+        self.today = GregorianDate.today(now: now, timeZone: timeZone)
         self.showsSecondaryClock = !localTimeIsRedundant
     }
 
@@ -94,7 +94,7 @@ final class ClockModel {
 
     /// Re-reads today from `now`, assigning only on a change.
     private func refreshToday() {
-        let day = todayAD(now: now, timeZone: timeZone)
+        let day = GregorianDate.today(now: now, timeZone: timeZone)
         if day != today { today = day }
         let differs = !localTimeIsRedundant
         if differs != showsSecondaryClock { showsSecondaryClock = differs }
@@ -105,18 +105,18 @@ final class ClockModel {
     /// day and the clocks.
     var timeZone: TimeZone {
         switch timeReference {
-        case .nepal: nepalTimeZone
+        case .nepal: TimeZone.nepal
         case .local: localTimeZone
         }
     }
 
     /// Today's Bikram Sambat date for the current tick, or nil outside the dataset.
-    func todayBSDate(in dataset: CalendarDataset = AppData.dataset) -> BSDay? {
-        today.flatMap { adToBS($0, in: dataset) }
+    func todayBSDate(in dataset: CalendarDataset = AppData.dataset) -> BikramSambatDate? {
+        today.flatMap { BikramSambatDate($0, in: dataset) }
     }
 
     /// Today's Gregorian civil day in the zone today follows.
-    func todayADDate() -> GADay? {
+    func todayADDate() -> GregorianDate? {
         today
     }
 
@@ -127,16 +127,16 @@ final class ClockModel {
     /// available past the dataset's supported range, where the Bikram Sambat
     /// date does not.
     func weekdayString(style: MonthNameStyle) -> String? {
-        guard let day = todayADDate(), let weekday = weekday(of: day) else { return nil }
-        return weekdayName(for: weekday, style: style)
+        guard let day = todayADDate(), let weekday = day.weekday else { return nil }
+        return BikramSambatDate.weekdayName(weekday, style: style)
     }
 
     func nptTimeString(digits: DigitScript) -> String {
-        formatClock(now, timeZone: nepalTimeZone, digits: digits)
+        digits.formatTime(now, in: .nepal)
     }
 
     func localTimeString(digits: DigitScript) -> String {
-        formatClock(now, timeZone: localTimeZone, digits: digits)
+        digits.formatTime(now, in: localTimeZone)
     }
 
     /// Whether showing Local alongside Nepal Time would repeat the same reading.
@@ -146,12 +146,12 @@ final class ClockModel {
     /// reading two identical clocks learns nothing from the second one, while
     /// someone in a different zone five and a half hours out always does.
     ///
-    /// Offset-at-instant rather than `localTimeZone == nepalTimeZone` because zone
+    /// Offset-at-instant rather than `localTimeZone == TimeZone.nepal` because zone
     /// identity is the wrong test. A zone with a different identifier can share
     /// Nepal's offset, and would then be showing a genuinely duplicated reading
     /// that identity comparison would miss.
     var localTimeIsRedundant: Bool {
-        localTimeZone.secondsFromGMT(for: now) == nepalTimeZone.secondsFromGMT(for: now)
+        localTimeZone.secondsFromGMT(for: now) == TimeZone.nepal.secondsFromGMT(for: now)
     }
 
     // MARK: - The two clocks
@@ -166,7 +166,7 @@ final class ClockModel {
     }
 
     func headerTimeString(digits: DigitScript) -> String {
-        formatClock(now, timeZone: timeZone, digits: digits)
+        digits.formatTime(now, in: timeZone)
     }
 
     /// The secondary row's clock: whichever of the two the header does not show.

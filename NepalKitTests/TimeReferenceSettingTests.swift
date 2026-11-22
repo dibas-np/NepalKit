@@ -17,7 +17,7 @@ struct TimeReferenceSettingTests {
     }
 
     @Test func eachReferenceNamesItsZone() {
-        #expect(TimeReference.nepal.timeZone == nepalTimeZone)
+        #expect(TimeReference.nepal.timeZone == TimeZone.nepal)
         #expect(TimeReference.local.timeZone.identifier == TimeZone.autoupdatingCurrent.identifier)
     }
 
@@ -57,7 +57,7 @@ struct TimeReferenceSettingTests {
         let defaults = try freshDefaults()
         let model = DisplaySettingsModel(store: SettingsStore(defaults: defaults))
         #expect(model.timeReference == .nepal)
-        #expect(model.timeZone == nepalTimeZone)
+        #expect(model.timeZone == TimeZone.nepal)
 
         model.timeReferenceSelection = .local
 

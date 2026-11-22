@@ -17,8 +17,8 @@ struct ClockModelTests {
         let before = try model(at: try TestDates.utc(2026, 9, 26, 18, 14))
         let after = try model(at: try TestDates.utc(2026, 9, 26, 18, 15))
 
-        #expect(before.todayBSDate() == BSDay(year: 2083, month: 6, day: 10))
-        #expect(after.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
+        #expect(before.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 10))
+        #expect(after.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
     }
 
     @Test func gregorianAndBSStringsHonorSettings() throws {
@@ -29,11 +29,11 @@ struct ClockModelTests {
         // Through the same formatters the views use, so the test describes
         // what renders rather than a parallel path.
         let bs = try #require(clock.todayBSDate())
-        #expect(formatBS(bs, settings: latin) == "11 Ashoj 2083")
-        #expect(formatBS(bs, settings: devanagari) == "११ असोज २०८३")
+        #expect(bs.formatted(latin) == "11 Ashoj 2083")
+        #expect(bs.formatted(devanagari) == "११ असोज २०८३")
         let ad = try #require(clock.todayADDate())
-        #expect(formatAD(ad, settings: latin) == "27 September 2026")
-        #expect(formatAD(ad, settings: devanagari) == "२७ September २०२६")
+        #expect(ad.formatted(digits: latin.digits) == "27 September 2026")
+        #expect(ad.formatted(digits: devanagari.digits) == "२७ September २०२६")
     }
 
     @Test func weekdayHonorsMonthNameSetting() throws {
@@ -89,7 +89,7 @@ struct ClockModelTests {
         //
         // The two spellings are the point: they are distinct TimeZone values
         // that both resolve to +05:45, so an identity comparison against
-        // `nepalTimeZone` would miss `Asia/Katmandu` entirely.
+        // `TimeZone.nepal` would miss `Asia/Katmandu` entirely.
         let katmandu = try #require(TimeZone(identifier: "Asia/Katmandu"))
         let london = try #require(TimeZone(identifier: "Europe/London"))
         #expect(ClockModel(now: .now, localTimeZone: katmandu, refreshes: false).localTimeIsRedundant)
@@ -166,7 +166,7 @@ struct ClockModelTests {
         await task?.value
         #expect(reads == 2)
         #expect(sleeps == 2)
-        #expect(clock.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
+        #expect(clock.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
 
         // Simulate a long closed interval; reopening reads the new instant.
         instant = try TestDates.utc(2026, 9, 28, 12, 0)
@@ -174,7 +174,7 @@ struct ClockModelTests {
         await task?.value
         #expect(reads == 4)
         #expect(sleeps == 4)
-        #expect(clock.todayADDate() == GADay(year: 2026, month: 9, day: 28))
+        #expect(clock.todayADDate() == GregorianDate(year: 2026, month: 9, day: 28))
         task = nil
     }
 

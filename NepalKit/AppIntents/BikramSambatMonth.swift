@@ -6,7 +6,7 @@ import AppIntents
 ///
 /// Raw values are the dataset's month numbers, so a case converts to the
 /// dataset world with no translation step. Titles are the app's canonical
-/// transliterations (`NepalKitCore.transliteratedMonthNames`); synonyms carry
+/// transliterations (`BikramSambatDate.monthNames(style: .transliterated)`); synonyms carry
 /// the variants people actually say, plus the Devanagari spellings, which
 /// serve text matching in Shortcuts/Spotlight — spoken matching rides the
 /// Latin titles and synonyms. Every string is a build-time literal, because

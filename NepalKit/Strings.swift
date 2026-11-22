@@ -22,7 +22,7 @@ nonisolated enum Strings {
     }
     /// Honors the digit-script setting like every other number the app renders.
     static func supportedThrough(_ bsYear: Int, digits: DigitScript) -> String {
-        "Supported through \(formatNumber(bsYear, digits: digits)) BS"
+        "Supported through \(digits.format(bsYear)) BS"
     }
     /// Compact menu-bar marker for the range boundary. The popover states the
     /// boundary in words; the menu bar only has room to avoid looking broken.
@@ -128,8 +128,8 @@ nonisolated enum Strings {
         case 0: todayLabel
         case 1: tomorrowLabel
         case -1: yesterdayLabel
-        case 2...: "In \(formatNumber(days, digits: digits)) days"
-        default: "\(formatNumber(-days, digits: digits)) days ago"
+        case 2...: "In \(digits.format(days)) days"
+        default: "\(digits.format(-days)) days ago"
         }
     }
     /// The day popover's actions. Copy takes the Bikram Sambat date as shown.

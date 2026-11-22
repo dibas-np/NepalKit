@@ -25,7 +25,7 @@ struct CalendarEventTests {
         // 4 Kartik 2083: Vijaya Dashami, a Dashain public holiday.
         let event = model.calendarEvent(for: try day(model, 4), settings: latin)
         #expect(event.title.contains("Vijaya Dashami"))
-        #expect(event.date == GADay(year: 2026, month: 10, day: 21))
+        #expect(event.date == GregorianDate(year: 2026, month: 10, day: 21))
         #expect(event.notes.hasPrefix("4 Kartik 2083 · 21 October 2026"))
         #expect(event.notes.contains("Public holiday"))
     }
@@ -45,7 +45,7 @@ struct CalendarEventTests {
     }
 
     @Test func theFileIsAnAllDayEventOnTheGregorianDay() throws {
-        let event = CalendarEvent(title: "Vijaya Dashami", notes: "4 Kartik 2083", date: GADay(year: 2026, month: 10, day: 21))
+        let event = CalendarEvent(title: "Vijaya Dashami", notes: "4 Kartik 2083", date: GregorianDate(year: 2026, month: 10, day: 21))
         let stamp = try TestDates.utc(2026, 10, 11, 14, 30)
         let ics = event.ics(stamp: stamp)
         #expect(ics.hasPrefix("BEGIN:VCALENDAR\r\n"))
@@ -80,7 +80,7 @@ struct CalendarEventTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        let event = CalendarEvent(title: "t", notes: "n", date: GregorianDate(year: 2026, month: 10, day: 21))
         var opened: URL?
         #expect(event.open(in: directory) { opened = $0; return true })
         let url = try #require(opened)
@@ -89,12 +89,12 @@ struct CalendarEventTests {
     }
 
     @Test func nothingOpeningItIsAFailure() throws {
-        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        let event = CalendarEvent(title: "t", notes: "n", date: GregorianDate(year: 2026, month: 10, day: 21))
         #expect(!event.open { _ in false })
     }
 
     @Test func aFileThatCannotBeWrittenIsAFailureAndOpensNothing() {
-        let event = CalendarEvent(title: "t", notes: "n", date: GADay(year: 2026, month: 10, day: 21))
+        let event = CalendarEvent(title: "t", notes: "n", date: GregorianDate(year: 2026, month: 10, day: 21))
         var called = false
         let missing = URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")
         #expect(!event.open(in: missing) { _ in called = true; return true })
@@ -107,7 +107,7 @@ struct CalendarEventTests {
         var handed: CalendarEvent?
         var announced: [String] = []
         #expect(model.addToCalendar(dashami, settings: latin, open: { handed = $0; return true }, announce: { announced.append($0) }))
-        #expect(handed?.date == GADay(year: 2026, month: 10, day: 21))
+        #expect(handed?.date == GregorianDate(year: 2026, month: 10, day: 21))
         #expect(announced.isEmpty)
         #expect(!model.addToCalendar(dashami, settings: latin, open: { _ in false }, announce: { announced.append($0) }))
         #expect(announced == [Strings.addToCalendarFailed])

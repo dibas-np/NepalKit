@@ -55,7 +55,7 @@ public struct CalendarDataset {
             1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
             1977: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
         ],
-        anchorBS: BSDay(year: 1975, month: 1, day: 1)
+        anchorBikramSambat: BikramSambatDate(year: 1975, month: 1, day: 1)
     )
 }
 """

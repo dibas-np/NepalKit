@@ -20,10 +20,10 @@ enum DisplayPreview {
     /// of nothing. The range itself is the About tab's fact to state.
     static func todayText(
         now: Date,
-        timeZone: TimeZone = nepalTimeZone,
+        timeZone: TimeZone = .nepal,
         in dataset: CalendarDataset,
         settings: DisplaySettings
     ) -> String? {
-        todayBS(now: now, timeZone: timeZone, in: dataset).map { formatBS($0, settings: settings) }
+        BikramSambatDate.today(now: now, timeZone: timeZone, in: dataset).map { ($0).formatted(settings) }
     }
 }

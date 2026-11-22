@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import Testing
 import NepalKitCore
+import NepalKitWatchSupport
 
-/// The Watch display contract: core supplies the complete meaning of a
+/// The Watch display contract: this package supplies the complete meaning of a
 /// resolved day — components, firm state copy and independent speech — so the
 /// app and the extension cannot drift. Views compose and lay out; they never
 /// resolve dates or format numbers themselves.
@@ -15,7 +16,7 @@ struct WatchDayDisplayTests {
 
     @Test func supportedComponentsCarryTheCanonicalPresentation() throws {
         // 27 September 2026 NPT = 11 Ashoj 2083, a Sunday.
-        let day = try resolvedDay(for: GADay(year: 2026, month: 9, day: 27), in: dataset)
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported display")
@@ -32,7 +33,7 @@ struct WatchDayDisplayTests {
     }
 
     @Test func supportedSpeechIsIndependentAndComplete() throws {
-        let day = try resolvedDay(for: GADay(year: 2026, month: 9, day: 27), in: dataset)
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported display")
@@ -51,7 +52,7 @@ struct WatchDayDisplayTests {
     @Test func supportedComponentsHonorOtherFixedSettings() throws {
         // The builder takes settings rather than hard-coding the Watch's, so a
         // transliterated/Latin combination renders through the same contract.
-        let day = try resolvedDay(for: GADay(year: 2026, month: 9, day: 27), in: dataset)
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(
             for: day,
@@ -72,7 +73,7 @@ struct WatchDayDisplayTests {
     // MARK: Range boundaries
 
     @Test func beforeBoundaryNamesTheFirstSupportedYear() throws {
-        let day = try resolvedDay(for: GADay(year: 1918, month: 4, day: 12), in: dataset)
+        let day = try ResolvedDay(GregorianDate(year: 1918, month: 4, day: 12), in: dataset)
 
         guard case .rangeBoundary(let boundary) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
             Issue.record("Expected a range boundary display")
@@ -91,7 +92,7 @@ struct WatchDayDisplayTests {
     }
 
     @Test func afterBoundaryNamesTheLastSupportedYear() throws {
-        let day = try resolvedDay(for: GADay(year: 2028, month: 4, day: 13), in: dataset)
+        let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
 
         guard case .rangeBoundary(let boundary) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
             Issue.record("Expected a range boundary display")
@@ -122,7 +123,7 @@ struct WatchDayDisplayTests {
 
     @Test func calculationErrorCarriesResolvedGregorianContext() {
         let display = watchCalculationErrorDisplay(
-            gregorianDay: GADay(year: 2028, month: 4, day: 13),
+            gregorianDay: GregorianDate(year: 2028, month: 4, day: 13),
             settings: .watch
         )
 

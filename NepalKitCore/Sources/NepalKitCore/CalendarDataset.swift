@@ -1,62 +1,67 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 // Copyright (c) 2023 Ask Buddie (historical base table)
+
 /// A versioned Bikram Sambat month-length table with its conversion anchor.
 ///
-/// The historical base is askbuddie/bikram-sambat at the commit pinned in
-/// SOURCES.md, under MIT, copyright (c) 2023 Ask Buddie. Its complete notice
-/// is bundled in Resources/AskBuddie-LICENSE.txt.
+/// Bikram Sambat month lengths follow astronomical observation, not a
+/// formula, so conversion reads a table. Pass a dataset to any conversion, or
+/// rely on the default, `bundled`.
 ///
-/// NepalKit retains 14 local month-length corrections across 1989, 1993,
-/// 2004, 2082 and 2083. The 2084 row is the maintainer's own provisional
-/// development/testing projection, not official calendar attestation.
-/// SOURCES.md records every exception and its evidence limits; ADR-0014
-/// governs the current base and update policy.
-///
-/// Supported range: 1975-2084 Bikram Sambat, 1918-04-13 through 2028-04-12
-/// Gregorian. Dataset 2.0.1 updates the provisional 2084 month lengths while
-/// preserving the anchor and supported range.
+/// The bundled table's historical base is askbuddie/bikram-sambat at the
+/// commit pinned in NepalKit's SOURCES.md, under MIT, copyright (c) 2023 Ask
+/// Buddie. Its complete notice is bundled in Resources/AskBuddie-LICENSE.txt.
+/// NepalKit keeps 14 recorded month-length corrections across 1989, 1993,
+/// 2004, 2082 and 2083, and the 2084 row is a provisional projection rather
+/// than an attested calendar. SOURCES.md records every exception and its
+/// evidence.
 public struct CalendarDataset: Sendable {
-    /// Dataset version, e.g. "2.0.0" for the table narrowed to 1975-2084 BS.
+    /// The dataset's version, such as "2.0.1".
     public let version: String
 
-    /// BS year to its twelve month lengths (Baisakh through Chaitra).
+    /// Each Bikram Sambat year's twelve month lengths, Baisakh through Chaitra.
     public let years: [Int: [Int]]
 
-    /// The anchor tying the table to the Gregorian calendar:
-    /// 1 Baisakh 2082 in Bikram Sambat is 14 April 2025 in the Gregorian calendar.
-    /// (`BS`/`AD` survive only in type and function names, where the spec standardizes on them.)
-    public let anchorBS: BSDay
-    public let anchorAD: GADay
+    /// One day whose date is known in both calendars, which ties the table to
+    /// the Gregorian calendar.
+    public let anchorBikramSambat: BikramSambatDate
+    /// The Gregorian date of `anchorBikramSambat`.
+    public let anchorGregorian: GregorianDate
 
-    /// Explicitly declared supported range (ADR-0002), not derived.
+    /// The Bikram Sambat years the table converts. Declared, not derived from
+    /// `years`, and never extrapolated.
     public let supportedRange: ClosedRange<Int>
 
-    /// Supported-range years whose rows are a projection rather than an
-    /// attested Nepali Patro (SOURCES.md, ADR-0014). Every surface that names
-    /// the caveat reads it from here, so attesting a row means editing only this set.
+    /// Supported years whose rows are a projection rather than an attested
+    /// calendar.
     public let provisionalYears: Set<Int>
 
     /// Absolute day index of each supported year's first day (lookup cache).
     let yearStartIndices: [Int: Int]
 
-    public init(version: String, years: [Int: [Int]], anchorBS: BSDay, anchorAD: GADay, supportedRange: ClosedRange<Int>, provisionalYears: Set<Int> = []) {
+    /// Builds a dataset. Every year in `supportedRange` must have a
+    /// twelve-month row, or this traps: a broken table must fail loudly at
+    /// construction rather than convert wrong.
+    public init(
+        version: String,
+        years: [Int: [Int]],
+        anchorBikramSambat: BikramSambatDate,
+        anchorGregorian: GregorianDate,
+        supportedRange: ClosedRange<Int>,
+        provisionalYears: Set<Int> = []
+    ) {
         // Clipped to the range: naming an unsupported year in a caveat would
         // claim it is supported.
         self.provisionalYears = provisionalYears.filter(supportedRange.contains)
         self.version = version
         self.years = years
-        self.anchorBS = anchorBS
-        self.anchorAD = anchorAD
+        self.anchorBikramSambat = anchorBikramSambat
+        self.anchorGregorian = anchorGregorian
         self.supportedRange = supportedRange
         var starts: [Int: Int] = [:]
         var cursor = 0
         for year in supportedRange {
             starts[year] = cursor
-            // A declared range year with a missing or non-twelve-month row would
-            // either silently shift every later year's index or crash at the
-            // month lookup, corrupting conversions either way. A broken dataset
-            // must fail loudly at construction, not convert wrong.
             guard let lengths = years[year], lengths.count == 12 else {
                 preconditionFailure("CalendarDataset \(version): supported-range year \(year) does not have a twelve-month row")
             }
@@ -65,8 +70,10 @@ public struct CalendarDataset: Sendable {
         self.yearStartIndices = starts
     }
 
-    public func monthLengths(for bsYear: Int) -> [Int]? {
-        years[bsYear]
+    /// The twelve month lengths of a Bikram Sambat year, or nil if the table
+    /// has no row for it.
+    public func monthLengths(for year: Int) -> [Int]? {
+        years[year]
     }
 
     /// Whether the Bikram Sambat year's row is a provisional projection; false
@@ -75,32 +82,28 @@ public struct CalendarDataset: Sendable {
         provisionalYears.contains(year)
     }
 
-    /// The first day the table can express, as a Gregorian civil day: the
-    /// Gregorian start of `supportedRange`. Nil only if the table is broken.
-    ///
-    /// Derived, never stored, for the same reason `gregorianEnd` is: the
-    /// Watch's boundary classification and support context read the exact
-    /// bounds, so a table change moves them without a Gregorian literal to
-    /// hunt down.
-    public var gregorianStart: GADay? {
-        bsToAD(BSDay(year: supportedRange.lowerBound, month: 1, day: 1), in: self)
+    /// The Gregorian date of the first day of `supportedRange`. Nil only if
+    /// the table is broken.
+    public var gregorianStart: GregorianDate? {
+        GregorianDate(BikramSambatDate(year: supportedRange.lowerBound, month: 1, day: 1), in: self)
     }
 
-    /// The last day the table can express, as a Gregorian civil day: the
-    /// Gregorian end of `supportedRange`. Nil only if the table is broken.
-    ///
-    /// Derived, never stored: the About surface and the spoken boundary
-    /// sentence both read this, so a table change moves them without a
-    /// Gregorian literal to hunt down (ADR-0010).
-    public var gregorianEnd: GADay? {
+    /// The Gregorian date of the last day of `supportedRange`. Nil only if the
+    /// table is broken.
+    public var gregorianEnd: GregorianDate? {
         guard let months = monthLengths(for: supportedRange.upperBound),
               months.count == 12
         else { return nil }
-        return bsToAD(BSDay(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
+        return GregorianDate(BikramSambatDate(year: supportedRange.upperBound, month: 12, day: months[11]), in: self)
     }
 
-    // MIT base with explicit NepalKit corrections and a local 2084 projection.
-    // See SOURCES.md for the pinned reference, exceptions and evidence limits.
+    /// The dataset conversions use by default: currently `v2`. A later
+    /// release may point it at a newer table; pass `v2` explicitly to keep
+    /// this one.
+    public static let bundled = v2
+
+    /// Dataset 2.0.1: 1975–2084 BS, 13 April 1918 through 12 April 2028
+    /// Gregorian, with 2084 provisional.
     public static let v2 = CalendarDataset(
         version: "2.0.1",
         years: [
@@ -215,8 +218,8 @@ public struct CalendarDataset: Sendable {
             2083: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
             2084: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
         ],
-        anchorBS: BSDay(year: 2082, month: 1, day: 1),
-        anchorAD: GADay(year: 2025, month: 4, day: 14),
+        anchorBikramSambat: BikramSambatDate(year: 2082, month: 1, day: 1),
+        anchorGregorian: GregorianDate(year: 2025, month: 4, day: 14),
         supportedRange: 1975 ... 2084,
         // The maintainer's own 2084 row (SOURCES.md). Remove once the official
         // Nepali Patro attests it.

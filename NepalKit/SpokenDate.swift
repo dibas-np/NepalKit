@@ -20,13 +20,13 @@ extension SpokenDate {
     ///   that is what makes the item identifiable — and the reminder is the part
     ///   that asks the user to act.
     static func menuBar(
-        today: BSDay?,
+        today: BikramSambatDate?,
         monthNames: MonthNameStyle,
         dataset: CalendarDataset,
         updateAvailable: Bool = false
     ) -> String {
         menuBar(
-            spokenDate: today.map { bs($0, monthNames: monthNames) },
+            spokenDate: today.map { bikramSambat($0, monthNames: monthNames) },
             dataset: dataset,
             updateAvailable: updateAvailable
         )
@@ -51,8 +51,15 @@ extension SpokenDate {
             guard let end = dataset.gregorianEnd else {
                 return "\(Strings.appNameForSpeech), \(reminder)\(Strings.bsDateUnavailable)"
             }
-            return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(ad(end)))"
+            return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(gregorian(end)))"
         }
         return "\(Strings.appNameForSpeech), \(reminder)\(spokenDate)"
+    }
+
+    /// A Gregorian date with its weekday, for the popover's second line. The
+    /// weekday is optional because it is a separate lookup that can fail.
+    static func gregorianAnnouncement(date: GregorianDate, weekday: String?) -> String {
+        guard let weekday else { return gregorian(date) }
+        return "\(gregorian(date)), \(weekday)"
     }
 }

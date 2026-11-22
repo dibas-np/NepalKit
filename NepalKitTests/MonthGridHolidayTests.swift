@@ -93,7 +93,7 @@ struct MonthGridHolidayTests {
         // 18 Baisakh 2083 is three nationwide rows in the gazette.
         let model = MonthGridModel(now: try TestDates.utc(2026, 4, 15, 6, 0))
         let day = try shownDay(model, 18)
-        #expect(day.bikramSambat == BSDay(year: 2083, month: 1, day: 18))
+        #expect(day.bikramSambat == BikramSambatDate(year: 2083, month: 1, day: 18))
         #expect(model.detail(for: day, settings: latin).holidays == ["Public holiday"])
     }
 
@@ -142,29 +142,29 @@ struct MonthGridHolidayTests {
     }
 
     @Test func todaysObservancesReadBothTables() {
-        let dashainMonday = TodayObservances(BSDay(year: 2083, month: 7, day: 2), festivals: .panchanga, holidays: .gazette)
+        let dashainMonday = TodayObservances(BikramSambatDate(year: 2083, month: 7, day: 2), festivals: .panchanga, holidays: .gazette)
         // A Dashain holiday with no festival of its own is named by the gazette.
         #expect(dashainMonday.festivals.map(\.english) == ["Dashain holiday"] && dashainMonday.isPublicHoliday)
         // The gazette's name already says it is a holiday, so it is not said twice.
         #expect(!dashainMonday.saysPublicHoliday)
         #expect(dashainMonday.line(monthNames: .transliterated) == "Dashain holiday")
         #expect(dashainMonday.line(monthNames: .nepali) == "दशैं बिदा")
-        let tika = TodayObservances(BSDay(year: 2083, month: 7, day: 4), festivals: .panchanga, holidays: .gazette)
+        let tika = TodayObservances(BikramSambatDate(year: 2083, month: 7, day: 4), festivals: .panchanga, holidays: .gazette)
         #expect(tika.line(monthNames: .nepali) == "विजयादशमी, सार्वजनिक बिदा")
         // Indra Jatra is a holiday only in the valley: named, not called one.
-        let indraJatra = TodayObservances(BSDay(year: 2083, month: 6, day: 9), festivals: .panchanga, holidays: .gazette)
+        let indraJatra = TodayObservances(BikramSambatDate(year: 2083, month: 6, day: 9), festivals: .panchanga, holidays: .gazette)
         #expect(!indraJatra.isPublicHoliday)
         #expect(indraJatra.line(monthNames: .transliterated) == "Indra Jatra")
-        let workingDay = TodayObservances(BSDay(year: 2083, month: 7, day: 9), festivals: .panchanga, holidays: .gazette)
+        let workingDay = TodayObservances(BikramSambatDate(year: 2083, month: 7, day: 9), festivals: .panchanga, holidays: .gazette)
         #expect(workingDay.line(monthNames: .transliterated) == nil)
     }
 
     @Test func todaysAnnouncementSaysAPublicHoliday() {
-        let bs = BSDay(year: 2083, month: 7, day: 2)
-        let ad = GADay(year: 2026, month: 10, day: 19)
+        let bs = BikramSambatDate(year: 2083, month: 7, day: 2)
+        let ad = GregorianDate(year: 2026, month: 10, day: 19)
         #expect(SpokenDate.today(bs, gregorian: ad, weekday: "Monday", monthNames: .transliterated, isPublicHoliday: true)
             == "2 Kartik 2083. 19 October 2026, Monday. public holiday")
-        let tika = BSDay(year: 2083, month: 7, day: 4)
+        let tika = BikramSambatDate(year: 2083, month: 7, day: 4)
         let festivals = FestivalCalendar.panchanga.festivals(on: tika)
         #expect(SpokenDate.today(tika, gregorian: nil, weekday: nil, monthNames: .nepali,
                                  festivals: festivals, isPublicHoliday: true)

@@ -155,18 +155,18 @@ private struct BSPickers: View {
             year: PickerColumn(
                 label: Strings.yearLabel, minWidth: 68, values: model.bsYears,
                 selection: $model.bsYear,
-                text: { formatNumber($0, digits: settings.digits) },
+                text: { settings.digits.format($0) },
                 spoken: { SpokenDate.number($0) }),
             month: PickerColumn(
                 label: Strings.monthLabel, minWidth: 112, values: Array(1 ... 12),
                 selection: $model.bsMonth,
-                text: { monthName(month: $0, style: settings.monthNames) },
-                spoken: { monthName(month: $0, style: settings.monthNames) }),
+                text: { BikramSambatDate.monthName($0, style: settings.monthNames) },
+                spoken: { BikramSambatDate.monthName($0, style: settings.monthNames) }),
             day: PickerColumn(
                 label: Strings.dayLabel, minWidth: 68,
                 values: Array(1 ... model.daysInBSMonth(year: model.bsYear, month: model.bsMonth)),
                 selection: $model.bsDay,
-                text: { formatNumber($0, digits: settings.digits) },
+                text: { settings.digits.format($0) },
                 spoken: { SpokenDate.number($0) })
         )
     }
@@ -181,19 +181,19 @@ private struct ADPickers: View {
             year: PickerColumn(
                 label: Strings.yearLabel, minWidth: 68, values: model.adYears,
                 selection: $model.adYear,
-                text: { formatNumber($0, digits: settings.digits) },
+                text: { settings.digits.format($0) },
                 spoken: { SpokenDate.number($0) }),
             month: PickerColumn(
                 label: Strings.monthLabel, minWidth: 112,
                 values: model.adMonths(year: model.adYear),
                 selection: $model.adMonth,
-                text: { gregorianMonthName($0) },
-                spoken: { gregorianMonthName($0) }),
+                text: { GregorianDate.monthName($0) },
+                spoken: { GregorianDate.monthName($0) }),
             day: PickerColumn(
                 label: Strings.dayLabel, minWidth: 68,
                 values: model.adDays(year: model.adYear, month: model.adMonth),
                 selection: $model.adDay,
-                text: { formatNumber($0, digits: settings.digits) },
+                text: { settings.digits.format($0) },
                 spoken: { SpokenDate.number($0) })
         )
     }

@@ -25,7 +25,7 @@ struct TimeReferenceModelTests {
 
     // MARK: - Menu bar
 
-    private func menuBar(timeZone: TimeZone = nepalTimeZone) throws -> MenuBarModel {
+    private func menuBar(timeZone: TimeZone = .nepal) throws -> MenuBarModel {
         MenuBarModel(now: try Self.disagreeing(), refreshes: false, schedulesMidnightFire: false, timeZone: timeZone)
     }
 
@@ -69,9 +69,9 @@ struct TimeReferenceModelTests {
     @Test func clockReadsTodayInTheChosenZone() throws {
         let nepal = try clock(.nepal)
         let local = try clock(.local)
-        #expect(nepal.todayBSDate() == BSDay(year: 2083, month: 6, day: 11))
-        #expect(local.todayBSDate() == BSDay(year: 2083, month: 6, day: 10))
-        #expect(local.todayADDate() == GADay(year: 2026, month: 9, day: 26))
+        #expect(nepal.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
+        #expect(local.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 10))
+        #expect(local.todayADDate() == GregorianDate(year: 2026, month: 9, day: 26))
         #expect(nepal.weekdayString(style: .transliterated) == "Sunday")
         #expect(local.weekdayString(style: .transliterated) == "Saturday")
     }
@@ -107,15 +107,15 @@ struct TimeReferenceModelTests {
         model.setTimeReference(.local)
         #expect(model.timeReference == .local)
         #expect(model.headerClockLabel == "Local")
-        #expect(model.todayBSDate() == BSDay(year: 2083, month: 6, day: 10))
+        #expect(model.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 10))
     }
 
     // MARK: - Month grid and converter
 
     @Test func monthGridMarksTheChosenZonesToday() throws {
         let model = MonthGridModel(now: try Self.disagreeing(), timeZone: try Self.newYork())
-        #expect(model.today == BSDay(year: 2083, month: 6, day: 10))
-        #expect(model.todayGregorian == GADay(year: 2026, month: 9, day: 26))
+        #expect(model.today == BikramSambatDate(year: 2083, month: 6, day: 10))
+        #expect(model.todayGregorian == GregorianDate(year: 2026, month: 9, day: 26))
     }
 
     @Test func movingTheGridsZoneMovesTodayButNotTheShownMonth() throws {
@@ -128,18 +128,18 @@ struct TimeReferenceModelTests {
 
         model.setTimeZone(try Self.newYork(), now: now)
 
-        #expect(model.today == BSDay(year: 2081, month: 12, day: 31))
+        #expect(model.today == BikramSambatDate(year: 2081, month: 12, day: 31))
         #expect(model.shown == MonthGridMonth(year: 2082, month: 1))
         #expect(!model.isShowingTodayMonth)
 
         model.refreshToday(now: try TestDates.utc(2025, 4, 14, 4, 0))
-        #expect(model.today == BSDay(year: 2082, month: 1, day: 1))
+        #expect(model.today == BikramSambatDate(year: 2082, month: 1, day: 1))
     }
 
     @Test func converterStartsOnTheChosenZonesToday() throws {
         let model = ConverterModel(now: try Self.disagreeing(), timeZone: try Self.newYork())
-        #expect(model.bsDate == BSDay(year: 2083, month: 6, day: 10))
-        #expect(model.adDate == GADay(year: 2026, month: 9, day: 26))
+        #expect(model.bsDate == BikramSambatDate(year: 2083, month: 6, day: 10))
+        #expect(model.adDate == GregorianDate(year: 2026, month: 9, day: 26))
     }
 
     @Test func settingsPreviewRendersTheChosenZonesToday() throws {
@@ -150,10 +150,10 @@ struct TimeReferenceModelTests {
     // MARK: - Siri
 
     @Test func siriTodayAnswersInTheChosenZone() throws {
-        let nepal = try TodayInBikramSambatIntent.answer(now: Self.disagreeing(), in: AppData.dataset, timeZone: nepalTimeZone)
+        let nepal = try TodayInBikramSambatIntent.answer(now: Self.disagreeing(), in: AppData.dataset, timeZone: .nepal)
         let local = try TodayInBikramSambatIntent.answer(now: Self.disagreeing(), in: AppData.dataset, timeZone: Self.newYork())
-        #expect(nepal.entity.bsDay == BSDay(year: 2083, month: 6, day: 11))
-        #expect(local.entity.bsDay == BSDay(year: 2083, month: 6, day: 10))
+        #expect(nepal.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 11))
+        #expect(local.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 10))
     }
 
     @Test func siriTomorrowAndYesterdayCountFromTheChosenZonesToday() throws {
@@ -161,16 +161,16 @@ struct TimeReferenceModelTests {
         let zone = try Self.newYork()
         let tomorrow = try TomorrowInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
         let yesterday = try YesterdayInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: zone)
-        #expect(tomorrow.entity.bsDay == BSDay(year: 2083, month: 6, day: 11))
-        #expect(yesterday.entity.bsDay == BSDay(year: 2083, month: 6, day: 9))
-        let nepalTomorrow = try TomorrowInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: nepalTimeZone)
-        #expect(nepalTomorrow.entity.bsDay == BSDay(year: 2083, month: 6, day: 12))
+        #expect(tomorrow.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 11))
+        #expect(yesterday.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 9))
+        let nepalTomorrow = try TomorrowInBikramSambatIntent.answer(now: now, in: AppData.dataset, monthNames: .transliterated, timeZone: .nepal)
+        #expect(nepalTomorrow.entity.bsDay == BikramSambatDate(year: 2083, month: 6, day: 12))
     }
 
     @Test func relativeDayCountsCivilDaysAcrossDaylightSaving() throws {
         // 00:30 EDT on Sunday 1 Nov 2026, the 25-hour day the clocks go back.
         // 24 hours later is 23:30 EST, still the 1st; tomorrow is the 2nd.
         let tomorrow = RelativeDay.bsDay(offset: 1, now: try TestDates.utc(2026, 11, 1, 4, 30), timeZone: try Self.newYork(), in: AppData.dataset)
-        #expect(tomorrow.flatMap { bsToAD($0, in: AppData.dataset) } == GADay(year: 2026, month: 11, day: 2))
+        #expect(tomorrow.flatMap { GregorianDate($0, in: AppData.dataset) } == GregorianDate(year: 2026, month: 11, day: 2))
     }
 }

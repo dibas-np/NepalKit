@@ -24,8 +24,8 @@ struct MonthGridMonth: Hashable {
 /// falls on, and its weekday, which belongs to the civil day and not to either
 /// calendar (CONTEXT.md, *Weekday*).
 struct MonthGridDay: Hashable {
-    let bikramSambat: BSDay
-    let gregorian: GADay
+    let bikramSambat: BikramSambatDate
+    let gregorian: GregorianDate
     /// 1 (Sunday) through 7 (Saturday), as the core reports it.
     let weekday: Int
     /// Only ever true inside the shown month: a neighbouring month's
@@ -74,12 +74,12 @@ final class MonthGridModel {
     private(set) var shown: MonthGridMonth
 
     /// Today in `timeZone` as a Bikram Sambat date, or nil past the supported range.
-    private(set) var today: BSDay?
+    private(set) var today: BikramSambatDate?
 
     /// Today's Gregorian day, for distances from today. Kept beside `today`
     /// because it survives the range boundary, where the Bikram Sambat side
     /// does not.
-    private(set) var todayGregorian: GADay?
+    private(set) var todayGregorian: GregorianDate?
 
     /// Today is past the dataset's last day, so the grid opens on the last
     /// supported month and the view says why.
@@ -102,7 +102,7 @@ final class MonthGridModel {
     ///   - timeZone: the zone today is read in; the app passes the user's
     ///     time reference and moves it with `setTimeZone(_:now:)`.
     init(dataset: CalendarDataset = AppData.dataset, festivals: FestivalCalendar = .panchanga,
-         holidays: PublicHolidayCalendar = .gazette, now: Date = .now, timeZone: TimeZone = nepalTimeZone) {
+         holidays: PublicHolidayCalendar = .gazette, now: Date = .now, timeZone: TimeZone = .nepal) {
         self.dataset = dataset
         self.festivalCalendar = festivals
         self.holidayCalendar = holidays
@@ -171,14 +171,14 @@ final class MonthGridModel {
 
     /// One reading of today, so `init` and `refreshToday` cannot disagree.
     private struct TodayState {
-        let today: BSDay?
-        let todayAD: GADay?
+        let today: BikramSambatDate?
+        let todayAD: GregorianDate?
         let isPastRange: Bool
     }
 
     private static func todayState(now: Date, timeZone: TimeZone, in dataset: CalendarDataset) -> TodayState {
-        let today = todayBS(now: now, timeZone: timeZone, in: dataset)
-        let todayGregorian = todayAD(now: now, timeZone: timeZone)
+        let today = BikramSambatDate.today(now: now, timeZone: timeZone, in: dataset)
+        let todayGregorian = GregorianDate.today(now: now, timeZone: timeZone)
         var isPastRange = false
         if today == nil, let todayGregorian, let end = dataset.gregorianEnd {
             isPastRange = todayGregorian > end
@@ -188,7 +188,7 @@ final class MonthGridModel {
 
     /// Today's month, else the range's last month past it, else its first: a
     /// today before the range is unreachable with this dataset but must not trap.
-    private static func month(containing today: BSDay?, in dataset: CalendarDataset, pastRange: Bool) -> MonthGridMonth {
+    private static func month(containing today: BikramSambatDate?, in dataset: CalendarDataset, pastRange: Bool) -> MonthGridMonth {
         if let today { return MonthGridMonth(year: today.year, month: today.month) }
         return pastRange
             ? MonthGridMonth(year: dataset.supportedRange.upperBound, month: 12)
@@ -207,10 +207,10 @@ final class MonthGridModel {
     /// A nil cell is outside the dataset, with no Bikram Sambat date.
     var weeks: [[MonthGridDay?]] {
         let length = monthLength(shown)
-        let firstBS = BSDay(year: shown.year, month: shown.month, day: 1)
+        let firstBS = BikramSambatDate(year: shown.year, month: shown.month, day: 1)
         // Every day of a supported month converts; the dataset's own init
         // validates the table this walks.
-        guard let firstAD = bsToAD(firstBS, in: dataset), let firstWeekday = weekday(of: firstAD) else {
+        guard let firstAD = GregorianDate(firstBS, in: dataset), let firstWeekday = firstAD.weekday else {
             preconditionFailure("Supported BS day \(firstBS) did not convert")
         }
         let leading = firstWeekday - 1
@@ -221,13 +221,13 @@ final class MonthGridModel {
             // ends: 0 is the previous month's last day, length + 1 the next
             // month's first.
             let offset = index - leading + 1
-            let bs: BSDay?
+            let bs: BikramSambatDate?
             if offset < 1 {
-                bs = previous.map { BSDay(year: $0.year, month: $0.month, day: monthLength($0) + offset) }
+                bs = previous.map { BikramSambatDate(year: $0.year, month: $0.month, day: monthLength($0) + offset) }
             } else if offset > length {
-                bs = next.map { BSDay(year: $0.year, month: $0.month, day: offset - length) }
+                bs = next.map { BikramSambatDate(year: $0.year, month: $0.month, day: offset - length) }
             } else {
-                bs = BSDay(year: shown.year, month: shown.month, day: offset)
+                bs = BikramSambatDate(year: shown.year, month: shown.month, day: offset)
             }
             guard let bs, let ad = firstAD.advanced(byDays: offset - 1) else { return nil }
             let inShownMonth = (1 ... length).contains(offset)
@@ -252,7 +252,7 @@ final class MonthGridModel {
 
     /// "Baisakh 2082", honouring both display settings.
     func title(settings: DisplaySettings) -> String {
-        "\(monthName(month: shown.month, style: settings.monthNames)) \(formatNumber(shown.year, digits: settings.digits))"
+        "\(BikramSambatDate.monthName(shown.month, style: settings.monthNames)) \(settings.digits.format(shown.year))"
     }
 
     /// The Gregorian months the shown month spans: "Oct–Nov 2026", or
@@ -260,8 +260,8 @@ final class MonthGridModel {
     /// three buttons.
     func gregorianSpan(settings: DisplaySettings) -> String? {
         guard let (first, last) = gregorianBounds() else { return nil }
-        let short = { (month: Int) in String(gregorianMonthName(month).prefix(3)) }
-        let year = { (year: Int) in formatNumber(year, digits: settings.digits) }
+        let short = { (month: Int) in String(GregorianDate.monthName(month).prefix(3)) }
+        let year = { (year: Int) in settings.digits.format(year) }
         if first.year != last.year {
             return "\(short(first.month)) \(year(first.year)) – \(short(last.month)) \(year(last.year))"
         }
@@ -274,7 +274,7 @@ final class MonthGridModel {
     /// The span as spoken: full month names and Latin digits.
     func spokenGregorianSpan() -> String? {
         guard let (first, last) = gregorianBounds() else { return nil }
-        let name = gregorianMonthName
+        let name = GregorianDate.monthName
         if first.year != last.year {
             return "\(name(first.month)) \(first.year) to \(name(last.month)) \(last.year)"
         }
@@ -284,10 +284,10 @@ final class MonthGridModel {
         return "\(name(first.month)) \(first.year)"
     }
 
-    private func gregorianBounds() -> (GADay, GADay)? {
+    private func gregorianBounds() -> (GregorianDate, GregorianDate)? {
         guard let length = dataset.monthLengths(for: shown.year)?[shown.month - 1],
-              let first = bsToAD(BSDay(year: shown.year, month: shown.month, day: 1), in: dataset),
-              let last = bsToAD(BSDay(year: shown.year, month: shown.month, day: length), in: dataset)
+              let first = GregorianDate(BikramSambatDate(year: shown.year, month: shown.month, day: 1), in: dataset),
+              let last = GregorianDate(BikramSambatDate(year: shown.year, month: shown.month, day: length), in: dataset)
         else { return nil }
         return (first, last)
     }
@@ -295,7 +295,7 @@ final class MonthGridModel {
     /// The title as spoken: the month name in the user's setting, the year in
     /// Latin digits (`SpokenDate`'s rule).
     func spokenTitle(settings: DisplaySettings) -> String {
-        "\(monthName(month: shown.month, style: settings.monthNames)) \(SpokenDate.number(shown.year))"
+        "\(BikramSambatDate.monthName(shown.month, style: settings.monthNames)) \(SpokenDate.number(shown.year))"
     }
 
     /// The weekday header, Sunday first, in short forms: seven full names do
@@ -306,7 +306,7 @@ final class MonthGridModel {
 
     /// Full weekday names for the header's spoken channel.
     func spokenWeekdayHeaders(settings: DisplaySettings) -> [String] {
-        (1 ... 7).map { weekdayName(for: $0, style: settings.monthNames) ?? "" }
+        (1 ... 7).map { BikramSambatDate.weekdayName($0, style: settings.monthNames) ?? "" }
     }
 
     /// Whether header column `column` (0 is Sunday) is the weekly holiday's.
@@ -315,19 +315,19 @@ final class MonthGridModel {
     }
 
     /// The menu bar's weekday uses the same short forms, so the cut lives in
-    /// core (`shortWeekdayName(for:style:)`) rather than here.
+    /// core (`BikramSambatDate.shortWeekdayName(_:style:)`) rather than here.
     static func shortWeekdayName(_ weekday: Int, style: MonthNameStyle) -> String {
-        NepalKitCore.shortWeekdayName(for: weekday, style: style) ?? ""
+        BikramSambatDate.shortWeekdayName(weekday, style: style) ?? ""
     }
 
     /// The cell's large Bikram Sambat day number.
     func dayText(_ day: MonthGridDay, settings: DisplaySettings) -> String {
-        formatNumber(day.bikramSambat.day, digits: settings.digits)
+        settings.digits.format(day.bikramSambat.day)
     }
 
     /// The cell's small Gregorian day number.
     func gregorianDayText(_ day: MonthGridDay, settings: DisplaySettings) -> String {
-        formatNumber(day.gregorian.day, digits: settings.digits)
+        settings.digits.format(day.gregorian.day)
     }
 
     /// The cell's spoken label: both full dates and the weekday, so a cell
@@ -335,9 +335,9 @@ final class MonthGridModel {
     func spokenLabel(for day: MonthGridDay, settings: DisplaySettings) -> String {
         let parts = [
             day.isToday ? Strings.todayLabel : nil,
-            SpokenDate.bs(day.bikramSambat, monthNames: settings.monthNames),
-            weekdayName(for: day.weekday, style: settings.monthNames),
-            SpokenDate.ad(day.gregorian),
+            SpokenDate.bikramSambat(day.bikramSambat, monthNames: settings.monthNames),
+            BikramSambatDate.weekdayName(day.weekday, style: settings.monthNames),
+            SpokenDate.gregorian(day.gregorian),
         ] + day.festivals.map { SpokenDate.festival($0, monthNames: settings.monthNames) }
             + day.holidayScopes.map { Strings.publicHolidaySpoken($0, monthNames: settings.monthNames) }
         return parts.compactMap { $0 }.joined(separator: ", ")

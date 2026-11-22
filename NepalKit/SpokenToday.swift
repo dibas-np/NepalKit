@@ -9,10 +9,10 @@ extension SpokenDate {
     /// shows the Gregorian side only in the month grid, and the festival line
     /// under the hero is part of the same element.
     static func today(
-        _ bs: BSDay, gregorian: GADay?, weekday: String?, monthNames: MonthNameStyle, festivals: [Festival] = [],
+        _ bs: BikramSambatDate, gregorian: GregorianDate?, weekday: String?, monthNames: MonthNameStyle, festivals: [Festival] = [],
         isPublicHoliday: Bool = false
     ) -> String {
-        var sentences = [Self.bs(bs, monthNames: monthNames)]
+        var sentences = [Self.bikramSambat(bs, monthNames: monthNames)]
         if let gregorian { sentences.append(gregorianAnnouncement(date: gregorian, weekday: weekday)) }
         let holiday = isPublicHoliday ? [Strings.publicHolidaySpoken(.nationwide, monthNames: monthNames)] : []
         let names = festivals.map { festival($0, monthNames: monthNames) } + holiday

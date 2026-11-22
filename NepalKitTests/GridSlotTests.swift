@@ -24,7 +24,7 @@ struct GridSlotTests {
             #expect(slot.id == AnyHashable(day.gregorian))
         }
         // Kartik 2083 starts on Sunday 18 October 2026, the first week's id.
-        #expect(GridSlot.weeks(model.weeks).first?.id == AnyHashable(GADay(year: 2026, month: 10, day: 18)))
+        #expect(GridSlot.weeks(model.weeks).first?.id == AnyHashable(GregorianDate(year: 2026, month: 10, day: 18)))
     }
 
     @Test func identitiesDoNotChangeWhenTodayMoves() throws {

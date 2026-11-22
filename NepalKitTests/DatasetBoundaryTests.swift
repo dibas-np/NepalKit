@@ -11,10 +11,10 @@ import NepalKitCore
 /// keep working. These tests pin that boundary from both sides.
 @MainActor
 struct DatasetBoundaryTests {
-    private let lastSupportedAD = GADay(year: 2028, month: 4, day: 12)
-    private let firstUnsupportedAD = GADay(year: 2028, month: 4, day: 13)
+    private let lastSupportedAD = GregorianDate(year: 2028, month: 4, day: 12)
+    private let firstUnsupportedAD = GregorianDate(year: 2028, month: 4, day: 13)
 
-    private func clock(_ date: GADay) throws -> ClockModel {
+    private func clock(_ date: GregorianDate) throws -> ClockModel {
         // Midday NPT, comfortably inside the civil day.
         let zone = try #require(TimeZone(identifier: "America/New_York"))
         return ClockModel(
@@ -24,7 +24,7 @@ struct DatasetBoundaryTests {
         )
     }
 
-    private func menuBar(_ date: GADay) throws -> MenuBarModel {
+    private func menuBar(_ date: GregorianDate) throws -> MenuBarModel {
         MenuBarModel(now: try TestDates.utc(date.year, date.month, date.day, 6, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
@@ -32,7 +32,7 @@ struct DatasetBoundaryTests {
 
     @Test func lastSupportedDateStillConverts() throws {
         let model = try clock(lastSupportedAD)
-        #expect(model.todayBSDate() == BSDay(year: 2084, month: 12, day: 30))
+        #expect(model.todayBSDate() == BikramSambatDate(year: 2084, month: 12, day: 30))
     }
 
     @Test func lastSupportedDateShowsABikramSambatDate() throws {
@@ -60,7 +60,7 @@ struct DatasetBoundaryTests {
     @Test func gregorianAndClocksSurviveTheBoundary() throws {
         let model = try clock(firstUnsupportedAD)
         let ad = try #require(model.todayADDate())
-        #expect(formatAD(ad, settings: DisplaySettings(digits: .latin, monthNames: .transliterated)) == "13 April 2028")
+        #expect(ad.formatted(digits: DisplaySettings(digits: .latin, monthNames: .transliterated).digits) == "13 April 2028")
         #expect(model.nptTimeString(digits: .latin) == "11:45:00")
     }
 

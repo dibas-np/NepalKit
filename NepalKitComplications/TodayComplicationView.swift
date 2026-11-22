@@ -3,6 +3,7 @@
 import SwiftUI
 import WidgetKit
 import NepalKitCore
+import NepalKitWatchSupport
 
 /// Renders a Today entry in whichever accessory family the face slot asks
 /// for, per the accepted Day-first composition. Views render the supplied

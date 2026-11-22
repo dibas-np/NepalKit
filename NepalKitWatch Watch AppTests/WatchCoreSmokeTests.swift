@@ -3,6 +3,7 @@
 import Foundation
 import Testing
 import NepalKitCore
+import NepalKitWatchSupport
 
 /// Proves the shared compiled dataset answers inside a watchOS test runner:
 /// the same compiled table the Mac links, exercised through the Watch app's
@@ -25,13 +26,13 @@ struct WatchCoreSmokeTests {
     @Test func watchContextResolvesBikramSambatThroughTheSharedDataset() throws {
         let now = try anchoredInstant()
 
-        #expect(todayBS(now: now, in: .v2) == BSDay(year: 2083, month: 6, day: 11))
+        #expect(BikramSambatDate.today(now: now, in: .v2) == BikramSambatDate(year: 2083, month: 6, day: 11))
     }
 
     @Test func watchContextRendersTheFixedCanonicalSettings() throws {
         let now = try anchoredInstant()
 
-        #expect(todayBS(now: now, in: .v2).map { formatBS($0, settings: .watch) } == "११ असोज २०८३")
+        #expect(BikramSambatDate.today(now: now, in: .v2).map { ($0).formatted(.watch) } == "११ असोज २०८३")
     }
 
     /// 26 September 2026, 18:30 UTC — already 11 Ashoj 2083 in Nepal Time.

@@ -31,7 +31,7 @@ extension MonthGridModel {
     func daysFromToday(_ day: MonthGridDay) -> Int? {
         // Both instants are noon UTC on their civil day, so their difference is
         // an exact multiple of a day; rounding only absorbs floating point.
-        guard let todayGregorian, let from = noonUTC(for: todayGregorian), let to = noonUTC(for: day.gregorian)
+        guard let todayGregorian, let from = todayGregorian.noonUTC, let to = day.gregorian.noonUTC
         else { return nil }
         return Int((to.timeIntervalSince(from) / 86_400).rounded())
     }
@@ -39,14 +39,14 @@ extension MonthGridModel {
     /// The popover's content for a day, shown as configured and spoken with
     /// Latin digits (`SpokenDate`'s rule).
     func detail(for day: MonthGridDay, settings: DisplaySettings) -> MonthGridDayDetail {
-        let weekday = weekdayName(for: day.weekday, style: settings.monthNames)
-        let gregorian = formatAD(day.gregorian, settings: settings)
+        let weekday = BikramSambatDate.weekdayName(day.weekday, style: settings.monthNames)
+        let gregorian = day.gregorian.formatted(digits: settings.digits)
         let distance = daysFromToday(day)
         return MonthGridDayDetail(
-            bikramSambat: formatBS(day.bikramSambat, settings: settings),
+            bikramSambat: day.bikramSambat.formatted(settings),
             gregorian: weekday.map { Strings.datedWithWeekday(gregorian, $0) } ?? gregorian,
             relative: distance.map { Strings.relativeDays($0, digits: settings.digits) },
-            spokenBikramSambat: SpokenDate.bs(day.bikramSambat, monthNames: settings.monthNames),
+            spokenBikramSambat: SpokenDate.bikramSambat(day.bikramSambat, monthNames: settings.monthNames),
             spokenGregorian: SpokenDate.gregorianAnnouncement(date: day.gregorian, weekday: weekday),
             spokenRelative: distance.map { Strings.relativeDays($0, digits: .latin) },
             festivals: day.festivals.map { $0.name(style: settings.monthNames) },

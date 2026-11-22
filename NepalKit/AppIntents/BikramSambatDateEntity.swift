@@ -10,7 +10,7 @@ import NepalKitCore
 /// with the user's actual display settings, Devanagari digits included. The
 /// dialog an intent pairs with this entity stays in `SpokenDate` form.
 nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
-    private let date: BSDay
+    private let date: BikramSambatDate
     private let calendarMonth: BikramSambatMonth
     private let weekdayValue: String?
 
@@ -43,19 +43,19 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     static let defaultQuery = BikramSambatDateQuery()
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(formatBS(bsDay, settings: SettingsStore().settings))")
+        DisplayRepresentation(title: "\(bsDay.formatted(SettingsStore().settings))")
     }
 
     /// The dataset-world day this entity names.
-    var bsDay: BSDay { date }
+    var bsDay: BikramSambatDate { date }
 
     /// Validates the calendar day and supplies its weekday for every query path.
-    init?(bsDay: BSDay, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) {
+    init?(bsDay: BikramSambatDate, monthNames: MonthNameStyle = SettingsStore().settings.monthNames) {
         guard let month = BikramSambatMonth(rawValue: bsDay.month),
-              let gregorian = bsToAD(bsDay, in: AppData.dataset) else { return nil }
+              let gregorian = GregorianDate(bsDay, in: AppData.dataset) else { return nil }
         self.date = bsDay
         self.calendarMonth = month
-        self.weekdayValue = IntentAnswers.weekdayNameString(NepalKitCore.weekday(of: gregorian), monthNames: monthNames)
+        self.weekdayValue = IntentAnswers.weekdayNameString(gregorian.weekday, monthNames: monthNames)
     }
 
     /// Today's date, in the zone the user's time reference names (ADR-0017).
@@ -63,7 +63,7 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     /// speaks the boundary statement then.
     static func today() -> BikramSambatDateEntity? {
         let timeZone = SettingsStore().timeReference.timeZone
-        guard let bs = todayBS(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
+        guard let bs = BikramSambatDate.today(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
         return BikramSambatDateEntity(bsDay: bs)
     }
 
@@ -89,7 +89,7 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         // Day before year: the four-digit number is the Bikram Sambat year.
         let year = numbers.first(where: { $0 >= 1000 }) ?? numbers[1]
         let day = numbers.first(where: { $0 != year }) ?? numbers[0]
-        return BikramSambatDateEntity(bsDay: BSDay(year: year, month: month.rawValue, day: day))
+        return BikramSambatDateEntity(bsDay: BikramSambatDate(year: year, month: month.rawValue, day: day))
     }
 
     /// Exact, case-insensitive equality against titles and synonyms — never
@@ -125,6 +125,6 @@ nonisolated extension BikramSambatDateEntity {
         let parts = idString.split(separator: "-", omittingEmptySubsequences: false)
         guard parts.count == 3,
               let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]) else { return nil }
-        self.init(bsDay: BSDay(year: year, month: month, day: day))
+        self.init(bsDay: BikramSambatDate(year: year, month: month, day: day))
     }
 }

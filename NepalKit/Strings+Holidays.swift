@@ -67,13 +67,13 @@ nonisolated extension Strings {
 
     /// Under the month grid when the shown year is a provisional projection.
     static func monthGridProvisionalYear(_ year: Int, digits: DigitScript) -> String {
-        "\(formatNumber(year, digits: digits)) BS is a projection, not yet in the official Nepali Patro."
+        "\(digits.format(year)) BS is a projection, not yet in the official Nepali Patro."
     }
 
     /// "2083", "2083 and 2084", "2083, 2084 and 2085". Joined by hand, as
     /// `provisionalYearsNote` is, not with Foundation list formatting.
     private static func yearList(_ years: Set<Int>, digits: DigitScript) -> String {
-        let sorted = years.sorted().map { formatNumber($0, digits: digits) }
+        let sorted = years.sorted().map { digits.format($0) }
         guard let last = sorted.last else { return "" }
         return sorted.count == 1 ? last : "\(sorted.dropLast().joined(separator: ", ")) and \(last)"
     }

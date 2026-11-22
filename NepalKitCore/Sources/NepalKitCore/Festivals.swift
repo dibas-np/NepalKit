@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 
 /// A festival or national day on a Bikram Sambat date, as the national
-/// Panchanga prints it (ADR-0016), or, for a gazetted day the Panchanga does
+/// Panchanga prints it, or, for a gazetted day the Panchanga does
 /// not print, as the gazette names it.
 public struct Festival: Hashable, Sendable {
     public enum Kind: Hashable, Sendable {
@@ -14,7 +14,7 @@ public struct Festival: Hashable, Sendable {
         case internationalDay
     }
 
-    /// Where the entry was read: the Panchanga (ADR-0016), or the gazette
+    /// Where the entry was read: the Panchanga, or the gazette
     /// notice for a gazetted day the Panchanga does not print, so the table can
     /// be checked against either.
     public enum Source: Hashable, Sendable {
@@ -44,26 +44,27 @@ public struct Festival: Hashable, Sendable {
 }
 
 /// Festivals and national days by Bikram Sambat date, for the years whose
-/// national Panchanga has been read (ADR-0016).
+/// national Panchanga has been read. NepalKit's ADR-0016 records which
+/// entries are selected.
 public struct FestivalCalendar: Sendable {
     /// Years with festival data. A year outside this set has none yet, which
     /// is a gap, not a year without festivals.
     public let years: Set<Int>
-    let entries: [BSDay: [Festival]]
+    let entries: [BikramSambatDate: [Festival]]
 
-    public init(years: Set<Int>, entries: [BSDay: [Festival]]) {
+    public init(years: Set<Int>, entries: [BikramSambatDate: [Festival]]) {
         self.years = years
         self.entries = entries
     }
 
     /// The festivals on `day`, in the Panchanga's order; empty when there are
     /// none or the year has no data.
-    public func festivals(on day: BSDay) -> [Festival] {
+    public func festivals(on day: BikramSambatDate) -> [Festival] {
         entries[day] ?? []
     }
 
     /// Every entry, for checks that sweep the table.
-    public var allEntries: [(day: BSDay, festivals: [Festival])] {
+    public var allEntries: [(day: BikramSambatDate, festivals: [Festival])] {
         entries.map { ($0.key, $0.value) }
     }
 

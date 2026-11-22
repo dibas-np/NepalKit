@@ -73,7 +73,7 @@ final class MenuBarModel {
         refreshes: Bool = true,
         schedulesMidnightFire: Bool = true,
         store: SettingsStore? = nil,
-        timeZone: TimeZone = nepalTimeZone,
+        timeZone: TimeZone = .nepal,
         workspaceNotifications: NotificationCenter? = nil,
         systemNotifications: NotificationCenter? = nil
     ) {
@@ -118,7 +118,7 @@ final class MenuBarModel {
     /// menu-bar item and was nearly all of the app's idle work.
     func pollForMissedChange() {
         let fresh = Date.now
-        if todayAD(now: fresh, timeZone: timeZone) != todayAD(now: now, timeZone: timeZone) {
+        if GregorianDate.today(now: fresh, timeZone: timeZone) != GregorianDate.today(now: now, timeZone: timeZone) {
             now = fresh
         }
     }
@@ -178,8 +178,8 @@ final class MenuBarModel {
     /// Seconds from `date` until just after the next midnight in `timeZone`
     /// (+1s so the civil day has definitively rolled over). Internal and pure so
     /// the flip's scheduling is assertable without real timers.
-    static nonisolated func midnightFireInterval(after date: Date, in timeZone: TimeZone = nepalTimeZone) -> TimeInterval? {
-        guard let nextMidnight = nextMidnight(after: date, in: timeZone) else { return nil }
+    static nonisolated func midnightFireInterval(after date: Date, in timeZone: TimeZone = .nepal) -> TimeInterval? {
+        guard let nextMidnight = timeZone.nextMidnight(after: date) else { return nil }
         return max(1, nextMidnight.timeIntervalSince(date) + 1)
     }
 
@@ -194,7 +194,7 @@ final class MenuBarModel {
     static nonisolated func timeTickInterval(
         after date: Date,
         showsSeconds: Bool,
-        in timeZone: TimeZone = nepalTimeZone
+        in timeZone: TimeZone = .nepal
     ) -> TimeInterval {
         let period: TimeInterval = showsSeconds ? 1 : 60
         // Every zone in use, Nepal's +5:45 included, is whole minutes from UTC,

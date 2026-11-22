@@ -3,7 +3,7 @@ import Testing
 import NepalKitCore
 
 struct FormattingTests {
-    static let date = BSDay(year: 2083, month: 6, day: 11)
+    static let date = BikramSambatDate(year: 2083, month: 6, day: 11)
     static let allSettings: [DisplayFormatFixture] = [
         .init(settings: DisplaySettings(digits: .latin, monthNames: .transliterated), expected: "11 Ashoj 2083", label: "Latin + transliterated"),
         .init(settings: DisplaySettings(digits: .devanagari, monthNames: .nepali), expected: "११ असोज २०८३", label: "Devanagari + Nepali"),
@@ -14,7 +14,7 @@ struct FormattingTests {
     @Test(arguments: allSettings)
     func fullFormat(testCase: DisplayFormatFixture) {
         #expect(
-            formatBS(Self.date, settings: testCase.settings) == testCase.expected,
+            Self.date.formatted(testCase.settings) == testCase.expected,
             "\(testCase.label) should render \(testCase.expected)"
         )
     }
@@ -24,7 +24,7 @@ struct FormattingTests {
         (DisplaySettings(digits: .devanagari, monthNames: .nepali), "११ असोज"),
     ])
     func shortFormatOmitsYear(testCase: (settings: DisplaySettings, expected: String)) {
-        #expect(formatBSShort(Self.date, settings: testCase.settings) == testCase.expected)
+        #expect(Self.date.formatted(testCase.settings, includesYear: false) == testCase.expected)
     }
 
     /// One instant across two fixed zones pins the time-zone handling — the
@@ -35,9 +35,9 @@ struct FormattingTests {
         let epoch = Date(timeIntervalSince1970: 0)
         let nepal = try #require(TimeZone(secondsFromGMT: 20_700))
         let utcPlusOne = try #require(TimeZone(secondsFromGMT: 3_600))
-        #expect(formatClock(epoch, timeZone: nepal, digits: .latin) == "05:45:00")
-        #expect(formatClock(epoch, timeZone: nepal, digits: .devanagari) == "०५:४५:००")
-        #expect(formatClock(epoch, timeZone: utcPlusOne, digits: .latin) == "01:00:00")
+        #expect(DigitScript.latin.formatTime(epoch, in: nepal) == "05:45:00")
+        #expect(DigitScript.devanagari.formatTime(epoch, in: nepal) == "०५:४५:००")
+        #expect(DigitScript.latin.formatTime(epoch, in: utcPlusOne) == "01:00:00")
     }
 
     /// Switching digit script must change the glyphs, never the value. An
@@ -50,8 +50,8 @@ struct FormattingTests {
     /// here: these suites cover the public API only.
     @Test(arguments: [-1, -42, -2084, 0, 7, 2084, 999_999])
     func digitScriptPreservesValueAndLength(value: Int) {
-        let latin = formatNumber(value, digits: .latin)
-        let devanagari = formatNumber(value, digits: .devanagari)
+        let latin = DigitScript.latin.format(value)
+        let devanagari = DigitScript.devanagari.format(value)
         #expect(latin == String(value))
         #expect(devanagari.count == latin.count, "'\(latin)' and '\(devanagari)' differ in length")
         #expect(devanagari.filter(\.isNumber).count == latin.filter(\.isNumber).count)
@@ -76,9 +76,9 @@ struct FormattingTests {
         (12, "Chaitra", "December"),
     ])
     func monthBoundsAreInclusive(month: Int, expectedBS: String, expectedAD: String) {
-        #expect(monthName(month: month, style: .transliterated) == expectedBS)
-        #expect(monthName(month: month, style: .nepali) == nepaliMonthNames[month - 1])
-        #expect(gregorianMonthName(month) == expectedAD)
+        #expect(BikramSambatDate.monthName(month, style: .transliterated) == expectedBS)
+        #expect(BikramSambatDate.monthName(month, style: .nepali) == BikramSambatDate.monthNames(style: .nepali)[month - 1])
+        #expect(GregorianDate.monthName(month) == expectedAD)
     }
 
     /// The documented pass-through rule: an out-of-range month renders as its
@@ -102,8 +102,23 @@ struct FormattingTests {
         (.max, "9223372036854775807", "Int.max: one past the last month"),
     ])
     func outOfRangeMonthRendersItsNumber(month: Int, expected: String, label: String) {
-        #expect(monthName(month: month, style: .transliterated) == expected, "\(label)")
-        #expect(monthName(month: month, style: .nepali) == expected, "\(label)")
-        #expect(gregorianMonthName(month) == expected, "\(label)")
+        #expect(BikramSambatDate.monthName(month, style: .transliterated) == expected, "\(label)")
+        #expect(BikramSambatDate.monthName(month, style: .nepali) == expected, "\(label)")
+        #expect(GregorianDate.monthName(month) == expected, "\(label)")
+    }
+
+    @Test func clockTimeInAnotherZone() throws {
+        let epoch = Date(timeIntervalSince1970: 0)
+        let utcPlusOne = try #require(TimeZone(secondsFromGMT: 3_600))
+        #expect(DigitScript.latin.formatTime(epoch, in: utcPlusOne, twentyFourHour: false, showsSeconds: false) == "1:00")
+        #expect(DigitScript.latin.formatTime(epoch, in: .gmt, twentyFourHour: false) == "12:00:00")
+        #expect(DigitScript.devanagari.formatTime(epoch, in: .gmt, showsSeconds: false) == "००:००")
+    }
+
+    @Test func shortWeekdayNames() {
+        #expect((1 ... 7).map { BikramSambatDate.shortWeekdayName($0, style: .transliterated) } == ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+        #expect((1 ... 7).map { BikramSambatDate.shortWeekdayName($0, style: .nepali) } == ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"])
+        #expect(BikramSambatDate.shortWeekdayName(0, style: .transliterated) == nil)
+        #expect(BikramSambatDate.shortWeekdayName(8, style: .nepali) == nil)
     }
 }

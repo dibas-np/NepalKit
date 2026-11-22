@@ -60,7 +60,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=17
+total=18
 ran=0
 summary=""
 current=""
@@ -171,6 +171,7 @@ gate "deployment floor consistency" bash -c '
 ' _ "$repo_root"
 # Throwaway repositories and key. Runs in macos26-floor.yml, which has zsh.
 gate "package release script suite" python3 "$repo_root/scripts/test_release_core.py"
+gate "Watch support tests (NepalKitWatchSupport)" bash -c 'cd "$1" && swift test' _ "$repo_root/NepalKitWatchSupport"
 # Last, and last in the file for a reason: this is the only gate that needs a
 # watchOS simulator runtime, so a contributor on a machine without one should
 # discover that from its own line rather than have it fail three gates earlier.

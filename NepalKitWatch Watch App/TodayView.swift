@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import SwiftUI
 import NepalKitCore
+import NepalKitWatchSupport
 
 /// Today, the Watch app's sole destination: the current Bikram Sambat date
 /// and its corresponding Gregorian date for the Nepal Time day. Complication

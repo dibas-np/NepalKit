@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import NepalKitCore
+import NepalKitWatchSupport
 
 /// The Watch's read-only Today state: resolves the current Nepal Time day and
 /// keeps it current without polling or persistence.
@@ -42,7 +43,7 @@ final class TodayModel {
         now: @escaping @Sendable () -> Date = { Date.now },
         dataset: CalendarDataset = .v2,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
-        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) },
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { TimeZone.nepal.nextMidnight(after: $0) },
         displayFor: @escaping @Sendable (Date) -> WatchDayDisplay
     ) {
         self.now = now
@@ -57,7 +58,7 @@ final class TodayModel {
         now: @escaping @Sendable () -> Date = { Date.now },
         dataset: CalendarDataset = .v2,
         clockChanges: @escaping @Sendable () -> ClockChangeStream = { NotificationCenter.default.systemClockChangeStream() },
-        nextMidnight: @escaping @Sendable (Date) -> Date? = { nextNPTMidnight(after: $0) }
+        nextMidnight: @escaping @Sendable (Date) -> Date? = { TimeZone.nepal.nextMidnight(after: $0) }
     ) {
         self.init(now: now, dataset: dataset, clockChanges: clockChanges, nextMidnight: nextMidnight) { instant in
             watchDayDisplay(now: instant, settings: .watch, in: dataset)

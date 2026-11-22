@@ -29,8 +29,8 @@ struct ConversionIntentTests {
         let morning = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 0, minute: 5)))
         let night = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 23, minute: 59)))
 
-        #expect(GregorianToBikramSambatIntent.namedDay(for: morning, calendar: calendar) == GADay(year: 2025, month: 3, day: 15))
-        #expect(GregorianToBikramSambatIntent.namedDay(for: night, calendar: calendar) == GADay(year: 2025, month: 3, day: 15))
+        #expect(GregorianToBikramSambatIntent.namedDay(for: morning, calendar: calendar) == GregorianDate(year: 2025, month: 3, day: 15))
+        #expect(GregorianToBikramSambatIntent.namedDay(for: night, calendar: calendar) == GregorianDate(year: 2025, month: 3, day: 15))
     }
 
     @Test("The default named-day reader is the user's zone on the Gregorian calendar")
@@ -49,9 +49,9 @@ struct ConversionIntentTests {
         let date = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 12)))
         let named = try #require(GregorianToBikramSambatIntent.namedDay(for: date, calendar: calendar))
 
-        let converted = try #require(adToBS(named, in: dataset))
-        #expect(converted == BSDay(year: 2081, month: 12, day: 2))
-        #expect(weekday(of: named) == 7)
+        let converted = try #require(BikramSambatDate(named, in: dataset))
+        #expect(converted == BikramSambatDate(year: 2081, month: 12, day: 2))
+        #expect(named.weekday == 7)
 
         let monthNames = SettingsStore().settings.monthNames
         let intent = GregorianToBikramSambatIntent()
@@ -60,16 +60,16 @@ struct ConversionIntentTests {
         let expectedWeekday = monthNames == .nepali ? "शनि" : "Saturday"
         let expectedDialog = monthNames == .nepali ? "शनि, 2 चैत 2081." : "Saturday, 2 Chaitra 2081."
         #expect(result.value?.weekday == expectedWeekday)
-        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: weekday(of: named), in: dataset)) == expectedDialog)
+        #expect(String(localized: GregorianToBikramSambatIntent.successDialog(converted, weekday: named.weekday, in: dataset)) == expectedDialog)
     }
 
     @Test("Out of range both directions names the range and the exceeded boundary")
     func gregorianOutOfRangeBothDirections() {
-        let after = GADay(year: 2030, month: 5, day: 12)
-        let before = GADay(year: 1910, month: 1, day: 1)
+        let after = GregorianDate(year: 2030, month: 5, day: 12)
+        let before = GregorianDate(year: 1910, month: 1, day: 1)
 
-        #expect(adToBS(after, in: dataset) == nil)
-        #expect(adToBS(before, in: dataset) == nil)
+        #expect(BikramSambatDate(after, in: dataset) == nil)
+        #expect(BikramSambatDate(before, in: dataset) == nil)
 
         let afterDialog = String(localized: GregorianToBikramSambatIntent.outOfRangeDialog(after, in: dataset))
         #expect(afterDialog.contains("1975") && afterDialog.contains("2084"))
@@ -83,21 +83,21 @@ struct ConversionIntentTests {
 
     @Test("A Gregorian date naming no civil day gets the month-length statement")
     func gregorianInvalidDay() throws {
-        #expect(daysInGregorianMonth(year: 2025, month: 2) == 28)
+        #expect(GregorianDate.daysInMonth(year: 2025, month: 2) == 28)
 
-        let dialog = try #require(GregorianToBikramSambatIntent.invalidDayDialog(GADay(year: 2025, month: 2, day: 30)))
+        let dialog = try #require(GregorianToBikramSambatIntent.invalidDayDialog(GregorianDate(year: 2025, month: 2, day: 30)))
         let text = String(localized: dialog)
         #expect(text.contains("30 February 2025"))
         #expect(text.contains("28 days"))
         #expect(!text.contains("2,025"))
 
-        #expect(GregorianToBikramSambatIntent.invalidDayDialog(GADay(year: 2025, month: 3, day: 15)) == nil)
+        #expect(GregorianToBikramSambatIntent.invalidDayDialog(GregorianDate(year: 2025, month: 3, day: 15)) == nil)
     }
 
     @Test("Oracle: 15 Ashar 2082 converts to 29 June 2025 at noon in the user's zone")
     func bikramSambatToGregorianOracle() async throws {
-        let converted = try #require(bsToAD(BSDay(year: 2082, month: 3, day: 15), in: dataset))
-        #expect(converted == GADay(year: 2025, month: 6, day: 29))
+        let converted = try #require(GregorianDate(BikramSambatDate(year: 2082, month: 3, day: 15), in: dataset))
+        #expect(converted == GregorianDate(year: 2025, month: 6, day: 29))
 
         // The reverse intent's reader, so a chained conversion lands on the same day.
         let calendar = GregorianToBikramSambatIntent.userGregorian()
@@ -124,7 +124,7 @@ struct ConversionIntentTests {
         // so noon UTC is already 30 June there; Los Angeles is UTC-7 (PDT).
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: zone))
-        let converted = try #require(bsToAD(BSDay(year: 2082, month: 3, day: 15), in: dataset))
+        let converted = try #require(GregorianDate(BikramSambatDate(year: 2082, month: 3, day: 15), in: dataset))
 
         let instant = try #require(BikramSambatToGregorianIntent.noonInUserCalendar(for: converted, calendar: calendar))
 
@@ -132,23 +132,23 @@ struct ConversionIntentTests {
         #expect(parts.year == 2025 && parts.month == 6 && parts.day == 29)
         let roundTrip = try #require(GregorianToBikramSambatIntent.namedDay(for: instant, calendar: calendar))
         #expect(roundTrip == converted)
-        #expect(adToBS(roundTrip, in: dataset) == BSDay(year: 2082, month: 3, day: 15))
+        #expect(BikramSambatDate(roundTrip, in: dataset) == BikramSambatDate(year: 2082, month: 3, day: 15))
     }
 
     @Test("A Gregorian day the calendar would normalize builds no instant")
     func noonInUserCalendarRejectsAnImpossibleDay() {
-        #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GADay(year: 2025, month: 2, day: 30), calendar: Self.utcCalendar()) == nil)
+        #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GregorianDate(year: 2025, month: 2, day: 30), calendar: Self.utcCalendar()) == nil)
     }
 
     @Test("Round trip through the entity returns the starting civil day")
     func roundTripThroughEntity() throws {
-        let bs = BSDay(year: 2082, month: 3, day: 15)
+        let bs = BikramSambatDate(year: 2082, month: 3, day: 15)
         let entity = try #require(BikramSambatDateEntity(bsDay: bs))
         #expect(entity.month == .ashar)
 
-        let ad = try #require(bsToAD(BSDay(year: entity.year, month: entity.month.rawValue, day: entity.day), in: dataset))
-        #expect(ad == GADay(year: 2025, month: 6, day: 29))
-        #expect(adToBS(ad, in: dataset) == bs)
+        let ad = try #require(GregorianDate(BikramSambatDate(year: entity.year, month: entity.month.rawValue, day: entity.day), in: dataset))
+        #expect(ad == GregorianDate(year: 2025, month: 6, day: 29))
+        #expect(BikramSambatDate(ad, in: dataset) == bs)
     }
 
     @Test("Invalid Bikram Sambat day names the month's real length")
@@ -229,10 +229,10 @@ struct ConversionIntentTests {
     // dataset's provisional row.
     @Test("Gregorian to Bikram Sambat into 2084 adds the provisional clause; 2083 does not")
     func gregorianToBikramSambatProvisionalClause() {
-        let provisional = String(localized: GregorianToBikramSambatIntent.successDialog(BSDay(year: 2084, month: 5, day: 22), weekday: 4, in: dataset))
+        let provisional = String(localized: GregorianToBikramSambatIntent.successDialog(BikramSambatDate(year: 2084, month: 5, day: 22), weekday: 4, in: dataset))
         // The month name follows the user's month-name setting, so only the year is pinned.
         #expect(provisional.hasSuffix(" 2084. That year is a provisional projection, not yet in the official Nepali Patro."))
-        let attested = String(localized: GregorianToBikramSambatIntent.successDialog(BSDay(year: 2083, month: 6, day: 11), weekday: 1, in: dataset))
+        let attested = String(localized: GregorianToBikramSambatIntent.successDialog(BikramSambatDate(year: 2083, month: 6, day: 11), weekday: 1, in: dataset))
         #expect(!attested.contains("provisional"))
     }
 
@@ -244,9 +244,9 @@ struct ConversionIntentTests {
         intent.year = 2084
         _ = try await intent.perform()
         #expect(dataset.isProvisional(2084))
-        let provisional = String(localized: BikramSambatToGregorianIntent.successDialog(GADay(year: 2027, month: 9, day: 8), fromProvisionalYear: dataset.isProvisional(2084)))
+        let provisional = String(localized: BikramSambatToGregorianIntent.successDialog(GregorianDate(year: 2027, month: 9, day: 8), fromProvisionalYear: dataset.isProvisional(2084)))
         #expect(provisional.hasSuffix("8 September 2027. That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."))
-        let attested = String(localized: BikramSambatToGregorianIntent.successDialog(GADay(year: 2025, month: 6, day: 29), fromProvisionalYear: dataset.isProvisional(2082)))
+        let attested = String(localized: BikramSambatToGregorianIntent.successDialog(GregorianDate(year: 2025, month: 6, day: 29), fromProvisionalYear: dataset.isProvisional(2082)))
         #expect(!attested.contains("provisional"))
     }
 
@@ -260,7 +260,7 @@ struct ConversionIntentTests {
             _ = try await intent.perform()
             Issue.record("12 May 2030 should throw: past the supported range")
         } catch {
-            let expected = GregorianToBikramSambatIntent.outOfRangeDialog(GADay(year: 2030, month: 5, day: 12), in: dataset)
+            let expected = GregorianToBikramSambatIntent.outOfRangeDialog(GregorianDate(year: 2030, month: 5, day: 12), in: dataset)
             #expect(Self.dialog(of: error) == String(localized: expected))
         }
     }

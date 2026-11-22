@@ -21,13 +21,13 @@ final class ConverterModel {
     /// Picker state bundled as dates: one value travels together instead of
     /// six ints. The `*Year/*Month/*Day` accessors below exist for the
     /// pickers, tests, and bindings.
-    private(set) var bsDate: BSDay
-    private(set) var adDate: GADay
+    private(set) var bsDate: BikramSambatDate
+    private(set) var adDate: GregorianDate
 
     var bsYear: Int {
         get { bsDate.year }
         set {
-            bsDate = BSDay(year: newValue, month: bsDate.month, day: bsDate.day)
+            bsDate = BikramSambatDate(year: newValue, month: bsDate.month, day: bsDate.day)
             clampBSDay()
         }
     }
@@ -35,7 +35,7 @@ final class ConverterModel {
     var bsMonth: Int {
         get { bsDate.month }
         set {
-            bsDate = BSDay(year: bsDate.year, month: newValue, day: bsDate.day)
+            bsDate = BikramSambatDate(year: bsDate.year, month: newValue, day: bsDate.day)
             clampBSDay()
         }
     }
@@ -43,7 +43,7 @@ final class ConverterModel {
     var bsDay: Int {
         get { bsDate.day }
         set {
-            bsDate = BSDay(year: bsDate.year, month: bsDate.month, day: newValue)
+            bsDate = BikramSambatDate(year: bsDate.year, month: bsDate.month, day: newValue)
             clampBSDay()
         }
     }
@@ -51,7 +51,7 @@ final class ConverterModel {
     var adYear: Int {
         get { adDate.year }
         set {
-            adDate = GADay(year: newValue, month: adDate.month, day: adDate.day)
+            adDate = GregorianDate(year: newValue, month: adDate.month, day: adDate.day)
             clampADDate()
         }
     }
@@ -59,7 +59,7 @@ final class ConverterModel {
     var adMonth: Int {
         get { adDate.month }
         set {
-            adDate = GADay(year: adDate.year, month: newValue, day: adDate.day)
+            adDate = GregorianDate(year: adDate.year, month: newValue, day: adDate.day)
             clampADDate()
         }
     }
@@ -67,7 +67,7 @@ final class ConverterModel {
     var adDay: Int {
         get { adDate.day }
         set {
-            adDate = GADay(year: adDate.year, month: adDate.month, day: newValue)
+            adDate = GregorianDate(year: adDate.year, month: adDate.month, day: newValue)
             clampADDate()
         }
     }
@@ -85,23 +85,23 @@ final class ConverterModel {
         adYear: Int? = nil, adMonth: Int? = nil, adDay: Int? = nil,
         dataset: CalendarDataset = AppData.dataset,
         now: Date = .now,
-        timeZone: TimeZone = nepalTimeZone
+        timeZone: TimeZone = .nepal
     ) {
         self.dataset = dataset
         self.direction = direction
-        let todayADDate = todayAD(now: now, timeZone: timeZone) ?? dataset.anchorAD
+        let todayADDate = GregorianDate.today(now: now, timeZone: timeZone) ?? dataset.anchorGregorian
         // Both pickers default to today clamped into the convertible span, so
         // past the supported range the Bikram Sambat side opens on its last day,
-        // not its first. Inside the span this equals `todayBS(now:timeZone:in:)`.
-        let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { adToBS($0, in: dataset) }
-        self.bsDate = BSDay(
+        // not its first. Inside the span this equals `BikramSambatDate.today(now:timeZone:in:)`.
+        let defaultBSDate = Self.convertibleDay(nearest: todayADDate, in: dataset).flatMap { BikramSambatDate($0, in: dataset) }
+        self.bsDate = BikramSambatDate(
             year: bsYear ?? defaultBSDate?.year ?? dataset.supportedRange.lowerBound,
             month: bsMonth ?? defaultBSDate?.month ?? 1,
             day: bsDay ?? defaultBSDate?.day ?? 1
         )
-        // todayAD cannot fail for a real instant; if it ever did, the dataset's
+        // GregorianDate.today cannot fail for a real instant; if it ever did, the dataset's
         // anchor day is an in-range fallback rather than an invented year.
-        self.adDate = GADay(
+        self.adDate = GregorianDate(
             year: adYear ?? todayADDate.year,
             month: adMonth ?? todayADDate.month,
             day: adDay ?? todayADDate.day
@@ -113,16 +113,16 @@ final class ConverterModel {
     /// The convertible Gregorian day closest to `day`: `day` itself inside the
     /// supported range, else the range's first or last day. Nil only if the
     /// dataset cannot convert its own first day.
-    private static func convertibleDay(nearest day: GADay, in dataset: CalendarDataset) -> GADay? {
+    private static func convertibleDay(nearest day: GregorianDate, in dataset: CalendarDataset) -> GregorianDate? {
         guard let first = dataset.gregorianStart, let last = dataset.gregorianEnd else { return nil }
         return min(max(day, first), last)
     }
 
     var bsYears: [Int] { Array(dataset.supportedRange) }
 
-    var minAD: GADay? { dataset.gregorianStart }
+    var minAD: GregorianDate? { dataset.gregorianStart }
 
-    var maxAD: GADay? {
+    var maxAD: GregorianDate? {
         dataset.gregorianEnd
     }
 
@@ -161,10 +161,10 @@ final class ConverterModel {
         // The core's calendar is the one the conversion math uses, so the
         // picker bounds and the conversion agree on what a civil day is.
         // Same contract as `daysInBSMonth`: clamped picker state in, no
-        // invented day counts. `daysInGregorianMonth` yields nil only for a
+        // invented day counts. `GregorianDate.daysInMonth` yields nil only for a
         // month outside 1...12, which the precondition excludes.
         precondition((1 ... 12).contains(month), "AD month \(month) is outside 1...12")
-        guard let days = daysInGregorianMonth(year: year, month: month) else {
+        guard let days = GregorianDate.daysInMonth(year: year, month: month) else {
             preconditionFailure("Gregorian month \(month) has no day count for year \(year)")
         }
         return days
@@ -191,7 +191,7 @@ final class ConverterModel {
         let clampedMonth = min(max(bsDate.month, 1), 12)
         let maxDay = daysInBSMonth(year: clampedYear, month: clampedMonth)
         let clampedDay = min(max(bsDate.day, 1), maxDay)
-        let clamped = BSDay(year: clampedYear, month: clampedMonth, day: clampedDay)
+        let clamped = BikramSambatDate(year: clampedYear, month: clampedMonth, day: clampedDay)
         if clamped != bsDate {
             bsDate = clamped
         }
@@ -206,7 +206,7 @@ final class ConverterModel {
         // Real calendar bounds first.
         let monthInYear = min(max(date.month, 1), 12)
         let maxDayInMonth = daysInADMonth(year: date.year, month: monthInYear)
-        date = GADay(year: date.year, month: monthInYear, day: min(max(date.day, 1), maxDayInMonth))
+        date = GregorianDate(year: date.year, month: monthInYear, day: min(max(date.day, 1), maxDayInMonth))
         // Convertible span.
         if date < minAD {
             date = minAD
@@ -217,7 +217,7 @@ final class ConverterModel {
         if !adMonths(year: date.year).contains(date.month) {
             let fallback = adMonths(year: date.year).first ?? date.month
             let maxDay = daysInADMonth(year: date.year, month: fallback)
-            date = GADay(year: date.year, month: fallback, day: min(max(date.day, 1), maxDay))
+            date = GregorianDate(year: date.year, month: fallback, day: min(max(date.day, 1), maxDay))
         }
         var day = min(max(date.day, 1), daysInADMonth(year: date.year, month: date.month))
         if date.year == minAD.year, date.month == minAD.month {
@@ -226,7 +226,7 @@ final class ConverterModel {
         if date.year == maxAD.year, date.month == maxAD.month {
             day = min(day, maxAD.day)
         }
-        let clamped = GADay(year: date.year, month: date.month, day: day)
+        let clamped = GregorianDate(year: date.year, month: date.month, day: day)
         if clamped != adDate {
             adDate = clamped
         }
@@ -243,11 +243,11 @@ final class ConverterModel {
     func toggleDirection() {
         switch direction {
         case .bsToAD:
-            if let ad = bsToAD(bsDate, in: dataset) {
+            if let ad = GregorianDate(bsDate, in: dataset) {
                 adDate = ad
             }
         case .adToBS:
-            if let bs = adToBS(adDate, in: dataset) {
+            if let bs = BikramSambatDate(adDate, in: dataset) {
                 bsDate = bs
             }
         }
@@ -263,9 +263,9 @@ final class ConverterModel {
     }
 
     /// Weekday name for the given Bikram Sambat date, or nil outside the table.
-    private func weekdayText(for bs: BSDay, style: MonthNameStyle) -> String? {
-        guard let day = weekday(of: bs, in: dataset),
-              let name = weekdayName(for: day, style: style)
+    private func weekdayText(for bs: BikramSambatDate, style: MonthNameStyle) -> String? {
+        guard let day = bs.weekday(in: dataset),
+              let name = BikramSambatDate.weekdayName(day, style: style)
         else { return nil }
         return name
     }
@@ -277,20 +277,20 @@ final class ConverterModel {
     private func converted(settings: DisplaySettings) -> (shown: String, spoken: String)? {
         switch direction {
         case .bsToAD:
-            guard let ad = bsToAD(bsDate, in: dataset),
+            guard let ad = GregorianDate(bsDate, in: dataset),
                   let weekday = weekdayText(for: bsDate, style: settings.monthNames)
             else { return nil }
             return (
-                Strings.datedWithWeekday(formatAD(ad, settings: settings), weekday),
-                "\(SpokenDate.ad(ad)), \(weekday)"
+                Strings.datedWithWeekday(ad.formatted(digits: settings.digits), weekday),
+                "\(SpokenDate.gregorian(ad)), \(weekday)"
             )
         case .adToBS:
-            guard let bs = adToBS(adDate, in: dataset),
+            guard let bs = BikramSambatDate(adDate, in: dataset),
                   let weekday = weekdayText(for: bs, style: settings.monthNames)
             else { return nil }
             return (
-                Strings.datedWithWeekday(formatBS(bs, settings: settings), weekday),
-                "\(SpokenDate.bs(bs, monthNames: settings.monthNames)), \(weekday)"
+                Strings.datedWithWeekday(bs.formatted(settings), weekday),
+                "\(SpokenDate.bikramSambat(bs, monthNames: settings.monthNames)), \(weekday)"
             )
         }
     }
@@ -303,7 +303,7 @@ final class ConverterModel {
         case .bsToAD:
             dataset.isProvisional(bsDate.year)
         case .adToBS:
-            adToBS(adDate, in: dataset).map { dataset.isProvisional($0.year) } ?? false
+            BikramSambatDate(adDate, in: dataset).map { dataset.isProvisional($0.year) } ?? false
         }
     }
 

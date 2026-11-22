@@ -96,13 +96,13 @@ struct DisplaySettingsModelTests {
             DisplaySettings(digits: .latin, monthNames: .transliterated),
             DisplaySettings(digits: .devanagari, monthNames: .nepali),
         ] {
-            guard let today = todayBS(now: now, in: .v2) else {
+            guard let today = BikramSambatDate.today(now: now, in: .v2) else {
                 Issue.record("no date")
                 return
             }
             // The menu bar drops the year; the popover keeps it. Same date either way.
-            #expect(bar.title(settings: settings) == formatBSShort(today, settings: settings))
-            #expect(formatBS(today, settings: settings).hasPrefix(bar.title(settings: settings)))
+            #expect(bar.title(settings: settings) == today.formatted(settings, includesYear: false))
+            #expect(today.formatted(settings).hasPrefix(bar.title(settings: settings)))
         }
     }
 

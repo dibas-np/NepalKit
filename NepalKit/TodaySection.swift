@@ -12,7 +12,7 @@ struct TodayObservances {
     /// ("Dashain holiday") is the only one, which already says it.
     let saysPublicHoliday: Bool
 
-    init(_ day: BSDay, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
+    init(_ day: BikramSambatDate, festivals: FestivalCalendar, holidays: PublicHolidayCalendar) {
         self.festivals = holidays.observances(on: day, festivals: festivals)
         self.isPublicHoliday = holidays.isNationwideHoliday(day)
         let namedOnlyByGazette = festivals.festivals(on: day).isEmpty && !self.festivals.isEmpty
@@ -57,7 +57,7 @@ struct TodaySection: View {
                 let observances = TodayObservances(todayBS, festivals: festivals, holidays: holidays)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(formatBS(todayBS, settings: settings))
+                        Text(todayBS.formatted(settings))
                             .font(.largeTitle.bold())
                         if let weekday = clock.weekdayString(style: settings.monthNames) {
                             Text("\(Strings.weekdaySeparator) \(weekday)")
@@ -104,7 +104,7 @@ struct TodaySection: View {
                 // Announced as one sentence, with Latin digits and the weekday.
                 let weekday = clock.weekdayString(style: settings.monthNames)
                 HStack(spacing: 4) {
-                    Text(formatAD(todayAD, settings: settings))
+                    Text(todayAD.formatted(digits: settings.digits))
                     if let weekday {
                         Text("\(Strings.weekdaySeparator) \(weekday)")
                     }
@@ -121,7 +121,7 @@ struct TodaySection: View {
 }
 
 extension TodaySection {
-    fileprivate func heroAnnouncement(_ todayBS: BSDay, observances: TodayObservances) -> String {
+    fileprivate func heroAnnouncement(_ todayBS: BikramSambatDate, observances: TodayObservances) -> String {
         SpokenDate.today(
             todayBS, gregorian: clock.todayADDate(),
             weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames,

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import NepalKitCore
+import NepalKitWatchSupport
 import WidgetKit
 
 /// The Today complication's provider: a thin adapter that completes each
@@ -12,7 +13,7 @@ struct TodayComplicationProvider: TimelineProvider {
     /// The fixed preview sample day. Its displayed values are generated
     /// through core at render time, so nothing here hand-maintains a paired
     /// date: a dataset change moves the preview with it.
-    static let previewSampleDay = GADay(year: 2026, month: 9, day: 27)
+    static let previewSampleDay = GregorianDate(year: 2026, month: 9, day: 27)
 
     private let now: @Sendable () -> Date
     private let dataset: CalendarDataset
@@ -24,8 +25,8 @@ struct TodayComplicationProvider: TimelineProvider {
         self.makeBuilder = {
             TodayTimelineBuilder(
                 dataset: dataset,
-                resolveDay: { try resolvedDay(for: $0, in: dataset) },
-                nextMidnight: { nextNPTMidnight(after: $0) }
+                resolveDay: { try ResolvedDay($0, in: dataset) },
+                nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
             )
         }
     }
@@ -87,11 +88,11 @@ struct TodayComplicationProvider: TimelineProvider {
 
     private var previewEntry: TodayComplicationEntry {
         let state: TodayComplicationState
-        if let day = try? resolvedDay(for: Self.previewSampleDay, in: dataset) {
+        if let day = try? ResolvedDay(Self.previewSampleDay, in: dataset) {
             state = .day(watchDayDisplay(for: day, settings: .watch, in: dataset))
         } else {
             state = .day(watchCalculationErrorDisplay(gregorianDay: Self.previewSampleDay, settings: .watch))
         }
-        return TodayComplicationEntry(date: noonUTC(for: Self.previewSampleDay) ?? .distantPast, state: state)
+        return TodayComplicationEntry(date: Self.previewSampleDay.noonUTC ?? .distantPast, state: state)
     }
 }

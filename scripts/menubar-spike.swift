@@ -2,7 +2,7 @@
 // Rendering spike: verify every possible menu-bar title renders
 // with full glyph coverage (no tofu) in the menu-bar font, and report the
 // widest string so truncation risk in the status bar can be judged.
-// Runs against the real NepalKitCore formatting seam (formatBSShort).
+// Runs against the real NepalKitCore formatting seam (`formatted(_:includesYear:)`).
 // Usage (repo root): swift build --package-path NepalKitCore && \
 //   swift -I NepalKitCore/.build/out/Products/Debug \
 //         -L NepalKitCore/.build/out/Products/Debug -lNepalKitCore \
@@ -25,10 +25,10 @@ for year in CalendarDataset.v2.supportedRange {
     guard let lengths = CalendarDataset.v2.monthLengths(for: year) else { continue }
     for month in 1 ... 12 {
         for day in 1 ... lengths[month - 1] {
-            let bs = BSDay(year: year, month: month, day: day)
+            let bs = BikramSambatDate(year: year, month: month, day: day)
             for digits in [DigitScript.latin, DigitScript.devanagari] as [DigitScript] {
                 for style in [MonthNameStyle.transliterated, MonthNameStyle.nepali] as [MonthNameStyle] {
-                    titles.insert(formatBSShort(bs, settings: DisplaySettings(digits: digits, monthNames: style)))
+                    titles.insert(bs.formatted(DisplaySettings(digits: digits, monthNames: style), includesYear: false))
                 }
             }
         }

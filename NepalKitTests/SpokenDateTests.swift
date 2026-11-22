@@ -18,8 +18,8 @@ import Testing
 /// rendering property; asserting it here would test nothing. The platform side
 /// is checked by walking the real accessibility tree of the running app.
 struct SpokenDateTests {
-    private let ashoj11 = BSDay(year: 2083, month: 6, day: 11)
-    private let adSeptember27 = GADay(year: 2026, month: 9, day: 27)
+    private let ashoj11 = BikramSambatDate(year: 2083, month: 6, day: 11)
+    private let adSeptember27 = GregorianDate(year: 2026, month: 9, day: 27)
 
     @Test func menuBarNamesTheAppSoItIsIdentifiableOutOfContext() {
         // The only surface a blind user meets before opening anything. A bare
@@ -149,7 +149,7 @@ struct SpokenOptionLabelTests {
 
         for style in [MonthNameStyle.nepali, .transliterated] {
             for month in 1 ... 12 {
-                let name = monthName(month: month, style: style)
+                let name = BikramSambatDate.monthName(month, style: style)
                 if name.contains(where: { forbidden.contains($0) }) {
                     offenders.append("month name \(name)")
                 }
@@ -157,15 +157,15 @@ struct SpokenOptionLabelTests {
         }
 
         for month in 1 ... 12 {
-            let gregorian = gregorianMonthName(month)
+            let gregorian = GregorianDate.monthName(month)
             if gregorian.contains(where: { forbidden.contains($0) }) {
                 offenders.append("gregorian month \(gregorian)")
             }
         }
 
-        let date = GADay(year: 2026, month: 9, day: 27)
+        let date = GregorianDate(year: 2026, month: 9, day: 27)
         for style in [MonthNameStyle.nepali, .transliterated] {
-            let spoken = SpokenDate.gregorianAnnouncement(date: date, weekday: weekdayName(for: weekday(of: date) ?? 1, style: style))
+            let spoken = SpokenDate.gregorianAnnouncement(date: date, weekday: BikramSambatDate.weekdayName(date.weekday ?? 1, style: style))
             if spoken.contains(where: { forbidden.contains($0) }) {
                 offenders.append("gregorian announcement \(spoken)")
             }
@@ -177,10 +177,10 @@ struct SpokenOptionLabelTests {
 
         // The boundary strings, including the menu-bar variants, which are the
         // ones a user past the range hears instead of a date.
-        let bs = BSDay(year: 2083, month: 6, day: 11)
+        let bs = BikramSambatDate(year: 2083, month: 6, day: 11)
         for style in [MonthNameStyle.nepali, .transliterated] {
             for spoken in [
-                SpokenDate.bs(bs, monthNames: style),
+                SpokenDate.bikramSambat(bs, monthNames: style),
                 SpokenDate.menuBar(today: bs, monthNames: style, dataset: .v2),
                 SpokenDate.menuBar(today: nil, monthNames: style, dataset: .v2),
             ] where spoken.contains(where: { forbidden.contains($0) }) {
@@ -358,5 +358,12 @@ struct SpokenOptionLabelTests {
         let spoken = Strings.supportedRangeSpoken(1975 ... 2084)
         #expect(!spoken.contains("\u{2013}"), "en dash survives in the spoken range: \(spoken)")
         #expect(spoken == "1975 to 2084 BS")
+    }
+
+    @Test func gregorianAnnouncementFoldsInTheWeekdayWhenThereIsOne() {
+        let date = GregorianDate(year: 2026, month: 9, day: 27)
+
+        #expect(SpokenDate.gregorianAnnouncement(date: date, weekday: "Sunday") == "27 September 2026, Sunday")
+        #expect(SpokenDate.gregorianAnnouncement(date: date, weekday: nil) == "27 September 2026")
     }
 }

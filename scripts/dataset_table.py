@@ -25,11 +25,10 @@ def shipped_table(dataset_path=DATASET):
     nothing reports success having checked nothing.
     """
     text = pathlib.Path(dataset_path).read_text(encoding="utf-8")
-    # Anchor on the indented literal: the bare form also matches the `public let
-    # years` declaration further up the file, and the slice would then depend on
-    # nothing before the data block containing an indented `],` by luck.
+    # Anchor on the literal's own line: `years: [` alone also matches the
+    # declaration and the init's parameter further up the file.
     try:
-        block = text[text.index("\n        years: ["):]
+        block = text[text.index("\n        years: [\n"):]
         block = block[:block.index("\n        ],")]
     except ValueError:
         sys.exit("no years block found in %s — the format changed?" % dataset_path)

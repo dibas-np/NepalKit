@@ -40,17 +40,17 @@ struct WatchFixtureControlTests {
         // sides of the dataset's exact bounds.
         let dataset = CalendarDataset.v2
         let beforeInstant = try #require(before.instant)
-        let beforeDay = try resolvedDay(now: beforeInstant, in: dataset)
+        let beforeDay = try ResolvedDay(now: beforeInstant, in: dataset)
         #expect(beforeDay.bikramSambat == .beforeSupportedRange)
 
         let afterInstant = try #require(after.instant)
-        let afterDay = try resolvedDay(now: afterInstant, in: dataset)
+        let afterDay = try ResolvedDay(now: afterInstant, in: dataset)
         #expect(afterDay.bikramSambat == .afterSupportedRange)
 
         // The terminal scenario's day +13 is the dataset maximum, which the
         // timeline contract answers with the conditional fifteenth entry.
         let terminalInstant = try #require(terminal.instant)
-        let terminalToday = try #require(todayAD(now: terminalInstant))
+        let terminalToday = try #require(GregorianDate.today(now: terminalInstant))
         #expect(terminalToday.advanced(byDays: 13) == dataset.gregorianEnd)
     }
 

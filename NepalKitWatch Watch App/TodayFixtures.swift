@@ -3,6 +3,7 @@
 #if NEPALKIT_WATCH_FIXTURES
 import Foundation
 import NepalKitCore
+import NepalKitWatchSupport
 
 /// Development-only fixture wiring for the Today screen. Compiled only under
 /// `NEPALKIT_WATCH_FIXTURES`; a nondevelopment build contains none of it, so
@@ -40,7 +41,7 @@ enum TodayFixtures {
         if fixture.failActivation {
             nextMidnight = { _ in nil }
         } else {
-            nextMidnight = { nextNPTMidnight(after: $0) }
+            nextMidnight = { TimeZone.nepal.nextMidnight(after: $0) }
         }
         return TodayModel(
             now: WatchFixtureControl.clock(for: fixture),
@@ -51,7 +52,7 @@ enum TodayFixtures {
                     // The failure keeps the day the instant resolved as
                     // context, exactly as a production resolution failure
                     // would.
-                    return watchCalculationErrorDisplay(gregorianDay: todayAD(now: instant), settings: .watch)
+                    return watchCalculationErrorDisplay(gregorianDay: GregorianDate.today(now: instant), settings: .watch)
                 case (_, true):
                     return watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)
                 default:

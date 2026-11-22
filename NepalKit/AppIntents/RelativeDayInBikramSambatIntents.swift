@@ -18,9 +18,9 @@ nonisolated enum RelativeDay {
         let isProvisional: Bool
     }
 
-    static func bsDay(offset: Int, now: Date, timeZone: TimeZone = nepalTimeZone, in dataset: CalendarDataset) -> BSDay? {
-        guard let target = todayAD(now: now, timeZone: timeZone)?.advanced(byDays: offset) else { return nil }
-        return adToBS(target, in: dataset)
+    static func bsDay(offset: Int, now: Date, timeZone: TimeZone = .nepal, in dataset: CalendarDataset) -> BikramSambatDate? {
+        guard let target = GregorianDate.today(now: now, timeZone: timeZone)?.advanced(byDays: offset) else { return nil }
+        return BikramSambatDate(target, in: dataset)
     }
 
     /// The day's answer, or the range-boundary error Today uses once the day
@@ -38,7 +38,7 @@ nonisolated enum RelativeDay {
         guard let entity = BikramSambatDateEntity(bsDay: bs, monthNames: monthNames) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
-        let prefix = IntentAnswers.weekdayPrefix(weekday(of: bs, in: dataset), monthNames: monthNames)
+        let prefix = IntentAnswers.weekdayPrefix(bs.weekday(in: dataset), monthNames: monthNames)
         return Answer(
             entity: entity,
             spoken: prefix + IntentAnswers.spoken(bs, monthNames: monthNames),

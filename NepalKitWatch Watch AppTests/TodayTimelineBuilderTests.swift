@@ -29,8 +29,8 @@ struct TodayTimelineBuilderTests {
     private var builder: TodayTimelineBuilder {
         TodayTimelineBuilder(
             dataset: dataset,
-            resolveDay: { try resolvedDay(for: $0, in: self.dataset) },
-            nextMidnight: { nextNPTMidnight(after: $0) }
+            resolveDay: { try ResolvedDay($0, in: self.dataset) },
+            nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
         )
     }
 
@@ -180,8 +180,8 @@ struct TodayTimelineBuilderTests {
         let calls = CallCounter()
         let failing = TodayTimelineBuilder(
             dataset: dataset,
-            resolveDay: { _ in calls.increment(); throw DayResolutionError.datasetAssumptionFailure(GADay(year: 2026, month: 9, day: 27)) },
-            nextMidnight: { nextNPTMidnight(after: $0) }
+            resolveDay: { _ in calls.increment(); throw DayResolutionError.datasetAssumptionFailure(GregorianDate(year: 2026, month: 9, day: 27)) },
+            nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
         )
 
         let built = failing.build(now: now)
@@ -201,7 +201,7 @@ struct TodayTimelineBuilderTests {
 
     @Test func intermediateFailureRetainsThePrefixAndStops() throws {
         // Day +3 is 30 September 2026; fail exactly there.
-        let failedDay = GADay(year: 2026, month: 9, day: 30)
+        let failedDay = GregorianDate(year: 2026, month: 9, day: 30)
         let calls = CallCounter()
         let failing = TodayTimelineBuilder(
             dataset: dataset,
@@ -210,9 +210,9 @@ struct TodayTimelineBuilderTests {
                 if day == failedDay {
                     throw DayResolutionError.datasetAssumptionFailure(day)
                 }
-                return try resolvedDay(for: day, in: self.dataset)
+                return try ResolvedDay(day, in: self.dataset)
             },
-            nextMidnight: { nextNPTMidnight(after: $0) }
+            nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
         )
 
         let built = failing.build(now: try supportedNow())
@@ -236,16 +236,16 @@ struct TodayTimelineBuilderTests {
 
     @Test func terminalEntryFailureRetainsTheHorizonAndStops() throws {
         // Day +14 (13 April 2028) fails after a fully supported horizon.
-        let failedDay = GADay(year: 2028, month: 4, day: 13)
+        let failedDay = GregorianDate(year: 2028, month: 4, day: 13)
         let failing = TodayTimelineBuilder(
             dataset: dataset,
             resolveDay: { day in
                 if day == failedDay {
                     throw DayResolutionError.datasetAssumptionFailure(day)
                 }
-                return try resolvedDay(for: day, in: self.dataset)
+                return try ResolvedDay(day, in: self.dataset)
             },
-            nextMidnight: { nextNPTMidnight(after: $0) }
+            nextMidnight: { TimeZone.nepal.nextMidnight(after: $0) }
         )
         let now = try UTCWatchFixture.utc(2028, 3, 30, 12, 0)
 
@@ -271,7 +271,7 @@ struct TodayTimelineBuilderTests {
             dataset: dataset,
             resolveDay: { day in
                 calls.increment()
-                return try resolvedDay(for: day, in: self.dataset)
+                return try ResolvedDay(day, in: self.dataset)
             },
             nextMidnight: { _ in nil }
         )

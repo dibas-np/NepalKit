@@ -26,13 +26,13 @@ struct RelativeDayIntentTests {
 
         let tomorrowBefore = try TomorrowInBikramSambatIntent.answer(now: before, in: dataset, monthNames: .transliterated)
         let tomorrowAfter = try TomorrowInBikramSambatIntent.answer(now: after, in: dataset, monthNames: .transliterated)
-        #expect(tomorrowBefore.entity.bsDay == BSDay(year: 2082, month: 1, day: 1))
-        #expect(tomorrowAfter.entity.bsDay == BSDay(year: 2082, month: 1, day: 2))
+        #expect(tomorrowBefore.entity.bsDay == BikramSambatDate(year: 2082, month: 1, day: 1))
+        #expect(tomorrowAfter.entity.bsDay == BikramSambatDate(year: 2082, month: 1, day: 2))
 
         let yesterdayBefore = try YesterdayInBikramSambatIntent.answer(now: before, in: dataset, monthNames: .transliterated)
         let yesterdayAfter = try YesterdayInBikramSambatIntent.answer(now: after, in: dataset, monthNames: .transliterated)
-        #expect(yesterdayBefore.entity.bsDay == BSDay(year: 2081, month: 12, day: 30))
-        #expect(yesterdayAfter.entity.bsDay == BSDay(year: 2081, month: 12, day: 31))
+        #expect(yesterdayBefore.entity.bsDay == BikramSambatDate(year: 2081, month: 12, day: 30))
+        #expect(yesterdayAfter.entity.bsDay == BikramSambatDate(year: 2081, month: 12, day: 31))
     }
 
     @Test("Tomorrow and yesterday cross the Bikram Sambat year end")
@@ -43,9 +43,9 @@ struct RelativeDayIntentTests {
         let firstDayOf2082 = try TestDates.utc(2025, 4, 14, 6, 0)
 
         #expect(try TomorrowInBikramSambatIntent.answer(now: lastDayOf2081, in: dataset).entity.bsDay
-            == BSDay(year: 2082, month: 1, day: 1))
+            == BikramSambatDate(year: 2082, month: 1, day: 1))
         #expect(try YesterdayInBikramSambatIntent.answer(now: firstDayOf2082, in: dataset).entity.bsDay
-            == BSDay(year: 2081, month: 12, day: 31))
+            == BikramSambatDate(year: 2081, month: 12, day: 31))
     }
 
     @Test("Tomorrow and yesterday cross a Bikram Sambat month end")
@@ -57,9 +57,9 @@ struct RelativeDayIntentTests {
         let firstOfShrawan = try TestDates.utc(2025, 7, 17, 6, 0)
 
         #expect(try TomorrowInBikramSambatIntent.answer(now: lastOfAshar, in: dataset).entity.bsDay
-            == BSDay(year: 2082, month: 4, day: 1))
+            == BikramSambatDate(year: 2082, month: 4, day: 1))
         #expect(try YesterdayInBikramSambatIntent.answer(now: firstOfShrawan, in: dataset).entity.bsDay
-            == BSDay(year: 2082, month: 3, day: 32))
+            == BikramSambatDate(year: 2082, month: 3, day: 32))
     }
 
     @Test("Tomorrow past the supported range speaks Today's range-boundary dialog")
@@ -70,7 +70,7 @@ struct RelativeDayIntentTests {
         let now = try TestDates.utc(end.year, end.month, end.day, 6, 0)
         let expected = String(localized: TodayInBikramSambatIntent.beyondRangeDialog(now: now, in: dataset))
 
-        #expect(todayBS(now: now, in: dataset) != nil)
+        #expect(BikramSambatDate.today(now: now, in: dataset) != nil)
         #expect(try YesterdayInBikramSambatIntent.answer(now: now, in: dataset).entity.bsDay.year
             == dataset.supportedRange.upperBound)
 

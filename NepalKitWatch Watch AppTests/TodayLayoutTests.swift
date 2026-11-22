@@ -4,6 +4,7 @@ import Foundation
 import SwiftUI
 import Testing
 import NepalKitCore
+import NepalKitWatchSupport
 @testable import NepalKitWatchApp
 
 /// Each Today state fits the height it is offered, and keeps its own
@@ -49,8 +50,8 @@ struct TodayLayoutTests {
 
     /// The widest hero measured, a day past the range, and an error with its date.
     private func states() throws -> [State] {
-        let today = GADay(year: 2026, month: 12, day: 17)
-        let past = GADay(year: 2030, month: 1, day: 1)
+        let today = GregorianDate(year: 2026, month: 12, day: 17)
+        let past = GregorianDate(year: 2030, month: 1, day: 1)
         guard case .supported(let supported) = watchDayDisplay(for: today, settings: .watch, in: .v2),
               case .rangeBoundary(let boundary) = watchDayDisplay(for: past, settings: .watch, in: .v2),
               case .calculationError(let error) = watchCalculationErrorDisplay(gregorianDay: today, settings: .watch)

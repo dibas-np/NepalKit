@@ -40,11 +40,11 @@
 # Every other gate runs in CI, in the workflow that owns it:
 # * this one: the pure-Python suites (gate 2's bootstrap suite, gates 9 to 13);
 # * macos26-floor.yml: gate 1 as build-for-testing (app plus hosted test
-#   bundle), the core, app, cask and package-release suites, and the
-#   deployment floor check;
+#   bundle), the core, Watch support, app, cask and package-release suites,
+#   and the deployment floor check;
 # * data-sources.yml: the parser and changelog suites;
 # * codeql.yml: SwiftLint;
-# * the Watch job: gate 17.
+# * the Watch job: gate 18.
 # `check-all.sh` is a superset and is not invoked here on purpose: its first
 # gate builds the app, so running it would duplicate the macOS build rather than
 # add a check.

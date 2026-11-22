@@ -21,7 +21,7 @@ struct MonthGridModelTests {
         // converter suite's anchor, plus 14 days).
         let model = MonthGridModel(now: try TestDates.utc(2026, 10, 11, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2083, month: 6))
-        #expect(model.today == BSDay(year: 2083, month: 6, day: 25))
+        #expect(model.today == BikramSambatDate(year: 2083, month: 6, day: 25))
         #expect(!model.isTodayPastSupportedRange)
         #expect(model.isShowingTodayMonth)
     }
@@ -29,7 +29,7 @@ struct MonthGridModelTests {
     @Test func todayFollowsNepalTimeNotUTC() throws {
         // 13 Apr 2025 18:30 UTC is 14 Apr 00:15 Nepal Time: already 1 Baisakh 2082.
         let model = MonthGridModel(now: try TestDates.utc(2025, 4, 13, 18, 30))
-        #expect(model.today == BSDay(year: 2082, month: 1, day: 1))
+        #expect(model.today == BikramSambatDate(year: 2082, month: 1, day: 1))
     }
 
     /// The shown month's own days, without the neighbours that fill the
@@ -46,13 +46,13 @@ struct MonthGridModelTests {
         #expect(weeks.allSatisfy { $0.count == 7 })
         #expect(weeks.flatMap { $0 }.allSatisfy { $0 != nil })
         let first = try #require(weeks[0][1])
-        #expect(first.bikramSambat == BSDay(year: 2082, month: 1, day: 1))
-        #expect(first.gregorian == GADay(year: 2025, month: 4, day: 14))
+        #expect(first.bikramSambat == BikramSambatDate(year: 2082, month: 1, day: 1))
+        #expect(first.gregorian == GregorianDate(year: 2025, month: 4, day: 14))
         #expect(first.weekday == 2)
         #expect(first.isInShownMonth)
         let days = shownDays(model)
         #expect(days.count == 31)
-        #expect(days.last?.gregorian == GADay(year: 2025, month: 5, day: 14))
+        #expect(days.last?.gregorian == GregorianDate(year: 2025, month: 5, day: 14))
         // 31 Baisakh falls on Wednesday.
         #expect(weeks[4][3]?.bikramSambat.day == 31)
     }
@@ -63,13 +63,13 @@ struct MonthGridModelTests {
         let leading = try #require(weeks[0][0])
         #expect(!leading.isInShownMonth)
         #expect(leading.bikramSambat.year == 2081 && leading.bikramSambat.month == 12)
-        #expect(leading.gregorian == GADay(year: 2025, month: 4, day: 13))
+        #expect(leading.gregorian == GregorianDate(year: 2025, month: 4, day: 13))
         #expect(leading.weekday == 1)
         // After 31 Baisakh (Wednesday) come 1 to 3 Jestha, then a full week
         // of Jestha to make the sixth row.
         let trailing = weeks[4][4 ... 6].compactMap { $0 } + weeks[5].compactMap { $0 }
-        #expect(trailing.map(\.bikramSambat) == (1 ... 10).map { BSDay(year: 2082, month: 2, day: $0) })
-        #expect(trailing.first?.gregorian == GADay(year: 2025, month: 5, day: 15))
+        #expect(trailing.map(\.bikramSambat) == (1 ... 10).map { BikramSambatDate(year: 2082, month: 2, day: $0) })
+        #expect(trailing.first?.gregorian == GregorianDate(year: 2025, month: 5, day: 15))
         #expect(trailing.allSatisfy { !$0.isInShownMonth && !$0.isToday })
     }
 
@@ -78,7 +78,7 @@ struct MonthGridModelTests {
         let model = try baisakh2082()
         model.showPreviousMonth()
         let cells = model.weeks.flatMap { $0 }.compactMap { $0 }
-        let spill = try #require(cells.first { $0.bikramSambat == BSDay(year: 2082, month: 1, day: 1) })
+        let spill = try #require(cells.first { $0.bikramSambat == BikramSambatDate(year: 2082, month: 1, day: 1) })
         #expect(!spill.isInShownMonth)
         #expect(!spill.isToday)
         #expect(cells.allSatisfy { !$0.isToday })
@@ -103,7 +103,7 @@ struct MonthGridModelTests {
 
     @Test func todayIsMarkedOnce() throws {
         let days = try baisakh2082().weeks.flatMap { $0 }.compactMap { $0 }
-        #expect(days.filter(\.isToday).map(\.bikramSambat) == [BSDay(year: 2082, month: 1, day: 1)])
+        #expect(days.filter(\.isToday).map(\.bikramSambat) == [BikramSambatDate(year: 2082, month: 1, day: 1)])
     }
 
     @Test func navigatingAwayLeavesNoTodayMarked() throws {
@@ -134,8 +134,8 @@ struct MonthGridModelTests {
         model.showPreviousMonth()
         #expect(model.shown == MonthGridMonth(year: 1975, month: 1))
         let first = try #require(model.weeks[0][6])
-        #expect(first.bikramSambat == BSDay(year: 1975, month: 1, day: 1))
-        #expect(first.gregorian == GADay(year: 1918, month: 4, day: 13))
+        #expect(first.bikramSambat == BikramSambatDate(year: 1975, month: 1, day: 1))
+        #expect(first.gregorian == GregorianDate(year: 1918, month: 4, day: 13))
         // Nothing precedes the dataset's first day, so the cells before it
         // stay empty rather than inventing a Chaitra 1974.
         #expect(model.weeks[0][0 ..< 6].allSatisfy { $0 == nil })
@@ -151,12 +151,12 @@ struct MonthGridModelTests {
         let days = shownDays(model)
         // 1 Chaitra 2084 = 14 Mar 2028, a Tuesday: Falgun's last two days lead.
         #expect(model.weeks[0][0]?.bikramSambat.month == 11 && model.weeks[0][1]?.bikramSambat.month == 11)
-        #expect(days.first?.gregorian == GADay(year: 2028, month: 3, day: 14))
-        #expect(days.last?.bikramSambat == BSDay(year: 2084, month: 12, day: 30))
-        #expect(days.last?.gregorian == GADay(year: 2028, month: 4, day: 12))
+        #expect(days.first?.gregorian == GregorianDate(year: 2028, month: 3, day: 14))
+        #expect(days.last?.bikramSambat == BikramSambatDate(year: 2084, month: 12, day: 30))
+        #expect(days.last?.gregorian == GregorianDate(year: 2028, month: 4, day: 12))
         // Nothing follows the dataset's last day, so the cells after it are empty.
         let cells = model.weeks.flatMap { $0 }
-        let lastIndex = try #require(cells.firstIndex { $0?.bikramSambat == BSDay(year: 2084, month: 12, day: 30) })
+        let lastIndex = try #require(cells.firstIndex { $0?.bikramSambat == BikramSambatDate(year: 2084, month: 12, day: 30) })
         #expect(cells[(lastIndex + 1)...].allSatisfy { $0 == nil })
     }
 
@@ -182,7 +182,7 @@ struct MonthGridModelTests {
         model.showNextMonth()
         // 15 May 2025 is 1 Jestha 2082.
         model.refreshToday(now: try TestDates.utc(2025, 5, 15, 6, 0))
-        #expect(model.today == BSDay(year: 2082, month: 2, day: 1))
+        #expect(model.today == BikramSambatDate(year: 2082, month: 2, day: 1))
         #expect(model.shown == MonthGridMonth(year: 2082, month: 2))
         #expect(model.isShowingTodayMonth)
     }
@@ -199,7 +199,7 @@ struct MonthGridModelTests {
     @Test func textHonoursDevanagariAndNepali() throws {
         let model = try baisakh2082()
         #expect(model.title(settings: devanagari) == "बैशाख २०८२")
-        #expect(model.weekdayHeaders(settings: devanagari) == nepaliWeekdayNames)
+        #expect(model.weekdayHeaders(settings: devanagari) == BikramSambatDate.weekdayNames(style: .nepali))
         let first = try #require(model.weeks[0][1])
         #expect(model.dayText(first, settings: devanagari) == "१")
         #expect(model.gregorianDayText(first, settings: devanagari) == "१४")
@@ -213,7 +213,7 @@ struct MonthGridModelTests {
         #expect(model.spokenLabel(for: first, settings: latin) == "Today, 1 Baisakh 2082, Monday, 14 April 2025")
         #expect(model.spokenLabel(for: second, settings: latin) == "2 Baisakh 2082, Tuesday, 15 April 2025")
         #expect(model.spokenLabel(for: second, settings: devanagari) == "2 बैशाख 2082, मंगल, 15 April 2025")
-        #expect(model.spokenWeekdayHeaders(settings: latin) == englishWeekdayNames)
+        #expect(model.spokenWeekdayHeaders(settings: latin) == BikramSambatDate.weekdayNames(style: .transliterated))
     }
 
     @Test func gregorianSpanNamesBothMonths() throws {
@@ -233,8 +233,8 @@ struct MonthGridModelTests {
     }
 
     @Test func todaysAnnouncementCarriesBothCalendars() {
-        let bs = BSDay(year: 2083, month: 7, day: 1)
-        let ad = GADay(year: 2026, month: 10, day: 18)
+        let bs = BikramSambatDate(year: 2083, month: 7, day: 1)
+        let ad = GregorianDate(year: 2026, month: 10, day: 18)
         #expect(SpokenDate.today(bs, gregorian: ad, weekday: "Sunday", monthNames: .transliterated)
             == "1 Kartik 2083. 18 October 2026, Sunday")
         #expect(SpokenDate.today(bs, gregorian: nil, weekday: nil, monthNames: .transliterated) == "1 Kartik 2083")

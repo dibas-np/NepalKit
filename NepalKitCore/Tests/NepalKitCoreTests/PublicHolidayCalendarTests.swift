@@ -9,8 +9,8 @@ import NepalKitCore
 struct PublicHolidayCalendarTests {
     private let calendar = PublicHolidayCalendar.gazette
 
-    private func day(_ month: Int, _ day: Int) -> BSDay {
-        BSDay(year: 2083, month: month, day: day)
+    private func day(_ month: Int, _ day: Int) -> BikramSambatDate {
+        BikramSambatDate(year: 2083, month: month, day: day)
     }
 
     @Test func newYearIsANationwideHoliday() throws {
@@ -34,7 +34,7 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func scopedHolidaysAreNotNationwide() {
-        let scoped: [(BSDay, PublicHoliday.Scope)] = [
+        let scoped: [(BikramSambatDate, PublicHoliday.Scope)] = [
             (day(5, 29), .womenEmployees),
             (day(6, 9), .kathmanduValley),
             (day(8, 8), .sikhCommunity),
@@ -83,8 +83,8 @@ struct PublicHolidayCalendarTests {
         for month in 1 ... 12 {
             for date in 1 ... lengths[month - 1] {
                 let bs = day(month, date)
-                let ad = try #require(bsToAD(bs, in: dataset))
-                guard weekday(of: ad) == 7 else { continue }
+                let ad = try #require(GregorianDate(bs, in: dataset))
+                guard ad.weekday == 7 else { continue }
                 if calendar.holidays(on: bs).isEmpty { saturdaysOff += 1 } else { saturdaysListed += 1 }
             }
         }
@@ -94,9 +94,9 @@ struct PublicHolidayCalendarTests {
 
     @Test func aYearWithoutDataHasNone() {
         #expect(calendar.years == [2083])
-        #expect(calendar.holidays(on: BSDay(year: 2082, month: 1, day: 1)).isEmpty)
-        #expect(!calendar.isNationwideHoliday(BSDay(year: 2084, month: 1, day: 1)))
-        #expect(calendar.scopes(on: BSDay(year: 2084, month: 1, day: 1)).isEmpty)
+        #expect(calendar.holidays(on: BikramSambatDate(year: 2082, month: 1, day: 1)).isEmpty)
+        #expect(!calendar.isNationwideHoliday(BikramSambatDate(year: 2084, month: 1, day: 1)))
+        #expect(calendar.scopes(on: BikramSambatDate(year: 2084, month: 1, day: 1)).isEmpty)
     }
 
     @Test func aCalendarIsOnlyItsEntries() {
@@ -155,18 +155,18 @@ struct PublicHolidayCalendarTests {
         // Kartik 2, 5 and 6 are Dashain holidays with no festival of their own;
         // Kartik 26 is the last day of the Tihar holiday.
         for day in [2, 5, 6] {
-            let named = holidays.observances(on: BSDay(year: 2083, month: 7, day: day), festivals: festivals)
+            let named = holidays.observances(on: BikramSambatDate(year: 2083, month: 7, day: day), festivals: festivals)
             #expect(named.map(\.nepali) == ["दशैं बिदा"])
             #expect(named.first?.english == "Dashain holiday")
             #expect(named.first?.source == .gazette)
         }
-        let tihar = holidays.observances(on: BSDay(year: 2083, month: 7, day: 26), festivals: festivals)
+        let tihar = holidays.observances(on: BikramSambatDate(year: 2083, month: 7, day: 26), festivals: festivals)
         #expect(tihar.map(\.english) == ["Tihar holiday"])
     }
 
     @Test func aDayWithFestivalsKeepsThem() {
         // Kartik 4, Vijaya Dashami: the festival names the day, not "Dashain holiday".
-        let day = BSDay(year: 2083, month: 7, day: 4)
+        let day = BikramSambatDate(year: 2083, month: 7, day: 4)
         let named = PublicHolidayCalendar.gazette.observances(on: day, festivals: .panchanga)
         #expect(named == FestivalCalendar.panchanga.festivals(on: day))
         #expect(!named.contains { $0.source == .gazette && $0.english == "Dashain holiday" })

@@ -181,7 +181,7 @@ private struct HeaderBar: View {
             // Sized by a constant "00:00:00" (monospaced, so as wide as any
             // reading) with the time in an overlay: a ticking `Text` in the
             // stack made SwiftUI re-measure the whole popover every second.
-            Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+            Text(settings.digits.formatTime(.distantPast, in: .gmt))
                 .hidden()
                 .overlay(alignment: .trailing) {
                     HeaderClockTime(clock: clock, digits: settings.digits)
@@ -244,7 +244,7 @@ private struct ClocksSection: View {
                 Divider()
                 Label {
                     // Constant-width template plus overlay, as in the header.
-                    Text(formatClock(.distantPast, timeZone: .gmt, digits: settings.digits))
+                    Text(settings.digits.formatTime(.distantPast, in: .gmt))
                         .hidden()
                         .overlay(alignment: .leading) {
                             SecondaryClockTime(clock: clock, digits: settings.digits)

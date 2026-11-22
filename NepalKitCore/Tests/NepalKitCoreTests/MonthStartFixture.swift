@@ -1,7 +1,7 @@
 import NepalKitCore
 
 struct MonthStartFixture {
-    let bs: BSDay
-    let ad: GADay
+    let bs: BikramSambatDate
+    let ad: GregorianDate
     let label: String
 }

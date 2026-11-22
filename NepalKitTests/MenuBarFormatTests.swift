@@ -1,12 +1,13 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import Testing
 import NepalKitCore
+@testable import NepalKit
 
 /// The menu-bar title's optional parts. Anchors: 27 Sep 2026 is a Sunday and
 /// 11 Ashoj 2083, 28 Sep 2026 a Monday and 12 Ashoj 2083 (the same anchors as
-/// `WeekdayNameTests`). Nepal Time is UTC+5:45, so 05:12:07 UTC reads 10:57:07.
+/// `WeekdayNameTests` in NepalKitCore). Nepal Time is UTC+5:45, so 05:12:07 UTC reads 10:57:07.
 struct MenuBarFormatTests {
     private static let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private static let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
@@ -113,21 +114,6 @@ struct MenuBarFormatTests {
         #expect(spoken == "Monday, 12 Ashoj 2083, 12:00 AM")
     }
 
-    @Test func clockTimeInAnotherZone() throws {
-        let epoch = Date(timeIntervalSince1970: 0)
-        let utcPlusOne = try #require(TimeZone(secondsFromGMT: 3_600))
-        #expect(formatClockTime(epoch, timeZone: utcPlusOne, usesTwentyFourHourClock: false, showsSeconds: false, digits: .latin) == "1:00")
-        #expect(formatClockTime(epoch, timeZone: .gmt, usesTwentyFourHourClock: false, showsSeconds: true, digits: .latin) == "12:00:00")
-        #expect(formatClockTime(epoch, timeZone: .gmt, usesTwentyFourHourClock: true, showsSeconds: false, digits: .devanagari) == "००:००")
-    }
-
-    @Test func shortWeekdayNames() {
-        #expect((1 ... 7).map { shortWeekdayName(for: $0, style: .transliterated) } == ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
-        #expect((1 ... 7).map { shortWeekdayName(for: $0, style: .nepali) } == ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"])
-        #expect(shortWeekdayName(for: 0, style: .transliterated) == nil)
-        #expect(shortWeekdayName(for: 8, style: .nepali) == nil)
-    }
-
     @Test func spokenTwelveHourTimeSaysWhichHalfOfTheDay() throws {
         let time = MenuBarFormat(showsTime: true)
         // 06:12 UTC is 11:57 in Nepal; 06:15 UTC is 12:00 noon, the first PM minute.
@@ -136,8 +122,20 @@ struct MenuBarFormatTests {
         #expect(SpokenDate.menuBarDate(now: try Self.utc(27, 6, 15, 0), format: time, monthNames: .transliterated, in: .v2)
             == "11 Ashoj 2083, 12:00 PM")
         // The screen keeps no marker.
-        let shown = formatClockTime(try Self.utc(27, 6, 15, 0), timeZone: nepalTimeZone,
-                                    usesTwentyFourHourClock: false, showsSeconds: false, digits: .latin)
+        let shown = DigitScript.latin.formatTime(try Self.utc(27, 6, 15, 0), twentyFourHour: false, showsSeconds: false)
         #expect(shown == "12:00")
+    }
+
+    /// 23:30 UTC on 26 Sep 2026 is Sunday 27 Sep in Nepal but Saturday 26 Sep,
+    /// 19:30, in New York (ADR-0017).
+    @Test func menuBarTitleReadsEveryPartInTheGivenZone() throws {
+        let now = try TestDates.utc(2026, 9, 26, 23, 30)
+        let newYork = try #require(TimeZone(identifier: "America/New_York"))
+        #expect(formatMenuBarTitle(now: now, format: Self.everything, settings: Self.latin, in: .v2) == "Sun 11 Ashoj 2083 5:15")
+        #expect(formatMenuBarTitle(now: now, timeZone: newYork, format: Self.everything, settings: Self.latin, in: .v2)
+            == "Sat 10 Ashoj 2083 7:30")
+        #expect(SpokenDate.menuBarDate(
+            now: now, timeZone: newYork, format: Self.everything, monthNames: .transliterated, in: .v2
+        ) == "Saturday, 10 Ashoj 2083, 7:30 PM")
     }
 }

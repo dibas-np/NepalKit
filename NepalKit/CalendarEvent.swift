@@ -11,7 +11,7 @@ import NepalKitCore
 struct CalendarEvent: Equatable {
     let title: String
     let notes: String
-    let date: GADay
+    let date: GregorianDate
 
     /// One identifier per day, so adding a day twice offers the same event.
     var uid: String {
@@ -58,7 +58,7 @@ struct CalendarEvent: Equatable {
     // MARK: - Format
 
     /// "20261018".
-    static func basic(_ day: GADay) -> String {
+    static func basic(_ day: GregorianDate) -> String {
         padded(day.year, 4) + padded(day.month, 2) + padded(day.day, 2)
     }
 

@@ -1,11 +1,19 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
+import NepalKitCore
+
+extension DisplaySettings {
+    /// The fixed settings every Watch surface renders with: canonical Nepali
+    /// month and weekday names, Devanagari digits. The Watch has no settings,
+    /// so there is exactly one display configuration.
+    public static let watch = DisplaySettings(digits: .devanagari, monthNames: .nepali)
+}
 
 /// Complete display components of one supported day: what every Watch surface
 /// composes from, plus the independent speech strings.
 ///
-/// Core supplies the meaning so the app and the extension cannot drift; views
+/// This package supplies the meaning so the app and the extension cannot drift; views
 /// choose composition and layout only. Bikram Sambat pieces use canonical
 /// Nepali names and the settings' digit script; Gregorian month names stay
 /// English while their digits still honor the settings — the intentional mix
@@ -117,19 +125,19 @@ public func watchDayDisplay(
 ) -> WatchDayDisplay {
     switch day.bikramSambat {
     case .supported(let bs):
-        let weekday = weekdayName(for: day.weekday, style: settings.monthNames) ?? String(day.weekday)
-        let spokenWeekday = weekdayName(for: day.weekday, style: .transliterated) ?? String(day.weekday)
+        let weekday = BikramSambatDate.weekdayName(day.weekday, style: settings.monthNames) ?? String(day.weekday)
+        let spokenWeekday = BikramSambatDate.weekdayName(day.weekday, style: .transliterated) ?? String(day.weekday)
         return .supported(WatchDayComponents(
             weekdayName: weekday,
-            bikramSambatDay: formatNumber(bs.day, digits: settings.digits),
-            bikramSambatMonthName: monthName(month: bs.month, style: settings.monthNames),
-            bikramSambatYear: formatNumber(bs.year, digits: settings.digits),
-            gregorianDay: formatNumber(day.gregorian.day, digits: settings.digits),
-            gregorianMonthName: gregorianMonthName(day.gregorian.month),
-            gregorianYear: formatNumber(day.gregorian.year, digits: settings.digits),
-            spokenBikramSambat: SpokenDate.bs(bs, monthNames: .transliterated),
+            bikramSambatDay: settings.digits.format(bs.day),
+            bikramSambatMonthName: BikramSambatDate.monthName(bs.month, style: settings.monthNames),
+            bikramSambatYear: settings.digits.format(bs.year),
+            gregorianDay: settings.digits.format(day.gregorian.day),
+            gregorianMonthName: GregorianDate.monthName(day.gregorian.month),
+            gregorianYear: settings.digits.format(day.gregorian.year),
+            spokenBikramSambat: SpokenDate.bikramSambat(bs, monthNames: .transliterated),
             spokenWeekdayName: spokenWeekday,
-            spokenGregorian: SpokenDate.ad(day.gregorian)
+            spokenGregorian: SpokenDate.gregorian(day.gregorian)
         ))
     case .beforeSupportedRange:
         return .rangeBoundary(boundary(.before, settings: settings, in: dataset, for: day))
@@ -149,7 +157,7 @@ public func watchDayDisplay(
     in dataset: CalendarDataset
 ) -> WatchDayDisplay {
     do {
-        let day = try resolvedDay(now: instant, in: dataset)
+        let day = try ResolvedDay(now: instant, in: dataset)
         return watchDayDisplay(for: day, settings: settings, in: dataset)
     } catch let error as DayResolutionError {
         return watchCalculationErrorDisplay(
@@ -164,12 +172,12 @@ public func watchDayDisplay(
 /// Resolves a Gregorian civil day and builds its display meaning in one step,
 /// with the same failure mapping as the instant-based variant.
 public func watchDayDisplay(
-    for civilDay: GADay,
+    for civilDay: GregorianDate,
     settings: DisplaySettings,
     in dataset: CalendarDataset
 ) -> WatchDayDisplay {
     do {
-        let day = try resolvedDay(for: civilDay, in: dataset)
+        let day = try ResolvedDay(civilDay, in: dataset)
         return watchDayDisplay(for: day, settings: settings, in: dataset)
     } catch let error as DayResolutionError {
         return watchCalculationErrorDisplay(
@@ -184,14 +192,14 @@ public func watchDayDisplay(
 /// Builds a calculation-error display, carrying the Gregorian day only when
 /// one was actually resolved.
 public func watchCalculationErrorDisplay(
-    gregorianDay: GADay?,
+    gregorianDay: GregorianDate?,
     settings: DisplaySettings
 ) -> WatchDayDisplay {
     .calculationError(WatchErrorComponents(
-        gregorianDay: gregorianDay.map { formatNumber($0.day, digits: settings.digits) },
-        gregorianMonthName: gregorianDay.map { gregorianMonthName($0.month) },
-        gregorianYear: gregorianDay.map { formatNumber($0.year, digits: settings.digits) },
-        spokenGregorian: gregorianDay.map { SpokenDate.ad($0) }
+        gregorianDay: gregorianDay.map { settings.digits.format($0.day) },
+        gregorianMonthName: gregorianDay.map { GregorianDate.monthName($0.month) },
+        gregorianYear: gregorianDay.map { settings.digits.format($0.year) },
+        spokenGregorian: gregorianDay.map { SpokenDate.gregorian($0) }
     ))
 }
 
@@ -205,7 +213,7 @@ private func boundary(
     case .before: dataset.supportedRange.lowerBound
     case .after: dataset.supportedRange.upperBound
     }
-    let contextYear = formatNumber(contextBSYear, digits: settings.digits)
+    let contextYear = settings.digits.format(contextBSYear)
     let contextLine = switch side {
     case .before: "Supported from \(contextYear) BS"
     case .after: "Supported through \(contextYear) BS"
@@ -218,10 +226,10 @@ private func boundary(
         side: side,
         contextYear: contextYear,
         contextLine: contextLine,
-        gregorianDay: formatNumber(day.gregorian.day, digits: settings.digits),
-        gregorianMonthName: gregorianMonthName(day.gregorian.month),
-        gregorianYear: formatNumber(day.gregorian.year, digits: settings.digits),
-        spokenGregorian: SpokenDate.ad(day.gregorian),
+        gregorianDay: settings.digits.format(day.gregorian.day),
+        gregorianMonthName: GregorianDate.monthName(day.gregorian.month),
+        gregorianYear: settings.digits.format(day.gregorian.year),
+        spokenGregorian: SpokenDate.gregorian(day.gregorian),
         spokenDescription: "\(WatchDayCopy.boundaryFull), \(spokenContext)"
     )
 }

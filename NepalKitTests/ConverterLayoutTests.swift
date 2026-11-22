@@ -50,7 +50,7 @@ struct ConverterLayoutTests {
         // Every month in both scripts, because the picker shows the widest one
         // in the list and the list is a parameter, not a constant. A clipping bug
         // in Devanagari would otherwise ship unseen in a Latin-only test machine.
-        for month in gregorianMonthNames {
+        for month in GregorianDate.monthNames {
             #expect(
                 Self.controlChrome + Self.width(of: month) <= 112,
                 "'\(month)' needs ~\(Int(Self.controlChrome + Self.width(of: month)))pt, floor is 112pt"
@@ -58,7 +58,7 @@ struct ConverterLayoutTests {
         }
         for month in 1 ... 12 {
             for style in [MonthNameStyle.nepali, .transliterated] {
-                let name = monthName(month: month, style: style)
+                let name = BikramSambatDate.monthName(month, style: style)
                 #expect(
                     Self.controlChrome + Self.width(of: name) <= 112,
                     "'\(name)' needs ~\(Int(Self.controlChrome + Self.width(of: name)))pt, floor is 112pt"
@@ -77,10 +77,10 @@ struct ConverterLayoutTests {
             // Devanagari, which this test caught rather than a screenshot.
             let yearFloor: CGFloat = 68
             #expect(
-                Self.controlChrome + Self.width(of: formatNumber(2084, digits: style)) <= yearFloor,
-                "\(formatNumber(2084, digits: style)) does not fit the \(Int(yearFloor))pt year picker"
+                Self.controlChrome + Self.width(of: style.format(2084)) <= yearFloor,
+                "\(style.format(2084)) does not fit the \(Int(yearFloor))pt year picker"
             )
-            #expect(Self.controlChrome + Self.width(of: formatNumber(32, digits: style)) <= yearFloor)
+            #expect(Self.controlChrome + Self.width(of: style.format(32)) <= yearFloor)
         }
     }
 
@@ -97,7 +97,7 @@ struct ConverterLayoutTests {
             }
         }
         for digits in [DigitScript.latin, .devanagari] {
-            let day = formatNumber(32, digits: digits)
+            let day = digits.format(32)
             #expect(Self.width(of: day) * 1.5 <= column, "\(day) does not fit a \(Int(column))pt column")
         }
     }
@@ -109,7 +109,7 @@ struct ConverterLayoutTests {
         let today = Self.controlChrome + 16 + Self.width(of: Strings.todayLabel)
         for style in [MonthNameStyle.nepali, .transliterated] {
             for month in 1 ... 12 {
-                let title = "\(monthName(month: month, style: style)) \(formatNumber(2084, digits: .devanagari))"
+                let title = "\(BikramSambatDate.monthName(month, style: style)) \(DigitScript.devanagari.format(2084))"
                 let demanded = Self.width(of: title) * 1.2 + today + chevrons + 3 * 4
                 #expect(demanded <= Self.popoverContentWidth, "'\(title)' header needs ~\(Int(demanded))pt")
             }

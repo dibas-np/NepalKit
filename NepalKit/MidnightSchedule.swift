@@ -19,9 +19,9 @@ struct MidnightSchedule: TimelineSchedule {
     /// Every midnight in `timeZone` after `date`, in order. Ends only if the
     /// next midnight cannot be computed.
     static func midnights(after date: Date, in timeZone: TimeZone) -> UnfoldSequence<Date, Date?> {
-        sequence(state: nextMidnight(after: date, in: timeZone)) { next in
+        sequence(state: timeZone.nextMidnight(after: date)) { next in
             guard let current = next else { return nil }
-            next = nextMidnight(after: current, in: timeZone)
+            next = timeZone.nextMidnight(after: current)
             return current
         }
     }
