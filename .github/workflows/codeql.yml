@@ -12,13 +12,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Analysis builds pull-request code, so it runs read-only; only the upload job,
-# which runs no repository code, can write code-scanning results.
-permissions:
-  contents: read
-  security-events: read
-  packages: read
-  actions: read
+permissions: {}
 
 env:
   XCODE_VERSION: "26.6"
@@ -29,6 +23,13 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-26') || 'ubuntu-latest' }}
     timeout-minutes: 45
+    # Analysis builds pull-request code, so it runs read-only; only the upload job,
+    # which runs no repository code, can write code-scanning results.
+    permissions:
+      contents: read
+      security-events: read
+      packages: read
+      actions: read
 
     strategy:
       fail-fast: false
