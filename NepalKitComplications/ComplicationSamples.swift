@@ -11,14 +11,12 @@ enum ComplicationSamples {
     }
 
     static func boundaryState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
-        dayState(for: GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
+        guard let day = dayAfterSupportedRange(in: dataset) else { return .placeholder }
+        return dayState(for: day, in: dataset)
     }
 
     static func errorState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
-        .day(watchCalculationErrorDisplay(
-            gregorianDay: GregorianDate(year: 2028, month: 4, day: 13),
-            settings: .watch
-        ))
+        .day(watchCalculationErrorDisplay(gregorianDay: dayAfterSupportedRange(in: dataset), settings: .watch))
     }
 
     static func errorWithoutContextState() -> TodayComplicationState {
@@ -30,7 +28,12 @@ enum ComplicationSamples {
     }
 
     static func longestMonthState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
-        dayState(for: GregorianDate(year: 2026, month: 10, day: 20), in: dataset)
+        guard let kartik = GregorianDate(BikramSambatDate(year: 2083, month: 7, day: 3), in: dataset) else { return .placeholder }
+        return dayState(for: kartik, in: dataset)
+    }
+
+    private static func dayAfterSupportedRange(in dataset: CalendarDataset) -> GregorianDate? {
+        dataset.gregorianEnd?.advanced(byDays: 1)
     }
 
     private static func dayState(for day: GregorianDate, in dataset: CalendarDataset) -> TodayComplicationState {

@@ -81,14 +81,18 @@ enum WatchFixtureControl {
     }
 
     nonisolated private static func scenarioInstant(_ name: String) -> Date? {
-        switch name {
-        case "boundaryBefore": try? Date("1918-04-12T06:15:00Z", strategy: .iso8601)
-        case "boundaryAfter": try? Date("2028-04-13T06:15:00Z", strategy: .iso8601)
-        case "projected2084": try? Date("2027-10-14T06:15:00Z", strategy: .iso8601)
-        case "terminal": try? Date("2028-03-30T06:15:00Z", strategy: .iso8601)
-        case "midnightApproach": try? Date("2026-09-26T18:10:00Z", strategy: .iso8601)
+        if name == "midnightApproach" {
+            return try? Date("2026-09-26T18:10:00Z", strategy: .iso8601)
+        }
+        let dataset = CalendarDataset.bundled
+        let day: GregorianDate? = switch name {
+        case "boundaryBefore": dataset.gregorianStart?.advanced(byDays: -1)
+        case "boundaryAfter": dataset.gregorianEnd?.advanced(byDays: 1)
+        case "projected2084": GregorianDate(BikramSambatDate(year: 2084, month: 6, day: 27), in: dataset)
+        case "terminal": dataset.gregorianEnd?.advanced(byDays: -13)
         default: nil
         }
+        return day?.noonUTC
     }
 }
 
