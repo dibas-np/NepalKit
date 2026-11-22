@@ -3,25 +3,10 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "General" tab: what the app shows, which clock today follows, and
-/// whether it starts at login.
-///
-/// Split out of `SettingsView` because that type is now the window — a system
-/// `TabView` sidebar over three destinations — and these sections are one
-/// destination among them. Keeping them in the window's own type would mean a
-/// file holding a layout and unrelated forms.
-///
-/// Software update is not here. It moved to the About tab, beside the version it
-/// updates, so the updater is no longer split across two destinations.
 struct GeneralSettingsView: View {
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
-    /// The same dataset the rest of the app converts with (ADR-0010), so the
-    /// Display section's live preview renders the calendar the app actually uses.
     let dataset: CalendarDataset
-    /// From the environment rather than `.current`, so the "My time zone" label
-    /// redraws when either changes while Settings is open, and previews can
-    /// override them.
     @Environment(\.timeZone) private var timeZone
     @Environment(\.locale) private var locale
 
@@ -29,17 +14,11 @@ struct GeneralSettingsView: View {
         Form {
             Section(Strings.displaySection) {
                 Picker(Strings.digitScriptLabel, selection: $settings.digits) {
-                    // The en dash shows the range on screen, where it reads
-                    // correctly; announced, it is unpredictable, so this option
-                    // speaks a plain hyphen. Same split as the option below.
                     Text(Strings.digitsLatin)
                         .tag(DigitScript.latin)
                         .accessibilityLabel(Strings.digitsLatinSpoken)
                     Text(Strings.digitsDevanagari)
                         .tag(DigitScript.devanagari)
-                        // The option announces with Latin digits so it stays
-                        // identifiable aloud; the screen keeps the Devanagari
-                        // characters it is describing.
                         .accessibilityLabel(Strings.digitsDevanagariSpoken)
                 }
                 .pickerStyle(.segmented)
@@ -50,19 +29,10 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                // Redrawn at each midnight in the chosen zone; nothing else this
-                // row reads changes then, so it would otherwise keep showing
-                // yesterday. One wake a day, not a per-second clock.
                 TimelineView(MidnightSchedule(timeZone: settings.timeZone)) { _ in
                     if let preview = DisplayPreview.todayText(
                         now: .now, timeZone: settings.timeZone, in: dataset, settings: settings.settings
                     ) {
-                        // The example is the section's payoff: both pickers above
-                        // change every date the app renders, and this row is one of
-                        // those dates, re-rendered as the pickers flip so the choice
-                        // lands where it is made rather than only in the menu bar.
-                        // Re-reads `settings.settings` in `body`, so the preview is
-                        // live without any explicit wiring.
                         LabeledContent(Strings.displayPreviewLabel) {
                             Text(preview)
                         }
@@ -87,18 +57,12 @@ struct GeneralSettingsView: View {
 
             Section(Strings.startupSection) {
                 Toggle(isOn: $loginItem.launchAtLogin) {
-                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
+                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin.rawValue)
                         .symbolRenderingMode(.monochrome)
                 }
-                // The symbol is decoration beside a control that is already
-                // named. Left in the label, some VoiceOver voices announce the
-                // symbol name too ("power symbol button, launch at login, on"),
-                // which is noise in front of the real name.
                 .accessibilityLabel(Strings.launchAtLoginLabel)
 
                 if loginItem.requiresApproval {
-                    // Not a failure: the toggle is truly on, so this names
-                    // what is missing and links to where it is granted.
                     Text(Strings.loginItemNeedsApproval)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -108,9 +72,6 @@ struct GeneralSettingsView: View {
                 }
 
                 if let failure = loginItem.setupError {
-                    // A failed register/unregister is invisible on the toggle:
-                    // `isOn` follows the system, so it springs back without
-                    // ever saying why. This line is where the reason lands.
                     Text(Strings.loginItemFailureReason(failure))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -118,13 +79,6 @@ struct GeneralSettingsView: View {
             }
 
             Section(Strings.siriShortcutsSection) {
-                // The sentence comes first and states what works, not what the
-                // feature set suggests. Voice parameter-filling for the two
-                // conversions is an OS behaviour — macOS 26 routes the
-                // invocation and then cannot fill the parameters from speech —
-                // while the same App Intents are fully usable from Shortcuts. A
-                // section that implied the voice path worked would send people
-                // to an answer of "late June or early July" from a web search.
                 Text(Strings.siriShortcutsSummary)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -136,11 +90,8 @@ struct GeneralSettingsView: View {
                         Text(capability.phrase)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            // Phrases are spoken, so they are taught as text
-                            // rather than run: `SiriTipView` does not exist on
-                            // macOS. Read as one string with the capability
-                            // named, because a bare phrase announced on its own
-                            // does not say what it does.
+                            // `SiriTipView` does not exist on macOS, so phrases are shown as text and
+                            // read together with the capability they invoke.
                             .accessibilityLabel(capability.spokenDescription)
                     }
                 }

@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
 /// A festival or national day on a Bikram Sambat date, as the national
-/// Panchanga prints it (ADR-0016), or, for a gazetted day the Panchanga does
-/// not print, as the gazette names it.
+/// Panchanga (or, failing that, the gazette) names it.
 public struct Festival: Hashable, Sendable {
     public enum Kind: Hashable, Sendable {
         /// A festival or observance.
@@ -14,9 +13,7 @@ public struct Festival: Hashable, Sendable {
         case internationalDay
     }
 
-    /// Where the entry was read: the Panchanga (ADR-0016), or the gazette
-    /// notice for a gazetted day the Panchanga does not print, so the table can
-    /// be checked against either.
+    /// Where the entry was read.
     public enum Source: Hashable, Sendable {
         case panchanga
         case gazette
@@ -36,34 +33,32 @@ public struct Festival: Hashable, Sendable {
         self.source = source
     }
 
-    /// The name in the reader's month-name setting: the Panchanga's own
-    /// wording with Nepali names, English with transliterated ones.
+    /// The name in the reader's month-name style.
     public func name(style: MonthNameStyle) -> String {
         style == .nepali ? nepali : english
     }
 }
 
-/// Festivals and national days by Bikram Sambat date, for the years whose
-/// national Panchanga has been read (ADR-0016).
+/// Festivals and national days by Bikram Sambat date. SOURCES.md records which
+/// entries are selected.
 public struct FestivalCalendar: Sendable {
-    /// Years with festival data. A year outside this set has none yet, which
-    /// is a gap, not a year without festivals.
+    /// Years with festival data. A missing year is a gap, not a year without
+    /// festivals.
     public let years: Set<Int>
-    let entries: [BSDay: [Festival]]
+    let entries: [BikramSambatDate: [Festival]]
 
-    public init(years: Set<Int>, entries: [BSDay: [Festival]]) {
+    public init(years: Set<Int>, entries: [BikramSambatDate: [Festival]]) {
         self.years = years
         self.entries = entries
     }
 
-    /// The festivals on `day`, in the Panchanga's order; empty when there are
-    /// none or the year has no data.
-    public func festivals(on day: BSDay) -> [Festival] {
+    /// The festivals on `day`, in the Panchanga's order.
+    public func festivals(on day: BikramSambatDate) -> [Festival] {
         entries[day] ?? []
     }
 
     /// Every entry, for checks that sweep the table.
-    public var allEntries: [(day: BSDay, festivals: [Festival])] {
+    public var allEntries: [(day: BikramSambatDate, festivals: [Festival])] {
         entries.map { ($0.key, $0.value) }
     }
 

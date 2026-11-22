@@ -3,11 +3,8 @@
 import SwiftUI
 import WidgetKit
 
-/// The Today complication: one static configuration across all four accessory
-/// families. Tapping it opens the Watch app, whose sole destination is Today.
 struct TodayComplication: Widget {
-    /// Placed complications are stored by this kind; renaming it silently
-    /// removes them from users' faces on upgrade.
+    /// Renaming this removes placed complications from users' faces.
     nonisolated static let kind = "NepalKitTodayComplication"
 
     var body: some WidgetConfiguration {
@@ -25,8 +22,6 @@ struct TodayComplication: Widget {
     }
 }
 
-/// The provider factory: ordinary in every nondevelopment build, fixture-wired
-/// only when the development condition is compiled in.
 #if NEPALKIT_WATCH_FIXTURES
 private func makeTodayProvider() -> TodayComplicationProvider {
     ComplicationFixtures.makeProvider()

@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
 import AppKit
 import Foundation
 import Testing
+import Synchronization
 import NepalKitCore
 @testable import NepalKit
 
@@ -11,7 +14,6 @@ struct MidnightFireIntervalTests {
     }
 
     @Test func intervalOneSecondBeforeMidnightIsTwoSeconds() throws {
-        // 18:14:59 UTC: next midnight is 18:15:00, +1s guard makes 2.
         let interval = MenuBarModel.midnightFireInterval(after: try TestDates.utc(2026, 9, 26, 18, 14, 59))
         #expect(interval == 2)
     }
@@ -22,13 +24,11 @@ struct MidnightFireIntervalTests {
     }
 }
 
-/// Counts what a model adds and removes, so a leaked observer shows up as an
-/// imbalance rather than going unseen. Nonisolated because it overrides
-/// nonisolated `NotificationCenter` members; the tests only touch it from the
-/// main actor.
-nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable {
-    private(set) var added = 0
-    private(set) var removed = 0
+nonisolated final class RecordingCenter: NotificationCenter {
+    private let counts = Mutex((added: 0, removed: 0))
+
+    var added: Int { counts.withLock { $0.added } }
+    var removed: Int { counts.withLock { $0.removed } }
 
     override func addObserver(
         forName name: NSNotification.Name?,
@@ -36,23 +36,18 @@ nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable
         queue: OperationQueue?,
         using block: @escaping @Sendable (Notification) -> Void
     ) -> any NSObjectProtocol {
-        added += 1
+        counts.withLock { $0.added += 1 }
         return super.addObserver(forName: name, object: obj, queue: queue, using: block)
     }
 
     override func removeObserver(_ observer: Any) {
-        removed += 1
+        counts.withLock { $0.removed += 1 }
         super.removeObserver(observer)
     }
 }
 
-/// Timer intervals do not advance while the Mac sleeps, so wake and a system
-/// clock change are observed directly. Posted here on private centers, so no
-/// test has to sleep the Mac or change its clock.
 @MainActor
 struct ClockDiscontinuityTests {
-    // Before the dataset range ends and long before any run of this suite, so
-    // a refresh is visible as `now` moving forward.
     private static func stale() throws -> Date { try TestDates.utc(2026, 9, 27, 12, 0) }
 
     @Test func refreshAfterClockDiscontinuityRereadsTheClock() throws {
@@ -140,21 +135,17 @@ struct ClockDiscontinuityTests {
                 systemNotifications: system
             )
             released = model
-            // Wake on the workspace; clock and time zone changes on the system center.
             #expect(workspace.added == 1 && system.added == 2)
         }
 
         #expect(released == nil)
         #expect(workspace.removed == workspace.added)
         #expect(system.removed == system.added)
-        // A post after release reaches no block, and nothing traps.
         workspace.post(name: NSWorkspace.didWakeNotification, object: nil)
         system.post(name: .NSSystemClockDidChange, object: nil)
     }
 }
 
-/// The menu bar's timers must keep firing while a menu is tracking, which runs
-/// the main run loop in the event-tracking mode rather than the default one.
 @MainActor
 struct MainActorTimerModeTests {
     @Test func timerFiresInTheEventTrackingMode() {

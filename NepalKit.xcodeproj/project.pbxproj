@@ -13,8 +13,11 @@
 		7A7B7C0C06975960098472F /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7A7B7C0D06975960098472F /* NepalKitCore */; };
 		A110C001C0DE000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A110C001C0DE000000000001 /* AppIcon.icon */; };
 		CAFEF00D0000000000000001 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D000000000000002E /* NepalKitCore */; };
+		5EA7C4000000000000000011 /* NepalKitWatchSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7C4000000000000000021 /* NepalKitWatchSupport */; };
 		CAFEF00D0000000000000002 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D000000000000002F /* NepalKitCore */; };
+		5EA7C4000000000000000012 /* NepalKitWatchSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7C4000000000000000022 /* NepalKitWatchSupport */; };
 		CAFEF00D0000000000000003 /* NepalKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEF00D0000000000000030 /* NepalKitCore */; };
+		5EA7C4000000000000000013 /* NepalKitWatchSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7C4000000000000000023 /* NepalKitWatchSupport */; };
 		CAFEF00D0000000000000036 /* NepalKitWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */; };
 		CAFEF00D0000000000000037 /* NepalKitComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CAFEF00D0000000000000009 /* NepalKitComplications.appex */; };
 /* End PBXBuildFile section */
@@ -175,18 +178,21 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				CAFEF00D0000000000000001 /* NepalKitCore in Frameworks */,
+				5EA7C4000000000000000011 /* NepalKitWatchSupport in Frameworks */,
 			);
 		};
 		CAFEF00D0000000000000012 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				CAFEF00D0000000000000002 /* NepalKitCore in Frameworks */,
+				5EA7C4000000000000000012 /* NepalKitWatchSupport in Frameworks */,
 			);
 		};
 		CAFEF00D0000000000000013 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				CAFEF00D0000000000000003 /* NepalKitCore in Frameworks */,
+				5EA7C4000000000000000013 /* NepalKitWatchSupport in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -290,6 +296,7 @@
 			name = "NepalKitWatch Watch App";
 			packageProductDependencies = (
 				CAFEF00D000000000000002E /* NepalKitCore */,
+				5EA7C4000000000000000021 /* NepalKitWatchSupport */,
 			);
 			productName = "NepalKitWatch Watch App";
 			productReference = CAFEF00D0000000000000008 /* NepalKitWatch Watch App.app */;
@@ -312,6 +319,7 @@
 			name = NepalKitComplications;
 			packageProductDependencies = (
 				CAFEF00D000000000000002F /* NepalKitCore */,
+				5EA7C4000000000000000022 /* NepalKitWatchSupport */,
 			);
 			productName = NepalKitComplications;
 			productReference = CAFEF00D0000000000000009 /* NepalKitComplications.appex */;
@@ -338,6 +346,7 @@
 			name = "NepalKitWatch Watch AppTests";
 			packageProductDependencies = (
 				CAFEF00D0000000000000030 /* NepalKitCore */,
+				5EA7C4000000000000000023 /* NepalKitWatchSupport */,
 			);
 			productName = "$(TARGET_NAME)";
 			productReference = CAFEF00D000000000000000A /* NepalKitWatch Watch AppTests.xctest */;
@@ -368,7 +377,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					233B3DC6306975960098472F = {
 						CreatedOnToolsVersion = 27.0;
@@ -402,6 +411,7 @@
 			packageReferences = (
 				A17E000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */,
+				5EA7C4000000000000000001 /* XCLocalSwiftPackageReference "NepalKitWatchSupport" */,
 			);
 			preferredProjectObjectVersion = 100;
 			productRefGroup = 233B3DC8306975960098472F /* Products */;
@@ -539,6 +549,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -564,6 +575,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -603,6 +615,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -621,6 +634,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -635,6 +649,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 10;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -669,6 +684,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 10;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -698,6 +714,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -721,6 +738,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CA89X9954L;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1016,6 +1034,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = NepalKitCore;
 		};
+		5EA7C4000000000000000001 /* XCLocalSwiftPackageReference "NepalKitWatchSupport" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = NepalKitWatchSupport;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1059,6 +1081,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 233B3DE0306975960098472F /* XCLocalSwiftPackageReference "NepalKitCore" */;
 			productName = NepalKitCore;
+		};
+		5EA7C4000000000000000021 /* NepalKitWatchSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7C4000000000000000001 /* XCLocalSwiftPackageReference "NepalKitWatchSupport" */;
+			productName = NepalKitWatchSupport;
+		};
+		5EA7C4000000000000000022 /* NepalKitWatchSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7C4000000000000000001 /* XCLocalSwiftPackageReference "NepalKitWatchSupport" */;
+			productName = NepalKitWatchSupport;
+		};
+		5EA7C4000000000000000023 /* NepalKitWatchSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7C4000000000000000001 /* XCLocalSwiftPackageReference "NepalKitWatchSupport" */;
+			productName = NepalKitWatchSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

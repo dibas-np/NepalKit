@@ -3,8 +3,6 @@
 import Testing
 @testable import NepalKit
 
-/// The `Strings` functions that compose a sentence around a value the caller
-/// supplies, so the wording around the value is pinned.
 struct StringsCompositionTests {
     @Test func versionAndLastCheckedFrameTheirValues() {
         #expect(Strings.versionLabel("1.2.3") == "Version 1.2.3")

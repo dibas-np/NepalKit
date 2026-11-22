@@ -5,10 +5,8 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Nepal Time is UTC+5:45, so a whole UTC minute is a whole Nepal Time minute.
 struct TimeTickIntervalTests {
     @Test func minuteTickWaitsForTheNextMinuteBoundary() throws {
-        // 05:12:07 UTC is 10:57:07 Nepal Time: 53 s to 10:58:00.
         let interval = MenuBarModel.timeTickInterval(after: try TestDates.utc(2026, 9, 27, 5, 12, 7), showsSeconds: false)
         #expect(interval == 53)
     }
@@ -25,24 +23,20 @@ struct TimeTickIntervalTests {
     }
 
     @Test func instantsBeforeTheReferenceDateStillAlign() {
-        // -30010 s from 2001-01-01 UTC is 2000-12-31 21:24:50 Nepal Time, 10 s
-        // short of a minute; the raw remainder there is negative.
         let interval = MenuBarModel.timeTickInterval(after: Date(timeIntervalSinceReferenceDate: -30_010), showsSeconds: false)
         #expect(interval == 10)
     }
 }
 
-/// The format as the menu-bar model applies, persists and ticks for it.
-/// 12:00 UTC on 27 Sep 2026 is 17:45 Nepal Time on Sunday, 11 Ashoj 2083.
 @MainActor
 struct MenuBarFormatModelTests {
     private static let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private static let everything = MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true)
 
+    private let scratch = ScratchDefaults()
+
     private func freshStore() throws -> (SettingsStore, UserDefaults) {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         return (SettingsStore(defaults: defaults), defaults)
     }
 
@@ -98,9 +92,8 @@ struct MenuBarFormatModelTests {
         #expect(model.title(settings: Self.latin, updateAvailable: true) == "! Sun 11 Ashoj 2083 5:45")
     }
 
-    @Test func beyondTheRangeTheMarkerReplacesTheTimeToo() {
-        // 26 Jul 2028, past the table's 12 April 2028 end.
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_848_096_000), refreshes: false, schedulesMidnightFire: false)
+    @Test func beyondTheRangeTheMarkerReplacesTheTimeToo() throws {
+        let model = MenuBarModel(now: try TestDates.utc(2028, 7, 25, 0, 0), refreshes: false, schedulesMidnightFire: false)
         model.save(Self.everything)
 
         #expect(model.title(settings: Self.latin) == Strings.menuBarBeyondRange)

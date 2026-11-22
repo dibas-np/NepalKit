@@ -6,10 +6,10 @@ import NepalKitCore
 @testable import NepalKit
 
 struct SettingsStoreTests {
+    private let scratch = ScratchDefaults()
+
     private func freshStore() throws -> (SettingsStore, UserDefaults) {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         return (SettingsStore(defaults: defaults), defaults)
     }
 
@@ -34,8 +34,6 @@ struct SettingsStoreTests {
             DisplaySettings(digits: .devanagari, monthNames: .transliterated)
         )
 
-        // A fresh instance over the same domain reads the saved values,
-        // simulating an app relaunch.
         #expect(
             SettingsStore(defaults: defaults).settings
                 == DisplaySettings(digits: .devanagari, monthNames: .transliterated)
@@ -78,13 +76,4 @@ struct SettingsStoreTests {
 
         #expect(store.menuBarFormat == MenuBarFormat(showsTime: true))
     }
-
-    // Ticket 12's question — do settings survive an in-place update? — is
-    // answered by `SettingsStore.init`'s contract rather than by a test. The
-    // property it needed to be asked (`persistenceIsVersionIndependent`)
-    // existed only to be read here, and asserted nothing a caller could not
-    // already see in the default argument three lines away; testing the real
-    // thing instead would mean writing to `UserDefaults.standard`, which
-    // clobbers the developer's own settings. The constraint is stated where a
-    // re-scoping would be made.
 }

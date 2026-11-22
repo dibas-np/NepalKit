@@ -1,0 +1,23 @@
+# Script self-tests that run on Linux; the appcast and signing-key suites need OpenSSL 3, which macOS LibreSSL lacks.
+name: Script tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: script self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - run: python3 scripts/test_verify_appcast.py
+      - run: python3 scripts/test_swiftlint.py
+      - run: python3 scripts/test_verify_release_product.py
+      - run: python3 scripts/test_measure_coverage.py
+      - run: python3 scripts/test_check_signing_key.py

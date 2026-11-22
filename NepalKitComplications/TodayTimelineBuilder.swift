@@ -2,58 +2,25 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import NepalKitCore
+import NepalKitWatchSupport
 import WidgetKit
 
-/// The timeline a complication request receives: ordered entries and the
-/// reload policy selected for them.
 struct BuiltTimeline {
     let entries: [TodayComplicationEntry]
     let policy: TimelineReloadPolicy
 }
 
-/// Builds the fourteen-Gregorian-day Today timeline, plus its one conditional
-/// terminal boundary entry, from a single clock reading.
-///
-/// Pure and deterministic. The clock is read once by the caller; the day
-/// resolver and the midnight seam are injected so tests can pin failures at
-/// exact offsets without touching the system clock. Production wires the core
-/// resolver and `nextNPTMidnight(after:)` — nothing here maintains a second
-/// calendar oracle or re-reads the clock.
-///
-/// The contract, from the accepted handoff: entry zero activates at the
-/// original reading, future entries at successive Nepal midnights (only
-/// future-midnight intervals are twenty-four hours apart — the first interval
-/// varies). Every day resolves independently, boundaries included, so a
-/// before-minimum Today enters support and an after-maximum Today still fills
-/// the horizon. When day +13 is the dataset's maximum supported Gregorian day,
-/// exactly one range boundary entry is appended at day +14's midnight; when
-/// the maximum falls earlier in the horizon its following boundary day is
-/// already part of it and nothing is duplicated. At the first calculation
-/// failure the valid prefix is kept and a distinct error entry is appended at
-/// that day's intended activation, then construction stops; if an activation
-/// cannot be calculated at all, the prefix is discarded in favor of one error
-/// entry at the original reading. Successful timelines — boundary entries
-/// included — use `.atEnd`; any timeline carrying a calculation error asks for
-/// `.after(errorActivation + 15 minutes)`. No exact reload or recovery time is
-/// promised beyond that request.
 struct TodayTimelineBuilder: Sendable {
-    /// The last offset of the ordinary horizon: Today through day +13.
     static let horizonLastOffset = 13
 
-    /// How long after an error entry WidgetKit is asked to try again. A
-    /// requested earliest reload, never a guarantee.
     static let errorRetryInterval: TimeInterval = 15 * 60
 
     let dataset: CalendarDataset
-    var resolveDay: @Sendable (GADay) throws -> ResolvedDay
+    var resolveDay: @Sendable (GregorianDate) throws -> ResolvedDay
     var nextMidnight: @Sendable (Date) -> Date?
 
-    /// Builds the timeline for the supplied instant — the one clock reading
-    /// this whole construction is anchored to.
     func build(now: Date) -> BuiltTimeline {
-        guard let today = todayAD(now: now) else {
-            // The instant itself is unreadable: no prefix exists and no
-            // Gregorian context may be invented.
+        guard let today = GregorianDate.today(now: now) else {
             return singleErrorTimeline(at: now, gregorianDay: nil)
         }
         var nextActivation = now
@@ -66,27 +33,19 @@ struct TodayTimelineBuilder: Sendable {
         }
     }
 
-    /// How the ordinary horizon resolved.
     private enum HorizonOutcome {
-        /// Construction stopped early: return this timeline unchanged.
         case stopped(BuiltTimeline)
-        /// Every day through the horizon end resolved.
         case completed([TodayComplicationEntry])
     }
 
-    /// Resolves Today through day +13, one independently resolved day per
-    /// entry.
     private func horizonEntries(
-        from today: GADay,
+        from today: GregorianDate,
         now: Date,
         _ nextActivation: inout Date
     ) -> HorizonOutcome {
         var entries: [TodayComplicationEntry] = []
         for offset in 0 ... Self.horizonLastOffset {
             guard let activation = activation(forOffset: offset, now: now, &nextActivation) else {
-                // This day's intended activation cannot be calculated, so the
-                // prefix is discarded for one error at the original reading —
-                // never a fabricated timestamp.
                 return .stopped(singleErrorTimeline(at: now, gregorianDay: nil))
             }
             guard let gregorian = today.advanced(byDays: offset) else {
@@ -105,8 +64,6 @@ struct TodayTimelineBuilder: Sendable {
         return .completed(entries)
     }
 
-    /// The entry's activation: entry zero at the original reading, future
-    /// days at the next Nepal midnight of the chain.
     private func activation(forOffset offset: Int, now: Date, _ nextActivation: inout Date) -> Date? {
         if offset == 0 {
             return now
@@ -116,13 +73,10 @@ struct TodayTimelineBuilder: Sendable {
         return midnight
     }
 
-    /// The conditional terminal entry: only when day +13 is exactly the
-    /// dataset's maximum supported Gregorian day. Earlier maxima already
-    /// carry their following boundary inside the horizon; maxima beyond it or
-    /// behind Today need no extra entry. Returns the timeline to return as-is
-    /// when the terminal entry fails, or nil when the horizon stands.
+    /// Appends the boundary entry when day +13 is the dataset's last day.
+    /// Returns nil when the horizon needs no terminal entry.
     private func terminalEntries(
-        from today: GADay,
+        from today: GregorianDate,
         now: Date,
         prefix: [TodayComplicationEntry],
         _ nextActivation: inout Date
@@ -150,12 +104,9 @@ struct TodayTimelineBuilder: Sendable {
         }
     }
 
-    /// The failed day keeps the valid prefix: a distinct error entry at the
-    /// day's intended activation, then construction stops and WidgetKit is
-    /// asked to retry fifteen minutes later.
     private func prefixRetainingError(
         at activation: Date,
-        gregorianDay: GADay?,
+        gregorianDay: GregorianDate?,
         prefix: [TodayComplicationEntry]
     ) -> BuiltTimeline {
         var entries = prefix
@@ -166,14 +117,14 @@ struct TodayTimelineBuilder: Sendable {
         )
     }
 
-    private func errorEntry(at activation: Date, gregorianDay: GADay?) -> TodayComplicationEntry {
+    private func errorEntry(at activation: Date, gregorianDay: GregorianDate?) -> TodayComplicationEntry {
         TodayComplicationEntry(
             date: activation,
             state: .day(watchCalculationErrorDisplay(gregorianDay: gregorianDay, settings: .watch))
         )
     }
 
-    private func singleErrorTimeline(at instant: Date, gregorianDay: GADay?) -> BuiltTimeline {
+    private func singleErrorTimeline(at instant: Date, gregorianDay: GregorianDate?) -> BuiltTimeline {
         BuiltTimeline(
             entries: [errorEntry(at: instant, gregorianDay: gregorianDay)],
             policy: .after(instant.addingTimeInterval(Self.errorRetryInterval))

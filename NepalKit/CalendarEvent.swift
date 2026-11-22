@@ -4,22 +4,15 @@ import AppKit
 import Foundation
 import NepalKitCore
 
-/// An all-day event handed to the user's calendar app as an iCalendar file.
-///
-/// A file rather than EventKit: Calendar opens its own "add event" window,
-/// and the app needs no calendar access or new sandbox entitlement (ADR-0008).
 struct CalendarEvent: Equatable {
     let title: String
     let notes: String
-    let date: GADay
+    let date: GregorianDate
 
-    /// One identifier per day, so adding a day twice offers the same event.
     var uid: String {
         "nepalkit-\(date.year)-\(date.month)-\(date.day)@nepalkit"
     }
 
-    /// The event as an RFC 5545 document. `stamp` is the required DTSTAMP,
-    /// injected for tests.
     func ics(stamp: Date) -> String {
         let lines = [
             "BEGIN:VCALENDAR",
@@ -39,8 +32,6 @@ struct CalendarEvent: Equatable {
         return lines.map(Self.fold).joined(separator: "\r\n") + "\r\n"
     }
 
-    /// Writes the file into `directory` and opens it in the default calendar
-    /// app. False when writing or opening failed, so the card can say so.
     func open(
         stamp: Date = .now,
         in directory: URL = FileManager.default.temporaryDirectory,
@@ -55,14 +46,10 @@ struct CalendarEvent: Equatable {
         return opener(url)
     }
 
-    // MARK: - Format
-
-    /// "20261018".
-    static func basic(_ day: GADay) -> String {
+    static func basic(_ day: GregorianDate) -> String {
         padded(day.year, 4) + padded(day.month, 2) + padded(day.day, 2)
     }
 
-    /// "20261011T143000Z".
     static func utcStamp(_ date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt
@@ -71,15 +58,13 @@ struct CalendarEvent: Equatable {
             + "T" + padded(parts.hour ?? 0, 2) + padded(parts.minute ?? 0, 2) + padded(parts.second ?? 0, 2) + "Z"
     }
 
-    /// `value` zero-padded to `width` ASCII digits, whatever the locale.
     private static func padded(_ value: Int, _ width: Int) -> String {
         let digits = String(value)
         return String(repeating: "0", count: max(0, width - digits.count)) + digits
     }
 
-    /// RFC 5545 TEXT escaping: backslash, semicolon, comma and newline. CRLF
-    /// and bare CR become newlines first: Swift reads "\r\n" as one Character,
-    /// which the "\n" replacement would miss, leaving a raw break in the line.
+    /// RFC 5545 TEXT escaping. CR and CRLF are normalised first because Swift treats
+    /// "\r\n" as one Character, which the "\n" replacement would miss.
     static func escape(_ text: String) -> String {
         text.replacing("\r\n", with: "\n")
             .replacing("\r", with: "\n")
@@ -89,8 +74,7 @@ struct CalendarEvent: Equatable {
             .replacing("\n", with: "\\n")
     }
 
-    /// Folds a content line at 75 octets, never inside a character. Counts
-    /// UTF-8 bytes, not characters: Devanagari is three bytes a letter.
+    /// Folds at 75 octets, never inside a character (Devanagari is three bytes a letter).
     static func fold(_ line: String) -> String {
         var folded = ""
         var width = 0

@@ -3,26 +3,9 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "About" tab: what this build is, and how to keep it current.
-///
-/// Shows app and dataset versions, the supported calendar range,
-/// and software update. Everything else this app could say about itself is
-/// either already in the sidebar footer (name, icon, repository) or is prose that
-/// belongs in the repository rather than in a preferences window.
-///
-/// Software update lives here rather than under General because both answers are
-/// questions about *this build*: what it is, and how to get the next one. Grouping
-/// them puts the version a user is about to report next to the control that
-/// changes it, which is the pairing that makes a bug report actionable.
 struct AboutSettingsView: View {
-    /// `@Bindable` for the automatic-checks toggle; `automaticChecksSetting`
-    /// writes through to the service, which stays the authority.
     @Bindable var updates: UpdateCheckModel
-    /// The build's own facts. Read from the bundle by the app and passed in, so
-    /// the version here cannot disagree with the one the menu bar was built from.
     let metadata: AppMetadata
-    /// The same dataset the app converts with, so the range shown is the range the
-    /// converter actually honours (ADR-0010).
     let dataset: CalendarDataset
 
     var body: some View {
@@ -44,7 +27,6 @@ struct AboutSettingsView: View {
                 .accessibilityLabel(Strings.supportedRangeLabel)
                 .accessibilityValue(Strings.supportedRangeSpoken(dataset.supportedRange))
                 if let note = Strings.provisionalYearsNote(dataset.provisionalYears) {
-                    // Directly under the range it qualifies.
                     Text(note)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -54,9 +36,6 @@ struct AboutSettingsView: View {
             }
 
             Section(Strings.updatesSection) {
-                // The shown title keeps its ellipsis, which marks a control that
-                // opens a sheet elsewhere. Spoken it is a pause and no meaning,
-                // so the announcement drops it.
                 Button(Strings.checkForUpdatesLabel, action: updates.checkNow)
                     .accessibilityLabel(Strings.checkForUpdatesLabelSpoken)
 
@@ -64,19 +43,11 @@ struct AboutSettingsView: View {
                     Text(Strings.updateAutomaticallyLabel)
                 }
 
-                if let status = updates.statusText {
-                    // A plain Text already announces itself. Left unmodified
-                    // rather than given a redundant label.
-                    Text(status)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                Text(updates.statusText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
 
                 if let lastCheck = updates.lastCheckDate {
-                    // Sits under the status because the two facts read as one
-                    // sentence: current, as of when. Nil before the first
-                    // check, matching the status line's own silence — an
-                    // uncheckable claim is not stated here either.
                     Text(Strings.updateLastChecked(lastCheck.formatted(date: .abbreviated, time: .shortened)))
                         .font(.footnote)
                         .foregroundStyle(.secondary)

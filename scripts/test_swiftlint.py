@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Checks the pinned SwiftLint bootstrap without downloading an archive."""
 
 import shutil
 import subprocess

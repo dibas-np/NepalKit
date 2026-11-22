@@ -3,40 +3,19 @@
 import NepalKitCore
 import SwiftUI
 
-/// The "Menu Bar" tab: what the menu-bar item currently shows, and the format
-/// options that belong to it alone (weekday, year and clock, after the macOS
-/// menu-bar clock's options).
-///
-/// Digit script and month names also shape the menu bar, but they shape the
-/// popover too, so they stay in General where a user looking for "how do I
-/// change my numbers" will find them.
-///
-/// The preview sits above the options, where a toggle's effect is seen. It also
-/// shows what nothing else can: the marker and the
-/// beyond-range fallback are branches of `MenuBarModel.title` that are otherwise
-/// unreachable until the day they matter, and a user who has never seen either
-/// has no way to know what the menu bar will do. `MenuBarModelTests` covers the
-/// logic; this shows the consequence.
 struct MenuBarSettingsView: View {
     @Bindable var menuBar: MenuBarModel
     let settings: DisplaySettings
-    /// Which clock the time option shows, so the footnote can name it.
     let timeReference: TimeReference
-    /// The same flag the real menu-bar label reads, so the preview cannot disagree
-    /// with the menu bar about whether an update is pending.
     let updateAvailable: Bool
 
     var body: some View {
         Form {
-            // Its own view so the clock's tick (each minute, or second)
-            // re-evaluates only the preview, not the whole form.
             MenuBarPreview(menuBar: menuBar, settings: settings, updateAvailable: updateAvailable)
             Section {
                 Toggle(Strings.menuBarShowsWeekday, isOn: $menuBar.showsWeekday)
                 Toggle(Strings.menuBarShowsYear, isOn: $menuBar.showsYear)
                 Toggle(Strings.menuBarShowsTime, isOn: $menuBar.showsTime)
-                // Visible but disabled while the time is off, as in the system
-                // clock's settings, and indented under the toggle they belong to.
                 Group {
                     Toggle(Strings.menuBarUsesTwentyFourHourClock, isOn: $menuBar.usesTwentyFourHourClock)
                     Toggle(Strings.menuBarShowsSeconds, isOn: $menuBar.showsSeconds)
@@ -55,8 +34,6 @@ struct MenuBarSettingsView: View {
     }
 }
 
-/// The Menu Bar tab's preview: what the menu-bar item shows and how it is
-/// announced.
 private struct MenuBarPreview: View {
     let menuBar: MenuBarModel
     let settings: DisplaySettings
@@ -64,9 +41,6 @@ private struct MenuBarPreview: View {
 
     var body: some View {
         Section {
-            // Glass on the value itself: a `Form(.grouped)` section paints its
-            // own background over anything behind it, so `.glassEffect` on the
-            // window was invisible (and swallowed clicks).
             Text(preview)
                 .font(.body.monospacedDigit())
                 .textSelection(.enabled)
@@ -74,21 +48,17 @@ private struct MenuBarPreview: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                // The value is the point of the row, so it is not decoration.
                 .accessibilityLabel(Strings.menuBarPreviewCaption)
                 .accessibilityValue(preview)
         } header: {
             Text(Strings.menuBarPreviewCaption)
         } footer: {
-            // Names what the spoken form is, since the value alone
-            // ("12 Ashoj 2083") gives no clue it is a menu bar.
             Text(spokenPreview)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
     }
 
-    /// The literal menu-bar string, through the same call the app makes.
     private var preview: String {
         menuBar.title(
             settings: settings,
@@ -97,11 +67,6 @@ private struct MenuBarPreview: View {
         )
     }
 
-    /// The same value in the form the menu bar itself announces.
-    ///
-    /// Reuses `spokenTitle` rather than writing a second sentence, so the preview
-    /// cannot drift from the menu bar the way a hand-written description of it
-    /// eventually would.
     private var spokenPreview: String {
         menuBar.spokenTitle(
             settings: settings,

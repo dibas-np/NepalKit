@@ -2,17 +2,8 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppIntents
 
-/// The twelve Bikram Sambat months as Siri resolves them by voice.
-///
-/// Raw values are the dataset's month numbers, so a case converts to the
-/// dataset world with no translation step. Titles are the app's canonical
-/// transliterations (`NepalKitCore.transliteratedMonthNames`); synonyms carry
-/// the variants people actually say, plus the Devanagari spellings, which
-/// serve text matching in Shortcuts/Spotlight — spoken matching rides the
-/// Latin titles and synonyms. Every string is a build-time literal, because
-/// App Intents metadata is extracted from source (wayfinder ticket 01). The
-/// synonym table is ticket 02's decision, adopted verbatim; "Manxsir" was
-/// explicitly rejected there and must not reappear.
+/// Every string is a literal because App Intents metadata
+/// is extracted from source.
 nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
     case baisakh = 1
     case jestha = 2
@@ -32,7 +23,7 @@ nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
     )
 
     static let caseDisplayRepresentations: [BikramSambatMonth: DisplayRepresentation] = [
-        .baisakh: DisplayRepresentation(
+            .baisakh: DisplayRepresentation(
                 title: "Baisakh",
                 synonyms: ["Baishakh", "Baisak", "Vaishakh", "Vaishakha", "Vaisakha", "बैशाख", "वैशाख"]
             ),
@@ -82,10 +73,6 @@ nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
             ),
     ]
 
-    /// Every string a typed query can name this month by: its title plus all
-    /// synonyms. Matching must be exact (case-insensitive) — the table
-    /// deliberately contains near-collisions ("Aso" for Ashar, "Asoj" for
-    /// Ashoj) that substring matching would misroute.
     var candidateStrings: [String] {
         let representation = Self.caseDisplayRepresentations[self]
         return [representation?.title.key ?? ""] + (representation?.synonyms.map { $0.key } ?? [])

@@ -3,8 +3,6 @@
 import Testing
 @testable import NepalKit
 
-/// The automatic-checks toggle's binding on `UpdateCheckModel`, apart from the
-/// model's other tests to keep that file under the length limit.
 @MainActor
 struct UpdateCheckSettingTests {
     @Test func theToggleBindingReadsTheCopyAndWritesThroughTheService() {

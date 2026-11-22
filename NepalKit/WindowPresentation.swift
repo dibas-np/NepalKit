@@ -2,74 +2,13 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
-/// Establishes activation and focus when a command opens a normal application
-/// window from NepalKit's menu-bar-only context.
-///
-/// ADR-0011 measured the gap this closes: opening such a window puts it on
-/// screen but leaves `NSApp.keyWindow` nil, `NSApp.isActive` false, and another
-/// application still frontmost. The window is focusable, just not focused — so
-/// it opens and cannot be used. Every command that opens a window goes through
-/// here rather than each growing its own activation call, so About
-/// inherits the behaviour instead of reimplementing it.
-///
-/// **Which API, measured rather than assumed.** Measured against the real app
-/// bundle, five strategies, each after resetting the active app so none could
-/// inherit the previous one's success:
-///
-/// | Strategy | App active | Settings window key |
-/// | --- | --- | --- |
-/// | `NSApp.activate()` | no | no |
-/// | `NSRunningApplication…activate(options: [])` | no | no |
-/// | `NSRunningApplication…activate(options: [.activateAllWindows])` | no | no |
-/// | `NSRunningApplication…activate(options: [.activateAllWindows, .activateIgnoringOtherApps])` | **yes** | **yes** |
-/// | `NSApp.activate(ignoringOtherApps: true)` | **yes** | **yes** |
-///
-/// `NSApp.activate()` cannot work here: it activates only when no other
-/// application is active, and a menu-bar app is being summoned *while* one is.
-/// So the activation must be able to come forward over the current frontmost
-/// app — which is what the `ignoringOtherApps` flag expresses.
-///
-/// **Which spelling, and why the obvious answer is not the one used.** The
-/// table above measured both spellings against the real app bundle. The
-/// `NSRunningApplication.activate(options:)` spelling cannot do this job on
-/// current macOS: its `ignoringOtherApps` flag is hard-deprecated (macOS 14),
-/// Apple's message says it "will have no effect", and plain activation is the
-/// table's never-comes-forward row. The older
-/// `NSApp.activate(ignoringOtherApps: true)` fronts this app just as
-/// reliably, so that is what is used. It is itself soft-deprecated — marked
-/// `API_TO_BE_DEPRECATED`, which emits no compiler warning — and keeping it
-/// is deliberate: the replacement Apple names is that same first row.
-///
-/// **`isActive` is the retry condition, not the request's return value.** The
-/// request-accepted `Bool` is a proxy for the thing that actually matters.
-/// The activation closure reports `NSApp.isActive`, which says whether the app
-/// came forward, so the bounded retry continues for exactly as long as the app
-/// is not yet frontmost — the real condition, and stricter than trusting a
-/// submission receipt.
-///
-/// The activation is attempted on a later main-actor turn, and retried a
-/// bounded number of times *while the app is not yet active*.
-///
-/// Retry rather than a longer sleep, because the observed failure is an
-/// activation that does not take effect, not a mistimed one: the app never
-/// comes forward, leaving the window open and dead to the keyboard. A fixed
-/// delay would paper over that and still fail when the machine is busy.
-///
-/// Measured for the `Settings` scene: activating in the same turn and on the
-/// next turn both work. Measured for a lazily created `Window` scene (About):
-/// the same one-turn hop worked on some launches and not others, which is why
-/// this is bounded-retry rather than a magic interval. Either way the invariant
-/// that matters is unchanged — never activate before opening, and never give up
-/// while the user is still waiting for a usable window.
+/// `NSApp.activate()` won't come forward while another app is active,
+/// so this uses the soft-deprecated `activate(ignoringOtherApps:)` and retries a
+/// bounded number of times until `NSApp.isActive`.
 @MainActor
 enum WindowPresentation {
     static func present(
         open: () -> Void,
-        // @MainActor on the closure, not just on the enum: a default argument
-        // expression is evaluated in a nonisolated context even when the
-        // enclosing function is isolated, so a body touching NSApp warns
-        // without it. The same reason the model initialisers build their
-        // defaults in the body rather than in the signature.
         activate: @escaping @MainActor () -> Bool = {
             NSApp.activate(ignoringOtherApps: true)
             return NSApp.isActive

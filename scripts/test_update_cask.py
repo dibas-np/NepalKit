@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Exercise the cask updater with isolated download and authentication stubs."""
 
 import os
 from pathlib import Path
@@ -61,7 +60,7 @@ class CaskIdentityTests(unittest.TestCase):
             stub = binaries / "stub"
             stub.write_text(STUB)
             stub.chmod(0o755)
-            for name in ("curl", "hdiutil", "spctl", "xcrun", "codesign", "shasum", "brew"):
+            for name in ("curl", "hdiutil", "spctl", "xcrun", "codesign", "shasum"):
                 (binaries / name).symlink_to(stub)
             log = tmp / "commands"
             team = re.findall(r"DEVELOPMENT_TEAM = ([^;]+);",

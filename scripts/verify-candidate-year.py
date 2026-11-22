@@ -6,42 +6,21 @@
 
 Usage: python3 scripts/verify-candidate-year.py 2085 [month_lengths_csv]
 
-Pins, caching and parsing are shared with verify-data-sources.py. Differences
-are reported rather than resolved. A row in a community table is not proof of
-an official calendar publication. Only 2084 has an explicitly approved local
-projection; a later year needs evidence under ADR-0014 before adoption.
+Differences are reported, not resolved. A later year than 2084 needs official
+evidence (see SOURCES.md) before it is adopted.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import sys
-from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-# verify-data-sources.py does `from dataset_table import shipped_table` at import
-# time, so scripts/ must be importable however this file was invoked. Loading it
-# by path mirrors how test_dataset_parsers.py loads it, rather than importing a
-# name that is not a valid module identifier.
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
-
-
-def load(name):
-    spec = importlib.util.spec_from_file_location(name.replace("-", "_"), HERE / name)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-vds = load("verify-data-sources.py")
+import data_sources as vds
 
 
 MONTHS = vds.MONTHS
 
 
-def parse_candidate(text, year):
-    """The candidate row as twelve month lengths, or exit with the reason why."""
+def parse_candidate(text):
     parts = [p for p in text.replace(" ", "").split(",") if p]
     if len(parts) != 12:
         sys.exit("a candidate year has 12 months; got %d from %r"
@@ -53,22 +32,16 @@ def parse_candidate(text, year):
 
 
 def fetch_row(name, year):
-    """One source's row for `year`, or None if it publishes no such year.
-
-    Raises on a fetch failure: an unreadable source is this script's problem to
-    report as a failure, distinct from a source that simply has nothing to say.
-    """
     url, repo = vds.PINS[name]
     body = vds.fetch(name, url, False)
     if body is None:
         raise OSError("could not fetch %s (%s)" % (name, url))
-    del vds.NOTES[:]
     table = vds.parse_askbuddie(body)
     if not table:
         raise ValueError("%s fetched, but no rows parsed — the file's shape "
                          "changed and the comparison would be silently empty"
                          % name)
-    return repo, table.get(year), list(vds.NOTES), min(table), max(table)
+    return repo, table.get(year), min(table), max(table)
 
 
 def main():
@@ -80,7 +53,7 @@ def main():
         year = int(args[0])
     except ValueError:
         sys.exit("the year must be a whole BS year, e.g. 2085; got %r" % args[0])
-    candidate = parse_candidate(args[1], year) if len(args) > 1 else None
+    candidate = parse_candidate(args[1]) if len(args) > 1 else None
 
     print("What the pinned sources publish for %d BS\n" % year)
     if candidate is None:
@@ -92,7 +65,7 @@ def main():
     failed = []
     for name in vds.PINS:
         try:
-            repo, row, notes, first, last = fetch_row(name, year)
+            repo, row, first, last = fetch_row(name, year)
         except (OSError, ValueError) as exc:
             print("%-13s ERROR  %s" % (name, exc))
             failed.append(name)
@@ -100,20 +73,12 @@ def main():
         rows[name] = row
         print("%-13s %s" % (name, repo))
         if row is None:
-            # Named explicitly. A source that publishes no row for the year is
-            # not a source that agrees with the others.
             print("  no row for %d BS (this table covers %d-%d BS)"
                   % (year, first, last))
             print()
             continue
         print("  %s  (%d days)" % (row, sum(row)))
-        # Notes the parser raised about the whole table, not this year: a source
-        # that flags its own impossible year is telling you how far to trust it.
-        for note in notes:
-            print("  elsewhere in this table — %s" % note.strip())
-        del vds.NOTES[:]
-        vds.check_impossible({year: row})
-        for note in vds.NOTES:
+        for note in vds.check_impossible({year: row}):
             print(note)
 
     published = {name: row for name, row in rows.items() if row is not None}
@@ -136,9 +101,6 @@ def main():
         return 0
 
     print("\nCandidate %d BS: %s  (%d days)" % (year, candidate, sum(candidate)))
-    # Classify whole rows, not months. A source that agrees on eleven months and
-    # is wrong on the twelfth has not agreed, and counting it as agreement would
-    # report a year with a different total as corroborated.
     differing = {name: [i for i in range(12) if row[i] != candidate[i]]
                  for name, row in published.items()}
     differing = {name: idxs for name, idxs in differing.items() if idxs}
@@ -172,19 +134,18 @@ def main():
               "shipped\ntable's corrections and projection; add this one "
               "there rather than\nresolving it here.")
 
-    del vds.NOTES[:]
-    vds.check_impossible({year: candidate})
+    notes = vds.check_impossible({year: candidate})
     print("\nCandidate year total: %d day(s)%s"
           % (sum(candidate),
              " — POSSIBLE" if sum(candidate) in (365, 366) else ""))
-    for note in vds.NOTES:
+    for note in notes:
         print(note)
-    if vds.NOTES:
+    if notes:
         print("The candidate cannot be transcribed as it stands: a BS year is "
               "365 or 366\ndays. Re-read the row before shipping it.")
     print("\nAttestation is not what this script measures. Agreement between "
           "projections is\nnot attestation: only the Samiti's published almanac "
-          "attests a year. See ADR-0014 and SOURCES.md.")
+          "attests a year. See SOURCES.md.")
 
 
 if __name__ == "__main__":

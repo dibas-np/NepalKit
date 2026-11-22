@@ -2,40 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import NepalKitCore
 
-/// The app-side half of the spoken forms: everything that composes app copy.
-/// The copy-free transformations live in NepalKitCore, where the boundary rule
-/// puts them and where any consumer of the package can reach them.
 extension SpokenDate {
-    /// A full announcement for the menu-bar extra.
-    ///
-    /// The hardest and most visible surface in the app: it is
-    /// the only thing a blind user meets before opening anything. A bare date
-    /// like "11 Ashoj" says nothing about *which* app it belongs to, and someone
-    /// navigating by menu-bar extras is relying on this one string entirely.
-    /// Naming the app costs a word and makes the item identifiable out of
-    /// context.
-    ///
-    /// - Parameter updateAvailable: adds the reminder clause. It goes *after* the
-    ///   app name and *before* the date, because nothing may precede the name —
-    ///   that is what makes the item identifiable — and the reminder is the part
-    ///   that asks the user to act.
-    static func menuBar(
-        today: BSDay?,
-        monthNames: MonthNameStyle,
-        dataset: CalendarDataset,
-        updateAvailable: Bool = false
-    ) -> String {
-        menuBar(
-            spokenDate: today.map { bs($0, monthNames: monthNames) },
-            dataset: dataset,
-            updateAvailable: updateAvailable
-        )
-    }
-
-    /// The same announcement around an already-spoken date, which is how the
-    /// menu-bar extra calls it: the date part there carries whatever weekday and
-    /// time the menu-bar format adds (`SpokenDate.menuBarDate`). Nil means the
-    /// date is past the supported range.
     static func menuBar(
         spokenDate: String?,
         dataset: CalendarDataset,
@@ -43,16 +10,16 @@ extension SpokenDate {
     ) -> String {
         let reminder = updateAvailable ? "\(Strings.updateAvailableSpoken), " : ""
         guard let spokenDate else {
-            // Past the supported range the label is a marker, not a date, and a
-            // bare "n/a" spoken alone is meaningless — it reads as a broken
-            // item. Say what actually happened instead. The end date comes from
-            // the dataset itself, so a table change moves this sentence with it
-            // (ADR-0010: no range literal outside the dataset).
             guard let end = dataset.gregorianEnd else {
                 return "\(Strings.appNameForSpeech), \(reminder)\(Strings.bsDateUnavailable)"
             }
-            return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(ad(end)))"
+            return "\(Strings.appNameForSpeech), \(reminder)\(Strings.spokenDateBeyondRange(gregorian(end)))"
         }
         return "\(Strings.appNameForSpeech), \(reminder)\(spokenDate)"
+    }
+
+    static func gregorianAnnouncement(date: GregorianDate, weekday: String?) -> String {
+        guard let weekday else { return gregorian(date) }
+        return "\(gregorian(date)), \(weekday)"
     }
 }

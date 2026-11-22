@@ -3,14 +3,6 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Fail when the monthly Nepali Patro check is overdue.
 
-The shipped table ends at 2084 BS (2028-04-12), and 2084 is a projection.
-Only the Samiti's published almanac, expected around Magh 2083 BS (January to
-February 2027), attests a year or makes a new one shippable (ADR-0014). Nothing
-machine-readable announces it, so this checks that a person has looked: the
-`last_checked:` line in docs/release-evidence/dataset-extension-procedure.md
-must be no older than 35 days. Quiet before 2027-01-01 and once the shipped
-table reaches 2085.
-
     scripts/check-patro-reminder.py [--today YYYY-MM-DD]
 """
 
@@ -23,14 +15,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PROCEDURE = ROOT / "docs" / "release-evidence" / "dataset-extension-procedure.md"
+PROCEDURE = ROOT / "docs" / "updating-calendar-data.md"
 CHECKS_START = datetime.date(2027, 1, 1)
 MAX_AGE_DAYS = 35
 EXTENDED_YEAR = 2085
 
 
 def last_checked(procedure_text: str) -> datetime.date | None:
-    """The recorded check date, or None for `none`. Exits if the line is missing or malformed."""
     match = re.search(r"^last_checked:\s*(\S+)\s*$", procedure_text, re.M)
     if not match:
         sys.exit(f"no `last_checked:` line in {PROCEDURE}")
@@ -44,7 +35,6 @@ def last_checked(procedure_text: str) -> datetime.date | None:
 
 
 def verdict(today: datetime.date, checked: datetime.date | None, last_year: int) -> tuple[bool, str]:
-    """(ok, message) for the reminder."""
     if last_year >= EXTENDED_YEAR:
         return True, f"the shipped table reaches {last_year} BS; the reminder is done"
     if today < CHECKS_START:
@@ -52,11 +42,9 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
     if checked is None:
         return False, ("the monthly Patro check has never been recorded. Read the Samiti's "
                        "notices on npns.gov.np, then set `last_checked:` in "
-                       "docs/release-evidence/dataset-extension-procedure.md")
+                       "docs/updating-calendar-data.md")
     age = (today - checked).days
     if age < -1:
-        # A future date would pass forever. One day of slack covers a local
-        # date ahead of the runner's UTC date.
         return False, (f"`last_checked: {checked}` is in the future; record the date the "
                        "check was actually made")
     if age > MAX_AGE_DAYS:
@@ -71,12 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--today", type=datetime.date.fromisoformat, default=datetime.date.today())
     args = parser.parse_args(argv)
 
-    sys.path.insert(0, str(ROOT / "scripts"))
     from dataset_table import shipped_table
 
     last_year = max(shipped_table())
-    # Read only when a check is due, so a missing line is quiet outside that
-    # window. The pull-request suite still requires it to be readable.
     quiet = args.today < CHECKS_START or last_year >= EXTENDED_YEAR
     checked = None if quiet else last_checked(PROCEDURE.read_text(encoding="utf-8"))
     ok, message = verdict(args.today, checked, last_year)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for verify-release-product.py, with codesign stubbed."""
 
 import base64
 import contextlib
@@ -40,6 +39,7 @@ GOOD_INFO = {
     "SURequireSignedFeed": True,
     "SUVerifyUpdateBeforeExtraction": True,
     "SUEnableInstallerLauncherService": True,
+    "SUSignedFeedFailureExpirationInterval": 0.0,
     "SUPublicEDKey": base64.b64encode(bytes(range(32))).decode(),
     "SUFeedURL": "https://dibas-np.github.io/NepalKit/appcast.xml",
 }
@@ -90,7 +90,6 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertNotIn("FAIL", out)
 
     def test_a_failed_codesign_run_is_a_failure_even_with_xml(self):
-        # The stub still prints a valid plist; only the exit code signals failure.
         code, out = self.run_case(codesign_exit=1)
         self.assertEqual(code, 1, out)
         self.assertIn("codesign exited 1", out)
@@ -123,6 +122,12 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("SURequireSignedFeed", out)
 
+    def test_a_signed_feed_failure_expiry_fails(self):
+        for value in (1728000.0, True):
+            code, out = self.run_case(info={"SUSignedFeedFailureExpirationInterval": value})
+            self.assertEqual(code, 1, value)
+            self.assertIn("SUSignedFeedFailureExpirationInterval", out)
+
     def test_wrong_length_public_key_fails(self):
         code, out = self.run_case(info={"SUPublicEDKey": base64.b64encode(b"short").decode()})
         self.assertEqual(code, 1)
@@ -134,8 +139,6 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.assertIn("SUFeedURL", out)
 
     def test_another_feed_on_the_same_host_fails(self):
-        # The feed URL is pinned exactly: a different path on the Pages host is a
-        # different feed.
         code, out = self.run_case(info={"SUFeedURL": "https://dibas-np.github.io/NepalKit/other.xml"})
         self.assertEqual(code, 1)
         self.assertIn("SUFeedURL", out)

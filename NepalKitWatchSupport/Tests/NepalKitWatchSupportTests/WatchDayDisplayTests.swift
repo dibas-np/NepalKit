@@ -1,0 +1,133 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Dibas Sigdel
+import Foundation
+import Testing
+import NepalKitCore
+import NepalKitWatchSupport
+
+struct WatchDayDisplayTests {
+    private let dataset = CalendarDataset.v2
+
+    @Test func supportedComponentsCarryTheCanonicalPresentation() throws {
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
+
+        guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
+            Issue.record("Expected a supported display")
+            return
+        }
+
+        #expect(components.weekdayName == "आइत")
+        #expect(components.bikramSambatDay == "११")
+        #expect(components.bikramSambatMonthName == "असोज")
+        #expect(components.bikramSambatYear == "२०८३")
+        #expect(components.gregorianDay == "२७")
+        #expect(components.gregorianMonthName == "September")
+        #expect(components.gregorianYear == "२०२६")
+    }
+
+    @Test func supportedSpeechIsIndependentAndComplete() throws {
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
+
+        guard case .supported(let components) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
+            Issue.record("Expected a supported display")
+            return
+        }
+
+        #expect(components.spokenBikramSambat == "11 Ashoj 2083")
+        #expect(components.spokenWeekdayName == "Sunday")
+        #expect(components.spokenGregorian == "27 September 2026")
+    }
+
+    @Test func supportedComponentsHonorOtherFixedSettings() throws {
+        let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
+
+        guard case .supported(let components) = watchDayDisplay(
+            for: day,
+            settings: DisplaySettings(digits: .latin, monthNames: .transliterated),
+            in: dataset
+        ) else {
+            Issue.record("Expected a supported display")
+            return
+        }
+
+        #expect(components.weekdayName == "Sunday")
+        #expect(components.bikramSambatDay == "11")
+        #expect(components.bikramSambatMonthName == "Ashoj")
+        #expect(components.gregorianYear == "2026")
+        #expect(components.spokenBikramSambat == "11 Ashoj 2083")
+    }
+
+    @Test func beforeBoundaryNamesTheFirstSupportedYear() throws {
+        let day = try ResolvedDay(GregorianDate(year: 1918, month: 4, day: 12), in: dataset)
+
+        guard case .rangeBoundary(let boundary) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
+            Issue.record("Expected a range boundary display")
+            return
+        }
+
+        #expect(boundary.side == .before)
+        #expect(boundary.contextYear == "१९७५")
+        #expect(boundary.contextLine == "Supported from १९७५ BS")
+        #expect(boundary.compactContextLine == "From १९७५ BS")
+        #expect(boundary.gregorianDay == "१२")
+        #expect(boundary.gregorianMonthName == "April")
+        #expect(boundary.gregorianYear == "१९१८")
+        #expect(boundary.spokenGregorian == "12 April 1918")
+        #expect(boundary.spokenDescription == "Bikram Sambat unavailable, supported from 1975 BS")
+    }
+
+    @Test func afterBoundaryNamesTheLastSupportedYear() throws {
+        let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
+
+        guard case .rangeBoundary(let boundary) = watchDayDisplay(for: day, settings: .watch, in: dataset) else {
+            Issue.record("Expected a range boundary display")
+            return
+        }
+
+        #expect(boundary.side == .after)
+        #expect(boundary.contextYear == "२०८४")
+        #expect(boundary.contextLine == "Supported through २०८४ BS")
+        #expect(boundary.compactContextLine == "Through २०८४ BS")
+        #expect(boundary.gregorianDay == "१३")
+        #expect(boundary.gregorianMonthName == "April")
+        #expect(boundary.gregorianYear == "२०२८")
+        #expect(boundary.spokenGregorian == "13 April 2028")
+        #expect(boundary.spokenDescription == "Bikram Sambat unavailable, supported through 2084 BS")
+    }
+
+    @Test func firmStateCopyIsExact() {
+        #expect(WatchDayCopy.boundaryFull == "Bikram Sambat unavailable")
+        #expect(WatchDayCopy.boundaryCompact == "Unavailable")
+        #expect(WatchDayCopy.failureFull == "Date calculation failed")
+        #expect(WatchDayCopy.failureCompact == "Error")
+    }
+
+    @Test func calculationErrorCarriesResolvedGregorianContext() {
+        let display = watchCalculationErrorDisplay(
+            gregorianDay: GregorianDate(year: 2028, month: 4, day: 13),
+            settings: .watch
+        )
+
+        guard case .calculationError(let components) = display else {
+            Issue.record("Expected a calculation error display")
+            return
+        }
+
+        #expect(components.gregorianDay == "१३")
+        #expect(components.gregorianMonthName == "April")
+        #expect(components.gregorianYear == "२०२८")
+    }
+
+    @Test func calculationErrorWithoutResolvedContextSuppliesNoDate() {
+        let display = watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)
+
+        guard case .calculationError(let components) = display else {
+            Issue.record("Expected a calculation error display")
+            return
+        }
+
+        #expect(components.gregorianDay == nil)
+        #expect(components.gregorianMonthName == nil)
+        #expect(components.gregorianYear == nil)
+    }
+}

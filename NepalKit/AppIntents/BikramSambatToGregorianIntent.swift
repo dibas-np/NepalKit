@@ -3,9 +3,6 @@
 import AppIntents
 import NepalKitCore
 
-/// Converts a Bikram Sambat date to Gregorian. A Bikram Sambat date is a
-/// civil day, not an instant, so the parameters are day, month, and year —
-/// never a `Date` (ticket 02).
 struct BikramSambatToGregorianIntent: AppIntent {
     static let title: LocalizedStringResource = "Convert a Bikram Sambat date to Gregorian"
 
@@ -34,33 +31,36 @@ struct BikramSambatToGregorianIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ReturnsValue<Date> & ProvidesDialog {
         let dataset = AppData.dataset
-        // Range first, then the month's real length — the dataset supplies
-        // every number, and intent code hard-codes none of them (ticket 03).
-        guard dataset.supportedRange.contains(year) else {
-            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
-        }
-        let lengths = dataset.monthLengths(for: year)
-        let monthLength = lengths.flatMap { month.rawValue <= $0.count ? $0[month.rawValue - 1] : nil }
-        guard let monthLength, (1 ... monthLength).contains(day) else {
-            let name = monthName(month: month.rawValue, style: SettingsStore().settings.monthNames)
-            throw SiriIntentError(dialog: "There is no \(day) \(name) \(IntentAnswers.number(year)) — \(name) \(IntentAnswers.number(year)) has \(monthLength ?? 0) days.")
-        }
-        guard let ad = bsToAD(BSDay(year: year, month: month.rawValue, day: day), in: dataset) else {
-            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
-        }
+        let ad = try Self.gregorian(day: day, month: month, year: year, in: dataset)
         guard let instant = Self.noonInUserCalendar(for: ad) else {
             throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
         }
         return .result(value: instant, dialog: IntentDialog(Self.successDialog(ad, fromProvisionalYear: dataset.isProvisional(year))))
     }
 
-    /// Noon of the converted day in the calendar the reverse intent reads
-    /// dates with, so the answer chains into "Convert to Bikram Sambat" as the
-    /// same day (noon UTC is the next local day from UTC+12 to UTC+14). Noon
-    /// keeps the instant clear of daylight-saving transitions, which happen at
-    /// night.
+    static func gregorian(day: Int, month: BikramSambatMonth, year: Int, in dataset: CalendarDataset) throws -> GregorianDate {
+        guard dataset.supportedRange.contains(year) else {
+            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
+        }
+        guard let lengths = dataset.monthLengths(for: year),
+              month.rawValue <= lengths.count,
+              lengths[month.rawValue - 1] >= 1
+        else {
+            throw SiriIntentError(dialog: "NepalKit couldn't build that date.")
+        }
+        let monthLength = lengths[month.rawValue - 1]
+        guard (1 ... monthLength).contains(day) else {
+            let name = BikramSambatDate.monthName(month.rawValue, style: SettingsStore().settings.monthNames)
+            throw SiriIntentError(dialog: "There is no \(day) \(name) \(IntentAnswers.number(year)) — \(name) \(IntentAnswers.number(year)) has \(monthLength) days.")
+        }
+        guard let ad = GregorianDate(BikramSambatDate(year: year, month: month.rawValue, day: day), in: dataset) else {
+            throw SiriIntentError(dialog: Self.outOfRangeDialog(in: dataset))
+        }
+        return ad
+    }
+
     static func noonInUserCalendar(
-        for ad: GADay,
+        for ad: GregorianDate,
         calendar: Calendar = GregorianToBikramSambatIntent.userGregorian()
     ) -> Date? {
         let components = DateComponents(year: ad.year, month: ad.month, day: ad.day, hour: 12)
@@ -71,23 +71,18 @@ struct BikramSambatToGregorianIntent: AppIntent {
         return instant
     }
 
-    /// The full boundary — both calendars — because neither side of an
-    /// out-of-range Bikram Sambat date is convertible. Dataset numbers only.
     static func outOfRangeDialog(in dataset: CalendarDataset) -> LocalizedStringResource {
-        guard let start = bsToAD(BSDay(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
+        guard let start = GregorianDate(BikramSambatDate(year: dataset.supportedRange.lowerBound, month: 1, day: 1), in: dataset) else {
             preconditionFailure("Calendar dataset must convert its first supported day")
         }
-        let end = dataset.gregorianEnd ?? dataset.anchorAD
+        let end = dataset.gregorianEnd ?? dataset.anchorGregorian
         return "NepalKit's data covers Bikram Sambat \(IntentAnswers.number(dataset.supportedRange.lowerBound)) through \(IntentAnswers.number(dataset.supportedRange.upperBound)) — \(IntentAnswers.spoken(start)) to \(IntentAnswers.spoken(end)). That date is outside it."
     }
 
-    /// The spoken answer for a successful conversion — extracted beside the
-    /// failure dialogs so the wording is testable without running the intent.
-    /// A provisional Bikram Sambat year adds the projection clause.
-    static func successDialog(_ ad: GADay, fromProvisionalYear: Bool) -> LocalizedStringResource {
+    static func successDialog(_ ad: GregorianDate, fromProvisionalYear: Bool) -> LocalizedStringResource {
         if fromProvisionalYear {
-            return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad)). That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."
+            return "\(IntentAnswers.weekdayPrefix(ad.weekday))\(IntentAnswers.spoken(ad)). That Bikram Sambat year is a provisional projection, not yet in the official Nepali Patro."
         }
-        return "\(IntentAnswers.weekdayPrefix(weekday(of: ad)))\(IntentAnswers.spoken(ad))."
+        return "\(IntentAnswers.weekdayPrefix(ad.weekday))\(IntentAnswers.spoken(ad))."
     }
 }

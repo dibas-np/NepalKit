@@ -4,8 +4,6 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Launch-at-login must default on at first launch and stay user-controllable.
-/// The system boundary is mocked: tests never touch SMAppService.
 @MainActor
 struct LoginItemModelTests {
     final class MockService: LoginItemServicing {
@@ -39,16 +37,11 @@ struct LoginItemModelTests {
 
     private struct Boom: Error {}
 
-    private func freshDefaults() throws -> UserDefaults {
-        let name = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: name))
-        defaults.removePersistentDomain(forName: name)
-        return defaults
-    }
+    private let scratch = ScratchDefaults()
 
     @Test func firstLaunchRegistersOnce() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.ensureDefaultOn()
 
@@ -57,7 +50,7 @@ struct LoginItemModelTests {
     }
 
     @Test func secondLaunchDoesNotRegisterAgain() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         let first = LoginItemModel(service: MockService(), defaults: defaults)
         first.ensureDefaultOn()
 
@@ -68,11 +61,24 @@ struct LoginItemModelTests {
         #expect(service.registerCalls == 0)
     }
 
-    @Test func failedFirstLaunchRetriesOnNextLaunch() throws {
-        let defaults = try freshDefaults()
-        let failing = MockService()
-        failing.error = Boom()
-        LoginItemModel(service: failing, defaults: defaults).ensureDefaultOn()
+    @Test func failedFirstLaunchRecordsTheRegistrationError() throws {
+        let service = MockService()
+        service.error = Boom()
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
+
+        model.ensureDefaultOn()
+
+        #expect(model.setupError == .registration(Boom().localizedDescription))
+    }
+
+    @Test func failedFirstLaunchLeavesTheConfiguredFlagUnsetAndRetries() throws {
+        let defaults = try scratch.make()
+        let service = MockService()
+        service.error = Boom()
+        LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
+
+        #expect(!defaults.bool(forKey: LoginItemModel.configuredKey))
+        #expect(service.registerCalls == 1)
 
         let retry = MockService()
         let relaunched = LoginItemModel(service: retry, defaults: defaults)
@@ -82,49 +88,26 @@ struct LoginItemModelTests {
         #expect(relaunched.isOn)
     }
 
-    @Test func failedFirstLaunchRecordsTheRegistrationError() throws {
-        let service = MockService()
-        service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+    @Test func anExplicitChoiceAfterAFailedFirstLaunchEndsTheDefault() throws {
+        let defaults = try scratch.make()
+        let failing = MockService()
+        failing.error = Boom()
+        LoginItemModel(service: failing, defaults: defaults).ensureDefaultOn()
+        LoginItemModel(service: MockService(registered: true), defaults: defaults).setOn(false)
 
-        model.ensureDefaultOn()
+        let relaunch = MockService()
+        LoginItemModel(service: relaunch, defaults: defaults).ensureDefaultOn()
 
-        // Same anchor as `failedRegistrationLeavesToggleOffAndSurfacesAnError`:
-        // the very error the fake throws, not a literal, so this pins that the
-        // model forwarded the system's description unchanged rather than what
-        // Foundation chose to word it as.
-        #expect(model.setupError == .registration(Boom().localizedDescription))
-    }
-
-    @Test func failedFirstLaunchLeavesTheConfiguredFlagUnsetAndRetries() throws {
-        let defaults = try freshDefaults()
-        let service = MockService()
-        service.error = Boom()
-        LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
-
-        // The retry is the documented policy, so the flag is asserted directly:
-        // a new defaults suite starts unset, and a refused registration must
-        // leave it that way for the next launch to try again.
-        #expect(!defaults.bool(forKey: LoginItemModel.configuredKey))
-        #expect(service.registerCalls == 1)
-
-        let retry = MockService()
-        LoginItemModel(service: retry, defaults: defaults).ensureDefaultOn()
-
-        #expect(retry.registerCalls == 1)
+        #expect(relaunch.registerCalls == 0)
     }
 
     @Test func isOnFollowsTheSystemWhenFirstLaunchFails() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.ensureDefaultOn()
 
-        // The pairing `setupError`'s own doc comment describes: the throw
-        // happens before the service registers, so the system still reports
-        // itself unregistered and the toggle must stay off — while the error
-        // alongside it is what says why.
         #expect(!model.isOn)
         #expect(model.setupError != nil)
     }
@@ -132,24 +115,20 @@ struct LoginItemModelTests {
     @Test func theSameFailureIsReportedIdenticallyFromFirstLaunchAndTheToggle() throws {
         let firstLaunch = MockService()
         firstLaunch.error = Boom()
-        let launched = LoginItemModel(service: firstLaunch, defaults: try freshDefaults())
+        let launched = LoginItemModel(service: firstLaunch, defaults: try scratch.make())
         launched.ensureDefaultOn()
 
         let toggle = MockService()
         toggle.error = Boom()
-        let toggled = LoginItemModel(service: toggle, defaults: try freshDefaults())
+        let toggled = LoginItemModel(service: toggle, defaults: try scratch.make())
         toggled.setOn(true)
 
-        // One refusal, two call paths. Comparing the two models to each other
-        // rather than to a literal means the mapping is asserted once and
-        // cannot drift: a user must not see two messages for one failure
-        // depending on whether it happened at first launch or from the toggle.
         #expect(launched.setupError != nil)
         #expect(launched.setupError == toggled.setupError)
     }
 
     @Test func successfulFirstLaunchClearsAnEarlierFailure() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         let service = MockService()
         service.error = Boom()
         let model = LoginItemModel(service: service, defaults: defaults)
@@ -159,8 +138,6 @@ struct LoginItemModelTests {
         service.error = nil
         model.ensureDefaultOn()
 
-        // The second call is only reached because the refusal left the flag
-        // unset — the retry working and the error clearing are the same fact.
         #expect(model.isOn)
         #expect(model.setupError == nil)
         #expect(defaults.bool(forKey: LoginItemModel.configuredKey))
@@ -168,7 +145,7 @@ struct LoginItemModelTests {
 
     @Test func toggleOffUnregisters() throws {
         let service = MockService(registered: true)
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(false)
 
@@ -178,7 +155,7 @@ struct LoginItemModelTests {
 
     @Test func toggleOnRegisters() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(true)
 
@@ -188,7 +165,7 @@ struct LoginItemModelTests {
 
     @Test func toggleOnWhenAlreadyRegisteredDoesNotRestateTheService() throws {
         let service = MockService(registered: true)
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(true)
 
@@ -199,7 +176,7 @@ struct LoginItemModelTests {
 
     @Test func toggleOffWhenAlreadyUnregisteredDoesNotRestateTheService() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(false)
 
@@ -211,41 +188,29 @@ struct LoginItemModelTests {
     @Test func failedRegistrationLeavesToggleOffAndSurfacesAnError() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(true)
 
         #expect(!model.isOn)
-        // The toggle springs back because `isOn` follows the system; the
-        // surfaced error is what tells the user why.
-        //
-        // Compared against the very error the fake throws, not against a
-        // literal: what is pinned is that the model forwarded the system's
-        // description unchanged, not what Foundation chose to word it as.
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
     @Test func failedDeregistrationIsReportedAsADeregistration() throws {
         let service = MockService(registered: true)
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.setOn(false)
 
-        // Same spring-back as the registration failure — the service throws
-        // before it unregisters, so the system still reports itself registered.
         #expect(model.isOn)
-        // The counterpart the other failure tests cannot reach: every other
-        // failure test turns the item *on*, so without this one the two cases
-        // could be swapped and the suite would still be green. Asserting the
-        // operation is the whole point of typing the failure.
         #expect(model.setupError == .deregistration(Boom().localizedDescription))
     }
 
     @Test func successfulToggleClearsTheError() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
         model.setOn(true)
         #expect(model.setupError == .registration(Boom().localizedDescription))
 
@@ -258,7 +223,7 @@ struct LoginItemModelTests {
 
     @Test(arguments: [false, true])
     func refreshFollowsExternalChangesWithoutSideEffects(configured: Bool) throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         if configured { defaults.set(true, forKey: LoginItemModel.configuredKey) }
         let storedFlag = defaults.object(forKey: LoginItemModel.configuredKey) as? Bool
         let service = MockService()
@@ -281,7 +246,7 @@ struct LoginItemModelTests {
     @Test func refreshPreservesExistingFailure() throws {
         let service = MockService()
         service.error = Boom()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
         model.setOn(true)
         let failure = model.setupError
 
@@ -295,19 +260,17 @@ struct LoginItemModelTests {
     }
 
     @Test func initReflectsCurrentSystemState() throws {
-        let on = LoginItemModel(service: MockService(registered: true), defaults: try freshDefaults())
-        let off = LoginItemModel(service: MockService(registered: false), defaults: try freshDefaults())
+        let on = LoginItemModel(service: MockService(registered: true), defaults: try scratch.make())
+        let off = LoginItemModel(service: MockService(registered: false), defaults: try scratch.make())
 
         #expect(on.isOn)
         #expect(!off.isOn)
     }
 
     @Test func approvalHeldBySystemIsSurfacedBesideAnOnToggle() throws {
-        // What the live service reports for `.requiresApproval`: registered,
-        // so the toggle is on, and held, so it must not read as done.
         let service = MockService(registered: true)
         service.requiresApproval = true
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         #expect(model.isOn)
         #expect(model.requiresApproval)
@@ -321,10 +284,9 @@ struct LoginItemModelTests {
 
     @Test func approvalStateIsReadAfterFirstLaunchRegisters() throws {
         let service = MockService()
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
         #expect(!model.requiresApproval)
 
-        // register() succeeds, but macOS holds the item for approval.
         service.requiresApproval = true
         model.ensureDefaultOn()
 
@@ -335,7 +297,7 @@ struct LoginItemModelTests {
     @Test func openLoginItemsSettingsIsForwardedToTheService() throws {
         let service = MockService(registered: true)
         service.requiresApproval = true
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
 
         model.openLoginItemsSettings()
 
@@ -347,7 +309,7 @@ struct LoginItemModelTests {
     @Test func refreshPicksUpApprovalGrantedOrWithdrawnInSystemSettings() throws {
         let service = MockService(registered: true)
         service.requiresApproval = true
-        let model = LoginItemModel(service: service, defaults: try freshDefaults())
+        let model = LoginItemModel(service: service, defaults: try scratch.make())
         #expect(model.requiresApproval)
 
         service.requiresApproval = false

@@ -5,18 +5,16 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Display settings must reach every surface uniformly, and persist.
 @MainActor
 struct DisplaySettingsModelTests {
+    private let scratch = ScratchDefaults()
+
     private func freshModel() throws -> DisplaySettingsModel {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
-        return DisplaySettingsModel(store: SettingsStore(defaults: defaults))
+        DisplaySettingsModel(store: SettingsStore(defaults: try scratch.make()))
     }
 
     private func menuBar() throws -> MenuBarModel {
-        MenuBarModel(now: try RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
+        MenuBarModel(now: try TestDates.utc(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     @Test("Menu-bar title honors both display axes")
@@ -31,10 +29,6 @@ struct DisplaySettingsModelTests {
 
     @Test("An update awaiting attention marks the menu-bar date")
     func updateMarkerPrefixesTheDateRatherThanReplacingIt() throws {
-        // A scheduled check is run by a windowless app, so its alert can go
-        // unseen. The menu bar is the surface this user actually looks at, so
-        // the reminder goes there - and the date stays, because showing today's
-        // date is the reason the item is in the menu bar at all.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -44,9 +38,6 @@ struct DisplaySettingsModelTests {
 
     @Test("The update marker is announced as words, not as the glyph")
     func updateMarkerIsSpokenAsWords() throws {
-        // A voice cannot read "!", and this is the one thing on the menu bar
-        // that changes what the user should do, so the spoken channel carries
-        // the meaning the glyph carries visually.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -60,23 +51,18 @@ struct DisplaySettingsModelTests {
 
     @Test("The reminder is still announced past the supported range")
     func reminderSurvivesTheRangeBoundary() throws {
-        // The boundary replaces the date with an explanation, which is the
-        // longest thing this label ever says. A reminder that silently
-        // disappeared there would leave the user with no signal at all, in
-        // exactly the state where the menu bar is least useful.
         let bar = MenuBarModel(
             now: try TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
         )
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         #expect(bar.title(settings: settings) == Strings.menuBarBeyondRange)
+        #expect(bar.title(settings: settings, updateAvailable: true) == Strings.menuBarUpdateMarker + Strings.menuBarBeyondRange)
         #expect(bar.spokenTitle(settings: settings, updateAvailable: true).contains(Strings.updateAvailableSpoken))
     }
 
     @Test("The marker never appears in the spoken channel of an unmarked menu bar")
     func noMarkerWithoutAnUpdate() throws {
-        // The existing sweep forbids typographic punctuation in every spoken
-        // string, so the marker must not leak into one that has no update.
         let bar = try menuBar()
 
         for style in [MonthNameStyle.nepali, .transliterated] {
@@ -89,20 +75,19 @@ struct DisplaySettingsModelTests {
 
     @Test("Menu bar and popover render the same date for the same settings")
     func menuBarMatchesPopoverForSameSettings() throws {
-        let now = try RoundTripFixtures.date(2026, 9, 27, 12, 0)
+        let now = try TestDates.utc(2026, 9, 27, 12, 0)
         let bar = try menuBar()
 
         for settings in [
             DisplaySettings(digits: .latin, monthNames: .transliterated),
             DisplaySettings(digits: .devanagari, monthNames: .nepali),
         ] {
-            guard let today = todayBS(now: now, in: .v2) else {
+            guard let today = BikramSambatDate.today(now: now, in: .v2) else {
                 Issue.record("no date")
                 return
             }
-            // The menu bar drops the year; the popover keeps it. Same date either way.
-            #expect(bar.title(settings: settings) == formatBSShort(today, settings: settings))
-            #expect(formatBS(today, settings: settings).hasPrefix(bar.title(settings: settings)))
+            #expect(bar.title(settings: settings) == today.formatted(settings, includesYear: false))
+            #expect(today.formatted(settings).hasPrefix(bar.title(settings: settings)))
         }
     }
 
@@ -126,16 +111,13 @@ struct DisplaySettingsModelTests {
 
     @Test("Model writes through to the store")
     func modelPersistsThroughStore() throws {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         let store = SettingsStore(defaults: defaults)
         let model = DisplaySettingsModel(store: store)
 
         model.save(digits: .devanagari)
         model.save(monthNames: .nepali)
 
-        // A fresh model over the same store sees the change: a relaunch keeps settings.
         let relaunched = DisplaySettingsModel(store: SettingsStore(defaults: defaults))
         #expect(relaunched.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
     }
@@ -156,16 +138,8 @@ struct DisplaySettingsModelTests {
 
     @Test("Previews read fixed non-default settings")
     func previewSettingsAreFixedAndNonDefault() {
-        // Whatever an earlier preview saved, the next one starts from the
-        // seeded pair, so the canvas never shows a developer's own settings.
         let first = DisplaySettingsModel.preview
         first.save(DisplaySettings(digits: .latin, monthNames: .transliterated))
         #expect(DisplaySettingsModel.preview.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
-    }
-}
-
-enum RoundTripFixtures {
-    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) throws -> Date {
-        try TestDates.utc(year, month, day, hour, minute)
     }
 }

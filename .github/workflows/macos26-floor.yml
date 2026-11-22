@@ -1,84 +1,3 @@
-# Deployment-floor gate (ADR-0007).
-#
-# The floor claim is behavioural: "this app builds, tests, and runs here." It is
-# not a pixel comparison — design review belongs on the current macOS release,
-# where a human is looking. The two are deliberately not confused.
-#
-# ## What this gate can no longer attest, and why
-#
-# This used to run on `macos-26` with Xcode 26.6, which meant a green run was
-# evidence about macOS 26 — the floor itself. It now runs on `xcode-27`, and
-# that image is **macOS 27**. So a green run is no longer evidence that the app
-# works on macOS 26; it is evidence that it builds, tests, and launches on macOS
-# 27.
-#
-# That trade was made deliberately, for a reason worth recording rather than
-# rediscovering. The floor is macOS 26.6, and the Xcode 26.6 toolchain could not
-# express it:
-#
-#     warning: The macOS deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to
-#     26.6, but the range of supported deployment target versions is 10.13 to
-#     26.5.99.
-#
-# The toolchain whose job is to verify the floor could not represent the floor.
-# The same Xcode also could not open the project file, because a maintainer on
-# macOS 27 editing build settings in Xcode 27 rewrites it into object version 110
-# and Xcode 26 reads only 100 — so every config edit cost a manual revert, twice
-# caught only because CI turned red. The floor toolchain was simultaneously too
-# old for the floor and too old for the file.
-#
-# What survives the change:
-#
-# - **The deployment floor is still declared, still gated, and still consistent.**
-#   `scripts/verify-deployment-floor.py` compares the project, the release
-#   script, the built product, and this repo's project-file format. That gate is
-#   unaffected by which runner executes it.
-# - **The compile-time floor still holds.** A macOS 27-only API is still an
-#   error against a 26.6 deployment target; `@available` and the SDK enforce it
-#   regardless of the Xcode version doing the enforcing. So the failure mode the
-#   header below describes — "compiles fine on a maintainer's Xcode, breaks the
-#   floor for everyone" — is still caught at compile time.
-# - **The run now records the macOS version it is evidence about**, which the
-#   old one did not.
-#
-# What is genuinely lost: no job now executes the app on macOS 26, so the claim
-# "this runs on the floor" rests on the compile-time guarantee plus release
-# evidence rather than on CI. If that matters enough to pay for, the way back is
-# a second job on `macos-26` that cannot build the project at all — it would
-# have to downgrade the object version first — which is why it was not done
-# here. ADR-0007 records the decision and the way out.
-#
-# ## When this fails because the toolchain moved
-#
-# The Xcode floor is the point of the workflow, and it is also its expiry date.
-# The `xcode-27` image is a **preview**, so it moves under you: betas get
-# replaced, and the image eventually becomes the default macOS 27 image. When it
-# does, the failure looks exactly like a regression:
-#
-#     ::error::Resolved Xcode <version> is below the 27.0 floor this gate asserts.
-#
-# It is not one. Nothing about NepalKit changed. The step says so in its own
-# error message, because a contributor hitting this at midnight should not have
-# to find this comment first.
-#
-# **Raising the floor is not a routine bump.** It is a re-evaluation of the
-# deployment-floor claim, and it should be treated like one:
-#
-# 1. Check whether a *newer* floor is now the honest claim. The project deploys
-#    to the lowest macOS it can support, and that is a product decision about
-#    people on old hardware, not a build setting.
-# 2. If the floor is unchanged, raise `XCODE_FLOOR` to whatever the image now
-#    provides and record why.
-# 3. Re-run the gate. A new floor has proved nothing until it has gone green, and
-#    the `sw_vers` output at the top of the log is what says what it went green
-#    on.
-# 4. Update ADR-0007 if the floor itself moves. It records the claim this
-#    workflow exists to enforce, and a stale claim is worse than no claim.
-#
-# A real regression looks completely different: the toolchain is present, the
-# build or a test fails, and the log says which. That is the case this workflow
-# exists for.
-
 name: macOS 26 floor
 
 on:
@@ -86,122 +5,35 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  # Reusable so the release-tag workflow can gate a tag on this same check
-  # rather than restating it. Two copies of a deployment-floor claim would drift,
-  # and the one that drifts is the one nobody reads.
   workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Declared, and the alert below is why. This workflow checks out the code, runs
-# four test suites (core, cask, floor self-tests, app-layer), builds and
-# launches the result. It never writes back: no commit, no comment, no release,
-# no artifact upload beyond the build log. So it gets `contents: read` and
-# nothing more.
-#
-# Omitting the block does not mean "no permissions" — it means every step gets
-# the repository's *default* token, which for a public repository is usually
-# read/write on contents. `actions/checkout` also leaves that token in
-# `.git/config` for anything that can read the workspace, so a workflow with no
-# stated permissions is a workflow holding a credential larger than its job
-# needs. CodeQL flagged this as `actions/missing-workflow-permissions`.
-#
-# `contents: read` is still exactly what checkout requires, so nothing here is
-# broken by the narrowing — it is only made honest.
 permissions:
   contents: read
 
 jobs:
   floor:
-    # The name below is load-bearing and is no longer accurate: this job runs on the
-# xcode-27 image, which is macOS 27, so it is no longer a macOS 26 gate. It keeps
-# the old name because the `main` ruleset requires a status check with exactly
-# this name, and a renamed check that protection still demands is a check that
-# can never be satisfied - every future pull request to main blocked forever.
-# Renaming it is a one-line change *together with* editing the ruleset; doing one
-# without the other breaks main.
     name: build, test, and launch on macOS 26
     runs-on: xcode-27
-    # macOS runners are the expensive kind; a hung build should die long
-    # before the 360-minute default.
     timeout-minutes: 45
 
     env:
-      # A floor, not an exact pin, and the reason is mechanical rather than a
-      # loosening of discipline. On the xcode-27 image the app directory is
-      # `/Applications/Xcode_27_beta_3.app`, so an exact pin would name a beta
-      # that GitHub renames on the next one; pinning it would break this gate on
-      # a toolchain change that is not a regression, which is the exact failure
-      # the header calls out as the worst one available.
-      #
-      # What is preserved is the property that matters: a green run states which
-      # toolchain it used, in the log, every time. The resolved version is
-      # printed below and asserted against this floor, so the image moving
-      # forward changes a number in the log rather than silently changing what
-      # the gate tests.
       XCODE_FLOOR: "27.0"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      # The gate attests a macOS version, so it has to know which one. Without
-      # this step a green run says only that *some* macOS was green, which is the
-      # one claim a floor gate exists to make and the one thing its own log
-      # previously omitted.
       - name: Record the operating system this run is evidence about
         run: |
           set -euo pipefail
           sw_vers
           echo "Product version: $(sw_vers -productVersion)"
 
-      # ## Do not pipe `xcodebuild` into `head`
-      #
-      # This step used to read the version as
-      #
-      #     resolved=$(DEVELOPER_DIR="$candidate" xcodebuild -version | head -1 | awk '{print $2}')
-      #
-      # which is a race, and this xcodebuild loses it by aborting rather than by
-      # exiting quietly. `xcodebuild -version` prints two lines; `head -1` exits
-      # after the first; the second write hits a closed pipe; and instead of
-      # dying on SIGPIPE the process raises an Objective-C exception:
-      #
-      #     *** Terminating app due to uncaught exception
-      #         'NSFileHandleOperationException', reason:
-      #         '*** -[_NSStdIOFileHandle writeData:]: Broken pipe'
-      #     ...
-      #     4   xcodebuild  -[XcodebuildPreIDEHandler handleVersionWithArguments:] + 552
-      #     ##[error]Process completed with exit code 134.
-      #
-      # 134 is 128 + 6, SIGABRT. Whether it happens depends on whether `head` has
-      # exited before `xcodebuild` writes its second line, so it is intermittent:
-      # the same commit passed on one pull request and failed on the next, minutes
-      # apart, on the same image. Nothing about the repository changed between
-      # them.
-      #
-      # It went unnoticed because this step had only ever run on runners where the
-      # timing went the right way. It surfaced the moment the check became
-      # something other than advisory for a branch that had nothing to do with
-      # CI: a documentation pull request was blocked by a crash in the toolchain
-      # probe, which is the clearest possible statement that a required check has
-      # to be a check and not a coin flip.
-      #
-      # The fix is to consume the whole stream and pick the first line out of it
-      # afterwards. `awk` reads to end of input, so nothing closes the pipe early
-      # and `xcodebuild` always exits 0. Same value, same assertion, no race.
-      #
-      # The rule this establishes for the rest of this file: **do not end a
-      # pipeline with `head` or `tail` in front of a tool that may still be
-      # writing.** `sed` and `awk` are tolerant of a closed pipe; `xcodebuild`
-      # raises on one, and `sort` can take SIGPIPE and report 141 under
-      # `pipefail`. The two `sort -V | head -1` comparisons further down this
-      # file were left in place by that first fix, on the reasoning that `sort`
-      # writes its whole two-line input in one go and so never notices `head`
-      # leaving. That is true for two lines and was measured rather than
-      # assumed, but it is the same shape of argument that let the original
-      # crash through: correct today, not guaranteed tomorrow. They now take the
-      # first line out of a captured string instead.
       - name: Resolve the image's default Xcode and assert its floor
         run: |
           set -euo pipefail
@@ -217,9 +49,6 @@ jobs:
           echo "DEVELOPER_DIR=$candidate" >> "$GITHUB_ENV"
           echo "Resolved Xcode: $resolved (floor ${XCODE_FLOOR})"
 
-          # An empty `resolved` would otherwise make the comparison below pass:
-          # sorting "27.0" and "" puts 27.0 first, so the assertion would be
-          # satisfied by a probe that read nothing. Refuse it explicitly.
           if [ -z "$resolved" ]; then
             echo "::error::Could not read an Xcode version from ${candidate}. Output was:"
             printf '%s\n' "$version_output"
@@ -228,7 +57,7 @@ jobs:
 
           lowest="$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | awk 'NR == 1 { print }')"
           if [ "$lowest" != "$XCODE_FLOOR" ]; then
-            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump. See ADR-0007."
+            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump."
             exit 1
           fi
           printf '%s\n' "$version_output"
@@ -237,13 +66,10 @@ jobs:
         working-directory: NepalKitCore
         run: swift test
 
-      # Signing is disabled: the project sets a development team target-wide, and
-      # a pull-request job must need no credentials and be unable to reach any.
-      #
-      # `build` skips NepalKitTests (the scheme marks it buildForRunning = NO),
-      # so a test target whose Swift mode or isolation drifted from the app's
-      # would compile nowhere in CI; ADR-0005 records a Swift 5/6 mismatch
-      # hidden that way. build-for-testing is also what check-all.sh's gate 1 runs.
+      - name: Watch support suite
+        working-directory: NepalKitWatchSupport
+        run: swift test
+
       - name: Build the application and the hosted test bundle
         run: |
           set -euo pipefail
@@ -263,10 +89,6 @@ jobs:
           test -f "$NEPAKIT_BUILT_PLIST" || { echo "::error::no Info.plist at $NEPAKIT_BUILT_PLIST; the plist tests would skip silently"; exit 1; }
           test -x "$RUNNER_TEMP/NepalKitDerivedData/Build/Products/Debug/NepalKit.app/Contents/MacOS/NepalKit"
 
-      # Runs after the build so the checker inherits NEPAKIT_BUILT_PLIST and the
-      # built product joins the floor comparison; Pages' run has no build, so it
-      # compares only the sources. The self-tests are the verifier's own suite,
-      # and this step is the only gate on a pull request that runs them.
       - name: Deployment floor self-tests and consistency
         run: |
           set -euo pipefail
@@ -276,27 +98,12 @@ jobs:
       - name: Cask updater suite
         run: python3 scripts/test_update_cask.py
 
-      # The committed SwiftPM harness, not `xcodebuild test`, which once hung on
-      # the hosted runner before connecting, even with an empty test. See
-      # ADR-0005.
-      #
-      # After the build, and with the product pointed at: `InfoPlistKeysTests`
-      # checks the built Info.plist rather than the project, because a key the
-      # build discards cannot be caught by reading the project. Run before the
-      # build, or without that variable, they skip - and a skipped test still
-      # reports as passing, so the Sparkle public key and LSUIElement would be
-      # unguarded while the job stayed green.
+      - name: Package release script suite
+        run: python3 scripts/test_release_core.py
+
       - name: App-layer suite
         run: ./scripts/run-app-tests.sh
 
-      # The check that matters most: an LSUIElement app that
-      # dies or respawns in a loop on its own floor is a real shipping defect,
-      # and cosmetic differences are not.
-      #
-      # What this can and cannot establish is recorded below, and the distinction
-      # is not blurred. It cannot prove the menu-bar item appeared or that the
-      # popover opens, because doing so headlessly would need a launch-argument
-      # debug hook that the spec explicitly forbids shipping.
       - name: Launch, survive, and exit without a relaunch loop
         run: |
           set -euo pipefail
@@ -313,7 +120,6 @@ jobs:
             exit 1
           fi
 
-          # A runaway loop would show up as more than one instance.
           instances=$(pgrep -f "$binary" | wc -l | tr -d ' ')
           echo "instances after launch: $instances"
           if [ "$instances" -ne 1 ]; then
@@ -322,8 +128,6 @@ jobs:
             exit 1
           fi
 
-          # Terminate the way the app's own exit path does, then confirm it is
-          # gone and does not come back.
           kill -TERM "$pid" 2>/dev/null || true
           sleep 5
           if kill -0 "$pid" 2>/dev/null; then
@@ -349,29 +153,6 @@ jobs:
           retention-days: 14
 
   watch:
-    # Separate from the floor job on purpose. That job's name is fixed by the
-    # main ruleset's required status check, so nothing about it may change; and
-    # this one needs a watchOS simulator runtime, which is a different dependency
-    # with a different failure mode. Sharing a job would couple the Mac app's
-    # floor evidence to whether a Watch runtime happens to be installed.
-    #
-    # **If no usable runtime is installed, this job passes rather than fails**,
-    # with a warning annotation in the log saying the Watch suite did not run.
-    # Device compilation still runs independently. A gate that turns red for an
-    # environment reason teaches people
-    # to ignore red, which is how the 26.0/26.6 floor drift shipped; but the
-    # cost of that choice is that a green run here is *not* by itself evidence
-    # that Watch tests ran. Overturn it deliberately, by making the discovery
-    # step below `exit 1`.
-    #
-    # The device-architecture build exists because the simulator's `arm64` is not
-    # the shipping architecture. The watchOS targets do not override ARCHS, so
-    # this compiles both slices of the universal binary
-    # `docs/watch/readiness-evidence.md` records - a `-target
-    # arm64_32-apple-watchos26.0` compile appears in its log - which the
-    # simulator run above does not. What it still cannot establish is that the
-    # result runs on a device. That is the physical session's, and it is listed
-    # at `docs/watch/physical-validation.md`.
     name: build and test the Watch app
     runs-on: xcode-27
     timeout-minutes: 45
@@ -379,28 +160,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      # Says what it decided and why, so a red or skipped run is diagnosable from
-      # the log alone rather than needing someone to have read this comment.
-      #
-      # "Is there a watchOS runtime" is NOT the right question, and answering it
-      # that way is how this job would have gone quietly green forever. With the
-      # ratified floor at 26.0, a 26.0 runtime is usable — but a runtime *older*
-      # than whatever floor the project declares is not:
-      # a destination older than the deployment target cannot run the product, so
-      # the suite would not execute while the job reported success. So the test is
-      # a runtime at or above the floor, read from the project rather than
-      # hard-coded here — which also means this step follows the floor if it moves.
-      # It publishes the runtime it chose as `runtime`, so the suite's destination
-      # follows that same choice instead of naming a runtime this runner may not
-      # have.
       - name: Record whether a usable watchOS simulator runtime is available
         id: watchos
         run: |
           set -euo pipefail
           xcrun simctl list runtimes
-          # The strictest declared floor: a runtime that satisfies the lowest
-          # target but not the highest cannot run every watch product.
           floor="$(sed -n 's/.*WATCHOS_DEPLOYMENT_TARGET = \([0-9.]*\);.*/\1/p' \
             NepalKit.xcodeproj/project.pbxproj | sort -uV | tail -1)"
           echo "watchOS floor declared in the project: $floor"
@@ -438,11 +205,6 @@ jobs:
             echo "::warning::No watchOS simulator runtime at or above the project's floor ($floor) is installed on this runner. The Watch suite did not run; device compilation is checked separately."
           fi
 
-      # One retry, after shutting down and erasing the device, only when the
-      # hosted simulator fails to start the test host ("Application has
-      # termination assertions", "The test runner hung before establishing
-      # connection"), which repeatedly failed unrelated pull requests. Test
-      # failures and other errors are not retried.
       - name: Watch suite
         if: steps.watchos.outputs.available == 'true'
         env:

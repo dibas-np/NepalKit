@@ -5,20 +5,16 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Paging the month grid by scrolling and by the arrow keys.
 @MainActor
 struct MonthScrollPagerTests {
     @Test func aTrackpadGesturePagesOnceAfterTheThreshold() {
         var pager = MonthScrollPager()
-        // Scrolling down: small negative deltas, as a swipe reports them.
         #expect(pager.step(deltaY: -5, phase: .began) == 0)
         #expect(pager.step(deltaY: -10, phase: .changed) == 0)
         #expect(pager.step(deltaY: -10, phase: .changed) == 1)
-        // The rest of the same gesture, and its momentum, page no further.
         #expect(pager.step(deltaY: -40, phase: .changed) == 0)
         #expect(pager.step(deltaY: 0, phase: .ended) == 0)
         #expect(pager.step(deltaY: -60, phase: .momentum) == 0)
-        // A new gesture pages again, upward this time.
         #expect(pager.step(deltaY: 30, phase: .began) == -1)
     }
 
@@ -28,7 +24,6 @@ struct MonthScrollPagerTests {
         #expect(pager.step(deltaY: 8, phase: .changed) == 0)
         #expect(pager.step(deltaY: -10, phase: .changed) == 0)
         #expect(pager.step(deltaY: 0, phase: .ended) == 0)
-        // Travel does not carry over into the next gesture.
         #expect(pager.step(deltaY: -MonthScrollPager.threshold + 1, phase: .began) == 0)
     }
 

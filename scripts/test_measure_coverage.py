@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Tests for the coverage parser in `measure-coverage.py`.
-
-That script produces the published coverage figures (including the OpenSSF badge
-answers); `docs/coverage.md` records three earlier bugs in it that each gave a
-wrong number. These tests feed it a recorded llvm-cov report table and pin what
-it counts, what it ignores and how it combines suites.
-"""
 
 from __future__ import annotations
 
@@ -23,12 +16,10 @@ _spec.loader.exec_module(mc)
 CORE = "NepalKitCore/Sources/NepalKitCore/"
 APP = "NepalKit/"
 
-# llvm-cov prints the repository path with its leading "/" stripped.
 ROOT = str(mc.REPO_ROOT).lstrip("/") + "/"
 
 
 def row(path: str, lines: int, missed: int, functions: str = "4 1 75.00%") -> str:
-    """One 13-field llvm-cov row: name, then regions, functions, lines, branches."""
     pct = f"{100 * (lines - missed) / lines:.2f}%" if lines else "-"
     return f"{ROOT}{path} 10 2 80.00% {functions} {lines} {missed} {pct} 0 0 -"
 
@@ -54,7 +45,6 @@ APP_ONLY = (APP,)
 
 class SummariseTests(unittest.TestCase):
     def test_only_rows_under_the_given_prefixes_count(self):
-        """The app prefix keeps app rows and drops core, test, header and TOTAL rows."""
         counts = mc.summarise(FIXTURE, APP_ONLY)
         self.assertEqual(counts["files"], 2)
         self.assertEqual(counts["lines"], 500)
@@ -67,12 +57,10 @@ class SummariseTests(unittest.TestCase):
         self.assertEqual(counts["lines_hit"], 90)
 
     def test_both_prefixes_select_all_product_rows(self):
-        """Both prefixes select all four rows, so the gate must not give both to one suite."""
         counts = mc.summarise(FIXTURE, CORE_ONLY + APP_ONLY)
         self.assertEqual(counts["files"], 4)
 
     def test_a_dash_column_is_positional_not_dropped(self):
-        """A "-" (no data) must not be dropped, or every later column shifts."""
         report = row(APP + "E.swift", 20, 5, functions="- - -")
         counts = mc.summarise(report, APP_ONLY)
         self.assertEqual(counts["functions"], 0)
@@ -83,15 +71,13 @@ class SummariseTests(unittest.TestCase):
         self.assertEqual(counts["regions_hit"], 8)
 
     def test_a_shared_home_prefix_stripped_by_llvm_cov_still_matches(self):
-        """With the build under the same home folder, llvm-cov drops that prefix too."""
-        tail = ROOT.split("/", 2)[2]  # e.g. "Users/me/" gone, the rest kept
+        tail = ROOT.split("/", 2)[2]
         report = FIXTURE.replace(ROOT, tail)
         counts = mc.summarise(report, APP_ONLY)
         self.assertEqual(counts["files"], 2)
         self.assertEqual(counts["lines"], 500)
 
     def test_an_unrelated_path_with_a_matching_tail_word_is_not_counted(self):
-        """Tails are cut at "/" boundaries, so "xNepalKit/" is not "NepalKit/"."""
         counts = mc.summarise(f"x{APP}C.swift 10 2 80.00% 4 1 75.00% 200 140 30.00% 0 0 -", APP_ONLY)
         self.assertEqual(counts["files"], 0)
 
@@ -119,8 +105,6 @@ class PercentageTests(unittest.TestCase):
 
 class CombinationTests(unittest.TestCase):
     def test_combined_is_line_weighted(self):
-        """Core 90/150 and app 60/500 lines give 150/650 = 23.08%; a file-weighted
-        mean of 60% and 12% would say 36%."""
         core = mc.summarise(FIXTURE, CORE_ONLY)
         app = mc.summarise(FIXTURE, APP_ONLY)
         combined = mc.combine([core, app])
@@ -144,7 +128,6 @@ class RegressionTests(unittest.TestCase):
         )
 
     def test_per_suite_regressions_are_reported(self):
-        """An app drop must fail even when a core gain keeps the total level."""
         suites = {
             "core": {"lines": 90.0, "regions": 70.0, "functions": 70.0, "files": 2},
             "app": {"lines": 20.0, "regions": 40.0, "functions": 40.0, "files": 2},

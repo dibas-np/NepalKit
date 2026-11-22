@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Suite for check-patro-reminder.py: when the monthly Patro check is due."""
 
 from __future__ import annotations
 
 import datetime
 import importlib.util
-import sys
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -49,7 +47,6 @@ class Verdict(unittest.TestCase):
         self.assertIn("in the future", message)
 
     def test_one_day_ahead_is_tolerated(self):
-        # A local date can be a day ahead of the runner's UTC date.
         ok, _ = cpr.verdict(D(2027, 2, 1), D(2027, 2, 2), 2084)
         self.assertTrue(ok)
 
@@ -77,8 +74,6 @@ class LastChecked(unittest.TestCase):
 
 class Main(unittest.TestCase):
     def _use_procedure(self, text: str) -> None:
-        # The script takes no path argument; the test points the module at a
-        # scratch procedure instead and restores it afterwards.
         import tempfile
         handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
         handle.write(text)
@@ -94,10 +89,6 @@ class Main(unittest.TestCase):
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
         self._use_procedure("no record")
-        # Pinned to a table that ends at 2084: once the shipped table reaches
-        # 2085 the reminder goes quiet by design, and this case would stop
-        # exercising the due window.
-        sys.path.insert(0, str(_SCRIPT.parent))
         import dataset_table
         with mock.patch.object(dataset_table, "shipped_table", return_value={2084: [30] * 12}):
             with self.assertRaises(SystemExit):

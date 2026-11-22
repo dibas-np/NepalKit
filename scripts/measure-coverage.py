@@ -1,28 +1,10 @@
 #!/usr/bin/env python3
-"""Measure and record Swift coverage for both test suites.
+"""Measure Swift coverage for NepalKitCore and the app suite (scripts/apptests).
 
     scripts/measure-coverage.py            # measure, compare to the floor, report
     scripts/measure-coverage.py --update   # accept the current numbers as the floor
 
-Two suites, measured separately and summed, because they compile different code
-through different harnesses:
-
-* ``NepalKitCore`` via ``swift test``. The calendar engine.
-* ``scripts/apptests`` via ``swift test``. The app layer, whose harness symlinks
-  the real ``NepalKit/`` and ``NepalKitTests/`` directories - see ADR-0005.
-
-Why a script rather than a reading of the number: coverage that is measured by
-hand is coverage that rots. This records a floor and fails when the number drops
-below it, which is the part that stops silently.
-
-**This gate deliberately has no target.** The OpenSSF badge asks for 80% and 90%
-statement coverage; the combined figure is recorded in scripts/coverage-floor.json
-and the gap is not a chore. See docs/coverage.md for why the SwiftUI layer is the blocker and what
-closing it would actually require. A floor that ratchets upward as tests land
-is honest; a target set above the truth is a lie that fails every day.
-
-Offline and credential-free, like every other gate here: coverage needs a
-toolchain and nothing else.
+Fails if coverage drops below scripts/coverage-floor.json.
 """
 
 from __future__ import annotations
@@ -40,23 +22,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FLOOR_FILE = REPO_ROOT / "scripts" / "coverage-floor.json"
 
-# Only these count. Test files are the instrument, not the subject; counting them
-# inflates the number by tens of points and makes the measurement useless.
-#
-# Matched against the path *relative to the repository root*, never against an
-# absolute prefix. An earlier version hard-coded `/Projects/NepalKit/NepalKit/`,
-# which silently matched nothing in a worktree or a CI checkout at a different
-# path - and a coverage script that reports on zero files is worse than none,
-# because it looks like it ran.
 def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
-    """Return the report rows whose file is product source under ``prefixes``."""
     keep = []
-    # llvm-cov strips the directory prefix common to every file it reports.
-    # With the build outside the checkout that prefix is a leading part of the
-    # repository path ("Users/me/" when both sit under the home folder, "/"
-    # otherwise), so try every tail of the root, longest first, cut at "/".
-    # A mismatch silently matches nothing, which looks identical to "no product
-    # source was compiled".
+    # llvm-cov strips the directory prefix common to every file, which may be
+    # part of the repository path, so try every tail of the root, longest first.
     full = str(REPO_ROOT).lstrip("/") + "/"
     tails = [full] + [full[i + 1:] for i, c in enumerate(full[:-1]) if c == "/"]
     for line in stdout.splitlines():
@@ -73,12 +42,8 @@ def subject_files(stdout: str, prefixes: tuple[str, ...]) -> list[str]:
 
 
 def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
-    """Total the raw counts of the subject rows in an llvm-cov report."""
-    # llvm-cov's row is: filename, then (count, missed, percent) four times over -
-    # regions, functions, lines, branches. Thirteen fields, and the filename is
-    # unquoted, so a path with spaces would shift the columns. Assert the shape
-    # rather than trusting it: a wrong column silently reports a wrong number,
-    # which is the exact failure this script is here to prevent.
+    # Filename then (count, missed, percent) for regions, functions, lines and
+    # branches.
     counts = {
         "regions": 0, "regions_hit": 0,
         "functions": 0, "functions_hit": 0,
@@ -88,9 +53,7 @@ def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
     for line in subject_files(report_text, prefixes):
         parts = line.split()
 
-        # Positional, because the "-" that stands in for "no data" must not be
-        # filtered out: dropping it shifts every later column and yields a
-        # confidently wrong number rather than an error.
+        # Positional, so a "-" (no data) does not shift later columns.
         def count(index: int) -> int:
             try:
                 return int(parts[index])
@@ -108,14 +71,9 @@ def summarise(report_text: str, prefixes: tuple[str, ...]) -> dict[str, int]:
 
 
 def percentages(counts: dict[str, int]) -> dict[str, float]:
-    """Turn raw counts into the percentages the floor file records."""
     return {
         "lines": round(100 * counts["lines_hit"] / counts["lines"], 2) if counts["lines"] else 0.0,
-        # llvm-cov's Regions column, which for Swift is region coverage. It is
-        # NOT branch coverage: Swift emits no branch data, so llvm-cov reports
-        # zero for its Branches column and calling that 0% would be a false
-        # reading rather than a true one. Named "regions" so nobody can quote it
-        # as branch coverage.
+        # Swift emits no branch data, so llvm-cov's Branches is always 0.
         "regions": round(100 * counts["regions_hit"] / counts["regions"], 2)
         if counts["regions"] else 0.0,
         "functions": round(100 * counts["functions_hit"] / counts["functions"], 2)
@@ -125,14 +83,12 @@ def percentages(counts: dict[str, int]) -> dict[str, float]:
 
 
 def combine(all_counts: list[dict[str, int]]) -> dict[str, int]:
-    """Sum raw counts across suites."""
     return {key: sum(counts[key] for counts in all_counts) for key in all_counts[0]}
 
 
 def regressions(
     totals: dict[str, float], suites: dict[str, dict[str, float]], floor: dict
 ) -> list[str]:
-    """Compare the totals and every suite against the recorded floor."""
     found = []
     for metric in ("lines", "regions", "functions"):
         if totals[metric] < floor["totals"][metric] - 0.005:
@@ -153,11 +109,7 @@ def regressions(
     return found
 
 
-# The app suite keeps only `NepalKit/`: its harness links `NepalKitCore`, so core
-# rows appear in its report too, and counting them would put core's 9 files in
-# both suites (app lines 34.79% instead of 30.12% at 0b50f7a).
 SUITES = (
-    # (label, package path, subject prefixes relative to the repository root)
     ("NepalKitCore", "NepalKitCore", ("NepalKitCore/Sources/NepalKitCore/",)),
     ("NepalKit app", "scripts/apptests", ("NepalKit/",)),
 )
@@ -167,18 +119,13 @@ def run(command: list[str], cwd: Path | None = None) -> subprocess.CompletedProc
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True)
 
 
-# A persistent build directory per suite, so later runs build incrementally.
-# Outside the repository because llvm-cov strips the path prefix common to
-# every reported file, and a build inside the checkout would strip the prefix
-# the subject filter matches on. Keyed by checkout so worktrees do not share
-# builds. Old profiles are deleted first: the report reads whichever .profdata
-# it finds, and a stale one reports the previous run's numbers.
+# Persistent per-checkout build directories outside the repository (llvm-cov's
+# prefix stripping would otherwise break the path filter).
 COVERAGE_BUILD = (Path.home() / "Library" / "Caches" / "nepalkit-coverage"
                   / hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12])
 
 
 def clear_profiles(build_dir: Path) -> int:
-    """Delete every .profraw and .profdata under build_dir; return how many."""
     stale = [p for pattern in ("*.profraw", "*.profdata") for p in build_dir.rglob(pattern)]
     for path in stale:
         path.unlink()
@@ -188,10 +135,7 @@ def clear_profiles(build_dir: Path) -> int:
 def measure(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
-    """Run one suite with coverage and total its subject files."""
     build_dir.mkdir(parents=True, exist_ok=True)
-    # Held until the report is read, so a concurrent run cannot delete this
-    # run's profiles between the test and the report.
     with open(build_dir / ".lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         return measure_locked(label, package, prefixes, build_dir)
@@ -200,7 +144,6 @@ def measure(
 def measure_locked(
     label: str, package: str, prefixes: tuple[str, ...], build_dir: Path
 ) -> dict[str, int]:
-    """measure() with the suite directory's lock held."""
     clear_profiles(build_dir)
     result = run(
         [
@@ -246,9 +189,6 @@ def main() -> int:
               f"regions {result['regions']:6.2f}%  "
               f"functions {result['functions']:6.2f}%  ({result['files']} files)")
 
-    # The combined figure is sum(hit)/sum(lines) across both suites, so a 300-line
-    # file weighs 300 lines. A plain mean of the two percentages would let the
-    # well-covered calendar engine paper over the app layer.
     totals = percentages(combine(list(raw_counts.values())))
 
     print(f"  {'combined':<16} lines {totals['lines']:6.2f}%  "

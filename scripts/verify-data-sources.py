@@ -2,13 +2,7 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Compare NepalKit's dataset with its sole pinned base, askbuddie.
-
-All differences are explicit NepalKit corrections or the local 2084 projection.
-A passing baseline check establishes that the recorded comparison still holds,
-not that either table is officially attested. See SOURCES.md.
-
-Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
+"""Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [--update-baseline [path]]
 
 --offline reads the pinned source cached in ~/.cache/nepalkit-data-sources/.
 --baseline compares with the committed observation and fails on any change.
@@ -17,75 +11,13 @@ Usage: python3 scripts/verify-data-sources.py [--offline] [--baseline <path>] [-
 """
 
 import json
-import os
-import re
 import sys
-import urllib.request
 from pathlib import Path
 
+from data_sources import MONTHS, PINS, fetch, parse_askbuddie
 from dataset_table import shipped_table
 
-MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashwin",
-          "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"]
-
-# Pinned commits. See SOURCES.md for why each is pinned and what it is for.
-PINS = {
-    "askbuddie": ("https://raw.githubusercontent.com/askbuddie/bikram-sambat/"
-                  "d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts",
-                  "askbuddie/bikram-sambat"),
-}
-
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
-
-# Diagnostics raised while parsing, flushed after the source's heading. A parse
-# runs before its source is named, so printing immediately attributes its
-# warnings to whichever source was reported last.
-NOTES = []
-
-
-def cache_dir():
-    """Where fetched source tables are cached between runs.
-
-    A per-user directory, not /tmp: --offline reads whatever is cached there,
-    and a fixed world-writable path would let planted bytes flow into a
-    comparison this project treats as provenance evidence. Override with
-    NEPAKIT_DATA_CACHE for tests or read-only environments.
-    """
-    root = os.environ.get("NEPAKIT_DATA_CACHE") or str(Path.home() / ".cache" / "nepalkit-data-sources")
-    path = Path(root)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def fetch(name, url, offline):
-    cache = str(cache_dir() / ("%s-days.json" % name))
-    if offline:
-        try:
-            return open(cache, encoding="utf-8").read()
-        except OSError:
-            sys.exit("--offline but no cached copy of the %s table at %s" % (name, cache))
-    try:
-        with urllib.request.urlopen(url, timeout=30) as response:
-            body = response.read().decode("utf-8")
-    except Exception as exc:                      # noqa: BLE001 - report and continue
-        print("  could not fetch %s: %s" % (name, exc), file=sys.stderr)
-        return None
-    open(cache, "w", encoding="utf-8").write(body)
-    return body
-
-
-def check_impossible(rows):
-    """Flag year totals that cannot occur. Applies to every source, not one."""
-    for year, values in sorted(rows.items()):
-        if sum(values) not in (365, 366):
-            NOTES.append("  note: %d BS sums to %d days, which is impossible; "
-                         "the source table contains an error" % (year, sum(values)))
-
-
-def parse_askbuddie(body):
-    pairs = re.findall(r"'(\d{4})'\s*:\s*\[([^\]]+)\]", body)
-    return {int(y): [int(x) for x in m.replace(" ", "").split(",")] for y, m in pairs}
-
 
 DEFAULT_BASELINE = Path("scripts/data-sources-baseline.json")
 
@@ -198,7 +130,6 @@ def main():
                 "uncovered": sorted(shipped),
             }
             continue
-        del NOTES[:]
         table = parse_askbuddie(body)
         if not table:
             print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
@@ -223,8 +154,6 @@ def main():
         }
 
         print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
-        for note in NOTES:
-            print(note)
         print("  covers %d-%d BS; %d years overlap the shipped range"
               % (min(table), max(table), len(shared)))
         uncovered = sorted(set(shipped) - set(table))
@@ -242,9 +171,6 @@ def main():
             print("  no differing months")
         print()
 
-    # A comparison that silently compares nothing is worse than no comparison:
-    # it reports success having checked nothing. Every fetch can fail, so a
-    # green exit must mean at least one source actually overlapped the table.
     if compared == 0:
         sys.exit("nothing was compared — no source was reachable or none overlap the shipped range")
     print("%d month values in the shipped table across %d years; %d year(s) were checked."

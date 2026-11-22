@@ -1,28 +1,17 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Exercise source parsing and the provenance gate's pass/fail decisions.
-
-The source fixture is a short excerpt of the pinned askbuddie table. The gate
-fixtures are synthetic observations, independent of current dataset decisions.
-They check range, coverage, source membership and differing-month changes.
-Recorded differences must remain permitted while unexpected drift must fail.
-"""
 
 from __future__ import annotations
 
 import importlib.util
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+import dataset_table
+
 HERE = Path(__file__).resolve().parent
-# verify-data-sources.py and check-kathmandu-calendar.py both do
-# `from dataset_table import ...` at import time, so scripts/ must be importable
-# however this file was invoked.
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
 
 
 def load(name):
@@ -31,8 +20,6 @@ def load(name):
     spec.loader.exec_module(module)
     return module
 
-
-import dataset_table  # noqa: E402
 
 vds = load("verify-data-sources.py")
 ckc = load("check-kathmandu-calendar.py")
@@ -55,20 +42,17 @@ public struct CalendarDataset {
             1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
             1977: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
         ],
-        anchorBS: BSDay(year: 1975, month: 1, day: 1)
+        anchorBikramSambat: BikramSambatDate(year: 1975, month: 1, day: 1)
     )
 }
 """
 
-# Rows copied verbatim from
-# NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift (1975-1977).
 SHIPPED_ROWS = {
     1975: [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
     1976: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
     1977: [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
 }
 
-# askbuddie/bikram-sambat @d347560, src/data/days-in-month-mapping.ts, 1975-1976.
 ASKBUDDIE_BODY = """\
 /**
  * This includes the number of days in each month for each year from 1975 to 2100 BS.
@@ -88,11 +72,6 @@ class ShippedTableTests(unittest.TestCase):
             return dataset_table.shipped_table(path)
 
     def test_reads_only_the_indented_literal(self):
-        # Two decoys precede the data block, and both must be inert. The
-        # `public let years` declaration is row-shaped to the reader but not to
-        # the row regex; the doc-comment year row is genuinely row-shaped, so a
-        # bare `years: [` anchor would swallow it and the expected rows would
-        # come back as 1970 too. Only a row-shaped decoy can prove the anchor.
         self.assertEqual(self.parse(DATASET_HEADER), SHIPPED_ROWS)
 
     def test_exits_when_no_years_block(self):
@@ -114,9 +93,6 @@ class ShippedTableTests(unittest.TestCase):
 
 
 class SourceParserTests(unittest.TestCase):
-    def setUp(self):
-        del vds.NOTES[:]
-
     def test_askbuddie_quoted_year_rows(self):
         self.assertEqual(
             vds.parse_askbuddie(ASKBUDDIE_BODY),
@@ -152,7 +128,6 @@ class ShippedRangeTests(unittest.TestCase):
 
 
 def gate_fixture():
-    """Fresh synthetic observations isolate decisions from dataset revisions."""
     return {
         "shipped": {"first": 1975, "last": 2084, "years": 110},
         "sources": {
@@ -170,34 +145,12 @@ def gate_fixture():
 
 
 class ProvenanceGateDecisionTests(unittest.TestCase):
-    """The gate's pass/fail decision, not its parsers.
-
-    Contract for verify-data-sources._compare_observations, which returns a list
-    of problem strings and is the only thing that makes the gate exit 1. It
-    reports, one line per test below:
-
-      1. nothing, when the live observation equals the baseline;
-      2. a moved shipped range — the baseline's 1975-2084 BS / 110 years against
-         whatever the live table now covers;
-      3. a source the live observation has and the baseline does not;
-      4. a source the baseline has and the live observation does not;
-      5. a changed `exact` or `shared` year count for a source present in both;
-      6. a (year, month) that newly differs — added to the diff set;
-      7. a (year, month) that no longer differs — removed from the diff set;
-      8. a year the live source has newly stopped being able to cover;
-      9. a year the baseline recorded as uncovered that the live source now covers.
-
-    Recorded differences are permitted; changing the observation is a finding.
-    The fixtures below are synthetic, not claims about the current source.
-    """
-
     def test_an_observation_equal_to_the_baseline_reports_no_problem(self):
         expected = gate_fixture()
         observed = gate_fixture()
         self.assertEqual(vds._compare_observations(observed, expected), [])
 
     def test_recorded_differences_are_not_themselves_a_problem(self):
-        # Synthetic recorded differences are allowed without judging values.
         expected = gate_fixture()
         observed = gate_fixture()
         self.assertEqual(observed["sources"]["base-fixture"]["diffs"],
@@ -205,7 +158,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         self.assertEqual(vds._compare_observations(observed, expected), [])
 
     def test_a_narrowed_shipped_range_is_reported(self):
-        # 2084 BS dropped from the table: the live rows now cover 1975-2083.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["shipped"] = {"first": 1975, "last": 2083, "years": 109}
@@ -216,7 +168,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_widened_shipped_range_is_reported(self):
-        # 2085 BS added to the table: the live rows now cover 1975-2085.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["shipped"] = {"first": 1975, "last": 2085, "years": 111}
@@ -227,9 +178,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_source_the_baseline_does_not_record_is_reported(self):
-        # partial-fixture: 106 shared years, 104 of them exact. Dropped from the expected
-        # side only, so the live observation holds a source the baseline never
-        # recorded, for example a new source added without a baseline update.
         expected = gate_fixture()
         observed = gate_fixture()
         del expected["sources"]["partial-fixture"]
@@ -238,8 +186,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_source_the_live_observation_is_missing_is_reported(self):
-        # The base fixture is in the baseline and the observation dropped it — a fetch
-        # that failed is not the same as a source that agreed.
         expected = gate_fixture()
         observed = gate_fixture()
         del observed["sources"]["base-fixture"]
@@ -248,7 +194,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_changed_exact_year_count_is_reported(self):
-        # The base fixture matches 107 of its 110 shared years exactly in the baseline.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["exact"] = 108
@@ -257,7 +202,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_changed_shared_year_count_is_reported(self):
-        # The base fixture overlaps all 110 shipped years in the baseline; here one fewer.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["shared"] = 109
@@ -266,8 +210,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_newly_differing_month_is_reported(self):
-        # 2084 BS Baisakh (month index 0) is not one of the recorded
-        # differences, so its arrival in the fixture's diff set is a finding.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["diffs"].append([2084, 0])
@@ -276,9 +218,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_vanished_differing_month_is_reported(self):
-        # 1975 BS Bhadra (month index 4) is a recorded difference, but the
-        # gate must still notice the day it stops differing: that is a table
-        # edit not recorded in the baseline.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["base-fixture"]["diffs"].remove([1975, 4])
@@ -288,8 +227,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_newly_uncovered_year_is_reported(self):
-        # The partial fixture cannot cover 1975-1978 BS in the baseline; 1979 joining that
-        # list means the live source lost a year it used to reach.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["partial-fixture"]["uncovered"].append(1979)
@@ -298,8 +235,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
         ])
 
     def test_a_year_that_is_no_longer_uncovered_is_reported(self):
-        # 1978 BS leaving the partial fixture's uncovered list: the live source now reaches
-        # a year the baseline says it could not.
         expected = gate_fixture()
         observed = gate_fixture()
         observed["sources"]["partial-fixture"]["uncovered"].remove(1978)
@@ -309,16 +244,6 @@ class ProvenanceGateDecisionTests(unittest.TestCase):
 
 
 class ProvenanceGateArgvTests(unittest.TestCase):
-    """verify-data-sources._parse_argv — the gate's only user input.
-
-    Contract: it returns (offline, baseline_path, update_path) and touches no
-    filesystem, so it can be exercised without a network or a fetch. --baseline
-    takes a path in either spelling. --update-baseline defaults to the committed
-    baseline when bare, because regenerating that file is deliberate but where
-    it lives is not. A bare --baseline is an error rather than a silent default,
-    so a mistyped command cannot quietly compare against nothing.
-    """
-
     def test_no_flag_leaves_every_option_unset(self):
         self.assertEqual(vds._parse_argv([]), (False, None, None))
 
@@ -348,14 +273,9 @@ class ProvenanceGateArgvTests(unittest.TestCase):
         self.assertEqual(update, Path("other.json"))
 
     def test_offline_alone_asks_for_no_comparison(self):
-        # The documented way to run where the network is unavailable: the sole
-        # pinned source come from ~/.cache/nepalkit-data-sources instead, and
-        # a cached table still has to clear the baseline to pass.
         self.assertEqual(vds._parse_argv(["--offline"]), (True, None, None))
 
     def test_a_baseline_without_a_path_exits_rather_than_defaulting(self):
-        # An exercised exit, not an assumed one — the same reason this file
-        # already asserts shipped_table's SystemExit.
         with self.assertRaises(SystemExit):
             vds._parse_argv(["--baseline"])
 

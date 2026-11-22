@@ -4,25 +4,19 @@ build/
 DerivedData/
 .DS_Store
 __pycache__/
-# Xcode's per-user directories. The real name is "<user>.xcuserdatad" — with a
-# trailing "d" — so the earlier "*.xcuserdata/" rule matched nothing and let a
-# local username sit tracked in the repository. Both spellings are covered so the
-# typo cannot be reintroduced silently.
 *.xcuserdatad/
 *.xcuserdata/
 xcuserdata/
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.p8
 
-# Agent workflow (local-only, never committed)
 AGENTS.md
 docs/agents/
 .zcode/
 plans/
-
-# ...except the product spec, which is durable project knowledge and is
-# reviewed in PRs. Ignores one level below each .scratch/<feature>/ directory
-# rather than the directory itself: git cannot re-include a file whose parent
-# directory is excluded, so excluding .scratch/ outright would make the
-# negation below unreachable.
-.scratch/*/*
-!.scratch/*/spec.md
+.scratch/

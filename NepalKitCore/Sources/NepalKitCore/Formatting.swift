@@ -1,20 +1,27 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
-/// Display settings for Bikram Sambat dates, per the locked spec: two independent axes.
-public enum DigitScript: String, Sendable, Hashable {
+/// The digits numbers are written in.
+public enum DigitScript: String, Sendable, Hashable, Codable, CaseIterable {
+    /// 0123456789
     case latin
+    /// ०१२३४५६७८९
     case devanagari
 }
 
-public enum MonthNameStyle: String, Sendable, Hashable {
+/// The language Bikram Sambat month names and weekday names are written in.
+/// Gregorian month names are always English.
+public enum MonthNameStyle: String, Sendable, Hashable, Codable, CaseIterable {
+    /// Nepali names in Devanagari: बैशाख, आइत.
     case nepali
+    /// Transliterated month names and English weekday names: Baisakh, Sunday.
     case transliterated
 }
 
-/// The two display axes travel together everywhere dates are shown.
-public struct DisplaySettings: Sendable, Hashable {
+/// How dates are written: the digits and the month-name style, chosen
+/// independently.
+public struct DisplaySettings: Sendable, Hashable, Codable {
     public let digits: DigitScript
     public let monthNames: MonthNameStyle
 
@@ -24,154 +31,144 @@ public struct DisplaySettings: Sendable, Hashable {
     }
 }
 
-extension DisplaySettings {
-    /// The fixed settings every Watch surface renders with: canonical Nepali
-    /// month and weekday names, Devanagari digits. The Watch has no settings,
-    /// so there is exactly one display configuration and it lives where the
-    /// other display components do.
-    public static let watch = DisplaySettings(digits: .devanagari, monthNames: .nepali)
-}
-
-/// Canonical transliterated English month names, Baisakh through Chaitra.
-public let transliteratedMonthNames = [
-    "Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashoj",
-    "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra",
-]
-
-/// Nepali month names, Baisakh through Chaitra.
-public let nepaliMonthNames = [
-    "बैशाख", "जेठ", "असार", "साउन", "भदौ", "असोज",
-    "कात्तिक", "मंसिर", "पुस", "माघ", "फागुन", "चैत",
-]
-
 private let devanagariDigits: [Character] = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
 
-private func devanagariString(_ latinDigits: String) -> String {
-    // Only ASCII digits are transliterated. Everything else is passed through
-    // untouched, because dropping it would silently change the value: a compactMap
-    // over wholeNumberValue discarded the minus sign, rendering -42 as "४२".
-    String(latinDigits.map { character in
-        guard character.isASCII,
-              let value = character.wholeNumberValue,
-              devanagariDigits.indices.contains(value)
-        else { return character }
-        return devanagariDigits[value]
-    })
-}
-
 extension DigitScript {
-    /// Renders a Latin-digit string in this script. The single place that
-    /// branches on digit script; all number formatting funnels through here.
+    /// A number written in this script: `DigitScript.devanagari.format(2083)`
+    /// is "२०८३". A minus sign is kept.
+    public func format(_ value: Int) -> String {
+        render(latinDigits: String(value))
+    }
+
+    /// The clock time at `date` in `timeZone`, written in this script.
+    ///
+    /// The 12-hour form has no AM/PM marker: there is no established Nepali
+    /// one to pair with Devanagari digits.
+    public func formatTime(
+        _ date: Date,
+        in timeZone: TimeZone = .nepal,
+        twentyFourHour: Bool = true,
+        showsSeconds: Bool = true
+    ) -> String {
+        let calendar = ClockCalendars.gregorian(timeZone: timeZone)
+        let hour24 = calendar.component(.hour, from: date)
+        let hour = twentyFourHour ? twoDigits(hour24) : format(hour24 % 12 == 0 ? 12 : hour24 % 12)
+        let minute = twoDigits(calendar.component(.minute, from: date))
+        guard showsSeconds else { return "\(hour):\(minute)" }
+        return "\(hour):\(minute):\(twoDigits(calendar.component(.second, from: date)))"
+    }
+
+    /// Renders a Latin-digit string in this script. Non-digits pass through.
     func render(latinDigits: String) -> String {
         switch self {
         case .latin:
             return latinDigits
         case .devanagari:
-            return devanagariString(latinDigits)
+            return String(latinDigits.map { character in
+                guard character.isASCII,
+                      let value = character.wholeNumberValue,
+                      devanagariDigits.indices.contains(value)
+                else { return character }
+                return devanagariDigits[value]
+            })
         }
     }
-}
 
-/// Formats a plain number (picker year/day) honoring the digit-script setting.
-public func formatNumber(_ value: Int, digits: DigitScript) -> String {
-    digits.render(latinDigits: String(value))
-}
-
-/// Bikram Sambat month name for 1 (Baisakh) through 12 (Chaitra),
-/// honoring the month-name setting.
-public func monthName(month: Int, style: MonthNameStyle) -> String {
-    let names: [String]
-    switch style {
-    case .nepali: names = nepaliMonthNames
-    case .transliterated: names = transliteratedMonthNames
+    private func twoDigits(_ value: Int) -> String {
+        render(latinDigits: value < 10 ? "0\(value)" : String(value))
     }
-    // Out-of-range months render as their number — the pass-through rule
-    // `devanagariString` uses. The pickers and the dataset bound months to
-    // 1...12, so reaching this line means an unclamped value got here, and
-    // showing "13" beats inventing a name or trapping on the way to the menu bar.
-    // The bound is checked against `month` and not against `month - 1`: these
-    // names are 1-based, so the index form has to subtract first, and
-    // `Int.min` minus one overflows and traps inside the very function
-    // promising never to. `devanagariString` gets away with checking the value
-    // directly because digit values are never negative.
-    guard (1 ... names.count).contains(month) else { return String(month) }
-    return names[month - 1]
 }
 
-/// Nepali weekday names, Sunday through Saturday.
-public let nepaliWeekdayNames = [
+private let transliteratedMonthNames = [
+    "Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashoj",
+    "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra",
+]
+
+private let nepaliMonthNames = [
+    "बैशाख", "जेठ", "असार", "साउन", "भदौ", "असोज",
+    "कात्तिक", "मंसिर", "पुस", "माघ", "फागुन", "चैत",
+]
+
+private let nepaliWeekdayNames = [
     "आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि",
 ]
 
-/// English weekday names, Sunday through Saturday.
-public let englishWeekdayNames = [
+private let englishWeekdayNames = [
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ]
 
-/// Weekday name for 1 (Sunday) through 7 (Saturday), honoring the month-name
-/// setting, or nil outside 1–7.
-public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
-    guard (1 ... 7).contains(weekday) else { return nil }
-    switch style {
-    case .nepali: return nepaliWeekdayNames[weekday - 1]
-    case .transliterated: return englishWeekdayNames[weekday - 1]
-    }
-}
-
-/// Short weekday name for 1 (Sunday) through 7 (Saturday), or nil outside
-/// 1–7. English names are cut to three letters; Nepali names are already short.
-public func shortWeekdayName(for weekday: Int, style: MonthNameStyle) -> String? {
-    guard let name = weekdayName(for: weekday, style: style) else { return nil }
-    switch style {
-    case .nepali: return name
-    case .transliterated: return String(name.prefix(3))
-    }
-}
-
-/// Formats a Bikram Sambat date as "day month year" honoring both display settings.
-public func formatBS(_ bs: BSDay, settings: DisplaySettings) -> String {
-    let month = monthName(month: bs.month, style: settings.monthNames)
-    return "\(formatNumber(bs.day, digits: settings.digits)) \(month) \(formatNumber(bs.year, digits: settings.digits))"
-}
-
-/// Formats a Bikram Sambat date as "day month" for the menu-bar extra, honoring both display settings.
-public func formatBSShort(_ bs: BSDay, settings: DisplaySettings) -> String {
-    let month = monthName(month: bs.month, style: settings.monthNames)
-    return "\(formatNumber(bs.day, digits: settings.digits)) \(month)"
-}
-
-/// Gregorian month names, January through December. The month-name setting
-/// governs Bikram Sambat months and weekday names; Gregorian months stay
-/// English while digits still honor the digit-script setting.
-public let gregorianMonthNames = [
+private let gregorianMonthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ]
 
-/// Gregorian month name for 1 (January) through 12 (December). Out-of-range
-/// months render as their number — same pass-through rule as `monthName`, and
-/// for the same reason: the bound is checked against the month, never against
-/// a pre-subtracted index, so `Int.min` returns rather than trapping.
-/// The one lookup `formatAD` and `SpokenDate.ad` share.
-public func gregorianMonthName(_ month: Int) -> String {
-    guard (1 ... gregorianMonthNames.count).contains(month) else { return String(month) }
-    return gregorianMonthNames[month - 1]
+extension BikramSambatDate {
+    /// The twelve month names, Baisakh through Chaitra.
+    public static func monthNames(style: MonthNameStyle) -> [String] {
+        switch style {
+        case .nepali: nepaliMonthNames
+        case .transliterated: transliteratedMonthNames
+        }
+    }
+
+    /// The name of month 1 (Baisakh) through 12 (Chaitra). A month outside
+    /// 1–12 is returned as its number rather than trapping.
+    public static func monthName(_ month: Int, style: MonthNameStyle) -> String {
+        let names = monthNames(style: style)
+        guard (1 ... names.count).contains(month) else { return String(month) }
+        return names[month - 1]
+    }
+
+    /// The seven weekday names, Sunday through Saturday.
+    public static func weekdayNames(style: MonthNameStyle) -> [String] {
+        switch style {
+        case .nepali: nepaliWeekdayNames
+        case .transliterated: englishWeekdayNames
+        }
+    }
+
+    /// The name of weekday 1 (Sunday) through 7 (Saturday), or nil outside 1–7.
+    public static func weekdayName(_ weekday: Int, style: MonthNameStyle) -> String? {
+        guard (1 ... 7).contains(weekday) else { return nil }
+        return weekdayNames(style: style)[weekday - 1]
+    }
+
+    /// A short weekday name ("Mon"), or nil outside 1–7.
+    public static func shortWeekdayName(_ weekday: Int, style: MonthNameStyle) -> String? {
+        guard let name = weekdayName(weekday, style: style) else { return nil }
+        switch style {
+        case .nepali: return name
+        case .transliterated: return String(name.prefix(3))
+        }
+    }
+
+    /// The date as "day month year", or "day month" without the year:
+    /// "11 Ashoj 2083", "११ असोज २०८३".
+    public func formatted(_ settings: DisplaySettings, includesYear: Bool = true) -> String {
+        let dayAndMonth = "\(settings.digits.format(day)) \(Self.monthName(month, style: settings.monthNames))"
+        guard includesYear else { return dayAndMonth }
+        return "\(dayAndMonth) \(settings.digits.format(year))"
+    }
 }
 
-/// Formats a Gregorian date as "day month year", honoring the digit-script setting.
-public func formatAD(_ ad: GADay, settings: DisplaySettings) -> String {
-    "\(formatNumber(ad.day, digits: settings.digits)) \(gregorianMonthName(ad.month)) \(formatNumber(ad.year, digits: settings.digits))"
+extension GregorianDate {
+    /// The twelve English month names, January through December.
+    public static let monthNames = gregorianMonthNames
+
+    /// The English name of month 1 (January) through 12 (December). A month
+    /// outside 1–12 is returned as its number rather than trapping.
+    public static func monthName(_ month: Int) -> String {
+        guard (1 ... monthNames.count).contains(month) else { return String(month) }
+        return monthNames[month - 1]
+    }
+
+    /// The date as "day month year" with an English month name and digits in
+    /// `digits`: "27 September 2026", "२७ September २०२६".
+    public func formatted(digits: DigitScript) -> String {
+        "\(digits.format(day)) \(Self.monthName(month)) \(digits.format(year))"
+    }
 }
 
-func twoDigits(_ value: Int, digits: DigitScript) -> String {
-    let padded = value < 10 ? "0\(value)" : String(value)
-    return digits.render(latinDigits: padded)
-}
-
-/// Gregorian calendars for the clock formatters and today's date, one per time
-/// zone. Building a `Calendar` per call dominated formatting cost at clock-tick
-/// frequency. Zones are few, so entries never evict. Lock-guarded because
-/// callers are nonisolated and may be on any thread.
 enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
@@ -181,19 +178,9 @@ enum ClockCalendars {
         defer { lock.unlock() }
         if let cached = calendars[timeZone.identifier] { return cached }
         var calendar = Calendar(identifier: .gregorian)
-        // A fixed zone, not the one passed in: an autoupdating zone cached
-        // under today's identifier would follow the Mac to a new zone and
-        // answer for it under the old key.
+        // A fixed zone: an autoupdating one would drift from its cache key.
         calendar.timeZone = TimeZone(identifier: timeZone.identifier) ?? timeZone
         calendars[timeZone.identifier] = calendar
         return calendar
     }
-}
-
-/// Formats a clock time as 24-hour "HH:mm:ss" in the given time zone,
-/// honoring the digit-script setting.
-public func formatClock(_ date: Date, timeZone: TimeZone, digits: DigitScript) -> String {
-    let calendar = ClockCalendars.gregorian(timeZone: timeZone)
-    let parts = calendar.dateComponents([.hour, .minute, .second], from: date)
-    return "\(twoDigits(parts.hour ?? 0, digits: digits)):\(twoDigits(parts.minute ?? 0, digits: digits)):\(twoDigits(parts.second ?? 0, digits: digits))"
 }

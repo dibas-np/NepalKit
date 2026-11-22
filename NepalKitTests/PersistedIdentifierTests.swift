@@ -5,20 +5,12 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Pins the identifiers users already have on disk. Written with literals
-/// rather than the constants, because renaming any of these silently resets
-/// every user's settings on upgrade.
 @MainActor
 struct PersistedIdentifierTests {
-    private func freshDefaults() throws -> UserDefaults {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
-        return defaults
-    }
+    private let scratch = ScratchDefaults()
 
     @Test func storedDisplaySettingsReadThroughTheLiteralKeysAndRawValues() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         defaults.set("devanagari", forKey: "digitScript")
         defaults.set("nepali", forKey: "monthNameStyle")
 
@@ -31,7 +23,7 @@ struct PersistedIdentifierTests {
     }
 
     @Test func savedDisplaySettingsUseTheLiteralKeysAndRawValues() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
 
         SettingsStore(defaults: defaults).save(DisplaySettings(digits: .devanagari, monthNames: .nepali))
 
@@ -40,7 +32,7 @@ struct PersistedIdentifierTests {
     }
 
     @Test func storedMenuBarFormatReadsThroughTheLiteralKeys() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         defaults.set(true, forKey: "menuBarShowsWeekday")
         defaults.set(true, forKey: "menuBarShowsYear")
         defaults.set(true, forKey: "menuBarShowsTime")
@@ -53,7 +45,7 @@ struct PersistedIdentifierTests {
     }
 
     @Test func savedMenuBarFormatUsesTheLiteralKeys() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
 
         SettingsStore(defaults: defaults).save(MenuBarFormat(showsWeekday: true, showsTime: true, showsSeconds: true))
 
@@ -65,7 +57,7 @@ struct PersistedIdentifierTests {
     }
 
     @Test func timeReferenceUsesTheLiteralKeyAndRawValues() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         defaults.set("local", forKey: "timeReference")
         #expect(SettingsStore(defaults: defaults).timeReference == .local)
         defaults.set("nepal", forKey: "timeReference")
@@ -76,8 +68,7 @@ struct PersistedIdentifierTests {
     }
 
     @Test func loginItemConfiguredFlagUsesTheLiteralKey() throws {
-        // A configured user must not be re-registered after they turned it off.
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         defaults.set(true, forKey: "loginItemConfigured")
         let service = LoginItemModelTests.MockService()
 

@@ -4,8 +4,6 @@ import AppKit
 import Testing
 @testable import NepalKit
 
-/// The Settings sidebar's rows: their order, and that each names itself and
-/// draws its own symbol, so no two rows read or look alike.
 @MainActor
 struct SettingsTabTests {
     @Test func theSidebarLandsOnItsFirstRow() {

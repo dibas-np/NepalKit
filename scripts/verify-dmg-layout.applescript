@@ -1,20 +1,7 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 -- Copyright (C) 2026 Dibas Sigdel
 --
--- Check that a mounted DMG's Finder window is the window that was designed.
---
--- The layout is written by Finder into the volume's `.DS_Store`, by a mechanism
--- Apple documents nowhere, into a format Apple documents nowhere. A release
--- that silently ships Finder's default arrangement instead is a release that
--- passed every other gate: the DMG is signed, notarized, stapled and
--- Gatekeeper-clean, and the window a user drags the app out of is a default
--- one. So the window is read back off the finished image and compared against
--- the layout it was supposed to be given.
---
--- Read back rather than diffed: the bytes can match while Finder ignores them,
--- and that is exactly the failure worth catching.
---
--- Usage: osascript scripts/verify-dmg-layout.applescript <volume> <app> <layout.json>
+-- Usage: osascript scripts/verify-dmg-layout.applescript <volume> <app> <layout-json>
 -- Exits 0 if the window matches, 1 with the list of mismatches otherwise.
 
 use framework "Foundation"
@@ -43,10 +30,6 @@ on run argv
 			set statusBarShown to statusbar visible of container window
 			set arrangementMode to arrangement of viewOptions
 
-			-- Bounds are {left, top, right, bottom} on screen. Only the size is
-			-- checked: where a window opens is the user's business and Finder's
-			-- to remember, and asserting on it would fail on any Mac that had
-			-- already opened the volume once.
 			set actualWindowSize to {(item 3 of windowBounds) - item 1 of windowBounds, (item 4 of windowBounds) - item 2 of windowBounds}
 			if actualWindowSize is not expectedWindowSize then
 				set end of mismatches to "window is " & my describe(actualWindowSize) & "pt, expected " & my describe(expectedWindowSize) & "pt"
@@ -92,9 +75,7 @@ end join
 on readLayout(json)
 	set text_ to current application's NSString's stringWithString:json
 	set data_ to text_'s dataUsingEncoding:(current application's NSUTF8StringEncoding)
-	-- `|error|`: the parameter is named after the `error` statement, and
-	-- without the vertical bars the `error` below is read as more of the same
-	-- expression rather than as a new statement.
+	-- `|error|` needs the bars, or the later `error` statement misparses.
 	set object_ to current application's NSJSONSerialization's JSONObjectWithData:data_ options:(current application's NSJSONReadingFragmentsAllowed) |error|:(missing value)
 	if object_ is missing value then
 		error "the layout was not valid JSON: " & json number 1001
