@@ -10,10 +10,6 @@ struct MonthGridModelTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    private func baisakh2082() throws -> MonthGridModel {
-        MonthGridModel(now: try TestDates.utc(2025, 4, 14, 6, 0))
-    }
-
     @Test func opensOnTodaysNepalTimeMonth() throws {
         let model = MonthGridModel(now: try TestDates.utc(2026, 10, 11, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2083, month: 6))
@@ -27,12 +23,8 @@ struct MonthGridModelTests {
         #expect(model.today == BikramSambatDate(year: 2082, month: 1, day: 1))
     }
 
-    private func shownDays(_ model: MonthGridModel) -> [MonthGridDay] {
-        model.weeks.flatMap { $0 }.compactMap { $0 }.filter(\.isInShownMonth)
-    }
-
     @Test func baisakh2082StartsOnMondayAfterChaitrasLastDay() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         let weeks = model.weeks
         #expect(weeks.count == MonthGridModel.weekCount)
         #expect(weeks.allSatisfy { $0.count == 7 })
@@ -42,14 +34,14 @@ struct MonthGridModelTests {
         #expect(first.gregorian == GregorianDate(year: 2025, month: 4, day: 14))
         #expect(first.weekday == 2)
         #expect(first.isInShownMonth)
-        let days = shownDays(model)
+        let days = model.shownDays
         #expect(days.count == 31)
         #expect(days.last?.gregorian == GregorianDate(year: 2025, month: 5, day: 14))
         #expect(weeks[4][3]?.bikramSambat.day == 31)
     }
 
     @Test func theNeighbouringMonthsFillTheFirstAndLastWeeks() throws {
-        let weeks = try baisakh2082().weeks
+        let weeks = try MonthGridModel.baisakh2082().weeks
         let leading = try #require(weeks[0][0])
         #expect(!leading.isInShownMonth)
         #expect(leading.bikramSambat.year == 2081 && leading.bikramSambat.month == 12)
@@ -62,7 +54,7 @@ struct MonthGridModelTests {
     }
 
     @Test func todayInANeighbouringMonthsSpillOverIsNotMarked() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         model.showPreviousMonth()
         let cells = model.weeks.flatMap { $0 }.compactMap { $0 }
         let spill = try #require(cells.first { $0.bikramSambat == BikramSambatDate(year: 2082, month: 1, day: 1) })
@@ -72,7 +64,7 @@ struct MonthGridModelTests {
     }
 
     @Test func everyCellSitsInItsWeekdayColumn() throws {
-        for week in try baisakh2082().weeks {
+        for week in try MonthGridModel.baisakh2082().weeks {
             for (column, cell) in week.enumerated() {
                 if let cell { #expect(cell.weekday == column + 1) }
             }
@@ -80,20 +72,20 @@ struct MonthGridModelTests {
     }
 
     @Test func saturdayIsTheHolidayColumn() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         #expect((0 ..< 7).filter(model.isWeeklyHolidayColumn) == [6])
-        let days = shownDays(model)
+        let days = model.shownDays
         #expect(days.filter(\.isWeeklyHoliday).map(\.bikramSambat.day) == [6, 13, 20, 27])
         #expect(days.filter(\.isWeeklyHoliday).allSatisfy { $0.weekday == 7 })
     }
 
     @Test func todayIsMarkedOnce() throws {
-        let days = try baisakh2082().weeks.flatMap { $0 }.compactMap { $0 }
+        let days = try MonthGridModel.baisakh2082().cells
         #expect(days.filter(\.isToday).map(\.bikramSambat) == [BikramSambatDate(year: 2082, month: 1, day: 1)])
     }
 
     @Test func navigatingAwayLeavesNoTodayMarked() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         model.showNextMonth()
         #expect(model.shown == MonthGridMonth(year: 2082, month: 2))
         #expect(!model.isShowingTodayMonth)
@@ -103,7 +95,7 @@ struct MonthGridModelTests {
     }
 
     @Test func navigationCrossesYearBoundaries() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         model.showPreviousMonth()
         #expect(model.shown == MonthGridMonth(year: 2081, month: 12))
         model.showNextMonth()
@@ -129,7 +121,7 @@ struct MonthGridModelTests {
         #expect(!model.canShowNextMonth)
         model.showNextMonth()
         #expect(model.shown == MonthGridMonth(year: 2084, month: 12))
-        let days = shownDays(model)
+        let days = model.shownDays
         #expect(model.weeks[0][0]?.bikramSambat.month == 11 && model.weeks[0][1]?.bikramSambat.month == 11)
         #expect(days.first?.gregorian == GregorianDate(year: 2028, month: 3, day: 14))
         #expect(days.last?.bikramSambat == BikramSambatDate(year: 2084, month: 12, day: 30))
@@ -156,7 +148,7 @@ struct MonthGridModelTests {
     }
 
     @Test func refreshMovesTodayButNotTheShownMonth() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         model.showNextMonth()
         model.refreshToday(now: try TestDates.utc(2025, 5, 15, 6, 0))
         #expect(model.today == BikramSambatDate(year: 2082, month: 2, day: 1))
@@ -165,7 +157,7 @@ struct MonthGridModelTests {
     }
 
     @Test func textHonoursLatinAndTransliterated() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         #expect(model.title(settings: latin) == "Baisakh 2082")
         #expect(model.weekdayHeaders(settings: latin) == ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
         let first = try #require(model.weeks[0][1])
@@ -174,7 +166,7 @@ struct MonthGridModelTests {
     }
 
     @Test func textHonoursDevanagariAndNepali() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         #expect(model.title(settings: devanagari) == "बैशाख २०८२")
         #expect(model.weekdayHeaders(settings: devanagari) == BikramSambatDate.weekdayNames(style: .nepali))
         let first = try #require(model.weeks[0][1])
@@ -183,7 +175,7 @@ struct MonthGridModelTests {
     }
 
     @Test func spokenFormsUseLatinDigits() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         let first = try #require(model.weeks[0][1])
         let second = try #require(model.weeks[0][2])
         #expect(model.spokenTitle(settings: devanagari) == "बैशाख 2082")
@@ -194,7 +186,7 @@ struct MonthGridModelTests {
     }
 
     @Test func gregorianSpanNamesBothMonths() throws {
-        let model = try baisakh2082()
+        let model = try MonthGridModel.baisakh2082()
         #expect(model.gregorianSpan(settings: latin) == "Apr–May 2025")
         #expect(model.gregorianSpan(settings: devanagari) == "Apr–May २०२५")
         #expect(model.spokenGregorianSpan() == "April to May 2025")

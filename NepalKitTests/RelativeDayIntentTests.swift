@@ -8,8 +8,6 @@ import NepalKitCore
 struct RelativeDayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
-    private static let devanagariDigits: [Character] = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
-
     @Test("Tomorrow and yesterday flip at Nepal Time midnight, not UTC midnight")
     func relativeDaysAreAnchoredToNepalTime() throws {
         let before = try TestDates.utc(2025, 4, 13, 18, 14)
@@ -75,8 +73,8 @@ struct RelativeDayIntentTests {
             let tomorrow = String(localized: try TomorrowInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
             let yesterday = String(localized: try YesterdayInBikramSambatIntent.answer(now: now, in: dataset, monthNames: monthNames).dialog)
 
-            #expect(!tomorrow.contains(where: Self.devanagariDigits.contains))
-            #expect(!yesterday.contains(where: Self.devanagariDigits.contains))
+            #expect(!tomorrow.contains(where: TestDates.devanagariDigits.contains))
+            #expect(!yesterday.contains(where: TestDates.devanagariDigits.contains))
             #expect(tomorrow.hasPrefix("Tomorrow is ") && tomorrow.contains("16") && tomorrow.contains("2082"))
             #expect(yesterday.hasPrefix("Yesterday was ") && yesterday.contains("14") && yesterday.contains("2082"))
         }

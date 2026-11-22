@@ -10,20 +10,12 @@ struct MonthGridDayDetailTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    private func baisakh2082() throws -> MonthGridModel {
-        MonthGridModel(now: try TestDates.utc(2025, 4, 14, 6, 0))
-    }
-
-    private func shownDays(_ model: MonthGridModel) -> [MonthGridDay] {
-        model.weeks.flatMap { $0 }.compactMap { $0 }.filter(\.isInShownMonth)
-    }
-
     @Test func distanceFromTodayCountsCivilDays() throws {
-        let model = try baisakh2082()
-        let days = shownDays(model)
+        let model = try MonthGridModel.baisakh2082()
+        let days = model.shownDays
         #expect(days.map { model.daysFromToday($0) } == (0 ..< 31).map { $0 })
         model.showPreviousMonth()
-        let lastOfChaitra = try #require(shownDays(model).last)
+        let lastOfChaitra = try #require(model.shownDays.last)
         #expect(model.daysFromToday(lastOfChaitra) == -1)
     }
 
@@ -38,8 +30,8 @@ struct MonthGridDayDetailTests {
     }
 
     @Test func dayDetailShowsBothCalendarsAndTheDistance() throws {
-        let model = try baisakh2082()
-        let day = try #require(shownDays(model).first { $0.bikramSambat.day == 6 })
+        let model = try MonthGridModel.baisakh2082()
+        let day = try #require(model.shownDays.first { $0.bikramSambat.day == 6 })
         let latinDetail = model.detail(for: day, settings: latin)
         #expect(latinDetail.bikramSambat == "6 Baisakh 2082")
         #expect(latinDetail.gregorian == "19 April 2025 · Saturday")
@@ -55,19 +47,19 @@ struct MonthGridDayDetailTests {
         #expect(nepali.spokenBikramSambat == "6 बैशाख 2082")
         #expect(nepali.spokenRelative == "In 5 days")
 
-        let today = try #require(shownDays(model).first)
+        let today = try #require(model.shownDays.first)
         #expect(model.detail(for: today, settings: latin).relative == "Today")
     }
 
     @Test func dayDetailKeepsCountingPastTheSupportedRange() throws {
         let model = MonthGridModel(now: try TestDates.utc(2028, 4, 13, 6, 0))
-        let last = try #require(shownDays(model).last)
+        let last = try #require(model.shownDays.last)
         #expect(model.detail(for: last, settings: latin).relative == "Yesterday")
     }
 
     @Test func copyPutsTheShownBikramSambatDateOnThePasteboard() throws {
-        let model = try baisakh2082()
-        let day = try #require(shownDays(model).first)
+        let model = try MonthGridModel.baisakh2082()
+        let day = try #require(model.shownDays.first)
         let detail = model.detail(for: day, settings: devanagari)
         let pasteboard = NSPasteboard(name: NSPasteboard.Name("NepalKitTests-\(UUID().uuidString)"))
         defer { pasteboard.releaseGlobally() }

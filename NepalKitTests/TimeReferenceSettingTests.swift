@@ -7,12 +7,7 @@ import NepalKitCore
 
 @MainActor
 struct TimeReferenceSettingTests {
-    private func freshDefaults() throws -> UserDefaults {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
-        return defaults
-    }
+    private let scratch = ScratchDefaults()
 
     @Test func eachReferenceNamesItsZone() {
         #expect(TimeReference.nepal.timeZone == TimeZone.nepal)
@@ -26,24 +21,24 @@ struct TimeReferenceSettingTests {
     }
 
     @Test func storeDefaultsToNepalTime() throws {
-        #expect(SettingsStore(defaults: try freshDefaults()).timeReference == .nepal)
+        #expect(SettingsStore(defaults: try scratch.make()).timeReference == .nepal)
     }
 
     @Test(arguments: TimeReference.allCases)
     func storeRoundTripsAcrossInstances(reference: TimeReference) throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         SettingsStore(defaults: defaults).save(reference)
         #expect(SettingsStore(defaults: defaults).timeReference == reference)
     }
 
     @Test func anUnknownStoredValueFallsBackToNepalTime() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         defaults.set("utc", forKey: SettingsStore.timeReferenceKey)
         #expect(SettingsStore(defaults: defaults).timeReference == .nepal)
     }
 
     @Test func theReferenceIsIndependentOfTheDisplaySettings() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         let store = SettingsStore(defaults: defaults)
         store.save(.local)
         store.save(DisplaySettings(digits: .devanagari, monthNames: .nepali))
@@ -52,7 +47,7 @@ struct TimeReferenceSettingTests {
     }
 
     @Test func modelLoadsPersistsAndNamesTheZone() throws {
-        let defaults = try freshDefaults()
+        let defaults = try scratch.make()
         let model = DisplaySettingsModel(store: SettingsStore(defaults: defaults))
         #expect(model.timeReference == .nepal)
         #expect(model.timeZone == TimeZone.nepal)
@@ -65,7 +60,7 @@ struct TimeReferenceSettingTests {
     }
 
     @Test func everyObserverHearsEachChange() throws {
-        let model = DisplaySettingsModel(store: SettingsStore(defaults: try freshDefaults()))
+        let model = DisplaySettingsModel(store: SettingsStore(defaults: try scratch.make()))
         var first: [TimeReference] = []
         var second: [TimeReference] = []
         model.observeTimeReference { first.append($0) }

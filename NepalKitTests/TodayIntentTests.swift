@@ -33,8 +33,7 @@ struct TodayIntentTests {
     @Test("Beyond-range today names the dataset's last year and keeps Gregorian today")
     func beyondRangeDialogUsesDatasetNumbers() throws {
         let end = try #require(dataset.gregorianEnd)
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
+        let utc = TestDates.utcCalendar
         let lastDay = try #require(utc.date(from: DateComponents(year: end.year, month: end.month, day: end.day)))
         let past = try #require(utc.date(byAdding: .day, value: 30, to: lastDay))
 
@@ -153,13 +152,12 @@ struct TodayIntentTests {
     func dialogDisplaySplit() {
         let bs = BikramSambatDate(year: 2082, month: 3, day: 15)
         let spoken = IntentAnswers.spoken(bs)
-        let devanagariDigits: [Character] = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"]
 
-        #expect(!spoken.contains(where: devanagariDigits.contains))
+        #expect(!spoken.contains(where: TestDates.devanagariDigits.contains))
         #expect(spoken.contains("15") && spoken.contains("2082"))
 
         let shown = bs.formatted(DisplaySettings(digits: .devanagari, monthNames: .nepali))
-        #expect(shown.contains(where: devanagariDigits.contains))
+        #expect(shown.contains(where: TestDates.devanagariDigits.contains))
         #expect(shown != spoken)
     }
 

@@ -10,17 +10,9 @@ struct CalendarEventTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let nepali = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    private func kartik2083() throws -> MonthGridModel {
-        MonthGridModel(now: try TestDates.utc(2026, 10, 18, 6, 0))
-    }
-
-    private func day(_ model: MonthGridModel, _ day: Int) throws -> MonthGridDay {
-        try #require(model.weeks.flatMap { $0 }.compactMap { $0 }.first { $0.isInShownMonth && $0.bikramSambat.day == day })
-    }
-
     @Test func aFestivalDayIsTitledByItsFestivals() throws {
-        let model = try kartik2083()
-        let event = model.calendarEvent(for: try day(model, 4), settings: latin)
+        let model = try MonthGridModel.kartik2083()
+        let event = model.calendarEvent(for: try model.shownDay(4), settings: latin)
         #expect(event.title.contains("Vijaya Dashami"))
         #expect(event.date == GregorianDate(year: 2026, month: 10, day: 21))
         #expect(event.notes.hasPrefix("4 Kartik 2083 · 21 October 2026"))
@@ -28,15 +20,15 @@ struct CalendarEventTests {
     }
 
     @Test func aPlainDayIsTitledByItsBikramSambatDate() throws {
-        let model = try kartik2083()
-        let event = model.calendarEvent(for: try day(model, 9), settings: latin)
+        let model = try MonthGridModel.kartik2083()
+        let event = model.calendarEvent(for: try model.shownDay(9), settings: latin)
         #expect(event.title == "9 Kartik 2083")
         #expect(!event.notes.contains("\n"))
     }
 
     @Test func theEventFollowsTheMonthNameSetting() throws {
-        let model = try kartik2083()
-        let event = model.calendarEvent(for: try day(model, 9), settings: nepali)
+        let model = try MonthGridModel.kartik2083()
+        let event = model.calendarEvent(for: try model.shownDay(9), settings: nepali)
         #expect(event.title == "९ कात्तिक २०८३")
     }
 
@@ -94,8 +86,8 @@ struct CalendarEventTests {
     }
 
     @Test func addingADayReportsWhetherTheCalendarAppTookIt() throws {
-        let model = try kartik2083()
-        let dashami = try day(model, 4)
+        let model = try MonthGridModel.kartik2083()
+        let dashami = try model.shownDay(4)
         var handed: CalendarEvent?
         var announced: [String] = []
         #expect(model.addToCalendar(dashami, settings: latin, open: { handed = $0; return true }, announce: { announced.append($0) }))

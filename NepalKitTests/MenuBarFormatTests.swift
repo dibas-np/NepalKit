@@ -11,9 +11,7 @@ struct MenuBarFormatTests {
     private static let everything = MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true)
 
     private static func utc(_ day: Int, _ hour: Int, _ minute: Int, _ second: Int) throws -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return try #require(calendar.date(from: DateComponents(year: 2026, month: 9, day: day, hour: hour, minute: minute, second: second)))
+        try TestDates.utc(2026, 9, day, hour, minute, second)
     }
 
     private func title(_ now: Date, _ format: MenuBarFormat, _ settings: DisplaySettings = latin) -> String? {

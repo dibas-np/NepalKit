@@ -33,10 +33,10 @@ struct MenuBarFormatModelTests {
     private static let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private static let everything = MenuBarFormat(showsWeekday: true, showsYear: true, showsTime: true)
 
+    private let scratch = ScratchDefaults()
+
     private func freshStore() throws -> (SettingsStore, UserDefaults) {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         return (SettingsStore(defaults: defaults), defaults)
     }
 

@@ -9,74 +9,66 @@ struct MonthGridHolidayTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    private func kartik2083(holidays: PublicHolidayCalendar = .gazette) throws -> MonthGridModel {
-        MonthGridModel(holidays: holidays, now: try TestDates.utc(2026, 10, 18, 6, 0))
-    }
-
-    private func shownDay(_ model: MonthGridModel, _ day: Int) throws -> MonthGridDay {
-        try #require(model.weeks.flatMap { $0 }.compactMap { $0 }.first { $0.isInShownMonth && $0.bikramSambat.day == day })
-    }
-
     @Test func aNationwideHolidayIsRedWhateverItsWeekday() throws {
-        let model = try kartik2083()
-        let day = try shownDay(model, 2)
+        let model = try MonthGridModel.kartik2083()
+        let day = try model.shownDay(2)
         #expect(day.weekday == 2)
         #expect(day.holidayScopes == [.nationwide])
         #expect(day.isNationwideHoliday && day.isMarkedAsHoliday)
         #expect(day.showsFestivalMark)
-        let dashami = try shownDay(model, 4)
+        let dashami = try model.shownDay(4)
         #expect(dashami.isMarkedAsHoliday && dashami.showsFestivalMark)
     }
 
     @Test func aWorkingDayIsNotRedAndASaturdayStillIs() throws {
-        let model = try kartik2083()
-        let kojagrat = try shownDay(model, 8)
+        let model = try MonthGridModel.kartik2083()
+        let kojagrat = try model.shownDay(8)
         #expect(kojagrat.holidayScopes.isEmpty)
         #expect(!kojagrat.isMarkedAsHoliday && kojagrat.showsFestivalMark)
-        let saturday = try shownDay(model, 14)
+        let saturday = try model.shownDay(14)
         #expect(saturday.isWeeklyHoliday && saturday.holidayScopes.isEmpty)
         #expect(saturday.isMarkedAsHoliday)
     }
 
     @Test func aLimitedHolidayIsNotRed() throws {
-        let model = try kartik2083()
+        let model = try MonthGridModel.kartik2083()
         model.showPreviousMonth()
-        let indraJatra = try shownDay(model, 9)
+        let indraJatra = try model.shownDay(9)
         #expect(indraJatra.weekday != MonthGridDay.weeklyHolidayWeekday)
         #expect(indraJatra.holidayScopes == [.kathmanduValley])
         #expect(!indraJatra.isNationwideHoliday && !indraJatra.isMarkedAsHoliday)
     }
 
     @Test func noGazetteMeansOnlySaturdaysAreRed() throws {
-        let model = try kartik2083(holidays: PublicHolidayCalendar(years: [], entries: [:]))
+        let model = try MonthGridModel.kartik2083(holidays: PublicHolidayCalendar(years: [], entries: [:]))
         let days = model.weeks.flatMap { $0 }.compactMap { $0 }
         #expect(days.allSatisfy { $0.holidayScopes.isEmpty && $0.isMarkedAsHoliday == $0.isWeeklyHoliday })
     }
 
     @Test func aHolidayCellSaysWhoItIsFor() throws {
-        let model = try kartik2083()
-        let day = try shownDay(model, 25)
+        let model = try MonthGridModel.kartik2083()
+        let day = try model.shownDay(25)
         #expect(model.spokenLabel(for: day, settings: latin) == "25 Kartik 2083, Wednesday, 11 November 2026, "
             + "Bhai Tika, Falgunanda Jayanti, public holiday, public holiday for the Kirat community")
         #expect(model.spokenLabel(for: day, settings: devanagari) == "25 कात्तिक 2083, बुध, 11 November 2026, "
             + "भाइटीका, फाल्गुनन्दजयन्ती, सार्वजनिक बिदा, किराँत धर्मावलम्बीका लागि बिदा")
-        #expect(model.spokenLabel(for: try shownDay(model, 2), settings: latin)
+        #expect(model.spokenLabel(for: try model.shownDay(2), settings: latin)
             == "2 Kartik 2083, Monday, 19 October 2026, Dashain holiday, public holiday")
     }
 
     @Test func theDetailsHaveOneLinePerScope() throws {
-        let model = try kartik2083()
-        let day = try shownDay(model, 25)
+        let model = try MonthGridModel.kartik2083()
+        let day = try model.shownDay(25)
         #expect(model.detail(for: day, settings: latin).holidays
             == ["Public holiday", "Public holiday for the Kirat community"])
         #expect(model.detail(for: day, settings: devanagari).holidays
             == ["सार्वजनिक बिदा", "किराँत धर्मावलम्बीका लागि बिदा"])
-        #expect(model.detail(for: try shownDay(model, 9), settings: latin).holidays.isEmpty)
+        #expect(model.detail(for: try model.shownDay(9), settings: latin).holidays.isEmpty)
     }
 
     @Test func repeatedGazetteRowsAreOneLine() throws {
         let model = MonthGridModel(now: try TestDates.utc(2026, 4, 15, 6, 0))
-        let day = try shownDay(model, 18)
+        let day = try model.shownDay(18)
         #expect(day.bikramSambat == BikramSambatDate(year: 2083, month: 1, day: 18))
         #expect(model.detail(for: day, settings: latin).holidays == ["Public holiday"])
     }
@@ -104,12 +96,12 @@ struct MonthGridHolidayTests {
     }
 
     @Test func jitiyaIsNarrowerThanTeejInTheDetails() throws {
-        let model = try kartik2083()
+        let model = try MonthGridModel.kartik2083()
         model.showPreviousMonth()
-        #expect(model.detail(for: try shownDay(model, 18), settings: latin).holidays
+        #expect(model.detail(for: try model.shownDay(18), settings: latin).holidays
             == ["Public holiday for women employees who observe Jitiya"])
         model.showPreviousMonth()
-        #expect(model.detail(for: try shownDay(model, 29), settings: latin).holidays
+        #expect(model.detail(for: try model.shownDay(29), settings: latin).holidays
             == ["Public holiday for women employees"])
     }
 

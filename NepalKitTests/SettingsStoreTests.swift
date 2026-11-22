@@ -6,10 +6,10 @@ import NepalKitCore
 @testable import NepalKit
 
 struct SettingsStoreTests {
+    private let scratch = ScratchDefaults()
+
     private func freshStore() throws -> (SettingsStore, UserDefaults) {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         return (SettingsStore(defaults: defaults), defaults)
     }
 

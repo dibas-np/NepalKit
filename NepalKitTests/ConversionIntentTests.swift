@@ -8,19 +8,13 @@ import NepalKitCore
 struct ConversionIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
-    private static func utcCalendar() -> Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar
-    }
-
     private static func dialog(of error: Error) -> String {
         String(localized: (error as? SiriIntentError)?.localizedStringResource ?? "missing")
     }
 
     @Test("Named day survives: time-of-day is discarded")
     func namedDayDiscardsTimeOfDay() throws {
-        let calendar = Self.utcCalendar()
+        let calendar = TestDates.utcCalendar
         let morning = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 0, minute: 5)))
         let night = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 23, minute: 59)))
 
@@ -40,7 +34,7 @@ struct ConversionIntentTests {
 
     @Test("Oracle: 15 March 2025 converts to Saturday 2 Chaitra 2081")
     func gregorianToBikramSambatOracle() async throws {
-        let calendar = Self.utcCalendar()
+        let calendar = TestDates.utcCalendar
         let date = try #require(calendar.date(from: DateComponents(year: 2025, month: 3, day: 15, hour: 12)))
         let named = try #require(GregorianToBikramSambatIntent.namedDay(for: date, calendar: calendar))
 
@@ -116,7 +110,7 @@ struct ConversionIntentTests {
 
     @Test("A Gregorian day the calendar would normalize builds no instant")
     func noonInUserCalendarRejectsAnImpossibleDay() {
-        #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GregorianDate(year: 2025, month: 2, day: 30), calendar: Self.utcCalendar()) == nil)
+        #expect(BikramSambatToGregorianIntent.noonInUserCalendar(for: GregorianDate(year: 2025, month: 2, day: 30), calendar: TestDates.utcCalendar) == nil)
     }
 
     @Test("Round trip through the entity returns the starting civil day")

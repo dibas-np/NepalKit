@@ -7,15 +7,14 @@ import NepalKitCore
 
 @MainActor
 struct DisplaySettingsModelTests {
+    private let scratch = ScratchDefaults()
+
     private func freshModel() throws -> DisplaySettingsModel {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
-        return DisplaySettingsModel(store: SettingsStore(defaults: defaults))
+        DisplaySettingsModel(store: SettingsStore(defaults: try scratch.make()))
     }
 
     private func menuBar() throws -> MenuBarModel {
-        MenuBarModel(now: try RoundTripFixtures.date(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
+        MenuBarModel(now: try TestDates.utc(2026, 9, 27, 12, 0), refreshes: false, schedulesMidnightFire: false)
     }
 
     @Test("Menu-bar title honors both display axes")
@@ -76,7 +75,7 @@ struct DisplaySettingsModelTests {
 
     @Test("Menu bar and popover render the same date for the same settings")
     func menuBarMatchesPopoverForSameSettings() throws {
-        let now = try RoundTripFixtures.date(2026, 9, 27, 12, 0)
+        let now = try TestDates.utc(2026, 9, 27, 12, 0)
         let bar = try menuBar()
 
         for settings in [
@@ -112,9 +111,7 @@ struct DisplaySettingsModelTests {
 
     @Test("Model writes through to the store")
     func modelPersistsThroughStore() throws {
-        let suiteName = "NepalKitTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try scratch.make()
         let store = SettingsStore(defaults: defaults)
         let model = DisplaySettingsModel(store: store)
 
@@ -144,11 +141,5 @@ struct DisplaySettingsModelTests {
         let first = DisplaySettingsModel.preview
         first.save(DisplaySettings(digits: .latin, monthNames: .transliterated))
         #expect(DisplaySettingsModel.preview.settings == DisplaySettings(digits: .devanagari, monthNames: .nepali))
-    }
-}
-
-enum RoundTripFixtures {
-    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) throws -> Date {
-        try TestDates.utc(year, month, day, hour, minute)
     }
 }
