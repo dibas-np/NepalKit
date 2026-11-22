@@ -12,7 +12,7 @@ struct MonthGridDayDetailTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    /// 1 Baisakh 2082 = 14 April 2025, a Monday, as in `MonthGridModelTests`.
+    /// 1 Baisakh 2082 = 14 April 2025, a Monday.
     private func baisakh2082() throws -> MonthGridModel {
         MonthGridModel(now: try TestDates.utc(2025, 4, 14, 6, 0))
     }

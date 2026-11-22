@@ -3,39 +3,25 @@
 import Testing
 import NepalKitCore
 
-/// Covers the *transformation* — that the spoken form uses pronounceable digits
-/// while keeping the user's month-name language, and that it agrees with the
-/// visual form when there is no reason to differ.
-///
-/// It does not assert what VoiceOver says. Spoken output is a platform
-/// rendering property; asserting it here would test nothing. The platform side
-/// is checked by walking the real accessibility tree of the running app.
 struct SpokenDateTests {
     private let ashoj11 = BikramSambatDate(year: 2083, month: 6, day: 11)
     private let adSeptember27 = GregorianDate(year: 2026, month: 9, day: 27)
 
     @Test func spokenBSUsesLatinDigitsWithTransliteratedMonthName() {
-        // 11 Ashoj 2083 — the visual form under Devanagari digits is
-        // "११ असोज २०८३", whose digits are the part a voice may not read.
         #expect(SpokenDate.bikramSambat(ashoj11, monthNames: .transliterated) == "11 Ashoj 2083")
     }
 
     @Test func spokenBSKeepsTheUsersMonthNameLanguage() {
-        // The month name is the semantically important half and a matching voice
-        // reads it; overriding it would discard the user's own setting.
         #expect(SpokenDate.bikramSambat(ashoj11, monthNames: .nepali) == "11 असोज 2083")
     }
 
     @Test func spokenBSAgreesWithTheVisualFormWhenDigitsAreLatin() {
-        // No cause to differ, so no override is applied. Announcing something
-        // different from the screen would be its own defect.
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         #expect(SpokenDate.bikramSambat(ashoj11, monthNames: .transliterated) == ashoj11.formatted(settings))
     }
 
     @Test func spokenBSDropsDevanagariDigits() {
-        // The point of the whole file: the digits must not survive into speech.
         let spoken = SpokenDate.bikramSambat(ashoj11, monthNames: .nepali)
 
         #expect(!spoken.contains("११"))

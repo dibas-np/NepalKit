@@ -5,26 +5,8 @@ import Testing
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// What `ComplicationAccessibility`'s label composition produces: the exact
-/// wording for named argument combinations, the two boundary label shapes, the
-/// error speech with and without resolved Gregorian context, and the canonical
-/// month names — including their combining marks — through core-generated
-/// samples.
-///
-/// **What this suite does not assert**, now stated plainly because it used to
-/// imply otherwise: which family passes which flags. Every test here calls the
-/// helper directly, so the correspondence between a family's visuals and its
-/// announced label is not exercised here at all — a second test that made the
-/// same call as its neighbour and asserted the same string was removed for
-/// claiming a view behaviour it never touched. That correspondence is pinned by
-/// `NepalKitTests/WatchPresentationWiringTests`, which derives it from each call
-/// site in `TodayComplicationView.swift`.
-///
-/// No rendering assertion is attempted, deliberately: these are SwiftUI views,
-/// and confirming the announced detail matches what is drawn needs either a
-/// rendering harness this repository does not have or a third-party
-/// view-inspection dependency `AGENTS.md` forbids without asking. The real check
-/// is a device and a screen reader.
+/// Label wording only. Which family passes which flags is covered by
+/// `NepalKitTests/WatchPresentationWiringTests`.
 struct ComplicationPresentationTests {
     private let dataset = CalendarDataset.v2
 
@@ -53,8 +35,6 @@ struct ComplicationPresentationTests {
     @Test func compactFamiliesAnnounceTheFullBikramSambatDateWithoutGregorian() throws {
         let components = try supportedComponents
 
-        // Circular, inline and corner show no weekday and no Gregorian date;
-        // the announced year fills what the visuals omit.
         #expect(
             ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false)
                 == "11 Ashoj 2083"
@@ -70,8 +50,6 @@ struct ComplicationPresentationTests {
             return
         }
 
-        // Compact visuals show only "Unavailable"; the announced label keeps
-        // the support context the visuals cannot fit.
         #expect(ComplicationAccessibility.boundaryLabel(boundary) == "Bikram Sambat unavailable, supported through 2084 BS")
         #expect(ComplicationAccessibility.boundaryLabel(boundary, gregorian: true)
             == "Bikram Sambat unavailable, supported through 2084 BS\n13 April 2028")
@@ -104,10 +82,7 @@ struct ComplicationPresentationTests {
     // MARK: Longest canonical month representation
 
     @Test func cornerLabelCarriesTheLongestMonthNameWithCombiningMarks() throws {
-        // Kartik 2083 begins the day after Ashoj's 31 days end; 27 September
-        // 2026 is 11 Ashoj, so Kartik 1 is 18 October. Its canonical name is
-        // the longest the dataset renders and carries combining marks — the
-        // worst case for the corner's tight label geometry.
+        // Kartik 1, 2083 is 18 October 2026.
         let kartikDay = try ResolvedDay(GregorianDate(year: 2026, month: 10, day: 18), in: dataset)
         guard case .supported(let components) = watchDayDisplay(for: kartikDay, settings: .watch, in: dataset) else {
             Issue.record("Expected a supported Kartik display")
@@ -119,8 +94,6 @@ struct ComplicationPresentationTests {
     }
 
     @Test func everyCanonicalMonthNameRendersThroughTheDisplayPath() throws {
-        // All twelve canonical names must survive the display path unchanged,
-        // including every combining mark.
         for (index, expected) in BikramSambatDate.monthNames(style: .nepali).enumerated() {
             let bsDay = BikramSambatDate(year: 2083, month: index + 1, day: 1)
             #expect(BikramSambatDate.monthName(bsDay.month, style: .nepali) == expected)

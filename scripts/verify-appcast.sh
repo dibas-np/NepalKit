@@ -2,32 +2,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Build the Sparkle appcast for a packaged release, then verify it.
-#
-# The appcast is generated into a staging directory, not into the repository.
-# That is deliberate: `generate_appcast` builds enclosure URLs from a prefix and
-# the archive filename, so the `1.0/` release-tag segment has to be supplied per
-# version. Baking one into a committed file would silently rot at 1.0.1 - the
-# feed would keep pointing at the 1.0 release and every future update 404. The
-# feed is a per-release artifact, published alongside the release it describes.
+# Build the Sparkle appcast for a packaged release in a staging directory,
+# sign it, and verify it.
 #
 # Usage: scripts/verify-appcast.sh <archives-dir> [download-url-prefix]
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
-# The repository URL has one home: AppMetadata.defaultRepositoryURL. Deriving
-# it here keeps the generated feed's enclosure URLs and link from outliving a
-# repository move that updated the app and the README but not this script.
-# `awk 'NR == 1'` rather than `head -1`: sed writing into a pipe head has already
-# closed takes SIGPIPE, and this script runs under `set -euo pipefail`. On a
-# one-match file sed has usually finished by then, so it has never bitten, but the
-# safe form costs nothing and keeps the pipeline shape identical to the two other
-# places this was fixed.
+# The repository URL is read from AppMetadata.defaultRepositoryURL.
 REPO_URL="$(sed -n 's/.*defaultRepositoryURL = URL(string: "\([^"]*\)").*/\1/p' "$ROOT/NepalKit/AppMetadata.swift" | awk 'NR == 1 { print }')"
 [[ -n "$REPO_URL" ]] || { echo "could not read defaultRepositoryURL from NepalKit/AppMetadata.swift" >&2; exit 1; }
 ARCHIVES_DIR="${1:?usage: $0 <archives-dir> [download-url-prefix]}"
-# Default assumes a GitHub release tag matching the marketing version. Override
-# for any other layout, e.g. a flat asset path.
+# Defaults to the GitHub release download path for the newest archive's version.
 URL_PREFIX="${2:-}"
 
 PY="${ROOT}/scripts/verify-appcast.py"
@@ -38,9 +24,8 @@ if [[ ! -d "$ARCHIVES_DIR" ]]; then
     exit 1
 fi
 
-# Sparkle's tooling is not vendored. SPARKLE_BIN overrides; otherwise only this
-# checkout's own build is used, because sign_update reaches the private key and
-# must not be whichever project's DerivedData happens to match a glob.
+# SPARKLE_BIN overrides; otherwise only this checkout's own build is used,
+# since sign_update reaches the private key.
 if [[ -n "${SPARKLE_BIN:-}" ]]; then
     GENERATE_APPCAST="$SPARKLE_BIN/generate_appcast"
 else
@@ -53,8 +38,8 @@ if [[ ! -x "$GENERATE_APPCAST" ]]; then
     exit 1
 fi
 
-# The binaries have no version flag, so the pin is checked against the tag of the
-# source checkout beside them (artifacts/ and checkouts/ share SourcePackages/).
+# The binaries have no version flag, so check the tag of the source checkout
+# beside them against the pinned version.
 if [[ "${SPARKLE_BIN_UNPINNED:-}" != "1" ]]; then
     PINNED_SPARKLE="$(python3 - "$ROOT/NepalKit.xcodeproj/project.pbxproj" <<'PY'
 import pathlib, re, sys
@@ -85,8 +70,7 @@ PY
         exit 1
     fi
 fi
-# The pin check above vouches for this directory, and sign_update is run from
-# it later, so neither tool may resolve (through a symlink) to anywhere else.
+# Both tools must resolve inside the directory the pin check vouched for.
 TOOL_DIR="${GENERATE_APPCAST:h:A}"
 for tool in "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"; do
     if [[ -e "$tool" && "${tool:A:h}" != "$TOOL_DIR" ]]; then
@@ -97,7 +81,6 @@ done
 echo "using $GENERATE_APPCAST"
 
 if [[ -z "$URL_PREFIX" ]]; then
-    # Derive the newest archive's version and use it as the release tag.
     NEWEST=(${ARCHIVES_DIR}/*.zip(Nom[1]))
     [[ -e "$NEWEST" ]] || NEWEST=(${ARCHIVES_DIR}/*.dmg(Nom[1]))
     [[ -e "$NEWEST" ]] || { echo "no archives in $ARCHIVES_DIR" >&2; exit 1; }
@@ -108,52 +91,20 @@ if [[ -z "$URL_PREFIX" ]]; then
     RELEASE_LINK="$REPO_URL/releases/tag/$TAG"
     echo "derived release tag '$TAG' from ${NEWEST:t}"
 else
-    # A caller-supplied prefix is for layouts with no release pages (a flat
-    # asset path, say), where a `/releases/tag/...` link would 404. Sparkle
-    # shows this as the update's "Learn More" destination, so the repository is
-    # the honest fallback rather than a link to nowhere.
+    # No release pages for a custom prefix, so link to the repository.
     RELEASE_LINK="$REPO_URL"
 fi
 
-# The trailing slash is load-bearing, not cosmetic. generate_appcast joins the
-# archive name onto this prefix with `URL(string:relativeTo:)`, and Foundation
-# resolves a base with no trailing slash by REPLACING its last path component:
-# `.../releases/download/1.2` + `NepalKit-1.2.zip` yields
-# `.../releases/download/NepalKit-1.2.zip`, which 404s. With the slash it
-# appends, and the url is right.
-#
-# This used to be worked around by generating against a placeholder prefix and
-# rewriting every enclosure afterwards, which put this script one post-hoc
-# substitution away from repointing the earlier releases into the new release's
-# directory - where they 404 too. That is not a hypothetical: it happened, and
-# it survived every existing check, because a feed that looks complete and
-# serves nothing is still a well-formed feed. Normalising the prefix removes
-# the step rather than guarding it.
+# The trailing slash matters: Foundation's `URL(string:relativeTo:)` replaces
+# the base's last path component when it has none.
 URL_PREFIX="${URL_PREFIX%/}/"
 
-# Seed the staging directory with the feed this release supersedes.
-#
-# `generate_appcast` merges into an existing appcast only when one is reachable
-# in the archives directory it was pointed at; with none there it starts from
-# empty and writes a feed containing this release alone. The staging directory
-# is deliberately fresh (it is per-run and private, see package-release.sh), so
-# without this the feed would carry no history at all.
-#
-# Retain the newest five versions per compatibility branch. Sparkle defaults
-# to three; the explicit limit keeps a longer recent history while preserving
-# separate update paths for older supported systems.
-# update-changelog.py still takes historical dates from the repository feed.
-#
-# Read from the repository rather than from a copy: the committed appcast is
-# what the previous release published, so it is the one that must be carried
-# forward. A missing file is not an error - the very first release has no
-# predecessor - but it is worth saying out loud, because a feed that has lost
-# its history otherwise looks exactly like a successful run.
+# generate_appcast only keeps history if an appcast is already in the
+# directory, so seed it with the committed feed. It keeps the newest five
+# versions per compatibility branch.
 if [[ -f "$ROOT/appcast.xml" ]]; then
     cp "$ROOT/appcast.xml" "$ARCHIVES_DIR/appcast.xml"
-    # package-release.sh hands out the signed feed read-only, and `cp` keeps the
-    # mode; generate_appcast rewrites this staging copy in place, so it must be
-    # writable.
+    # The released feed is read-only; generate_appcast rewrites this copy in place.
     chmod u+w "$ARCHIVES_DIR/appcast.xml"
     echo "carried forward $(grep -c '<item>' "$ROOT/appcast.xml") existing feed item(s)"
 else
@@ -163,14 +114,7 @@ fi
 echo "generating appcast in $ARCHIVES_DIR"
 echo "release url prefix: $URL_PREFIX"
 
-# `--download-url-prefix` carries the version directory itself, so the url
-# generate_appcast writes is already the published one and there is nothing to
-# correct afterwards. Prior items are read back from the seeded feed and keep
-# the urls they were published under. Signing happens here, from the keychain,
-# where a human can approve the prompt.
-# The link is the release page, not the repository: Sparkle shows it as the
-# update's "Learn More" destination, so the bare repo URL drops the release
-# notes a user is being offered.
+# Each item links to its release page, Sparkle's "Learn More" destination.
 "$GENERATE_APPCAST" \
     --maximum-versions 5 \
     --download-url-prefix "$URL_PREFIX" \
@@ -180,48 +124,13 @@ echo "release url prefix: $URL_PREFIX"
 APPCAST="$ARCHIVES_DIR/appcast.xml"
 [[ -f "$APPCAST" ]] || { echo "generate_appcast did not write an appcast" >&2; exit 1; }
 
-# Embed the release notes. generate_appcast never writes descriptions, so
-# without this step every release would depend on remembering a hand edit
-# after generation. Notes live in scripts/release-notes/<version>.html as HTML
-# fragments, which Sparkle's alert renders, and are matched to items by
-# sparkle:shortVersionString. An item whose version has no notes file fails
-# the release: an unnoted update alert is the drift this step exists to
-# prevent. Re-running over an already-described item is a no-op.
-#
-# The splice lives in verify-appcast.py (--embed-notes) rather than in a heredoc
-# here, so it is fixture-testable next to the rest of the feed tooling instead
-# of being reachable only by running a release. The contract is unchanged, and
-# it is deliberately still two steps: embed, then verify each enclosure below.
+# Embed the release notes from scripts/release-notes/<version>.html. A
+# version without a notes file fails the release.
 python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"
 
-# Sign the feed, and do it HERE - after the notes are embedded, never before.
-#
-# Everything above rewrites bytes that Sparkle's signature covers: generate_appcast
-# adds the new item, and --embed-notes rewrites every <description>. The committed
-# appcast.xml arrives here already carrying a signature block, and carrying it
-# forward unchanged is worse than having none: it looks signed while being stale,
-# and the failure surfaces as a confusing byte-count mismatch rather than as an
-# unsigned feed.
-#
-# This was a real release failure, not a hypothetical. A release run reported
-#
-#   FAIL  feed signature block declares 5731 bytes of signed content but 6791
-#   bytes precede it.
-#
-# because nothing in this path ever re-signed. Verified rather than assumed: a
-# one-byte edit inside the signed region of the real feed produces the same class
-# of error, and re-signing it with the project's key makes it verify again.
-#
-# Last, because sign_update signs the exact bytes it is given - anything written
-# after this point invalidates it again.
-#
-# Skipped when the private key is absent, which is the CI case: pages.yml runs
-# this script to check the committed feed, and must never hold signing material.
-# The staleness check below still runs there and still fails on a stale block, so
-# skipping the signing cannot hide the bug this step fixes.
-# Derived from GENERATE_APPCAST rather than from $SPARKLE_BIN: that variable is
-# only set when the caller supplies it, and is unset on the discovery path above,
-# so "$SPARKLE_BIN/sign_update" would silently expand to "/sign_update".
+# Sign the feed last: generate_appcast and --embed-notes both change signed
+# bytes. Skipped when sign_update is absent (CI), where the verification
+# below still catches a stale signature.
 SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"
 if [[ -x "$SIGN_UPDATE" ]]; then
   echo "signing the feed: ${SIGN_UPDATE##*/}"
@@ -233,21 +142,12 @@ else
   echo "no sign_update at $SIGN_UPDATE; verifying the feed as committed (CI path)"
 fi
 
-# Verify each enclosure locally. Uses only the committed public key, so this is
-# safe to run anywhere - including CI, where the private key must never exist.
-#
-# A partial pass is the expected state here, not a failure. The feed keeps one
-# item per release ever published while package-release.sh stages exactly one
-# archive, so only the item naming that archive has bytes to check - see the
-# comment on the fetch branch in verify-appcast.py. --allow-partial keeps that
-# documented gap from blocking a release, and the tally below puts the number in
-# the log where it can be read. Anything actually checked and found wrong still
-# fails, because that is a FAIL line, not a skip.
+# Verify each enclosure against the committed public key. The feed has every
+# release but only the new archive is staged, so --allow-partial is expected.
 STATUS=0
 VERIFIED_VERSIONS=""
 UNVERIFIED_VERSIONS=""
-# The denominator is the verifier's own "well-formed, N item(s)" count, which
-# excludes anything after the signing block. A test pins the wording.
+# The item count comes from the verifier's "well-formed, N item(s)" line.
 ITEMS=""
 ARCHIVES_CHECKED=0
 for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
@@ -256,12 +156,7 @@ for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     ARCHIVES_CHECKED=$(( ARCHIVES_CHECKED + 1 ))
     output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
     printf '%s\n' "$output"
-    # Read back out of the verifier's own lines rather than re-derived here, so
-    # the tally below cannot disagree with the report printed above it. Matched
-    # on the message text, not on the `ok`/`skip` column layout, so reformatting
-    # a prefix does not quietly turn this into a count of zero. The versions are
-    # collected rather than counted, because the loop can stage more than one
-    # archive and every invocation skips the same un-staged items.
+    # Tally from the verifier's own messages so the summary matches its report.
     VERIFIED_VERSIONS="$VERIFIED_VERSIONS
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"
     UNVERIFIED_VERSIONS="$UNVERIFIED_VERSIONS

@@ -2,19 +2,14 @@
 // Copyright (C) 2026 Dibas Sigdel
 import AppKit
 
-/// Turns scrolling over the grid into whole-month steps.
-///
-/// A trackpad swipe is dozens of small deltas then momentum; paging on each
-/// would fly through a year per flick. So a gesture pages once, after
-/// `threshold` points, and momentum is ignored. Each wheel notch pages once.
+/// Turns scrolling over the grid into whole-month steps. A trackpad gesture
+/// pages once after `threshold` points and ignores momentum; each wheel notch pages once.
 struct MonthScrollPager {
     enum Phase {
         case began, changed, ended, momentum
-        /// A wheel notch: no gesture around it.
         case discrete
 
-        /// Momentum first, as a momentum event has no gesture phase; neither
-        /// is a wheel notch. Cancelled, may-begin or stationary reads as ended.
+        /// A momentum event has no gesture phase, so momentum is checked first.
         init(phase: NSEvent.Phase, momentumPhase: NSEvent.Phase) {
             if !momentumPhase.isEmpty {
                 self = .momentum
@@ -30,15 +25,12 @@ struct MonthScrollPager {
         }
     }
 
-    /// Enough to ignore a resting finger's drift or a sideways swipe, small
-    /// enough for a short deliberate one.
     static let threshold = 24.0
 
     private var travel = 0.0
     private var hasPaged = false
 
-    /// The month step: 1, -1 or 0. Scrolling down (negative delta, after the
-    /// user's scroll-direction setting) moves forward, as in a document.
+    /// Scrolling down (negative delta) moves forward, as in a document.
     mutating func step(deltaY: Double, phase: Phase) -> Int {
         switch phase {
         case .began:

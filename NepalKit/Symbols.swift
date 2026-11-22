@@ -3,60 +3,28 @@
 import Foundation
 
 /// Every SF Symbol the app uses, named once.
-///
-/// Centralised so an unresolvable name fails the suite rather than rendering as
-/// *nothing* with no error and no fallback. `SymbolTests` resolves every name in
-/// `all`, and `all` is meant to list exactly what the app renders — an entry no
-/// view can reach is dead weight that still looks maintained.
-///
-/// A symbol earns its place by reinforcing its label, not decorating it, so each
-/// pairing is written down with the reasoning. That is what caught `person`
-/// beside "Local", which reads as a user account rather than a place, and it is
-/// why the popover's clock rows use typographic labels instead: "Nepal Time" and
-/// "Local" are short enough that a glyph beside them is decoration, and a glyph
-/// that differs only in a detail the reader must decode is worse than none.
-///
-/// Per ADR-0004 rendering mode is chosen per surface for contrast against Liquid
-/// Glass; the remaining symbols are all monochrome inline icons beside text.
+/// `SymbolTests` resolves every name in `all`, so a typo fails the suite instead
+/// of rendering nothing. Monochrome inline icons per ADR-0004.
 enum Symbols {
-    /// "Launch at login" — the conventional glyph for run-at-startup.
     static let launchAtLogin = "power"
 
-    /// "Settings…" — the standard macOS Settings glyph.
     static let settings = "gearshape"
 
-    /// "About NepalKit" — the standard macOS information glyph.
     static let about = "info.circle"
 
-    /// "Menu Bar" — the Settings sidebar row for the menu-bar item's own
-    /// appearance. The glyph is the menu bar itself rather than a clock, because
-    /// what the tab governs is the item's presence and format, not the time.
+    /// The menu-bar settings tab.
     static let menuBar = "menubar.rectangle"
 
-    /// "General" — the remaining preferences. Deliberately *not* `gearshape`:
-    /// that glyph is the Settings button in the popover footer, and putting the
-    /// same gear on a row inside Settings would read as "the settings for these
-    /// settings". Sliders say "adjustable preferences" and stay distinct.
+    /// Not `gearshape`, which is already the popover's Settings button.
     static let general = "slider.horizontal.3"
 
-    /// "Source repository" — the conventional source-control glyph, beside the
-    /// word "Source" in the identity strip along the bottom of the Settings
-    /// window. The word carries the meaning; the glyph marks it as a link.
+    /// The Source link in the Settings window's identity strip.
     static let repository = "chevron.left.forwardslash.chevron.right"
 
-    /// The popover footer's update button, shown only when a check has found
-    /// something to install. The arrow-in-circle is the App Store's own mark for
-    /// "a new version has arrived", which is the one convention a user has already
-    /// met for this exact idea.
-    ///
-    /// Not `arrow.triangle.2.circlepath`, the conventional mark for "check again":
-    /// that is what this button asks the updater for when it cannot find the update
-    /// already in hand, so drawing it would name the fallback rather than the
-    /// offer. Not `square.and.arrow.down`, which reads as saving a file to disk.
+    /// The popover footer's update button.
     static let update = "arrow.down.circle"
 
-    /// The month grid's previous and next buttons, drawn without text; the
-    /// titles stay on the buttons for VoiceOver.
+    /// Month grid navigation; the buttons keep their titles for VoiceOver.
     static let previousMonth = "chevron.left"
     static let nextMonth = "chevron.right"
 

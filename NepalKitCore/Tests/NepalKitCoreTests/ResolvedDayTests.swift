@@ -4,24 +4,14 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// The resolved-day contract: one Nepal Time civil day carries its Gregorian
-/// identity, one weekday, and either a supported Bikram Sambat date or an
-/// explicit range boundary. Gregorian progression continues outside the
-/// supported range; invalid input and broken dataset assumptions are errors,
-/// never boundaries.
-///
-/// Boundary dates reuse the pinned dataset facts (1918-04-13 through
-/// 2028-04-12 Gregorian) and the weekday anchors `GregorianWeekdayTests`
-/// already established; nothing here regenerates expectations through the
-/// code under test.
+/// The supported range is 1918-04-13 through 2028-04-12 Gregorian.
 struct ResolvedDayTests {
     private let dataset = CalendarDataset.v2
 
     // MARK: Supported days
 
     @Test func supportedDayCarriesBothIdentitiesAndOneWeekday() throws {
-        // 26 Sep 2026, 18:30 UTC is already 27 Sep in Nepal Time: 11 Ashoj 2083,
-        // a Sunday (GregorianWeekdayTests pins the weekday).
+        // 27 Sep 2026 is 11 Ashoj 2083, a Sunday.
         let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         #expect(day.gregorian == GregorianDate(year: 2026, month: 9, day: 27))
@@ -30,8 +20,7 @@ struct ResolvedDayTests {
     }
 
     @Test func firstSupportedDayIsSupported() throws {
-        // 1 Baisakh 1975 is 13 April 1918, a Saturday — the dataset's inclusive
-        // Gregorian start, so the boundary day itself is supported.
+        // 1 Baisakh 1975 is 13 April 1918, a Saturday.
         let day = try ResolvedDay(GregorianDate(year: 1918, month: 4, day: 13), in: dataset)
 
         #expect(day.weekday == 7)
@@ -39,8 +28,7 @@ struct ResolvedDayTests {
     }
 
     @Test func lastSupportedDayIsSupported() throws {
-        // 30 Chaitra 2084 is 12 April 2028, a Wednesday — the dataset's
-        // inclusive Gregorian end.
+        // 30 Chaitra 2084 is 12 April 2028, a Wednesday.
         let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 12), in: dataset)
 
         #expect(day.weekday == 4)
@@ -57,7 +45,7 @@ struct ResolvedDayTests {
     }
 
     @Test func dayAfterMaximumIsAnAfterBoundary() throws {
-        // 13 April 2028 is a Thursday (GregorianWeekdayTests pins it).
+        // 13 April 2028 is a Thursday.
         let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
 
         #expect(day.weekday == 5)
@@ -65,8 +53,6 @@ struct ResolvedDayTests {
     }
 
     @Test func gregorianProgressionContinuesPastTheMaximum() throws {
-        // The day after the boundary progresses independently: its weekday is
-        // the next civil day's, and the boundary stays an expected result.
         let day = try ResolvedDay(GregorianDate(year: 2028, month: 4, day: 14), in: dataset)
 
         #expect(day.weekday == 6)
@@ -74,7 +60,7 @@ struct ResolvedDayTests {
     }
 
     @Test func gregorianProgressionContinuesBeforeTheMinimum() throws {
-        // 11 April 1918 is a Thursday (Foundation numbers it 5).
+        // 11 April 1918 is a Thursday.
         let day = try ResolvedDay(GregorianDate(year: 1918, month: 4, day: 11), in: dataset)
 
         #expect(day.weekday == 5)
@@ -84,8 +70,6 @@ struct ResolvedDayTests {
     // MARK: Errors are distinct from boundaries
 
     @Test func invalidCivilDayIsAnErrorNotABoundary() {
-        // February 30 does not name a real day: it must fail as invalid input,
-        // not normalize into a March boundary.
         #expect(throws: DayResolutionError.invalidCivilDay(GregorianDate(year: 2026, month: 2, day: 30))) {
             try ResolvedDay(GregorianDate(year: 2026, month: 2, day: 30), in: dataset)
         }
@@ -98,9 +82,6 @@ struct ResolvedDayTests {
     }
 
     @Test func brokenDatasetAssumptionIsAnErrorDistinctFromBoundaries() {
-        // A table whose supported-range year has zero-length months cannot
-        // derive its Gregorian bounds: every resolution must fail loudly as a
-        // dataset assumption failure rather than report a boundary.
         let broken = CalendarDataset(
             version: "broken-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
@@ -115,9 +96,7 @@ struct ResolvedDayTests {
     }
 
     @Test func endDerivationFailureIsDistinctFromTheBeforeBoundary() throws {
-        // A table whose last year is zero-length derives a start but no end:
-        // days before the start still report the before boundary; days the
-        // table should cover fail as a dataset assumption.
+        // A zero-length last year derives a start but no end.
         let brokenEnd = CalendarDataset(
             version: "broken-end-test",
             years: [
@@ -192,8 +171,6 @@ struct ResolvedDayTests {
     }
 
     @Test func instantResolverFollowsTheDatasetPastItsMaximum() throws {
-        // An instant past the Gregorian end resolves its NPT day as an
-        // after-boundary, with the Gregorian day still carried.
         let instant = try UTCDateFixture.utc(2028, 4, 13, 12, 0)
         let day = try ResolvedDay(now: instant, in: dataset)
 

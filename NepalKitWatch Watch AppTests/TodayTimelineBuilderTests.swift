@@ -5,23 +5,10 @@ import Testing
 import NepalKitCore
 import WidgetKit
 
-/// The timeline builder contract: one clock reading anchors entry zero;
-/// future entries activate at successive Nepal midnights (only future-midnight
-/// intervals are twenty-four hours apart); every day resolves independently,
-/// boundaries included; the conditional terminal entry appears only when day
-/// +13 is the dataset maximum; and calculation failures retain the prefix,
-/// stop construction, and select the fifteen-minute `.after` request while
-/// successful timelines — boundary entries included — use `.atEnd`.
-///
-/// Failures are pinned through the builder's resolver and midnight seams, the
-/// same injection points the development harness uses; the production wiring
-/// under test is the default closure set the provider installs.
 struct TodayTimelineBuilderTests {
     private let dataset = CalendarDataset.v2
 
-    // Anchored instant: 26 Sep 2026, 18:30 UTC = 00:15 NPT on 27 Sep, so
-    // day 0 is 2026-09-27 (11 Ashoj 2083) and day k's midnight begins at
-    // 2026-09-26 18:15 UTC + k days.
+    // 26 Sep 2026, 18:30 UTC = 00:15 NPT on 27 Sep (11 Ashoj 2083).
     private func supportedNow() throws -> Date {
         try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
     }
@@ -62,8 +49,7 @@ struct TodayTimelineBuilderTests {
     @Test func onlyFutureEntriesAreTwentyFourHoursApart() throws {
         let built = builder.build(now: try supportedNow())
 
-        // The first interval varies (here 23h45m); every future-midnight
-        // interval is exactly one civil day.
+        // The first interval varies; later ones are one civil day.
         #expect(built.entries[1].date.timeIntervalSince(built.entries[0].date) != 86_400)
         for index in 1 ..< built.entries.count - 1 {
             let spacing = built.entries[index + 1].date.timeIntervalSince(built.entries[index].date)
@@ -74,7 +60,6 @@ struct TodayTimelineBuilderTests {
     @Test func everyEntryCarriesItsResolvedDayInOrder() throws {
         let built = builder.build(now: try supportedNow())
 
-        // Day 0 is 11 Ashoj 2083; each later entry advances one Gregorian day.
         guard case .day(.supported(let first)) = built.entries[0].state else {
             Issue.record("Expected a supported entry zero")
             return
@@ -116,9 +101,7 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func afterMaximumTodayProgressesThroughTheHorizon() throws {
-        // 13 April 2028 NPT: every entry is an after-boundary and Gregorian
-        // days still progress; no terminal entry is appended because the
-        // maximum is behind Today.
+        // 13 April 2028 NPT: the maximum is behind Today, so no terminal entry.
         let now = try UTCWatchFixture.utc(2028, 4, 13, 12, 0)
         let built = builder.build(now: now)
 
@@ -135,15 +118,13 @@ struct TodayTimelineBuilderTests {
             Issue.record("Expected a boundary final entry")
             return
         }
-        // Day +13 = 26 April 2028; the Gregorian date remains answerable.
+        // Day +13 = 26 April 2028.
         #expect(last.gregorianDay == "२६")
         #expect(last.gregorianMonthName == "April")
     }
 
     @Test func maximumEarlierInTheHorizonDoesNotDuplicateTheBoundary() throws {
-        // 7 April 2028 NPT: the maximum (12 April) is day +5, so day +6
-        // (13 April) is the horizon's own boundary and no terminal entry is
-        // appended.
+        // 7 April 2028 NPT: the maximum (12 April) is day +5, so no terminal entry.
         let now = try UTCWatchFixture.utc(2028, 4, 7, 12, 0)
         let built = builder.build(now: now)
 
@@ -157,8 +138,7 @@ struct TodayTimelineBuilderTests {
     }
 
     @Test func maximumExactlyAtDayPlusThirteenAppendsTheTerminalBoundary() throws {
-        // 30 March 2028 NPT: day +13 is 12 April 2028, the dataset maximum,
-        // so exactly one boundary entry is appended at day +14's midnight.
+        // 30 March 2028 NPT: day +13 is 12 April 2028, the dataset maximum.
         let now = try UTCWatchFixture.utc(2028, 3, 30, 12, 0)
         let built = builder.build(now: now)
 
@@ -192,7 +172,6 @@ struct TodayTimelineBuilderTests {
             Issue.record("Expected a calculation error entry")
             return
         }
-        // The NPT day was derived, so the error carries it as context.
         #expect(components.gregorianDay == "२७")
         #expect(components.gregorianMonthName == "September")
         #expect(calls.value == 1)
@@ -217,8 +196,6 @@ struct TodayTimelineBuilderTests {
 
         let built = failing.build(now: try supportedNow())
 
-        // Three valid entries, then the error at day +3's intended activation;
-        // no subsequent days are attempted.
         #expect(built.entries.count == 4)
         #expect(try built.entries[3].date == UTCWatchFixture.utc(2026, 9, 29, 18, 15))
         #expect(calls.value == 4)
@@ -226,8 +203,6 @@ struct TodayTimelineBuilderTests {
             Issue.record("Expected a calculation error entry")
             return
         }
-        // The failed day's Gregorian identity was computed by progression, so
-        // the context names it — and invents nothing beyond it.
         #expect(components.gregorianDay == "३०")
         #expect(components.gregorianMonthName == "September")
         #expect(components.gregorianYear == "२०२६")
@@ -278,8 +253,6 @@ struct TodayTimelineBuilderTests {
 
         let built = failing.build(now: now)
 
-        // The first future activation cannot be calculated: the prefix is
-        // discarded and one error is returned at the original clock reading.
         #expect(built.entries.count == 1)
         #expect(built.entries[0].date == now)
         #expect(calls.value == 1)
@@ -293,9 +266,6 @@ struct TodayTimelineBuilderTests {
     }
 }
 
-/// A tiny call counter for seams whose invocation count is part of the
-/// contract. Marked nonisolated because the seams call it from nonisolated
-/// closures; each test owns its own counter, so there is no shared state.
 nonisolated final class CallCounter: @unchecked Sendable {
     private var count = 0
 
@@ -308,8 +278,6 @@ nonisolated final class CallCounter: @unchecked Sendable {
     }
 }
 
-/// UTC instant builder for the Watch target's tests, mirroring the core
-/// suite's `UTCDateFixture`.
 enum UTCWatchFixture {
     static func utc(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) throws -> Date {
         var calendar = Calendar(identifier: .gregorian)

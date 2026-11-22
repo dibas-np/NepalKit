@@ -3,13 +3,10 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Fail when the monthly Nepali Patro check is overdue.
 
-The shipped table ends at 2084 BS (2028-04-12), and 2084 is a projection.
-Only the Samiti's published almanac, expected around Magh 2083 BS (January to
-February 2027), attests a year or makes a new one shippable (ADR-0014). Nothing
-machine-readable announces it, so this checks that a person has looked: the
-`last_checked:` line in docs/updating-calendar-data.md
-must be no older than 35 days. Quiet before 2027-01-01 and once the shipped
-table reaches 2085.
+The shipped table ends at 2084 BS, a projection; only the Samiti's published
+almanac (expected around January 2027) makes a new year shippable (ADR-0014).
+So this requires the `last_checked:` line in docs/updating-calendar-data.md to
+be no older than 35 days. Quiet before 2027-01-01 and once the table reaches 2085.
 
     scripts/check-patro-reminder.py [--today YYYY-MM-DD]
 """
@@ -55,8 +52,7 @@ def verdict(today: datetime.date, checked: datetime.date | None, last_year: int)
                        "docs/updating-calendar-data.md")
     age = (today - checked).days
     if age < -1:
-        # A future date would pass forever. One day of slack covers a local
-        # date ahead of the runner's UTC date.
+        # A future date would pass forever; allow one day for time zones.
         return False, (f"`last_checked: {checked}` is in the future; record the date the "
                        "check was actually made")
     if age > MAX_AGE_DAYS:
@@ -75,8 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     from dataset_table import shipped_table
 
     last_year = max(shipped_table())
-    # Read only when a check is due, so a missing line is quiet outside that
-    # window. The pull-request suite still requires it to be readable.
+    # Only read when a check is due, so a missing line is quiet otherwise.
     quiet = args.today < CHECKS_START or last_year >= EXTENDED_YEAR
     checked = None if quiet else last_checked(PROCEDURE.read_text(encoding="utf-8"))
     ok, message = verdict(args.today, checked, last_year)

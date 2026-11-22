@@ -4,28 +4,15 @@ import Foundation
 import NepalKitCore
 
 extension DisplaySettings {
-    /// The fixed settings every Watch surface renders with: canonical Nepali
-    /// month and weekday names, Devanagari digits. The Watch has no settings,
-    /// so there is exactly one display configuration.
+    /// The Watch's only display configuration: Nepali names, Devanagari digits.
     public static let watch = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 }
 
-/// Complete display components of one supported day: what every Watch surface
-/// composes from, plus the independent speech strings.
+/// The display pieces of one supported day, plus speech strings.
 ///
-/// This package supplies the meaning so the app and the extension cannot drift; views
-/// choose composition and layout only. Bikram Sambat pieces use canonical
-/// Nepali names and the settings' digit script; Gregorian month names stay
-/// English while their digits still honor the settings — the intentional mix
-/// docs/glossary.md describes. Speech is independent of the visuals: Latin digits,
-/// transliterated month and weekday names, and the complete year, whatever is
-/// fitted on screen. The first on-device session (2026-10-03) found the
-/// watch's VoiceOver voices skipping Devanagari month names entirely, so
-/// transliterated names — which every voice reads — carry the spoken meaning
-/// while the visuals keep the canonical Devanagari script.
+/// Speech uses Latin digits and transliterated names: watchOS VoiceOver voices
+/// skip Devanagari month names entirely.
 public struct WatchDayComponents: Sendable, Hashable {
-    /// The resolved day's weekday, named per the settings. Shown once, no
-    /// matter how many calendar representations the surface renders.
     public let weekdayName: String
     public let bikramSambatDay: String
     public let bikramSambatMonthName: String
@@ -34,40 +21,26 @@ public struct WatchDayComponents: Sendable, Hashable {
     public let gregorianMonthName: String
     public let gregorianYear: String
 
-    /// The spoken Bikram Sambat date, e.g. `11 Ashoj 2083`.
     public let spokenBikramSambat: String
-    /// The spoken weekday, transliterated so every voice reads it — carried
-    /// separately from the visual weekday, which stays in the canonical
-    /// script.
     public let spokenWeekdayName: String
-    /// The spoken Gregorian date, for surfaces that present it.
     public let spokenGregorian: String
 }
 
-/// The display meaning of a range boundary: the expected "the Bikram Sambat
-/// date is unavailable" result with its dataset-derived support context and
-/// the Gregorian date that remains answerable.
+/// The display pieces of a day outside the supported range.
 public struct WatchBoundaryComponents: Sendable, Hashable {
     public enum Side: Sendable, Hashable {
-        /// Before the dataset's first supported day: support is named from
-        /// the first supported year.
         case before
-        /// After the dataset's last supported day: support is named through
-        /// the last supported year.
         case after
     }
 
     public let side: Side
 
-    /// The boundary's context year — the first supported BS year before the
-    /// range, the last one after it — rendered in the display digits.
+    /// The first or last supported BS year, in display digits.
     public let contextYear: String
 
-    /// The composed support line in display digits, e.g.
-    /// `Supported from १९७५ BS`.
+    /// For example, `Supported from १९७५ BS`.
     public let contextLine: String
 
-    /// Support context for a compact complication, preserving the bound and year.
     public var compactContextLine: String {
         switch side {
         case .before: "From \(contextYear) BS"
@@ -75,42 +48,31 @@ public struct WatchBoundaryComponents: Sendable, Hashable {
         }
     }
 
-    /// The Gregorian day the boundary belongs to; it remains answerable.
     public let gregorianDay: String
     public let gregorianMonthName: String
     public let gregorianYear: String
 
-    /// The resolved Gregorian date formatted for speech with Latin digits.
     public let spokenGregorian: String
 
-    /// The unavailable statement and support context, spoken with Latin digits.
     public let spokenDescription: String
 }
 
-/// The display meaning of a calculation failure. Gregorian context appears
-/// only when a Gregorian day was actually resolved; an error never invents
-/// one.
+/// The display pieces of a calculation failure. The Gregorian fields are nil
+/// unless a day was actually resolved.
 public struct WatchErrorComponents: Sendable, Hashable {
     public let gregorianDay: String?
     public let gregorianMonthName: String?
     public let gregorianYear: String?
 
-    /// The spoken form of the resolved Gregorian date with Latin digits, for
-    /// accessibility compositions. nil when no day was resolved — speech
-    /// never reads the visual Devanagari digits.
     public let spokenGregorian: String?
 
-    /// The failure statement and any resolved Gregorian date, formatted for speech.
     public var spokenDescription: String {
         guard let spokenGregorian else { return WatchDayCopy.failureFull }
         return "\(WatchDayCopy.failureFull)\n\(spokenGregorian)"
     }
 }
 
-/// What a Watch surface renders for one day: a supported date, an expected
-/// range boundary, or a calculation failure. The three states are distinct
-/// values — color alone never carries the distinction, and no surface may
-/// substitute one for another.
+/// What a Watch surface renders for one day.
 public enum WatchDayDisplay: Sendable, Hashable {
     case supported(WatchDayComponents)
     case rangeBoundary(WatchBoundaryComponents)
@@ -146,11 +108,8 @@ public func watchDayDisplay(
     }
 }
 
-/// Resolves the Nepal Time day of the supplied instant and builds its display
-/// meaning in one step, mapping a resolution failure to the calculation-error
-/// display. The error carries the Gregorian day only when one was actually
-/// resolved — never an invented date. Never throws: the display states are
-/// exhaustive.
+/// Resolves the Nepal Time day at `instant` and builds its display, mapping a
+/// resolution failure to the calculation-error display.
 public func watchDayDisplay(
     now instant: Date,
     settings: DisplaySettings,
@@ -169,8 +128,7 @@ public func watchDayDisplay(
     }
 }
 
-/// Resolves a Gregorian civil day and builds its display meaning in one step,
-/// with the same failure mapping as the instant-based variant.
+/// Resolves a Gregorian civil day and builds its display.
 public func watchDayDisplay(
     for civilDay: GregorianDate,
     settings: DisplaySettings,
@@ -189,8 +147,7 @@ public func watchDayDisplay(
     }
 }
 
-/// Builds a calculation-error display, carrying the Gregorian day only when
-/// one was actually resolved.
+/// Builds a calculation-error display.
 public func watchCalculationErrorDisplay(
     gregorianDay: GregorianDate?,
     settings: DisplaySettings
@@ -234,9 +191,7 @@ private func boundary(
     )
 }
 
-/// The firm copy the Watch uses for its states, in one place. The accepted
-/// presentation fixes these strings; the English status copy does not alter
-/// the fixed Nepali month/weekday and Devanagari date presentation.
+/// Status copy for the Watch's boundary and failure states.
 public enum WatchDayCopy {
     /// Range boundary, full presentation.
     public static let boundaryFull = "Bikram Sambat unavailable"

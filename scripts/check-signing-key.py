@@ -11,10 +11,8 @@ importing anything (ADR-0012).
     scripts/check-signing-key.py                      # the keychain key
     scripts/check-signing-key.py --key-file PATH      # a backup copy
 
-Run it on the release machine. Output never includes key material, only
-sign_update's message and the key file's path on failure; nothing is written
-outside a temporary directory. SPARKLE_BIN overrides where sign_update is
-found, as for scripts/verify-appcast.sh.
+Output never includes key material. SPARKLE_BIN overrides where sign_update
+is found, as for scripts/verify-appcast.sh.
 """
 
 from __future__ import annotations
@@ -31,9 +29,7 @@ from pathlib import Path
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
-# This checkout's build of the pinned Sparkle, unless SPARKLE_BIN names the
-# tools' directory. sign_update reaches the private key, so it is never
-# whichever DerivedData matches a glob.
+# This checkout's build of the pinned Sparkle, unless SPARKLE_BIN is set.
 SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
                else ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update")
 
@@ -49,8 +45,7 @@ def sparkle_signer(sign_update: Path, key_file: Path | None,
                    timeout: float = SIGN_TIMEOUT_SECONDS) -> Callable[[Path], str]:
     """A signer that runs `sign_update -p`, which prints only the base64 signature.
 
-    The timeout turns an unanswered keychain access prompt into a failure
-    rather than a hang.
+    The timeout turns an unanswered keychain prompt into a failure.
     """
     def sign(path: Path) -> str:
         command = [str(sign_update), "-p", str(path)]
@@ -73,11 +68,8 @@ _KEY_LIKE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 
 def withhold_key_material(text: str, key_file: Path | None) -> str:
-    """`text` without the key file's contents or anything shaped like a key.
-
-    sign_update echoes a key it cannot decode, and a mistyped seed is most of the
-    real one, so an exact-match scrub alone is not enough.
-    """
+    """`text` without the key file's contents or anything shaped like a key
+    (sign_update echoes a key it cannot decode)."""
     if key_file is not None:
         try:
             contents = key_file.read_text(encoding="utf-8", errors="replace").strip()

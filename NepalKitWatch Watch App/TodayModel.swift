@@ -4,36 +4,22 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// The Watch's read-only Today state: resolves the current Nepal Time day and
-/// keeps it current without polling or persistence.
+/// The Watch's Today state: resolves the current Nepal Time day and keeps it
+/// current without polling.
 ///
-/// Lifecycle contract: `activate()` computes immediately, starts clock-change
-/// observation and schedules a refresh for the next Nepal midnight;
-/// `deactivate()` cancels both. Reactivating after any number of inactive days
-/// recomputes at once. Repeated activation does not duplicate work — the
-/// observation guard makes the second call a no-op. The clock is injected and
-/// read exactly once per refresh; every refresh resolves from the current
-/// reading and reschedules.
-///
-/// While active, a system clock change cancels the stale midnight work,
-/// re-resolves and reschedules — forward and backward changes both land on
-/// the correct day. A missed signal may leave the active display stale until
-/// the next wake or activation, whose immediate recomputation is the
-/// corrective fallback; no polling is added to mask it.
+/// While active, it refreshes at each Nepal midnight and on system clock
+/// changes; every activation recomputes immediately.
 @MainActor
 @Observable
 final class TodayModel {
-    /// The complete display meaning of the current day, or nil before the
-    /// first resolution at launch.
+    /// The current day's display, or nil before the first resolution.
     private(set) var display: WatchDayDisplay?
 
     private let now: @Sendable () -> Date
     private let dataset: CalendarDataset
     private let clockChanges: @Sendable () -> ClockChangeStream
     private let nextMidnight: @Sendable (Date) -> Date?
-    /// The production resolve-and-display path by default; the development
-    /// fixture harness injects resolution failure points through it without
-    /// changing any calendar answer.
+    /// Injectable so fixtures can force resolution failures.
     private let displayFor: @Sendable (Date) -> WatchDayDisplay
 
     private var midnightTask: Task<Void, Never>?
@@ -53,7 +39,6 @@ final class TodayModel {
         self.displayFor = displayFor
     }
 
-    /// The ordinary production model.
     convenience init(
         now: @escaping @Sendable () -> Date = { Date.now },
         dataset: CalendarDataset = .v2,
@@ -65,26 +50,19 @@ final class TodayModel {
         }
     }
 
-    /// The display for an arbitrary instant, without reading the clock or
-    /// touching the lifecycle. Always On renders through this with its
-    /// timeline's date, since a dimmed scene may never show the midnight
-    /// refresh above.
+    /// The display for an arbitrary instant. Always On renders through this,
+    /// since a dimmed scene may never see the midnight refresh.
     func display(at instant: Date) -> WatchDayDisplay {
         displayFor(instant)
     }
 
-    /// Launch or foreground activation. Repeated activation while already
-    /// active does nothing — the observation task is the marker of an active
-    /// lifecycle, so recomputation, scheduling and subscription cannot
-    /// duplicate.
+    /// Idempotent while already active.
     func activate() {
         guard clockChangeTask == nil else { return }
         refresh()
         observeClockChanges()
     }
 
-    /// Background or inactivation: cancel the scheduled midnight refresh and
-    /// the clock-change observation; the next activation recomputes.
     func deactivate() {
         midnightTask?.cancel()
         midnightTask = nil
@@ -92,24 +70,17 @@ final class TodayModel {
         clockChangeTask = nil
     }
 
-    /// Reads the clock once, resolves the current Nepal Time day, and
-    /// reschedules the next-midnight refresh. Core maps any resolution
-    /// failure to the calculation-error display with only genuinely resolved
-    /// Gregorian context.
     private func refresh() {
         let instant = now()
         display = displayFor(instant)
         scheduleMidnightRefresh(after: instant)
     }
 
-    /// Sleeps until the next Nepal midnight, then re-resolves from the clock
-    /// as it stands at wake — never from the instant the schedule was made.
+    /// Re-reads the clock at wake rather than trusting the scheduled instant.
     private func scheduleMidnightRefresh(after instant: Date) {
         midnightTask?.cancel()
         guard let next = nextMidnight(instant) else {
-            // Calendar arithmetic failed to name the next midnight: the
-            // display stays as resolved until the next wake, activation or
-            // clock-change signal recomputes. No polling is added to mask it.
+            // The display stays as is until the next activation or clock change.
             return
         }
         let interval = next.timeIntervalSince(instant)
@@ -120,8 +91,7 @@ final class TodayModel {
         }
     }
 
-    /// Owns one clock-change observation for the active lifecycle. Cancelling
-    /// the task ends the stream, which removes the notification observer.
+    /// Cancelling the task ends the stream, which removes the observer.
     private func observeClockChanges() {
         guard clockChangeTask == nil else { return }
         let stream = clockChanges()

@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""The exported app's entitlements, Sparkle keys and Sparkle version, read off the product.
+"""Check the exported app's entitlements, Sparkle keys and Sparkle version.
 
-``NepalKit/NepalKit.entitlements`` is not the whole contract: Xcode merges
-``ENABLE_*`` build settings into the entitlements at signing, which is how 1.6.0
-shipped ``com.apple.security.files.user-selected.read-only`` from
-``ENABLE_USER_SELECTED_FILES = readonly``. The embedded Sparkle version is
-compared with the project's pin because package resolution on the build machine
-can drift from it.
+Xcode merges ``ENABLE_*`` build settings into the entitlements at signing, so
+the signed entitlements are compared with ``NepalKit/NepalKit.entitlements``.
+The embedded Sparkle version is compared with the project's pin.
 
-Run by ``package-release.sh`` on the exported app, before notarisation (which
-also checks hardened runtime). Every check prints ``ok`` or ``FAIL``; any FAIL
-exits 1 after all are reported.
+Run by ``package-release.sh`` on the exported app. Prints ``ok`` or ``FAIL``
+for each check and exits 1 if any failed.
 """
 
 import argparse
@@ -103,9 +99,7 @@ def check_sparkle_keys(info):
 
 
 def check_sparkle_version(app, pbxproj_text):
-    # Only Sparkle's own block: it ends at the next package reference or the end
-    # of the section, so a later package's requirement can never be read as
-    # Sparkle's.
+    # Only Sparkle's own block, up to the next package reference.
     block = re.search(
         r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
         r'(?P<body>(?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',

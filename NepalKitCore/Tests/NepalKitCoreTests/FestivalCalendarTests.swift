@@ -4,8 +4,6 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// The festival lookup, and sweeps over the bundled table that catch a
-/// mistyped entry before a reader meets it (ADR-0016).
 struct FestivalCalendarTests {
     private let calendar = FestivalCalendar.panchanga
 
@@ -40,7 +38,6 @@ struct FestivalCalendarTests {
             BikramSambatDate(year: 2083, month: 11, day: 24): Festival(nepali: "अन्तर्राष्ट्रिय नारी दिवस", english: "International Women's Day", kind: .internationalDay),
         ]
         for (day, festival) in expected {
-            // Equality covers the source too: these are the Panchanga's.
             #expect(calendar.festivals(on: day).contains(festival), "\(day)")
         }
     }
@@ -64,7 +61,6 @@ struct FestivalCalendarTests {
         #expect(jyapu == Festival(nepali: "ज्यापू दिवस", english: "Jyapu Diwas", kind: .nationalDay, source: .gazette))
         let genZ = calendar.festivals(on: BikramSambatDate(year: 2083, month: 5, day: 23))
         #expect(genZ == [Festival(nepali: "जेनजी सहिद दिवस", english: "GenZ Martyrs' Day", kind: .nationalDay, source: .gazette)])
-        // The default is the Panchanga.
         #expect(Festival(nepali: "परीक्षण", english: "Test").source == .panchanga)
     }
 
@@ -73,8 +69,6 @@ struct FestivalCalendarTests {
     }
 
     @Test func aYearWithoutDataHasNone() {
-        // 2082 is not read yet: a gap, which the lookup reports as no
-        // festivals rather than guessing from another year's dates.
         #expect(!calendar.years.contains(2082))
         #expect(calendar.festivals(on: BikramSambatDate(year: 2082, month: 1, day: 1)).isEmpty)
         #expect(calendar.festivals(on: BikramSambatDate(year: 2084, month: 1, day: 1)).isEmpty)

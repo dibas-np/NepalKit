@@ -4,21 +4,18 @@ import AppKit
 import SwiftUI
 import NepalKitCore
 
-/// One Bikram Sambat month as a Sunday-first grid, each day's Gregorian day
-/// beneath it. Layout only; state and strings come from `MonthGridModel`.
+/// One Bikram Sambat month as a Sunday-first grid. Layout only; state and
+/// strings come from `MonthGridModel`.
 struct MonthGridView: View {
     let model: MonthGridModel
     let settings: DisplaySettings
     let clock: ClockModel
-    /// False while another destination is showing. The grid stays laid out
-    /// underneath (see `PopoverView`), so it must stop taking keys and scrolls.
+    /// False while hidden under another destination, so it stops taking keys and scrolls.
     var isActive = true
 
     @State private var selected: MonthGridDay?
-    /// The last Add to Calendar failed; cleared when the selection changes.
     @State private var calendarFailed = false
 
-    /// Lets the arrow keys reach the grid as soon as the popover opens.
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -26,7 +23,6 @@ struct MonthGridView: View {
             MonthGridHeader(model: model, settings: settings, clock: clock)
 
             if model.isTodayPastSupportedRange {
-                // Range boundary state, not an error; secondary, like the Today tab's.
                 Text(Strings.monthGridPastRange(model.lastSupportedBSYear, digits: settings.digits))
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -37,9 +33,8 @@ struct MonthGridView: View {
             MonthGridDays(model: model, settings: settings, selected: $selected)
             MonthGridYearNotes(model: model, settings: settings)
 
-            // Under the grid, not in a popover of their own: a popover anchored
-            // to a cell was torn down mid-layout when its action switched
-            // destination (AppKit layout recursion, "transaction during CA commit").
+            // Under the grid rather than in a popover anchored to a cell, which was torn
+            // down mid-layout when its action switched destination.
             if let day = selected {
                 let detail = model.detail(for: day, settings: settings)
                 MonthGridDayDetailCard(
@@ -51,20 +46,16 @@ struct MonthGridView: View {
                 )
             }
         }
-        // Paging away leaves the selected day off the grid, so its details go.
         .onChange(of: model.shown) { selected = nil }
         .onChange(of: selected) { calendarFailed = false }
-        // The model outlives the popover: re-read today on appear, and follow
-        // midnight while open.
+        // The model outlives the popover, so today is re-read on appear.
         .onAppear { model.refreshToday(now: clock.now) }
         .background { TodayFollower(clock: clock, model: model) }
-        // `.edit`: the default makes a view focusable only with Full Keyboard
-        // Access on. No focus ring: it would frame the whole month.
+        // `.edit` makes the grid focusable without Full Keyboard Access.
         .focusable(isActive, interactions: .edit)
         .focusEffectDisabled()
         .focused($isFocused)
-        // `defaultFocus`, not `isFocused = true` in `onAppear`: that changes
-        // first responder mid-layout (layout recursion, "transaction during CA commit").
+        // Not `isFocused = true` in `onAppear`, which changes first responder mid-layout.
         .defaultFocus($isFocused, true)
         .onKeyPress(.leftArrow) {
             model.page(by: -1)
@@ -78,22 +69,19 @@ struct MonthGridView: View {
     }
 }
 
-/// Pages the grid on scrolling while the pointer is over it. SwiftUI has no
-/// scroll-wheel event outside a scroll view, so this monitors the app's scroll
-/// events and takes only those over the grid; `MonthScrollPager` decides paging.
+/// Pages the grid on scrolling over it. SwiftUI has no scroll-wheel event outside
+/// a scroll view, so this monitors the app's scroll events.
 private struct ScrollPaging: ViewModifier {
     let model: MonthGridModel
     let isActive: Bool
     @State private var isHovering = false
-    /// `isActive` for the monitor. Its closure is made once and the grid never
-    /// reappears to remake it, so it reads state, which sees each change,
-    /// rather than the captured `let`.
+    /// Read by the monitor's closure, which is created once and would otherwise
+    /// capture a stale `isActive`.
     @State private var isActiveNow = true
     @State private var monitor: Any?
 
     func body(content: Content) -> some View {
         content
-            // The whole frame, so scrolling between days still pages.
             .contentShape(.rect)
             .onHover { isHovering = $0 }
             .onChange(of: isActive, initial: true) { isActiveNow = isActive }
@@ -115,8 +103,7 @@ private struct ScrollPaging: ViewModifier {
     }
 }
 
-/// Moves today's highlight at midnight. A separate view so the clock's
-/// per-second tick invalidates only this empty body, not the grid.
+/// A separate view so the clock's per-second tick invalidates only this body.
 private struct TodayFollower: View {
     let clock: ClockModel
     let model: MonthGridModel
@@ -127,7 +114,6 @@ private struct TodayFollower: View {
     }
 }
 
-/// Month title on the left, navigation on the right.
 private struct MonthGridHeader: View {
     let model: MonthGridModel
     let settings: DisplaySettings
@@ -140,7 +126,6 @@ private struct MonthGridHeader: View {
                     .font(.headline)
                     .accessibilityLabel(model.spokenTitle(settings: settings))
                     .accessibilityAddTraits(.isHeader)
-                // Gives the Gregorian digits under each day their month.
                 if let span = model.gregorianSpan(settings: settings) {
                     Text(span)
                         .font(.caption)
@@ -156,8 +141,6 @@ private struct MonthGridHeader: View {
                 model.showToday(now: clock.now)
             }
             .disabled(model.isShowingTodayMonth)
-            // Hidden, not greyed, while it would do nothing; keeps its width
-            // so the chevrons stay put.
             .opacity(model.isShowingTodayMonth ? 0 : 1)
             .accessibilityHidden(model.isShowingTodayMonth)
             .accessibilityHint(Strings.showTodayHelp)
@@ -174,8 +157,8 @@ private struct MonthGridHeader: View {
     }
 }
 
-/// The shown year's caveats, so a year past the transcribed lists does not
-/// read as one with no festivals. Spoken with Latin digits.
+/// The shown year's caveats, so a year past the transcribed lists does not read
+/// as one with no festivals.
 private struct MonthGridYearNotes: View {
     let model: MonthGridModel
     let settings: DisplaySettings
@@ -197,7 +180,6 @@ private struct MonthGridYearNotes: View {
 private struct MonthGridDays: View {
     let model: MonthGridModel
     let settings: DisplaySettings
-    /// Owned by the grid view, which shows its details card.
     @Binding var selected: MonthGridDay?
 
     var body: some View {
@@ -235,8 +217,7 @@ private struct MonthGridDays: View {
         .accessibilityLabel(Strings.monthGridDaysLabel)
     }
 
-    /// A button, not a tap gesture, so VoiceOver and the keyboard can press
-    /// it. Pressing the selected day again hides its details.
+    /// A button rather than a tap gesture so VoiceOver and the keyboard can press it.
     private func dayButton(_ day: MonthGridDay) -> some View {
         Button {
             selected = selected == day ? nil : day
@@ -252,8 +233,7 @@ private struct MonthGridDays: View {
     }
 }
 
-/// Grid identities that outlive a month: a day is its Gregorian date, a week
-/// its first day's. Undated cells at the dataset's ends fall back to position.
+/// A day's identity is its Gregorian date, so grid identities outlive a month.
 struct GridSlot: Identifiable {
     let id: AnyHashable
     let day: MonthGridDay?
@@ -283,9 +263,7 @@ private struct MonthGridCell: View {
 
     private static let festivalMarkSize: CGFloat = 4
 
-    /// Red for a holiday as on a wall calendar, even on today: the tint behind
-    /// is light enough, and dropping the red would hide the holiday.
-    /// Neighbouring months' days are tertiary whatever their column.
+    /// Red for a holiday even on today, as on a wall calendar.
     private var dayStyle: AnyShapeStyle {
         if !day.isInShownMonth { return AnyShapeStyle(.tertiary) }
         return day.isMarkedAsHoliday ? AnyShapeStyle(.red) : AnyShapeStyle(.primary)
@@ -304,8 +282,7 @@ private struct MonthGridCell: View {
             Text(model.gregorianDayText(day, settings: settings))
                 .font(.caption2)
                 .foregroundStyle(gregorianStyle)
-            // The festival mark, drawn in every cell and shown only on a
-            // festival day so rows keep one height. National days share it.
+            // Drawn in every cell and shown only on festival days, so rows keep one height.
             Circle()
                 .fill(.tint)
                 .frame(width: Self.festivalMarkSize, height: Self.festivalMarkSize)

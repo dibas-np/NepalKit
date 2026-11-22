@@ -10,15 +10,13 @@ struct MonthGridModelTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-    /// 1 Baisakh 2082 = 14 April 2025, a Monday (Bikram Sambat New Year 2082;
-    /// the same anchor `NewYearBoundaryTests` pins). 06:00 UTC is 11:45 Nepal Time.
+    /// 1 Baisakh 2082 = 14 April 2025, a Monday. 06:00 UTC is 11:45 Nepal Time.
     private func baisakh2082() throws -> MonthGridModel {
         MonthGridModel(now: try TestDates.utc(2025, 4, 14, 6, 0))
     }
 
     @Test func opensOnTodaysNepalTimeMonth() throws {
-        // 11 Oct 2026 is 25 Ashoj 2083 (11 Ashoj 2083 = 27 Sep 2026, the
-        // converter suite's anchor, plus 14 days).
+        // 11 Oct 2026 is 25 Ashoj 2083.
         let model = MonthGridModel(now: try TestDates.utc(2026, 10, 11, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 2083, month: 6))
         #expect(model.today == BikramSambatDate(year: 2083, month: 6, day: 25))
@@ -126,8 +124,7 @@ struct MonthGridModelTests {
     }
 
     @Test func previousStopsAtBaisakh1975() throws {
-        // 1 Baisakh 1975 = 13 Apr 1918, the dataset's first day (docs/glossary.md,
-        // *Supported range*), a Saturday.
+        // 1 Baisakh 1975 = 13 Apr 1918, the dataset's first day, a Saturday.
         let model = MonthGridModel(now: try TestDates.utc(1918, 4, 13, 6, 0))
         #expect(model.shown == MonthGridMonth(year: 1975, month: 1))
         #expect(!model.canShowPreviousMonth)
@@ -254,8 +251,7 @@ struct MonthGridModelTests {
     @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
 
-        // Read from the source, as WatchPresentationWiringTests does, because
-        // the harness renders no views. Today must build the grid; Convert must not.
+        // Read from source because the harness renders no views.
         let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
         let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
         let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))
@@ -264,8 +260,6 @@ struct MonthGridModelTests {
         #expect(source.components(separatedBy: "MonthGridView(").count == 2, "built once, in Today")
     }
 
-    /// Searched upward, because `#filePath` is the harness's symlinked path at
-    /// run time (see WatchPresentationWiringTests.repositoryRoot).
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()

@@ -4,36 +4,21 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// Ticks while the popover is visible so its clocks stay live and the Bikram
-/// Sambat date flips at midnight in the zone the user chose: Nepal Time by
-/// default, whatever the system zone, or the Mac's own zone (ADR-0017).
-///
-/// The anchoring itself lives in NepalKitCore (`todayBS`/`todayAD`); this
-/// model only owns `now`, the time reference, and formats them. `localTimeZone`
-/// is injected for tests; production follows the system zone per read.
+/// Ticks while the popover is visible so its clocks stay live and the date
+/// flips at midnight in the chosen time reference (ADR-0017).
 @MainActor
 @Observable
 final class ClockModel {
     private(set) var now: Date
-    /// Today's Gregorian day in `timeZone`, stored apart from `now` and assigned
-    /// only when it changes, so views that show the day (the Today hero) are
-    /// invalidated once a day rather than on every per-second tick.
+    /// Assigned only on a change, so day-level views are not invalidated every tick.
     private(set) var today: GregorianDate?
-    /// Whether the secondary clock row shows: the two clocks read differently,
-    /// whichever is the header's (so never on a Mac set to Nepal's offset).
-    /// Stored and assigned only on a change, like `today`, so the row is not
-    /// invalidated every tick.
+    /// False when both clocks read the same; assigned only on a change, like `today`.
     private(set) var showsSecondaryClock = false
-    /// Which clock today follows, and so which one the header shows.
     private(set) var timeReference: TimeReference
-    /// nil means "follow the system zone". Injected for tests. Resolved per read
-    /// rather than stored: the app runs for weeks as a login item, and a zone
-    /// captured at launch goes stale the moment the user travels.
+    /// nil follows the system zone, resolved per read so travel shows without a relaunch.
     private let injectedLocalTimeZone: TimeZone?
-    /// Test seam for a mid-session system-zone change. Production reads the live
-    /// system zone; tests inject a mutable box. Global `NSTimeZone.default`
-    /// mutation demonstrably does not move `TimeZone.current` on this platform,
-    /// so travel cannot be simulated any other way.
+    /// Injected so tests can change the system zone mid-session: mutating
+    /// `NSTimeZone.default` does not move `TimeZone.current` on this platform.
     private let systemZone: () -> TimeZone
 
     private let currentTime: () -> Date
@@ -41,8 +26,7 @@ final class ClockModel {
     private let refreshes: Bool
     private let sleep: @MainActor (Duration) async throws -> Void
 
-    /// Initialization schedules no work. The popover owns the refresh task.
-    /// Set `refreshes` to false for fixed previews and date-formatting tests.
+    /// Schedules no work; the popover owns the refresh task.
     init(
         now: Date = .now,
         localTimeZone: TimeZone? = nil,
@@ -79,20 +63,16 @@ final class ClockModel {
         }
     }
 
-    /// The zone the Local row shows. Reading the live system zone per read is
-    /// what keeps a mid-session system zone change visible without a relaunch.
     var localTimeZone: TimeZone {
         injectedLocalTimeZone ?? systemZone()
     }
 
-    /// Follows a new time reference. Nothing is scheduled: the popover's tick
-    /// re-reads both clocks every second.
+    /// Nothing to schedule: the popover's tick re-reads both clocks every second.
     func setTimeReference(_ timeReference: TimeReference) {
         self.timeReference = timeReference
         refreshToday()
     }
 
-    /// Re-reads today from `now`, assigning only on a change.
     private func refreshToday() {
         let day = GregorianDate.today(now: now, timeZone: timeZone)
         if day != today { today = day }
@@ -100,9 +80,7 @@ final class ClockModel {
         if differs != showsSecondaryClock { showsSecondaryClock = differs }
     }
 
-    /// The zone today is read in. Uses the model's own `localTimeZone` rather
-    /// than `TimeReference.timeZone`, so a test's injected zone governs both the
-    /// day and the clocks.
+    /// Uses `localTimeZone` so a test's injected zone governs both the day and the clocks.
     var timeZone: TimeZone {
         switch timeReference {
         case .nepal: TimeZone.nepal
@@ -110,22 +88,15 @@ final class ClockModel {
         }
     }
 
-    /// Today's Bikram Sambat date for the current tick, or nil outside the dataset.
     func todayBSDate(in dataset: CalendarDataset = AppData.dataset) -> BikramSambatDate? {
         today.flatMap { BikramSambatDate($0, in: dataset) }
     }
 
-    /// Today's Gregorian civil day in the zone today follows.
     func todayADDate() -> GregorianDate? {
         today
     }
 
-    /// Weekday of today's civil day, in the selected display language.
-    ///
-    /// Derived from today's Gregorian day rather than from a Bikram
-    /// Sambat conversion: the weekday is a property of the date, so it stays
-    /// available past the dataset's supported range, where the Bikram Sambat
-    /// date does not.
+    /// Derived from the Gregorian day, so it survives past the supported range.
     func weekdayString(style: MonthNameStyle) -> String? {
         guard let day = todayADDate(), let weekday = day.weekday else { return nil }
         return BikramSambatDate.weekdayName(weekday, style: style)
@@ -139,25 +110,15 @@ final class ClockModel {
         digits.formatTime(now, in: localTimeZone)
     }
 
-    /// Whether showing Local alongside Nepal Time would repeat the same reading.
-    ///
-    /// Compared by UTC offset at this instant rather than by zone identity, because
-    /// the question is whether the row adds information: someone in Kathmandu
-    /// reading two identical clocks learns nothing from the second one, while
-    /// someone in a different zone five and a half hours out always does.
-    ///
-    /// Offset-at-instant rather than `localTimeZone == TimeZone.nepal` because zone
-    /// identity is the wrong test. A zone with a different identifier can share
-    /// Nepal's offset, and would then be showing a genuinely duplicated reading
-    /// that identity comparison would miss.
+    /// Compared by UTC offset at this instant, not zone identity: another zone can
+    /// share Nepal's offset.
     var localTimeIsRedundant: Bool {
         localTimeZone.secondsFromGMT(for: now) == TimeZone.nepal.secondsFromGMT(for: now)
     }
 
     // MARK: - The two clocks
 
-    /// The header's clock: the one today follows, since the date beneath it was
-    /// read from that clock.
+    /// The clock today follows, since the date beneath it was read from that clock.
     var headerClockLabel: String {
         switch timeReference {
         case .nepal: Strings.nepalTimeLabel
@@ -169,7 +130,6 @@ final class ClockModel {
         digits.formatTime(now, in: timeZone)
     }
 
-    /// The secondary row's clock: whichever of the two the header does not show.
     var secondaryClockLabel: String {
         switch timeReference {
         case .nepal: Strings.localTimeLabel

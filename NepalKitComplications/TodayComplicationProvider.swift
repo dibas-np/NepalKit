@@ -5,14 +5,10 @@ import NepalKitCore
 import NepalKitWatchSupport
 import WidgetKit
 
-/// The Today complication's provider: a thin adapter that completes each
-/// framework callback exactly once from the deterministic builder and snapshot
-/// paths below. The clock is injected and read once per operation; nothing
-/// here is MainActor-bound.
+/// The Today complication's timeline provider. The clock is injected and read
+/// once per operation.
 struct TodayComplicationProvider: TimelineProvider {
-    /// The fixed preview sample day. Its displayed values are generated
-    /// through core at render time, so nothing here hand-maintains a paired
-    /// date: a dataset change moves the preview with it.
+    /// The preview's sample day, resolved through core at render time.
     static let previewSampleDay = GregorianDate(year: 2026, month: 9, day: 27)
 
     private let now: @Sendable () -> Date
@@ -31,8 +27,7 @@ struct TodayComplicationProvider: TimelineProvider {
         }
     }
 
-    /// The fixture/test path: a builder constructed elsewhere so development
-    /// failure injection reaches the production timeline construction.
+    /// For tests and fixtures that inject failures into the builder.
     nonisolated init(
         now: @escaping @Sendable () -> Date,
         dataset: CalendarDataset,
@@ -43,8 +38,7 @@ struct TodayComplicationProvider: TimelineProvider {
         self.makeBuilder = makeBuilder
     }
 
-    /// Neutral and clock-free: WidgetKit redacts placeholder content, so the
-    /// placeholder neither reads the clock nor resolves Today.
+    /// WidgetKit redacts placeholder content, so this does not read the clock.
     func placeholder(in context: Context) -> TodayComplicationEntry {
         placeholderEntry()
     }
@@ -58,29 +52,19 @@ struct TodayComplicationProvider: TimelineProvider {
         completion(Timeline(entries: built.entries, policy: built.policy))
     }
 
-    /// The placeholder entry, extracted like the snapshot path so tests
-    /// exercise the same content the adapter returns.
     func placeholderEntry() -> TodayComplicationEntry {
         TodayComplicationEntry(date: .distantPast, state: .placeholder)
     }
 
-    /// The snapshot entry, parameterized by `isPreview` so tests exercise the
-    /// same path the adapter unwraps from the context. Ordinary snapshots
-    /// resolve actual Today with one clock read; preview snapshots use the
-    /// fixed core-generated sample; snapshot failures stay errors.
+    /// Previews use the fixed sample day; ordinary snapshots resolve Today.
     func snapshot(isPreview: Bool) -> TodayComplicationEntry {
         if isPreview {
             return previewEntry
         }
-        // Core maps any resolution failure to the calculation-error display:
-        // an error, never a boundary or a fabricated sample, carrying the
-        // Gregorian day only when one was actually resolved.
         let instant = now()
         return TodayComplicationEntry(date: instant, state: .day(watchDayDisplay(now: instant, settings: .watch, in: dataset)))
     }
 
-    /// The full timeline from one clock read through the deterministic
-    /// builder.
     func timeline() -> BuiltTimeline {
         let instant = now()
         return makeBuilder().build(now: instant)

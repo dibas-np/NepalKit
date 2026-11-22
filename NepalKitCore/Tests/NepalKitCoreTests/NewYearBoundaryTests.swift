@@ -1,10 +1,8 @@
 import Testing
 import NepalKitCore
 
-/// Every New Year boundary in the shipped range, from the independent anchor
-/// list (two single-day typos corrected: 1975, 2089). The list starts at 1975
-/// because dataset 2.0.0 cut 1970-1974, whose anchors are no longer part of the
-/// conversion contract.
+/// Every New Year in the supported range, from an independent anchor list
+/// (with single-day typos corrected for 1975 and 2089).
 struct NewYearBoundaryTests {
     static let newYears: [(bs: Int, ad: GregorianDate)] = [
         (1975, GregorianDate(year: 1918, month: 4, day: 13)),

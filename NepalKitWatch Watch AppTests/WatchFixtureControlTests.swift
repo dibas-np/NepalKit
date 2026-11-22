@@ -5,11 +5,6 @@ import Testing
 import NepalKitCore
 @testable import NepalKitWatchApp
 
-/// The development fixture harness: it parses its launch arguments exactly,
-/// fails closed on anything it does not fully understand, and drives the
-/// production seams — fixed instants through the clock, failure points
-/// through the resolver — without changing any calendar answer. Every symbol
-/// here exists only when NEPALKIT_WATCH_FIXTURES compiles in.
 @MainActor
 struct WatchFixtureControlTests {
     @Test func noFixtureArgumentsYieldNoFixture() {
@@ -36,8 +31,6 @@ struct WatchFixtureControlTests {
             WatchFixtureControl.fixture(arguments: ["-NepalKitFixtureScenario", "terminal"])
         )
 
-        // The scenario instants must place production code on the intended
-        // sides of the dataset's exact bounds.
         let dataset = CalendarDataset.v2
         let beforeInstant = try #require(before.instant)
         let beforeDay = try ResolvedDay(now: beforeInstant, in: dataset)
@@ -47,8 +40,7 @@ struct WatchFixtureControlTests {
         let afterDay = try ResolvedDay(now: afterInstant, in: dataset)
         #expect(afterDay.bikramSambat == .afterSupportedRange)
 
-        // The terminal scenario's day +13 is the dataset maximum, which the
-        // timeline contract answers with the conditional fifteenth entry.
+        // The terminal scenario's day +13 is the dataset maximum.
         let terminalInstant = try #require(terminal.instant)
         let terminalToday = try #require(GregorianDate.today(now: terminalInstant))
         #expect(terminalToday.advanced(byDays: 13) == dataset.gregorianEnd)
@@ -106,7 +98,6 @@ struct WatchFixtureControlTests {
     // MARK: The harness exercises production paths
 
     @Test func fixtureModelRendersTheAfterBoundaryThroughProductionCode() async throws {
-        // The arguments flow through the app module's own parsing and wiring.
         let model = TodayFixtures.makeModel(arguments: ["-NepalKitFixtureScenario", "boundaryAfter"])
         model.activate()
 
@@ -125,8 +116,6 @@ struct WatchFixtureControlTests {
         ])
         let built = provider.timeline()
 
-        // The valid prefix survives; the injected failure lands at day +3's
-        // intended activation and construction stops.
         #expect(built.entries.count == 4)
         #expect(try built.entries[3].date == UTCWatchFixture.utc(2026, 9, 29, 18, 15))
         guard case .day(.calculationError(let components)) = built.entries[3].state else {

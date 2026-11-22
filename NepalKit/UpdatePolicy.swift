@@ -2,17 +2,10 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
-/// The update path's decisions, kept out of `SparkleUpdateService.swift` so
-/// the app-test harness can compile them: that file imports Sparkle and is
-/// excluded from the harness (scripts/apptests/Package.swift), and an
-/// untestable decision is one a refactor can silently invert. The Sparkle
-/// file maps framework types onto the neutral inputs these functions take;
-/// everything after that mapping is pinned by `UpdatePolicyTests`.
+/// The update path's decisions, kept out of `SparkleUpdateService.swift` so the
+/// app-test harness can compile and test them.
 enum UpdatePolicy {
-    /// Whether a launch from this bundle path is transient — a build directory
-    /// or a mounted image, where an in-place self-update cannot succeed. The
-    /// prefixes match `start()`'s measured failures (2026-09-28): /tmp debug
-    /// copies, DMG mounts, and DerivedData builds.
+    /// A build directory or mounted image, where an in-place self-update cannot succeed.
     static func isTransientLaunch(installPath: String) -> Bool {
         installPath.hasPrefix("/tmp/")
             || installPath.hasPrefix("/private/tmp/")
@@ -20,11 +13,7 @@ enum UpdatePolicy {
             || installPath.contains("/DerivedData/")
     }
 
-    /// How the framework's "no update found" reason classifies, per
-    /// `UpdateOutcome`'s contract: being current is a good answer; not being
-    /// able to find out is not. The Sparkle delegate reduces the framework's
-    /// reason enum to this kind, so the decision lives here where it is
-    /// testable.
+    /// Being current is a good answer; not being able to find out is not.
     enum NoUpdateFoundKind {
         case onLatestVersion
         case onNewerThanLatestVersion
@@ -38,17 +27,13 @@ enum UpdatePolicy {
         }
     }
 
-    /// Whether a check should be refused: only a scheduled check on a transient
-    /// launch, where the self-update cannot succeed. A manual check is the user
-    /// asking a question, so it still runs.
+    /// Only scheduled checks on a transient launch are refused; manual checks run.
     static func vetoesCheck(isScheduled: Bool, installPath: String) -> Bool {
         isScheduled && isTransientLaunch(installPath: installPath)
     }
 
-    /// Classifies Sparkle's `SPUNoUpdateFoundReason` by raw value. The framework
-    /// stores an `NSNumber` under `SPUNoUpdateFoundReasonKey`, and an `NSNumber`
-    /// held in `Any` does not cast to an imported `NS_ENUM`: casting to the enum
-    /// classifies every "on the latest version" result as a failure.
+    /// Classified by raw value: an `NSNumber` held in `Any` does not cast to an
+    /// imported `NS_ENUM`, so casting would treat "on the latest version" as a failure.
     static func noUpdateKind(rawReason: Int?) -> NoUpdateFoundKind {
         switch rawReason {
         case 1: .onLatestVersion            // SPUNoUpdateFoundReasonOnLatestVersion
@@ -57,9 +42,7 @@ enum UpdatePolicy {
         }
     }
 
-    /// What an aborted update cycle means to the user. `nil` means "say
-    /// nothing": "no update" and user cancellation also arrive here and are
-    /// answered elsewhere. Any other abort is a check that did not complete.
+    /// `nil` for "no update" and user cancellation, which are reported elsewhere.
     static func outcome(forAbortedCheckDomain domain: String, code: Int, description: String) -> UpdateOutcome? {
         if domain == "SUSparkleErrorDomain" && (code == 1001 || code == 4007) {
             // SUNoUpdateError, SUInstallationCanceledError

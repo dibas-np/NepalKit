@@ -5,15 +5,8 @@ import WidgetKit
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Renders a Today entry in whichever accessory family the face slot asks
-/// for, per the accepted Day-first composition. Views render the supplied
-/// state only — no clock reads, no date resolution, no color carrying
-/// meaning: every state is distinct text, so full-color, accented and
-/// redacted rendering modes cannot obscure the distinction and
-/// `widgetRenderingMode` needs no branch here.
-///
-/// The large-text fallbacks swap composition deterministically at
-/// accessibility text sizes rather than truncating or shrinking.
+/// Renders a Today entry in the requested accessory family. States are told
+/// apart by text, never color, so every rendering mode works unchanged.
 struct TodayComplicationView: View {
     @Environment(\.widgetFamily) private var family
     let entry: TodayComplicationEntry
@@ -34,26 +27,21 @@ struct TodayComplicationView: View {
             }
         }
         .containerBackground(for: .widget) {
-            // watchOS 10+ accessory widgets must declare their container
-            // background; the complication supplies none of its own.
+            // Accessory widgets must declare a container background.
         }
     }
 }
 
-/// The threshold where Watch compositions switch to their large-text
-/// fallbacks. The watchOS Text Size slider's maximum stops below the
-/// accessibility size categories, so `isAccessibilitySize` never fires there;
-/// xxLarge is the first size at which the default compositions measurably
-/// clip. Deliberately duplicated per module: core does not import SwiftUI.
+/// The watchOS Text Size slider stops below the accessibility sizes, so
+/// `isAccessibilitySize` never fires; xxLarge is where the default layouts
+/// first clip. Duplicated in the Watch app.
 extension DynamicTypeSize {
     var watchLargeTextFallback: Bool {
         self >= .xxLarge
     }
 }
 
-/// Rectangular: weekday · year over the Bikram Sambat day and month; at large
-/// text sizes, day and month over the year. The announced label drops what the
-/// visuals drop.
+/// Weekday · year over the Bikram Sambat day and month.
 struct TodayRectangularComplication: View {
     let state: TodayComplicationState
 
@@ -65,10 +53,7 @@ struct TodayRectangularComplication: View {
             Text("NepalKit")
         case .day(.supported(let components)):
             if dynamicTypeSize.watchLargeTextFallback {
-                // Leading is 2 rather than the default 8, and deliberately so: a
-                // real Modular middle slot admits two lines and no more, so both
-                // this large-text pair and the weekday-year pair below are held
-                // to that same two-line budget instead of to the default gap.
+                // Spacing 2: a Modular middle slot fits exactly two lines.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.bikramSambatDay) \(components.bikramSambatMonthName)")
                         .font(.title3)
@@ -78,20 +63,8 @@ struct TodayRectangularComplication: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
             } else {
-                // Two lines are all a real Modular middle slot fits, and
-                // the first attempt put the weekday on the day/month line —
-                // which truncated the month. The day/month stands alone;
-                // the weekday joins the year on the secondary line, and the
-                // optional Gregorian piece leaves the visuals entirely. Same
-                // leading of 2 as the large-text fallback above, for the same
-                // reason: which of the two compositions runs, the slot's height
-                // budget does not change.
-                //
-                // Label line over the metric, as every rectangular layout in
-                // Apple's watchOS 26 kit is arranged: the small emphasized line
-                // first, tinted on tinted faces, then the value large. Same
-                // text styles, so the two-line height is unchanged; semibold
-                // measured 1 pt wider (71 pt at xLarge), well inside the slot.
+                // The weekday shares the year's line: on the day/month line it
+                // truncated the month.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(components.weekdayName) · \(components.bikramSambatYear)\(ComplicationFixtureMarker.suffix)")
                         .font(.caption2.weight(.semibold))
@@ -103,8 +76,6 @@ struct TodayRectangularComplication: View {
                 .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: true, gregorian: false))
             }
         case .day(.rangeBoundary(let boundary)):
-            // The boundary uses the same two-line budget as supported dates.
-            // Gregorian detail remains available in the app after tapping.
             VStack(alignment: .leading, spacing: 2) {
                 Text(WatchDayCopy.boundaryCompact)
                     .font(.headline)
@@ -132,8 +103,7 @@ struct TodayRectangularComplication: View {
     }
 }
 
-/// Inline: the full Bikram Sambat day/month/year on one line; at
-/// accessibility sizes the year leaves the visuals but stays in speech.
+/// The Bikram Sambat date on one line; large text drops the year visually.
 struct TodayInlineComplication: View {
     let state: TodayComplicationState
 
@@ -165,8 +135,6 @@ struct TodayInlineComplication: View {
     }
 }
 
-/// Circular: the stacked Bikram Sambat day and month; the composition holds
-/// at accessibility sizes and the announced year fills the gap.
 struct TodayCircularComplication: View {
     let state: TodayComplicationState
 
@@ -181,8 +149,7 @@ struct TodayCircularComplication: View {
                 Text(components.bikramSambatMonthName)
                     .font(.caption)
             }
-            // The stacked stack renders slightly low in the Infograph inner
-            // subdial's optical circle; this small lift centers it.
+            // Optically centers the stack in the Infograph subdial.
             .padding(.bottom, 4)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(ComplicationAccessibility.supportedLabel(components, weekday: false, gregorian: false))
@@ -200,9 +167,6 @@ struct TodayCircularComplication: View {
     }
 }
 
-/// Corner: the Bikram Sambat day, with the month/year in the native
-/// `widgetLabel` — the family's own supplementary slot, which stays even at
-/// accessibility sizes.
 struct TodayCornerComplication: View {
     let state: TodayComplicationState
 

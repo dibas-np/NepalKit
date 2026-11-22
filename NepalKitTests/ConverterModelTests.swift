@@ -57,7 +57,6 @@ struct ConverterModelTests {
         model.toggleDirection()
         #expect(model.direction == .adToBS)
         #expect((model.adYear, model.adMonth, model.adDay) == (2026, 9, 27))
-        // Toggling back restores the Bikram Sambat date.
         model.toggleDirection()
         #expect(model.direction == .bsToAD)
         #expect((model.bsYear, model.bsMonth, model.bsDay) == (2083, 6, 11))
@@ -84,8 +83,6 @@ struct ConverterModelTests {
     @Test func adPickersBoundedToConvertibleSpan() {
         let model = bsModel()
         // Dataset 2.0.0: 1975-01-01 ↔ 1918-04-13, 2084-12-30 ↔ 2028-04-12.
-        // The lower bound follows from the table's first year, not from a
-        // constant here.
         #expect(model.minAD == GregorianDate(year: 1918, month: 4, day: 13))
         #expect(model.maxAD == GregorianDate(year: 2028, month: 4, day: 12))
         #expect(model.adMonths(year: 1918).first == 4)
@@ -94,10 +91,8 @@ struct ConverterModelTests {
     }
 
     @Test func adDateClampsIntoConvertibleSpan() {
-        // Asked for 1 January 1913, five years before the range now starts.
-        // The clamp must pull it forward to the first convertible day, not
-        // leave it outside the span. `init` runs it, so an out-of-range
-        // argument cannot leave the model holding a day it cannot convert.
+        // 1 January 1913 is before the range, so `init` clamps it forward to
+        // the first convertible day.
         let model = ConverterModel(
             direction: .adToBS, bsYear: 2083, bsMonth: 6, bsDay: 11,
             adYear: 1913, adMonth: 1, adDay: 1
@@ -105,17 +100,12 @@ struct ConverterModelTests {
         #expect((model.adYear, model.adMonth, model.adDay) == (1918, 4, 13))
     }
 
-    // The bundled picker state is `private(set)`, so these four are the only
-    // way a caller can change it. Each one therefore has to land the *stored*
-    // date in range on its own: `bsDate`/`adDate` are read back directly, not
-    // through the clamping accessors, so an unclamped value cannot hide behind
-    // an accessor that re-clamps on the way out.
+    // The setters must clamp the stored date themselves: `bsDate`/`adDate` are
+    // read back directly, not through the clamping accessors.
 
     @Test func bsYearAboveTheSupportedRangeClampsToItsUpperBound() {
         let model = bsModel()
-        // The bundled dataset supports 1975...2084, so 3000 has no month row
-        // to clamp against. The setter has to pull it back to 2084 rather than
-        // leave a year the pickers' month-length lookup traps on.
+        // 1975...2084 is supported, so 3000 clamps back to 2084.
         model.bsYear = 3000
         #expect(model.bsDate.year == 2084)
     }
@@ -123,8 +113,6 @@ struct ConverterModelTests {
     @Test func bsDayBeyondTheRealMonthLengthClampsToThatMonth() {
         let model = bsModel()
         // Projected Jestha 2084 has 32 days, so day 40 clamps to 32.
-        // A 30-day month would let an unclamped day pass unnoticed, which is
-        // why this picks a month whose length is not 30.
         model.bsYear = 2084
         model.bsMonth = 2
         model.bsDay = 40
@@ -133,9 +121,7 @@ struct ConverterModelTests {
 
     @Test func adYearAboveTheConvertibleSpanClampsToItsLastDay() {
         let model = bsModel()
-        // The dataset's convertible span ends on 12 April 2028, so 3000 has no
-        // counterpart in the table at all. The setter has to land on that last
-        // convertible day, not merely on the year 2028.
+        // The convertible span ends on 12 April 2028.
         model.adYear = 3000
         #expect(model.adDate == GregorianDate(year: 2028, month: 4, day: 12))
     }
@@ -163,15 +149,8 @@ struct ConverterModelTests {
         #expect(model.adDate == GregorianDate(year: 2026, month: 9, day: 27))
     }
 
-    /// The picker bounds must come from the dataset, never from a range literal
-    /// in this model. ADR-0010 relies on that: a future dataset release has to
-    /// move the Gregorian span on its own. A single-year table is the proof —
-    /// its span is nowhere near the bundled one, so a baked-in constant would
-    /// fail here.
-    ///
-    /// The Gregorian dates below are not claims about the real calendar. They
-    /// fall out of the fixture by construction: 1 Baisakh 2000 is the anchor,
-    /// and the year is 365 days long, so the last day is 364 days later.
+    /// Picker bounds come from the dataset, not a constant (ADR-0010). The
+    /// fixture's dates follow from its anchor, 1 Baisakh 2000, and a 365-day year.
     @Test func pickerSpanFollowsTheDatasetNotAConstant() {
         let narrow = CalendarDataset(
             version: "test",

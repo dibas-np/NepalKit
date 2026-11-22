@@ -7,15 +7,13 @@ import Testing
 @MainActor
 struct PopoverDestinationTests {
     @Test func segmentTitlesNameTheirDestinations() {
-        // The tabs read `destination.title`; a renamed section would
-        // otherwise leave a tab silently naming the old one.
+        // A renamed section would otherwise leave a tab naming the old one.
         #expect(PopoverDestination.today.title == Strings.todayLabel)
         #expect(PopoverDestination.convert.title == Strings.converterLabel)
     }
 
     @Test func destinationTitlesAreDistinct() {
-        // Two tabs with the same title could not be told apart, by eye or
-        // by VoiceOver.
+        // Two tabs with the same title couldn't be told apart.
         #expect(PopoverDestination.today.title != PopoverDestination.convert.title)
     }
 

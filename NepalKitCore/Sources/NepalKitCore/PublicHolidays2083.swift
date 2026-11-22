@@ -1,19 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
-// Public holidays for 2083 BS, from the Home Ministry's notice in the Nepal
-// Gazette (खण्ड ७५ संख्या ६७, भाग ५, 2082-11-18), pages 2-6. One row per
-// gazette item, in the gazette's own wording, with its section in a trailing
-// comment so each row can be checked against the page. A day can carry
-// several rows: 18 Baisakh is three nationwide items, 13 Bhadra is one for
-// the Newar community and one for Kathmandu Valley. Jitiya (3 ख) is only for
-// women employees who observe it, which is narrower than Teej (3 क).
-//
-// Left out because the gazette gives no date: Eid ul-Fitr and Eid ul-Adha
-// (2.1 त, थ), Siruwa Pawani (2.2 घ), Bhoto Jatra (5 ग) and Mohammad Jayanti
-// (7.2 ख). Guru Nanak Jayanti (7.2 ग) has no gazette date either; it sits on
-// 8 Mangsir, where the Panchanga prints it. The national days kept with
-// offices open (section 8) are not holidays and are festival entries instead.
+// Public holidays for 2083 BS from the Home Ministry's notice in the Nepal
+// Gazette (खण्ड ७५ संख्या ६७, भाग ५, 2082-11-18), one row per item with its
+// section in a trailing comment. Undated items (Eid, Siruwa Pawani, Bhoto
+// Jatra, Mohammad Jayanti) are left out; Guru Nanak Jayanti uses the
+// Panchanga's date.
 
 let publicHolidays2083: [BikramSambatDate: [PublicHoliday]] = [
     BikramSambatDate(year: 2083, month: 1, day: 1): [

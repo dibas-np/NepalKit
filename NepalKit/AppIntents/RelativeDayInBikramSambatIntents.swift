@@ -3,15 +3,9 @@
 import AppIntents
 import NepalKitCore
 
-/// The Bikram Sambat date one civil day away from Today, in the zone the user's
-/// time reference names (ADR-0017).
-///
-/// Civil-day arithmetic, never instant arithmetic: Today's Gregorian day in
-/// that zone, advanced by whole days, then converted. Adding 86,400 seconds
-/// to `now` breaks across a daylight-saving change in the user's zone.
+/// The Bikram Sambat date a whole number of civil days from today (ADR-0017).
+/// Advances the Gregorian day rather than adding seconds, which breaks across DST.
 nonisolated enum RelativeDay {
-    /// A relative day's answer: the entity, the `<weekday>, <spoken date>`
-    /// text, and whether the day's year is a provisional projection.
     struct Answer {
         let entity: BikramSambatDateEntity
         let spoken: String
@@ -23,8 +17,7 @@ nonisolated enum RelativeDay {
         return BikramSambatDate(target, in: dataset)
     }
 
-    /// The day's answer, or the range-boundary error Today uses once the day
-    /// leaves the supported range.
+    /// The day's answer, or the range-boundary error once it leaves the supported range.
     static func answer(
         offset: Int,
         now: Date,
@@ -47,13 +40,10 @@ nonisolated enum RelativeDay {
     }
 }
 
-/// The shared shape of the tomorrow and yesterday intents: each names only
-/// its offset and its dialog.
+/// Shared shape of the tomorrow and yesterday intents.
 nonisolated protocol RelativeDayIntent: AppIntent {
     static var offset: Int { get }
-    /// The answer, with the provisional-year clause when the day falls in a
-    /// projected year. Two literals rather than one interpolated clause, so
-    /// each stays a localizable whole sentence.
+    /// Two literals rather than an interpolated clause so each stays a whole localizable sentence.
     static func dialog(_ spoken: String, isProvisional: Bool) -> LocalizedStringResource
 }
 
@@ -76,11 +66,8 @@ nonisolated extension RelativeDayIntent {
     }
 }
 
-/// Answers tomorrow's date in Bikram Sambat: the day after Today.
-///
-/// One parameterless intent per offset rather than one intent with an offset
-/// parameter: voice only works for parameterless intents on macOS 26 (the
-/// spec's surface table), and each App Shortcut binds one intent type.
+/// Answers tomorrow's date in Bikram Sambat. One parameterless intent per offset,
+/// since voice only works for parameterless intents on macOS 26.
 struct TomorrowInBikramSambatIntent: RelativeDayIntent {
     static let title: LocalizedStringResource = "What is tomorrow's Bikram Sambat date"
 
@@ -97,7 +84,6 @@ struct TomorrowInBikramSambatIntent: RelativeDayIntent {
     }
 }
 
-/// Answers yesterday's date in Bikram Sambat: the day before Today.
 struct YesterdayInBikramSambatIntent: RelativeDayIntent {
     static let title: LocalizedStringResource = "What was yesterday's Bikram Sambat date"
 

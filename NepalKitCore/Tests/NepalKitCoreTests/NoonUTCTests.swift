@@ -4,10 +4,7 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// `().noonUTC` is the GregorianDate→Date conversion a Shortcuts result rides:
-/// noon UTC, so the named civil day survives from UTC−12 inclusive through
-/// UTC+12 exclusive and rolls to the following local day at UTC+12 and beyond
-/// (pinned below).
+/// Noon UTC keeps the civil day from UTC−12 through UTC+12 exclusive.
 struct NoonUTCTests {
     private static var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -25,8 +22,6 @@ struct NoonUTCTests {
 
     @Test("A civil day that does not exist yields no instant")
     func impossibleDayYieldsNoInstant() {
-        // utcDate's round-trip validity check: February 30 must not
-        // normalize into March 1 on the way to an instant.
         #expect(GregorianDate(year: 2025, month: 2, day: 30).noonUTC == nil)
     }
 

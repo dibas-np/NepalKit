@@ -22,10 +22,7 @@ struct MidnightFireIntervalTests {
     }
 }
 
-/// Counts what a model adds and removes, so a leaked observer shows up as an
-/// imbalance rather than going unseen. Nonisolated because it overrides
-/// nonisolated `NotificationCenter` members; the tests only touch it from the
-/// main actor.
+/// Counts observers added and removed, so a leak shows up as an imbalance.
 nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable {
     private(set) var added = 0
     private(set) var removed = 0
@@ -46,9 +43,8 @@ nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable
     }
 }
 
-/// Timer intervals do not advance while the Mac sleeps, so wake and a system
-/// clock change are observed directly. Posted here on private centers, so no
-/// test has to sleep the Mac or change its clock.
+/// Timers don't advance while the Mac sleeps, so wake and clock changes are
+/// observed directly. These tests post on private notification centers.
 @MainActor
 struct ClockDiscontinuityTests {
     // Before the dataset range ends and long before any run of this suite, so
@@ -153,8 +149,7 @@ struct ClockDiscontinuityTests {
     }
 }
 
-/// The menu bar's timers must keep firing while a menu is tracking, which runs
-/// the main run loop in the event-tracking mode rather than the default one.
+/// The menu bar's timers must keep firing in the event-tracking run loop mode.
 @MainActor
 struct MainActorTimerModeTests {
     @Test func timerFiresInTheEventTrackingMode() {

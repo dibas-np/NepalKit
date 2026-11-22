@@ -6,82 +6,44 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 APP=NepalKit
-# Every intermediate artifact lives in a per-run private directory, not in
-# fixed /tmp/<name> paths: /tmp is world-writable and sticky, so a predictable
-# path there can be pre-planted with a symlink by any local account, and two
-# concurrent releases would collide. mktemp -d creates a 0700 directory whose
-# name cannot be guessed.
+# A private mktemp directory, not fixed /tmp paths that could be pre-planted
+# with a symlink or collide with a concurrent run.
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
 DEPLOYMENT_TARGET=26.6
 ARCHIVE="$WORK/$APP.xcarchive"
 EXPORT_DIR="$WORK/${APP}-export"
 APP_PATH="$EXPORT_DIR/$APP.app"
 DMG="$WORK/$APP.dmg"
-# Submitted to Apple. Rebuilt later as $DIST_ZIP, after the staple lands.
 NOTARY_ZIP="$WORK/${APP}-for-notary.zip"
 
-# The drag-install DMG and the writable image its window is laid out on. See
-# the DMG section below for why there are two images and why hdiutil is
-# involved; the paths live here because the cleanup trap needs them.
 BACKGROUND=dmg-background@2x.png
 DMG_LAYOUT="$WORK/${APP}-layout.dmg"
-# Unique on purpose. The volume's own name has to be $APP — the background's
-# alias is recorded against it — but Finder identifies a mounted disk by the
-# last component of wherever it is mounted, so a name already in use on this
-# Mac would silently script the wrong volume. That failure is invisible: the
-# layout is written to a volume nobody ships, and the DMG comes out default.
-# LaunchServices also retains records for detached images at their mount paths.
-# Reusing a path can match an older image that unregistering this run cannot remove.
+# Unique per run: Finder identifies a mounted disk by its mount path, so a
+# name already in use would script the wrong volume.
 DMG_LAYOUT_MOUNT="/Volumes/${APP}-layout-${WORK:t}"
-# Big enough for the stapled app and the artwork with room to spare. The
-# compressed image that comes out is a fraction of this.
 DMG_LAYOUT_SIZE=300m
 DMG_LAYOUT_DEVICE=
 MNT="/Volumes/${APP}-release-check-${WORK:t}"
 
-# Computed at use, not here: the export has not run yet at this point in the
-# script, so reading its Info.plist now would silently yield "0" in the name.
+# Set once the export exists; the version comes from its Info.plist.
 DIST_ZIP=
 LS_CLEANUP_FAILED=0
 
-# Every app bundle this run creates registers itself with LaunchServices, keyed
-# by the temp path it was built at. `lsregister -u` on a path that no longer
-# exists fails with -10814 and leaves the registration behind, so deleting the
-# workspace without unregistering first seeds one permanent stale entry per run.
-# The dev machine accumulated 90+ for this bundle id, which made bundle-id
-# resolution ambiguous for system services — including the App Shortcuts
-# registration the Siri intents depend on.
-#
-# Order in cleanup() is load-bearing: unregister while the bundles still exist,
-# then unmount, then delete. Moving this line below `rm -rf "$WORK"` would make
-# it a no-op that still reported success, which is the failure mode this is here
-# to prevent. The export directory is a subdirectory of $WORK, and the staged
-# copy on the layout volume is still mounted, so both are live here.
+# Unregister every bundle this run creates before deleting it: `lsregister -u`
+# fails on a path that no longer exists and leaves a stale registration behind.
 unregister_launchservices() {
     local bundle unregister_result=0
     for bundle in "$APP_PATH" "$DMG_LAYOUT_MOUNT/$APP.app" "$MNT/$APP.app" \
                   "$WORK/${APP}-dist-verify/$APP.app"; do
         [[ -e "$bundle" ]] || continue
-        # In zsh functions, $0 is the function name; ROOT preserves the script location.
         "$ROOT/scripts/unregister-launchservices.sh" "$bundle" || unregister_result=1
     done
     return "$unregister_result"
 }
 
-# Everything this script mounts is unmounted on the way out, including when it
-# fails partway and including when it is signalled. EXIT on its own is not that
-# guarantee: it does not fire for SIGHUP or SIGTERM, and both of those arrive
-# exactly while an image is attached — a cancelled CI run, or a terminal closed
-# during the Finder layout scripting. A read-write image left attached is not
-# merely untidy: it is EBUSY, and the next run's conversion then fails with a
-# message that never mentions attachments.
-#
-# cleanup returns 0 unconditionally so the EXIT/HUP/INT/TERM traps always run
-# to completion: a gate that aborted the trap would skip an unmount, and the
-# next run would fail on the attached image with EBUSY. So the unregistration
-# failure is recorded while the unmounts continue. Once cleanup fails, its
-# workspace survives repeated signal/EXIT traps so the original bundle or disk
-# image remains available for recovery. The final gate still exits non-zero.
+# Runs on EXIT and on HUP/INT/TERM so attached images are always released.
+# Always returns 0 so every unmount runs; a LaunchServices failure keeps the
+# workspace for recovery and is reported by the final gate.
 cleanup() {
     if ! unregister_launchservices; then
         LS_CLEANUP_FAILED=1
@@ -98,27 +60,11 @@ cleanup() {
     return 0
 }
 trap cleanup EXIT
-# 128 + signal number, the shell's convention (HUP 1, INT 2, TERM 15), so a
-# signalled run reports why it stopped. cleanup runs again on the EXIT these
-# exit calls trigger; that is deliberate rather than guarded against, because
-# every command in it is already fault-tolerant and it ends in `return 0`.
 trap 'cleanup; exit 129' HUP
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
-# Resolve how to authenticate to the notary service.
-#
-# A keychain profile is the only supported path, and the only one that puts
-# nothing secret in argv. notarytool's env-var form (APPLE_ID /
-# APP_SPECIFIC_PASSWORD) is deliberately not implemented here: it would put
-# the app-specific password in the process table for the length of each
-# submission, and there is no CI release path that needs it.
-#
-# The profile's contents are NOT parsed here. notarytool stores a JSON blob under
-# service "appSpecificPassword" with account
-# "com.apple.gke.notary.tool.saved-creds.<profile>", and only notarytool knows how
-# to read it. Existence is therefore detected by asking whether the item is
-# there, and the profile is then passed through untouched.
+# Notary credentials come from a keychain profile only, so no secret is in argv.
 NOTARY_PROFILE="${NOTARY_PROFILE:-NepalKit-notary}"
 
 if [[ -z "${TEAM_ID:-}" ]]; then
@@ -131,27 +77,8 @@ NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
 echo "notary credentials: keychain profile '$NOTARY_PROFILE'"
 
 
-# Explicitly require a Developer ID Application certificate for this team —
-# a generic codesigning identity is not enough for distribution.
-#
-# ## Why this is not `... | head -1`
-#
-# It was, and it had a failure mode that the `|| true` hid rather than fixed.
-# `head -1` exits after the first match, so `grep` can still be scanning the
-# keychain when the pipe closes underneath it. grep then dies on SIGPIPE, the
-# pipeline reports 141, and `|| true` swallows that into an empty IDENTITY — which
-# is indistinguishable from "no matching certificate". The result is a release
-# machine that *has* the certificate failing with "no Developer ID Application
-# certificate for team ...", on a large enough keychain to lose the race.
-#
-# Measured, not assumed: `seq 1 200000 | grep -o '[0-9]*' | head -1` returns 141
-# on this machine. A three-identity keychain finishes scanning before head leaves,
-# which is why this has never fired here — it is a keychain-size race, not a
-# correctness property.
-#
-# `awk` reads to end of input, so nothing closes the pipe early and the exit
-# status is grep's alone. The `|| true` stays, and now guards only what it says
-# it guards: a genuine no-match, which is what the friendly error below is for.
+# Require a Developer ID Application certificate for this team. awk rather
+# than `head -1`, which can SIGPIPE grep on a large keychain and look like no match.
 IDENTITY="$(security find-identity -v -p codesigning \
     | grep -o "Developer ID Application: .* ($TEAM_ID)" | awk 'NR == 1 { print }' || true)"
 [[ -n "$IDENTITY" ]] || {
@@ -173,16 +100,7 @@ cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 </plist>
 EOF
 
-# Explicit deployment target: the release artifact must never silently
-# inherit a different floor from Xcode project state.
-#
-# generic/platform=macOS, not platform=macOS: the latter matches both arm64 and
-# x86_64 on a machine that has both, and Xcode warns that it is picking the
-# first arbitrarily. generic/ is the universal build and matches exactly one.
-#
-# The comment sits above the command rather than inside it: a `#` comment
-# between the parts of a backslash-continued command is spliced into the
-# command line, and the rest of it then runs as a command of its own.
+# generic/platform=macOS builds universal; platform=macOS picks one arch arbitrarily.
 MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
     -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
@@ -190,7 +108,6 @@ MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcod
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
     -exportPath "$EXPORT_DIR" -exportOptionsPlist "$WORK/${APP}-ExportOptions.plist"
 
-# Verify the exported app before it goes anywhere near a DMG.
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee "$WORK/${APP}-codesign.txt"
 grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
@@ -198,57 +115,25 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
     exit 1
 }
 
-# Check entitlements, Sparkle keys and the embedded Sparkle version on the
-# exported product: ENABLE_* build settings are merged into the entitlements at
-# signing (how 1.6.0 shipped an unrecorded file-access entitlement), and the
-# Sparkle pin is only as good as package resolution on this machine.
+# ENABLE_* build settings are merged into the entitlements at signing, so
+# check the exported product, not the source file.
 python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
     --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
     --entitlements "$ROOT/$APP/$APP.entitlements"
 
-# Notarize the APP, not only the DMG.
-#
-# Sparkle never hands a user the DMG. It extracts the enclosure and copies the
-# .app over the installed one, so a ticket stapled to the DMG is thrown away on
-# every single update and Gatekeeper is left fetching a fresh one from Apple's
-# CDN at update time. That succeeds on a good connection and fails on a poor
-# one, which is exactly how "updates randomly fail for some users" begins.
-#
-# Apple issues a ticket per submitted item, so the .app has to be submitted in
-# its own right: stapling it beforehand fails with "Error 73" because there is
-# no ticket for it to staple. notarytool takes a zip rather than a bare bundle.
-# The staple then lands on the .app in the export directory, and the DMG below
-# is assembled *from that stapled app*, so both paths stay clean.
+# Notarize and staple the app itself, not only the DMG: Sparkle installs the
+# .app from the zip, so a ticket stapled only to the DMG is lost on update.
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
-# The check that would have caught this. A stapled DMG passed here for months
-# while the app inside it had no ticket at all, so the DMG was the wrong thing
-# to be validating. This is the assertion that matters for Sparkle.
 spctl -a -t execute -vv "$APP_PATH"
 echo "app notarized and stapled: $APP_PATH"
 
-# DMG with an Applications shortcut for drag-install, in a window laid out to
-# match the artwork the user is met with when they open it.
-#
-# The window cannot be built by copying files into a folder and asking
-# `diskutil image create from` for a DMG. That deliberately drops `.DS_Store`,
-# which is where Finder keeps window geometry and the background picture, so an
-# image built that way is a default Finder window no matter what the staging
-# directory contains. The layout has to be written by Finder onto a mounted,
-# writable volume, and the shipped image has to be made from that volume
-# afterwards.
-#
-# hdiutil, deliberately, twice, and both calls warn. `diskutil image create
-# blank` is the supported way to make a read-write image, but every filesystem
-# it offers either cannot hold the Applications symlink (ExFAT, MS-DOS) or is
-# wrapped in an APFS container that cannot be converted to a compressed UDZO
-# image at all. A single-volume HFS+ image can, and `hdiutil convert` is the
-# only thing that performs that conversion: Apple's deprecation notice points
-# at `diskutil image create from`, which fails with EBUSY on a disk-image
-# source. The warnings are filtered out below, because a release log that
-# always carries a deprecation notice teaches people to stop reading it.
+# Finder only writes the window layout (.DS_Store) onto a mounted, writable
+# volume, so the layout is built on a read-write HFS+ image and then converted
+# to UDZO. Only `hdiutil convert` can do that conversion; its deprecation
+# warnings are filtered out.
 HDIUTIL_LOG="$WORK/${APP}-hdiutil.log"
 hdiutil_run() {
     hdiutil "$@" 2>"$HDIUTIL_LOG" || {
@@ -259,11 +144,7 @@ hdiutil_run() {
     grep -v "is deprecated" "$HDIUTIL_LOG" >&2 || true
 }
 
-# The window is laid out and read back by scripting Finder, which is a
-# permission this machine may not have granted yet: the first osascript that
-# tries to control Finder comes back -1743, and that error does not mention
-# permissions. Translated here, because a release that stops for want of a
-# setting is otherwise a puzzle.
+# Error -1743 means this terminal may not control Finder yet.
 finder_run() {
     osascript "$@" || {
         echo "$1 failed." >&2
@@ -275,9 +156,7 @@ finder_run() {
 
 rm -f "$DMG_LAYOUT"
 hdiutil_run create -size "$DMG_LAYOUT_SIZE" -fs HFS+ -volname "$APP" "$DMG_LAYOUT"
-# The plist is the only non-deprecated way to learn that identifier:
-# `diskutil image attach` prints the volume's, and ejecting the volume leaves
-# the image attached.
+# `diskutil image attach` prints the volume, not the device that must be ejected.
 DMG_LAYOUT_DEVICE=$(diskutil image attach "$DMG_LAYOUT" --mountPoint "$DMG_LAYOUT_MOUNT" --plist \
     | plutil -extract system-entities.0.dev-entry raw -o - -)
 
@@ -288,12 +167,8 @@ LAYOUT=$(swift "$ROOT/scripts/make-dmg-artwork.swift" "$DMG_LAYOUT_MOUNT/.backgr
 finder_run "$ROOT/scripts/dmg-layout.applescript" "${DMG_LAYOUT_MOUNT:t}" "$APP" \
     "$DMG_LAYOUT_MOUNT/.background/$BACKGROUND" "$LAYOUT"
 
-# Finder's change log is written while the volume is mounted and has no business
-# in a shipped image.
 rm -rf "$DMG_LAYOUT_MOUNT/.fseventsd"
-# Unmount, then eject. Ejecting is what actually releases the image: an image
-# that is still attached is EBUSY, and the conversion below fails with a
-# message that does not mention attachments at all.
+# Unmount, then eject. A still-attached image makes the conversion fail with EBUSY.
 unregister_launchservices
 diskutil unmount "$DMG_LAYOUT_MOUNT"
 diskutil eject "$DMG_LAYOUT_DEVICE"
@@ -304,33 +179,15 @@ hdiutil_run convert "$DMG_LAYOUT" -format UDZO -o "$DMG"
 xcrun notarytool submit "$DMG" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$DMG"
 
-# "Gatekeeper-clean" is earned only here. Note the assessment order, each a
-# hard gate: the ticket on the DMG first, then the app users actually launch.
-# (A DMG carries no code signature by design, so `spctl` on the .dmg file
-# itself always reports "no usable signature" — the meaningful checks are
-# the stapled ticket plus the mounted app.)
+# A DMG carries no code signature, so check its stapled ticket and the app inside.
 xcrun stapler validate "$DMG"
 
-# No `--mountOptions nobrowse` here, unlike every other mount in this script:
-# the window check below asks Finder what the window looks like, and Finder
-# cannot answer for a volume it has been told not to show. The window that opens
-# on screen during a release is the price of checking it.
+# Not mounted with nobrowse: Finder cannot read the window of a hidden volume.
 diskutil image attach "$DMG" --mountPoint "$MNT" >/dev/null
 
-# The window, read back off the finished image.
-#
-# This is a hard gate because every other gate in this script passes just as
-# happily on a DMG whose window is Finder's default: the image is signed,
-# notarized, stapled and Gatekeeper-clean either way, and the layout lives in
-# an undocumented file that Apple is free to stop reading. A release that ships
-# a default window should fail here, loudly, rather than in a bug report.
 finder_run "$ROOT/scripts/verify-dmg-layout.applescript" "${MNT:t}" "$APP" "$LAYOUT"
 
-# The background picture is the one part of the layout AppleScript cannot read
-# back: `background picture` is declared as a `file` and every way of asking
-# for it fails with -10000 whether or not one is set. So it is checked in the
-# place it is actually stored — the icon view options inside `.DS_Store`, which
-# name the artwork they point at.
+# AppleScript cannot read back the background picture, so check .DS_Store for it.
 strings -a "$MNT/.DS_Store" | grep -q "$BACKGROUND" || {
     echo "the DMG window has no background picture: .DS_Store never names $BACKGROUND"
     exit 1
@@ -342,7 +199,6 @@ strings -a "$MNT/.DS_Store" | grep -q "$BACKGROUND" || {
 
 spctl -a -t execute "$MNT/$APP.app"
 
-# Launch smoke: the notarized app must start from the mounted DMG.
 open "$MNT/$APP.app"
 launched=0
 for _ in {1..15}; do
@@ -352,30 +208,19 @@ done
 [[ $launched == 1 ]] || { echo "app did not launch from mounted DMG"; exit 1; }
 pkill -f "$MNT/$APP.app/Contents/MacOS/$APP" || true
 
-# The Sparkle enclosure: the stapled app, zipped *after* stapling so the ticket
-# is inside it. Rebuilt rather than reusing $NOTARY_ZIP, which predates the
-# staple and would ship without one.
+# Zip the app again after stapling so the Sparkle enclosure carries the ticket.
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
     "$APP_PATH/Contents/Info.plist")
 DIST_ZIP="$WORK/${APP}-${VERSION}.zip"
 rm -f "$DIST_ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ZIP"
-# Same signature check as the DMG: Sparkle verifies this exact file, so it is
-# the artifact that actually has to be Gatekeeper-accepting.
 unzip -qo "$DIST_ZIP" -d "$WORK/${APP}-dist-verify"
 spctl -a -t execute -vv "$WORK/${APP}-dist-verify/$APP.app"
-# Unregistered here rather than left to the cleanup trap: the extraction is
-# deleted on the next line, and an unregistered-then-deleted bundle is exactly
-# the stale entry this whole mechanism exists to avoid. The trap still covers
-# it as a fallback for the runs that fail between here and the end. This call
-# is fatal (unlike the trap's): it runs mid-build with set -e, nothing has been
-# deleted yet, and no later step re-checks this bundle — a swallowed failure
-# here would strand the entry with no report after the run.
+# Unregistered before the extraction is deleted; fatal here, unlike in the trap.
 "${0:A:h}/unregister-launchservices.sh" "$WORK/${APP}-dist-verify/$APP.app"
 rm -rf "$WORK/${APP}-dist-verify"
 
-# Build and verify the appcast for this version. Signing needs the keychain, so
-# this runs on the release machine, never in CI.
+# Signing the appcast needs the keychain, so this never runs in CI.
 APPCAST_DIR="$WORK/${APP}-appcast-$VERSION"
 rm -rf "$APPCAST_DIR"
 mkdir -p "$APPCAST_DIR"
@@ -385,41 +230,20 @@ cp "$DIST_ZIP" "$APPCAST_DIR/"
     exit 1
 }
 
-# CHANGELOG.md is generated, not hand-edited: the same notes files the
-# appcast step just embedded render as its markdown sections, and the new
-# version's date comes from the fresh pubDate in the staged appcast. The
-# working-tree change is committed with the appcast, never re-typed later.
 python3 "$ROOT/scripts/update-changelog.py" "$APPCAST_DIR/appcast.xml"
 
-# The workspace dies with the run, but the release outputs do not: they are
-# copied to a private directory beside it that the operator keeps. mktemp -d
-# rather than a `$$`-derived path, for the reason at the top of this file: a
-# predictable path under a world-writable /tmp can be pre-planted with a
-# symlink, and the bytes copied into it include the signed appcast.
 OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release-output.XXXXXXXX")"
 cp "$DMG" "$DIST_ZIP" "$APPCAST_DIR/appcast.xml" "$OUT_DIR/"
-# Read-only, because the feed's signature covers every byte and an autosaving
-# editor can rewrite a file that was only opened (Zed did, for 1.6.1).
-# verify-appcast.sh makes its staging copy writable again, so a read-only feed
-# copied into the repository cannot break the next release.
+# Read-only: the feed's signature covers every byte, and editors can rewrite
+# a file that was only opened.
 chmod 0444 "$OUT_DIR"/*
 
-# The last thing this run does to the machine, and the only one the operator
-# would not otherwise notice: nothing from $WORK should be left registered.
-# Checked after the export is copied out because that is the point at which
-# every bundle this run built has existed at least once — the alternative,
-# checking inside the trap, races the `rm -rf` on the very next line.
-#
 echo "Gatekeeper-clean DMG: $OUT_DIR/$(basename "$DMG")"
 echo "Sparkle enclosure (stapled, zipped): $OUT_DIR/$(basename "$DIST_ZIP")"
 echo "Signed appcast: $OUT_DIR/appcast.xml"
 echo "Changelog updated: $ROOT/CHANGELOG.md"
 
-# Last gate, after the paths are printed: a failure here must not hide the
-# artifacts (they are complete, verified and named above), but it must also
-# not report success — a release that seeded a stale registration failed its
-# own contract. Preserve the workspace and name the bundle needed for retry;
-# the printed release outputs above are archives, not unregisterable bundles.
+# Last gate, after the outputs are printed: a stale registration fails the release.
 unregister_launchservices || {
     LS_CLEANUP_FAILED=1
     echo "release hygiene failed: a run bundle is still registered with LaunchServices" >&2

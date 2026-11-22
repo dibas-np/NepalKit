@@ -5,14 +5,8 @@ import NepalKitCore
 import Testing
 @testable import NepalKit
 
-/// Layout invariants of the converter's controls.
-///
-/// The defect these guard against is not derivable from types: a segmented
-/// control and a `Picker` size themselves to content and *clip* rather than wrap
-/// or shrink, so a label that is merely too long still compiles, still builds,
-/// and still passes every other test. It only shows up as `ikram Sambat →
-/// Gregorian` and a month reading `As…`, which is what happened when the
-/// converter inherited a 340pt popover from the tabbed layout.
+/// Layout invariants of the converter's controls. Segmented controls and
+/// pickers clip rather than wrap, so an overlong label only shows on screen.
 @MainActor
 struct ConverterLayoutTests {
     /// Width inside the popover: 340pt frame less 12pt padding each side.
@@ -23,9 +17,7 @@ struct ConverterLayoutTests {
     private static let controlChrome: CGFloat = 28
 
     @Test func directionSegmentsFitThePopover() {
-        // The two segments share one control, and the control shares the popover
-        // with the tab switcher above it. Both segment labels are on screen at
-        // once, so it is their sum that has to fit.
+        // Both segment labels are on screen at once, so their sum has to fit.
         let segments = [Strings.bsToAD, Strings.adToBS]
         let demanded = segments.reduce(CGFloat(0)) { total, label in
             total + Self.controlChrome + Self.width(of: label)
@@ -37,9 +29,7 @@ struct ConverterLayoutTests {
     }
 
     @Test func directionSegmentsAreAbbreviatedOnScreen() {
-        // Pins the specific defect: the full calendar names are what overflowed.
-        // The full forms must still exist for speech, or the abbreviations are
-        // all a listener ever hears.
+        // The full forms must still exist for speech.
         #expect(Strings.bsToAD == "BS → AD")
         #expect(Strings.adToBS == "AD → BS")
         #expect(Strings.bsToADSpoken == "Bikram Sambat to Gregorian")
@@ -47,9 +37,7 @@ struct ConverterLayoutTests {
     }
 
     @Test func everyMonthNameFitsTheMonthPicker() {
-        // Every month in both scripts, because the picker shows the widest one
-        // in the list and the list is a parameter, not a constant. A clipping bug
-        // in Devanagari would otherwise ship unseen in a Latin-only test machine.
+        // Both scripts, since the picker sizes to its widest item.
         for month in GregorianDate.monthNames {
             #expect(
                 Self.controlChrome + Self.width(of: month) <= 112,
@@ -68,13 +56,9 @@ struct ConverterLayoutTests {
     }
 
     @Test func yearAndDayValuesFitTheirPickers() {
-        // The widest year is the last one in the dataset, and the widest day the
-        // longest month allows. Devanagari digits are wider than Latin, so both
-        // are checked.
+        // Devanagari digits are wider than Latin, so both are checked.
         for style in [DigitScript.latin, .devanagari] {
-            // 68pt, matching the floor in `DatePickers`. The original 62 was
-            // only just enough for a Latin year and fell 2pt short for
-            // Devanagari, which this test caught rather than a screenshot.
+            // Matches the floor in `DatePickers`.
             let yearFloor: CGFloat = 68
             #expect(
                 Self.controlChrome + Self.width(of: style.format(2084)) <= yearFloor,
@@ -85,10 +69,8 @@ struct ConverterLayoutTests {
     }
 
     @Test func monthGridColumnsFitThePopover() {
-        // Seven equal columns with 2pt gutters share the content width, so each
-        // weekday header and each day number must fit one column. The Bikram
-        // Sambat day is drawn at body size, larger than the controls this
-        // estimate was set for, so it is checked at 1.5x.
+        // Seven equal columns with 2pt gutters. The Bikram Sambat day is drawn
+        // at body size, so it is checked at 1.5x.
         let column = (Self.popoverContentWidth - 6 * 2) / 7
         for style in [MonthNameStyle.nepali, .transliterated] {
             for weekday in 1 ... 7 {
@@ -116,13 +98,8 @@ struct ConverterLayoutTests {
         }
     }
 
-    /// Conservative advance width for a string at the control's text size.
-    ///
-    /// Deliberately pessimistic: Devanagari conjuncts and diacritics advance
-    /// further than a Latin average, and a wrong guess here must fail the test
-    /// rather than pass it. A font-metrics call would be exact but would make
-    /// the assertion a statement about the current OS font instead of about the
-    /// labels, which is not what regressed.
+    /// Conservative advance width for a string at the control's text size,
+    /// pessimistic so that a wrong guess fails rather than passes.
     private static func width(of string: String) -> CGFloat {
         let devanagariScalars = string.unicodeScalars.filter { (0x0900 ... 0x097F).contains($0.value) }.count
         let other = string.count - devanagariScalars

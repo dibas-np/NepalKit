@@ -5,12 +5,9 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Development-only fixture wiring for the Today screen. Compiled only under
-/// `NEPALKIT_WATCH_FIXTURES`; a nondevelopment build contains none of it, so
-/// no fixture route exists from the ordinary launch path.
+/// Debug-only fixture wiring for the Today screen.
 enum TodayFixtures {
-    /// What the fixture banner should say, or nil when no fixture is active.
-    /// The banner is how an active fixture identifies itself on screen.
+    /// The on-screen fixture banner, or nil when no fixture is active.
     static var bannerNote: String? {
         guard let fixture = WatchFixtureControl.current else { return nil }
         var parts: [String] = []
@@ -33,8 +30,6 @@ enum TodayFixtures {
         return "FIXTURE — " + parts.joined(separator: ", ")
     }
 
-    /// The Today model wired to the fixture — the process launch arguments
-    /// by default — or the ordinary model when no fixture is present.
     static func makeModel(arguments: [String] = ProcessInfo.processInfo.arguments) -> TodayModel {
         guard let fixture = WatchFixtureControl.fixture(arguments: arguments) else { return TodayModel() }
         let nextMidnight: @Sendable (Date) -> Date?
@@ -49,9 +44,6 @@ enum TodayFixtures {
             displayFor: { instant in
                 switch (fixture.failTodayWithContext, fixture.failTodayWithoutContext) {
                 case (true, _):
-                    // The failure keeps the day the instant resolved as
-                    // context, exactly as a production resolution failure
-                    // would.
                     return watchCalculationErrorDisplay(gregorianDay: GregorianDate.today(now: instant), settings: .watch)
                 case (_, true):
                     return watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch)

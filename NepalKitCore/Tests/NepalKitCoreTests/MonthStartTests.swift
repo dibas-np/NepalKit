@@ -1,14 +1,8 @@
 import Testing
 import NepalKitCore
 
-/// Month starts and notable month dates from published Patro reproductions
-/// (independent of the table sources): KMC government grids, Hamro Patro,
-/// Nepali Patro, mypatro, ashesh, rat32, khudra, nepali-calendar.com.
-///
-/// Months whose length was **disputed** between sources live in
-/// `ArbitratedDisputeTests` instead, with the reason each was settled. This
-/// suite holds the ones that were never in contention. Provisional 2084
-/// contracts live in Projected2084Tests, not among published-calendar fixtures.
+/// Month starts from published Patro calendars, independent of the table's
+/// sources. Disputed months are in `ArbitratedDisputeTests`.
 struct MonthStartTests {
     static let bsToADCases: [MonthStartFixture] = [
         // KMC government calendar grids, 2083.

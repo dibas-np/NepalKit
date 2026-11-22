@@ -6,10 +6,8 @@ import NepalKitCore
 @testable import NepalKit
 
 /// The Display section's live preview: today's date rendered with the picked
-/// settings, nil when today has no Bikram Sambat answer.
-///
-/// The oracle date is the one ticket 04 computed independently: noon UTC on
-/// 29 June 2025 is 15 Ashar 2082 in Nepal Time (17:45 NPT, same civil day).
+/// settings, nil when today has no Bikram Sambat answer. Noon UTC on
+/// 29 June 2025 is 15 Ashar 2082 in Nepal Time.
 struct DisplayPreviewTests {
     private var dataset: CalendarDataset { AppData.dataset }
     private var now: Date {
@@ -31,8 +29,7 @@ struct DisplayPreviewTests {
 
     @Test("The two pickers change independently")
     func axesAreIndependent() throws {
-        // Devanagari digits with the transliterated month name: the digit
-        // setting governs numerals only.
+        // The digit setting governs numerals only.
         let devanagariTransliterated = DisplayPreview.todayText(
             now: try now, in: dataset,
             settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated)
@@ -40,8 +37,7 @@ struct DisplayPreviewTests {
         #expect(devanagariTransliterated?.contains(where: Self.devanagariDigits.contains) == true)
         #expect(devanagariTransliterated?.contains("Ashar") == true)
 
-        // Latin digits with the Nepali month name: the month-name setting
-        // governs Bikram Sambat month names only.
+        // The month-name setting governs Bikram Sambat month names only.
         let latinNepali = DisplayPreview.todayText(
             now: try now, in: dataset,
             settings: DisplaySettings(digits: .latin, monthNames: .nepali)

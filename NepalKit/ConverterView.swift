@@ -3,23 +3,16 @@
 import SwiftUI
 import NepalKitCore
 
-/// Bikram Sambat ↔ Gregorian converter with direction toggle and bounded pickers.
-/// Invalid dates are structurally impossible: day ranges follow the real
-/// month length, years follow the dataset's supported range.
+/// Bikram Sambat ↔ Gregorian converter with a direction toggle and bounded pickers.
 struct ConverterView: View {
     @Bindable var model: ConverterModel
     let settings: DisplaySettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Named, because the popover's own Today/Converter control no
-            // longer heads this section: it names the *tab*, not the direction
-            // within it, so without this the two segments announce as bare
-            // "BS → AD" with nothing to say what the control governs.
+            // Named so VoiceOver says what the segments govern.
             Picker(Strings.converterDirectionLabel, selection: $model.directionSelection) {
-                // Abbreviated on screen, spoken in full. The segments share one
-                // control with the tab switcher above and a 340pt popover, so
-                // the full calendar names clipped to "ikram Sambat → Gregorian".
+                // Abbreviated on screen, spoken in full: full names clipped at 340pt.
                 Text(Strings.bsToAD)
                     .accessibilityLabel(Strings.bsToADSpoken)
                     .tag(ConverterDirection.bsToAD)
@@ -38,35 +31,23 @@ struct ConverterView: View {
             }
 
             if let output = model.convertedText(settings: settings) {
-                // The shown line and the announcement come from the same
-                // conversion, so they cannot describe different days. The
-                // "Result" prefix is spoken-only: on screen the line sits under
-                // the pickers that produced it, but read aloud "12 Ashoj 2083"
-                // gives no clue which calendar it is in.
-                //
-                // Falls back to the shown text rather than an optional. The two
-                // share a conversion, so this is unreachable in practice — but
-                // an unreachable path must not be allowed to announce
-                // "Optional(12 Ashoj 2083)" to a screen reader.
+                // "Result" is spoken only: read aloud, the date alone doesn't say which calendar
+                // it is in.
                 Text(output)
                     .font(.headline)
-                    // Label only: `children: .ignore` leaves a `Text` with no role
-                    // (same as the popover headline). Replacing the label keeps its
-                    // static-text role.
+                    // Label only: `children: .ignore` would drop the static-text role.
                     .accessibilityLabel(
                         [Strings.converterResultLabel, model.spokenResult(settings: settings) ?? output]
                             .joined(separator: ": ")
                     )
                 if model.resultIsProvisional {
-                    // Hidden from VoiceOver: the result's label above already
-                    // speaks it, and reading it twice is noise.
+                    // Hidden from VoiceOver: the result's label already speaks it.
                     Text(Strings.converterProvisionalNote)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                 }
             } else {
-                // A plain Text already announces itself; no override needed.
                 Text(Strings.converterOutOfRange)
                     .foregroundStyle(.secondary)
             }
@@ -74,15 +55,7 @@ struct ConverterView: View {
     }
 }
 
-/// One column of the converter's date pickers: the values to choose from,
-/// the selection binding, and the two channels — what is shown and what is
-/// spoken. Grouping them is what keeps a picker concern from being a
-/// parameter on a fifteen-argument call.
-///
-/// The shown and spoken closures are deliberately separate members even
-/// where they currently agree: they are different channels by contract
-/// (SpokenDate's header), and welding them removes the seam the first
-/// speech-specific divergence will need.
+/// One picker column: the values, the selection, and the shown and spoken text.
 private struct PickerColumn {
     let label: String
     let minWidth: CGFloat
@@ -92,16 +65,8 @@ private struct PickerColumn {
     let spoken: (Int) -> String
 }
 
-/// Layout shared by both directions' pickers.
-///
-/// Year, month and day are given explicit minimum widths rather than being left
-/// to size themselves. A `Picker` with no floor shrinks to whatever is left over,
-/// and inside a 340pt popover that left the Year label reading "ar" and the
-/// month collapsed to an ellipsis — a control that is technically present and
-/// practically unusable.
-///
-/// Month gets the extra room because "September" is nine characters where a year
-/// is four, and Devanagari month names are longer again.
+/// Layout shared by both directions' pickers. Minimum widths stop the pickers
+/// collapsing in the 340pt popover.
 private struct DatePickers: View {
     let year: PickerColumn
     let month: PickerColumn
@@ -110,26 +75,14 @@ private struct DatePickers: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
             column(year)
-            // Widest of the three: "September" is nine characters, and a
-            // Devanagari month name is longer again. Truncating the month to an
-            // ellipsis defeats the point of a picker, since the month is the one
-            // field a user is actually scanning to identify.
+            // Widest: month names, especially in Devanagari, are the longest values.
             column(month)
             column(day)
         }
     }
 
-    /// A caption above an untitled picker.
-    ///
-    /// The label moves out of the control because a titled macOS `Picker` lays
-    /// its title and its value out on one line, so the title eats the width the
-    /// value needs. Inside a 340pt popover that left "Year" clipped to "ar" and
-    /// the month to an ellipsis. Captioning above also matches the order a date
-    /// is read in - year, then month, then day - instead of interleaving labels
-    /// and values on one line.
-    ///
-    /// The caption is the visible label but the picker stays untitled, so the
-    /// caption is what VoiceOver announces; the two must not both speak.
+    /// A caption above an untitled picker: a titled macOS `Picker` puts its title on
+    /// the value's line and clips it. The caption is the accessibility label.
     private func column(_ column: PickerColumn) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(column.label)

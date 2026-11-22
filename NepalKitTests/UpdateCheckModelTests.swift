@@ -25,8 +25,7 @@ struct UpdateCheckModelTests {
     }
 
     @Test func outcomeIsNilUntilSomethingIsReported() {
-        // The distinction this model exists to keep: "not checked" is not
-        // "up to date", so the default state must not read as current.
+        // "Not checked" must not read as "up to date".
         let model = UpdateCheckModel(service: FakeUpdateService())
 
         #expect(model.outcome == nil)
@@ -43,8 +42,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func aReportedOutcomeRefreshesLastCheckDate() throws {
-        // Stored so the About tab redraws; the outcome callback is when the
-        // framework's own date has moved.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
         #expect(model.lastCheckDate == nil)
@@ -82,8 +79,6 @@ struct UpdateCheckModelTests {
     }
 
     @Test func aFailedCheckIsNotReportedAsUpToDate() {
-        // The failure mode an updater must not have: telling someone they are
-        // current when the truth is that nothing could be verified.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -93,16 +88,8 @@ struct UpdateCheckModelTests {
     }
 
     @Test func aFrameworkReasonCannotContradictTheFailure() {
-        // Found by running the app, not by reading this: the status line read
-        // "Could not check for updates: You're up to date!" Sparkle's
-        // localizedDescription for a start failure is phrased for its own UI
-        // and does not always describe the check. Spliced straight into our
-        // sentence the line asserts both outcomes at once, which is worse than
-        // either answer on its own.
-        //
-        // The fix is presentation, not classification: the outcome is still
-        // `.failed`, and the reason is still shown, but it is quoted so the two
-        // claims stay separable and the blame is visibly the framework's.
+        // Sparkle's start-failure description can read "You're up to date!", so
+        // the reason is quoted to keep it apart from our failure sentence.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -131,14 +118,11 @@ struct UpdateCheckModelTests {
     }
 
     @Test func everyOutcomeHasDistinctText() {
-        // Guards against a future edit collapsing two cases into one string,
-        // which would reintroduce the conflation this type prevents.
         let outcomes: [UpdateOutcome] = [.upToDate, .updateAvailable, .failed(reason: "x")]
         let rendered = outcomes.map(Self.renderedText(for:))
         #expect(Set(rendered).count == 3, "collapsed to: \(rendered)")
     }
 
-    /// Renders one outcome in isolation, for the distinctness check above.
     private static func renderedText(for outcome: UpdateOutcome) -> String? {
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
@@ -160,10 +144,8 @@ struct UpdateCheckModelTests {
     }
 
     @Test func theReminderIsIndependentOfTheReportedOutcome() {
-        // The two answer different questions and must not be conflated. An
-        // alert raised by a windowless app can be missed entirely, so the
-        // marker stays up after the outcome says an update is available, and a
-        // later "up to date" does not retract it on its own.
+        // An alert from a windowless app can be missed, so the reminder stays
+        // up regardless of later outcomes.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -184,14 +166,10 @@ struct UpdateCheckModelTests {
 
     #if DEBUG
     @Test func aPreviewStandInReachesItsStateWithoutStartingTheUpdater() {
-        // Asserted here rather than eyeballed in the canvas, because the canvas is
-        // not a gate. See `PreviewUpdateService.onOutcome` for why assignment is the
-        // only moment a stand-in can report.
         let available = UpdateCheckModel(service: PreviewUpdateService(reporting: .updateAvailable))
         #expect(available.isUpdateAvailable)
 
-        // And the resting state stays reachable, or every other preview in the app
-        // would claim an update is waiting for a user who has none.
+        // The resting state must not claim an update is waiting.
         let resting = UpdateCheckModel(service: PreviewUpdateService())
         #expect(resting.isUpdateAvailable == false)
         #expect(resting.statusText == Strings.updateStatusNotChecked)
@@ -199,9 +177,7 @@ struct UpdateCheckModelTests {
     #endif
 
     @Test func onlyAFoundUpdateGatesThePopoverButton() {
-        // The footer shows its update button on this and nothing else. The
-        // last case matters most: a failed check says "I could not find out", which is
-        // not an offer to install something.
+        // A failed check is not an offer to install.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -218,10 +194,8 @@ struct UpdateCheckModelTests {
     }
 
     @Test func anAvailableUpdateSurvivesTheUserDismissingTheReminder() {
-        // The failure this guards: keying the button to the reminder instead of
-        // the outcome. Attending to the alert clears the marker, and a user who
-        // chose to defer would then have no way left to install it from anywhere but
-        // Settings — having been shown that it existed.
+        // The button follows the outcome, not the reminder, so dismissing the
+        // alert doesn't take away the way to install.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -234,19 +208,13 @@ struct UpdateCheckModelTests {
         #expect(model.isUpdateAvailable, "the update is still installable after the alert is dismissed")
     }
 
-    /// One place a view reaches the install flow. A pair rather than a preformatted
-    /// string, so the assertions group by *which file* owns a trigger and the text
-    /// is only built where a human reads it.
     private struct InstallCallSite {
         let file: String
         let line: String
     }
 
     @Test func thePopoverAndSettingsShareOneTriggerForTheInstallFlow() throws {
-        // "One trigger" is a claim about two view files, not about this model, so it
-        // has to be checked where those files live: SwiftUI builds view trees by type
-        // erasure, leaving nothing at runtime to ask. `checkNow` forwarding to the
-        // service is already covered by `checkNowIsForwarded`.
+        // SwiftUI leaves nothing to inspect at runtime, so read the view sources.
         let appDir = Self.repositoryRoot.appendingPathComponent("NepalKit")
         let names = try Self.appSources(under: appDir)
         #expect(
@@ -254,27 +222,14 @@ struct UpdateCheckModelTests {
             "the walk did not reach the two surfaces this test guards — found \(names.count) files: \(names)"
         )
 
-        // Read once. Two walks over the same tree would be two chances for the two
-        // checks below to disagree about what the sources say. The walk is recursive
-        // because `AppIntents/` holds eight files a flat listing cannot see, and an
-        // App Intent reaching the install flow is exactly what the `.checkForUpdates()`
-        // sweep below exists to catch.
+        // Recursive, so App Intents are covered too.
         let sources = try names.reduce(into: [String: String]()) { result, name in
             result[name] = try String(contentsOf: appDir.appendingPathComponent(name), encoding: .utf8)
         }
 
-        // Matched as `updates.checkNow` rather than `checkNow()` because that is how
-        // both call sites are written: a method reference passed as an action, which
-        // never has parentheses. The leading dot also skips the declaration in
-        // UpdateCheckModel.swift and the comment in PopoverFooter.swift that names it
-        // without a receiver. Doc comments are excluded so documenting the trigger in
-        // a view is not a test failure — only calling it is.
-        //
-        // This is a tripwire against the common mistake, not enforcement: matching
-        // text cannot see a call routed through a differently-named property, a key
-        // path (`\.checkNow`), or a closure handed down from a third view. If the
-        // install flow ever grows past two surfaces, putting the trigger behind a real
-        // seam beats loosening what is matched here.
+        // Both call sites pass a method reference, so there are no parentheses.
+        // Text matching is a tripwire, not enforcement: a key path or a closure
+        // handed down from another view would get past it.
         let callSites = sources.flatMap { name, source -> [InstallCallSite] in
             source
                 .split(separator: "\n")
@@ -288,15 +243,7 @@ struct UpdateCheckModelTests {
                 }
         }
 
-        // Both surfaces, and only them: the popover footer and the Settings About
-        // tab. A third is a new way into the install flow and wants a decision
-        // recorded rather than a silently passing test.
-        //
-        // Asserted on which files own a trigger, not on how many call sites exist.
-        // A count cannot tell the right two files from the wrong two, and it names
-        // nothing when it fails — so a surface that broke the rule was reported as
-        // a number instead of by name. The per-file count then holds each named
-        // surface to a single trigger.
+        // Exactly the popover footer and the Settings About tab, one trigger each.
         let surfaces = Dictionary(grouping: callSites, by: \.file)
 
         #expect(
@@ -316,13 +263,8 @@ struct UpdateCheckModelTests {
             )
         }
 
-        // And no view reaches the framework's own check directly, which is the same
-        // install flow entered without the model in front of it.
-        //
-        // Matched as `.checkForUpdates()` with the receiver's dot, so the protocol's
-        // own declaration and the preview stand-ins' conformance do not read as
-        // calls. Only `UpdateCheckModel` may hold one, and `SparkleUpdateService` is
-        // where the real one is forwarded to the framework.
+        // No view may call the framework's check directly. The leading dot skips
+        // the protocol declaration and the preview stand-ins' conformance.
         for (name, source) in sources
             where name != "UpdateCheckModel.swift" && name != "SparkleUpdateService.swift" {
             #expect(
@@ -334,8 +276,7 @@ struct UpdateCheckModelTests {
 
     @Test func repeatedReminderTransitionsSettleOnTheLastOne() {
         // The framework can present an update again after the user returns to
-        // it, and the end of a session repeats the dismissal. Both are plain
-        // assignments, so ordering is the only thing that can go wrong.
+        // it, and the end of a session repeats the dismissal.
         let service = FakeUpdateService()
         let model = UpdateCheckModel(service: service)
 
@@ -345,8 +286,6 @@ struct UpdateCheckModelTests {
         }
     }
 
-    /// Upward search for the project file, as in `SymbolTests` — `#filePath` may
-    /// or may not be standardized depending on how the compiler was invoked.
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()
@@ -360,14 +299,7 @@ struct UpdateCheckModelTests {
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     }
 
-    /// Every Swift file under `directory`, as paths relative to it, sorted.
-    ///
-    /// Recursive because a flat listing cannot see `AppIntents/` — eight files the
-    /// app target compiles and the install-flow sweep must not be able to miss.
-    /// `Assets.xcassets/` is skipped by name: it is a compiled asset catalogue, not
-    /// source. Paths come back relative so a failure message names `AppIntents/X.swift`
-    /// rather than an absolute path that differs per machine, and sorted so that
-    /// message is the same between runs.
+    /// Every Swift file under `directory`, as sorted relative paths.
     private static func appSources(under directory: URL) throws -> [String] {
         let root = directory.standardizedFileURL
         guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {

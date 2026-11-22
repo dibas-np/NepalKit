@@ -89,10 +89,7 @@ struct LoginItemModelTests {
 
         model.ensureDefaultOn()
 
-        // Same anchor as `failedRegistrationLeavesToggleOffAndSurfacesAnError`:
-        // the very error the fake throws, not a literal, so this pins that the
-        // model forwarded the system's description unchanged rather than what
-        // Foundation chose to word it as.
+        // The error the fake throws, forwarded unchanged.
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
@@ -102,9 +99,7 @@ struct LoginItemModelTests {
         service.error = Boom()
         LoginItemModel(service: service, defaults: defaults).ensureDefaultOn()
 
-        // The retry is the documented policy, so the flag is asserted directly:
-        // a new defaults suite starts unset, and a refused registration must
-        // leave it that way for the next launch to try again.
+        // A refused registration leaves the flag unset so the next launch retries.
         #expect(!defaults.bool(forKey: LoginItemModel.configuredKey))
         #expect(service.registerCalls == 1)
 
@@ -121,10 +116,8 @@ struct LoginItemModelTests {
 
         model.ensureDefaultOn()
 
-        // The pairing `setupError`'s own doc comment describes: the throw
-        // happens before the service registers, so the system still reports
-        // itself unregistered and the toggle must stay off — while the error
-        // alongside it is what says why.
+        // The throw happens before registering, so the toggle stays off and the
+        // error says why.
         #expect(!model.isOn)
         #expect(model.setupError != nil)
     }
@@ -140,10 +133,7 @@ struct LoginItemModelTests {
         let toggled = LoginItemModel(service: toggle, defaults: try freshDefaults())
         toggled.setOn(true)
 
-        // One refusal, two call paths. Comparing the two models to each other
-        // rather than to a literal means the mapping is asserted once and
-        // cannot drift: a user must not see two messages for one failure
-        // depending on whether it happened at first launch or from the toggle.
+        // The same failure must read the same at first launch and from the toggle.
         #expect(launched.setupError != nil)
         #expect(launched.setupError == toggled.setupError)
     }
@@ -159,8 +149,7 @@ struct LoginItemModelTests {
         service.error = nil
         model.ensureDefaultOn()
 
-        // The second call is only reached because the refusal left the flag
-        // unset — the retry working and the error clearing are the same fact.
+        // Reached only because the refusal left the flag unset.
         #expect(model.isOn)
         #expect(model.setupError == nil)
         #expect(defaults.bool(forKey: LoginItemModel.configuredKey))
@@ -216,12 +205,7 @@ struct LoginItemModelTests {
         model.setOn(true)
 
         #expect(!model.isOn)
-        // The toggle springs back because `isOn` follows the system; the
-        // surfaced error is what tells the user why.
-        //
-        // Compared against the very error the fake throws, not against a
-        // literal: what is pinned is that the model forwarded the system's
-        // description unchanged, not what Foundation chose to word it as.
+        // `isOn` follows the system; the error says why the toggle sprang back.
         #expect(model.setupError == .registration(Boom().localizedDescription))
     }
 
@@ -232,13 +216,9 @@ struct LoginItemModelTests {
 
         model.setOn(false)
 
-        // Same spring-back as the registration failure — the service throws
-        // before it unregisters, so the system still reports itself registered.
+        // The service throws before unregistering, so the item stays registered.
         #expect(model.isOn)
-        // The counterpart the other failure tests cannot reach: every other
-        // failure test turns the item *on*, so without this one the two cases
-        // could be swapped and the suite would still be green. Asserting the
-        // operation is the whole point of typing the failure.
+        // The only failure test that turns the item off, so it pins the operation.
         #expect(model.setupError == .deregistration(Boom().localizedDescription))
     }
 

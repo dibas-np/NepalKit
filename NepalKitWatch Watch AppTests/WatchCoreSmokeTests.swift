@@ -5,17 +5,10 @@ import Testing
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Proves the shared compiled dataset answers inside a watchOS test runner:
-/// the same compiled table the Mac links, exercised through the Watch app's
-/// core dependency, offline and without any Watch-specific copy of the data.
+/// Checks the core dataset answers inside a watchOS test runner.
 ///
-/// This bundle also compiles `NepalKitComplications/`, so it carries the
-/// extension's `nonisolated` default rather than the Watch app's `MainActor`
-/// and the two copies of those sources agree by setting, not by luck.
-///
-/// The anchored instant and expected Bikram Sambat date reuse the
-/// authoritative pair the host `TodayTests` suite already pins (26 September
-/// 2026, 18:30 UTC = 11 Ashoj 2083); nothing here invents its own fixture.
+/// This bundle also compiles `NepalKitComplications/`, so it uses the
+/// extension's `nonisolated` default isolation, not the Watch app's `MainActor`.
 struct WatchCoreSmokeTests {
     private let utcGregorian: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

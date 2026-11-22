@@ -5,10 +5,6 @@ import Testing
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// The Watch display contract: this package supplies the complete meaning of a
-/// resolved day — components, firm state copy and independent speech — so the
-/// app and the extension cannot drift. Views compose and lay out; they never
-/// resolve dates or format numbers themselves.
 struct WatchDayDisplayTests {
     private let dataset = CalendarDataset.v2
 
@@ -40,18 +36,13 @@ struct WatchDayDisplayTests {
             return
         }
 
-        // Speech uses Latin digits, transliterated names, and the complete
-        // year — whatever the visuals render. The on-device session found
-        // watch voices skip Devanagari month names, so speech reads
-        // transliterated while the visuals keep the canonical script.
+        // Watch voices skip Devanagari month names, so speech is transliterated.
         #expect(components.spokenBikramSambat == "11 Ashoj 2083")
         #expect(components.spokenWeekdayName == "Sunday")
         #expect(components.spokenGregorian == "27 September 2026")
     }
 
     @Test func supportedComponentsHonorOtherFixedSettings() throws {
-        // The builder takes settings rather than hard-coding the Watch's, so a
-        // transliterated/Latin combination renders through the same contract.
         let day = try ResolvedDay(GregorianDate(year: 2026, month: 9, day: 27), in: dataset)
 
         guard case .supported(let components) = watchDayDisplay(
@@ -111,8 +102,6 @@ struct WatchDayDisplayTests {
     }
 
     @Test func firmStateCopyIsExact() {
-        // The accepted presentation fixes this copy; a drift here changes what
-        // users are told on every surface at once.
         #expect(WatchDayCopy.boundaryFull == "Bikram Sambat unavailable")
         #expect(WatchDayCopy.boundaryCompact == "Unavailable")
         #expect(WatchDayCopy.failureFull == "Date calculation failed")
@@ -145,7 +134,6 @@ struct WatchDayDisplayTests {
             return
         }
 
-        // An error without a resolved Gregorian day invents nothing.
         #expect(components.gregorianDay == nil)
         #expect(components.gregorianMonthName == nil)
         #expect(components.gregorianYear == nil)

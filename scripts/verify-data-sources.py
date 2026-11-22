@@ -28,7 +28,6 @@ from dataset_table import shipped_table
 MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashwin",
           "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"]
 
-# Pinned commits. See SOURCES.md for why each is pinned and what it is for.
 PINS = {
     "askbuddie": ("https://raw.githubusercontent.com/askbuddie/bikram-sambat/"
                   "d3475606084141352d3bf4472c80f9051968551a/src/data/days-in-month-mapping.ts",
@@ -37,19 +36,14 @@ PINS = {
 
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
 
-# Diagnostics raised while parsing, flushed after the source's heading. A parse
-# runs before its source is named, so printing immediately attributes its
-# warnings to whichever source was reported last.
+# Parse warnings, printed after the source's heading so they are attributed to it.
 NOTES = []
 
 
 def cache_dir():
-    """Where fetched source tables are cached between runs.
+    """Per-user cache for fetched tables (NEPAKIT_DATA_CACHE overrides).
 
-    A per-user directory, not /tmp: --offline reads whatever is cached there,
-    and a fixed world-writable path would let planted bytes flow into a
-    comparison this project treats as provenance evidence. Override with
-    NEPAKIT_DATA_CACHE for tests or read-only environments.
+    Not /tmp, since --offline trusts whatever is cached there.
     """
     root = os.environ.get("NEPAKIT_DATA_CACHE") or str(Path.home() / ".cache" / "nepalkit-data-sources")
     path = Path(root)
@@ -242,9 +236,7 @@ def main():
             print("  no differing months")
         print()
 
-    # A comparison that silently compares nothing is worse than no comparison:
-    # it reports success having checked nothing. Every fetch can fail, so a
-    # green exit must mean at least one source actually overlapped the table.
+    # Fail if no source could be compared at all.
     if compared == 0:
         sys.exit("nothing was compared — no source was reachable or none overlap the shipped range")
     print("%d month values in the shipped table across %d years; %d year(s) were checked."

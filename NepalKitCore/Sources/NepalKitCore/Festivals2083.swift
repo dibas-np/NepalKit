@@ -1,20 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
-// Festivals and national days for 2083 BS, read from the national Panchanga
-// for 2083 (SOURCES.md pins the file) and selected under ADR-0016. The Nepali
-// names are the Panchanga's wording, with its outer brackets dropped for
-// display: "(जितियापर्व)" and "(योमरीपून्हि, थिंलापून्हि)" are printed in brackets.
-// Every entry was checked against its page by a second read.
-//
-// The selection also takes in every day the Home Ministry's gazette notice of
-// public holidays and national days names (PublicHolidays2083.swift), so a
-// holiday always has a name in the day's details. Where the Panchanga prints
-// that day, its wording is used even though the selection had left it out:
-// Labour Day, Caste Discrimination Day, Civil Service Day, Falgunanda
-// Jayanti, Disability Day, Dura Mhaipru Nakuma, Prithvi Jayanti and Women's
-// Day. Two the Panchanga does not print at all, Jyapu Diwas and GenZ Martyrs'
-// Day, are named as the gazette names them and marked `source: .gazette`.
+// Festivals and national days for 2083 BS from the national Panchanga
+// (pinned in SOURCES.md), selected under ADR-0016, in the Panchanga's wording
+// with outer brackets dropped. Every gazetted day is included; the two the
+// Panchanga does not print are marked `source: .gazette`.
 
 let festivals2083: [BikramSambatDate: [Festival]] = [
     BikramSambatDate(year: 2083, month: 1, day: 1): [

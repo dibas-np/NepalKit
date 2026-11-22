@@ -7,10 +7,8 @@ import NepalKitCore
 import NepalKitWatchSupport
 @testable import NepalKitWatchApp
 
-/// Each Today state fits the height it is offered, and keeps its own
-/// composition where that fits. The short heights are below any real screen
-/// on purpose (the xLarge hero is 104 pt; a 40 mm screen is 197 pt), so the
-/// fallback is exercised.
+/// The short heights are below any real screen (the xLarge hero is 104 pt; a
+/// 40 mm screen is 197 pt) so the scrolling fallback is exercised.
 @MainActor
 struct TodayLayoutTests {
     nonisolated private static let cramped = 40.0

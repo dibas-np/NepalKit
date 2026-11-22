@@ -3,12 +3,6 @@
 import SwiftUI
 import WidgetKit
 
-/// Native previews for every accessory family across the representative
-/// states. The samples are core-generated (`ComplicationSamples`), so the
-/// previews render exactly what the timeline and snapshot paths resolve.
-/// Visual fit — the longest canonical month names and their combining marks,
-/// especially in corner geometry — is judged here and confirmed on hardware
-/// during the physical session.
 #Preview("Rectangular — supported", as: .accessoryRectangular) {
     TodayComplication()
 } timeline: {

@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-"""Regenerate CHANGELOG.md from the per-version release notes.
+"""Regenerate CHANGELOG.md from scripts/release-notes/<version>.html.
 
-`scripts/release-notes/<version>.html` is the single source for each
-version's notes: verify-appcast.sh injects the fragment into the appcast
-item, and this script renders the same fragments as the markdown sections
-of CHANGELOG.md. One set of facts, two formats, no third place to drift.
-
-Section headings come from the fragments' `<b>…</b>` blocks, bullets from
-`<li>`, and `<p>` paragraphs pass through as text. Version dates come from
-the appcast's `pubDate` per item, except that a date already written to this
-file stands over either feed; a version neither knows is listed as unreleased.
+Dates come from each appcast item's pubDate, but a date already in
+CHANGELOG.md is kept. Versions with no date are listed as unreleased.
 
 Usage: update-changelog.py [appcast.xml]
 
-Without an argument the repository's own appcast is read; pass the staged
-appcast while packaging a release so the new version picks up its fresh
-pubDate. The output is deterministic — running twice changes nothing.
+Without an argument the repository's appcast.xml is read; pass the staged
+appcast while packaging so the new version gets its pubDate.
 """
 
 from __future__ import annotations
@@ -43,10 +35,8 @@ the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 class FragmentParser(HTMLParser):
     """Renders one release-notes fragment as markdown blocks.
 
-    The fragments are written by this project to a small contract —
-    `<b>Heading:</b>`, `<ul><li>`, and `<p>` — so the parser handles exactly
-    those and no more; a foreign tag fails the run rather than being
-    silently dropped from the changelog.
+    Only `<b>Heading:</b>`, `<ul><li>` and `<p>` are allowed; any other tag
+    is an error.
     """
 
     def __init__(self) -> None:
@@ -87,8 +77,6 @@ def render_fragment(path: Path) -> str:
         raise ValueError(f"{path.name}: no content")
     lines: list[str] = []
     for block in parser.blocks:
-        # Consecutive bullets form one tight markdown list; anything else
-        # gets a blank line before it.
         if lines and not (block.startswith("- ") and lines[-1].startswith("- ")):
             lines.append("")
         lines.append(block)
@@ -117,29 +105,15 @@ def release_dates(appcast: Path) -> dict[str, str]:
 
 
 def resolve_dates(committed: Path, staged: Path, changelog: Path) -> dict[str, str]:
-    """Version → YYYY-MM-DD, deciding which source wins a disagreement.
-
-    The changelog is authoritative: a date already written to it is applied last
-    and overwrites both feeds. The feeds are still read, and are still the
-    source for any version the changelog has never dated — which is how a new
-    release gets a date at all.
-    """
+    """Version → YYYY-MM-DD. Dates already in the changelog win over both feeds."""
     dates: dict[str, str] = {}
     if committed.exists():
         dates.update(release_dates(committed))
     if staged.exists():
         dates.update(release_dates(staged))
 
-    # A date already written to the changelog is the durable record, so a
-    # regeneration must neither drop one nor move one — which is why this loop
-    # overwrites rather than filling gaps. Both feeds are seeded above it, so a
-    # `pubDate` that disagreed with an already-shipped date used to win.
-    #
-    # The headings are read at all because no feed can be trusted to hold every
-    # release on its own: `generate_appcast` prunes, so 1.0 fell out of
-    # appcast.xml when 1.3.0 shipped, and reading only the feed turned 1.0 back
-    # into "unreleased" on the next run. Applying them last keeps that fixed and
-    # makes a no-argument run non-destructive rather than merely idempotent.
+    # Changelog dates are applied last: generate_appcast prunes old items, so the
+    # feeds alone would turn old releases back into "unreleased".
     for heading in re.finditer(
         r"^## (\S+) — (\d{4}-\d{2}-\d{2})$",
         changelog.read_text(encoding="utf-8"),
@@ -158,14 +132,9 @@ def main() -> int:
     explicit = len(sys.argv) == 2
     appcast = Path(sys.argv[1]) if explicit else DEFAULT_APPCAST
     if explicit and not appcast.exists():
-        # Not the same as a repository that has shipped nothing yet. Both yield
-        # no dates, so treating them alike rewrote every released version as
-        # "unreleased" and wrote that to CHANGELOG.md with no diagnostic — and
-        # the release script commits the changelog it produces. A mistyped or
-        # not-yet-staged path has to fail here, where the operator can see it.
+        # Fail rather than rewrite every release as "unreleased".
         print(f"error: no appcast at {appcast}", file=sys.stderr)
         return 1
-    # The changelog is the authority on its own dates; the feeds fill the gaps.
     dates = resolve_dates(DEFAULT_APPCAST, appcast, CHANGELOG)
 
     sections = []

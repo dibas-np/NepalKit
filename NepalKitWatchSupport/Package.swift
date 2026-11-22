@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Dibas Sigdel
 //
-// The Watch's shared display meaning: what the Watch app and its complication
-// extension both render and announce. The two watchOS products cannot share a
-// framework target and neither can see the other's files, so the helpers they
-// must agree on byte for byte live here, linked by both. Outside NepalKitCore
-// on purpose: that directory is published as a package for other apps, and
-// none of this is meant for them.
+// Display helpers shared by the Watch app and its complication extension.
+// Kept out of NepalKitCore, which is published for other apps.
 import PackageDescription
 
 let package = Package(

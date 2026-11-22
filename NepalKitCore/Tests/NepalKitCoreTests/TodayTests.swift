@@ -20,8 +20,8 @@ struct TodayTests {
 
     @Test("A system time zone west of Nepal must not move today's date")
     func todayIgnoresWestOfNPTSystemZone() throws {
-        // 23:30 UTC on 26 Sep is 04:45 NPT on the 27th, but 19:30 on the 26th
-        // in New York. A Calendar.current regression would answer the 26th.
+        // 23:30 UTC on 26 Sep is 05:15 NPT on the 27th, but 19:30 on the 26th
+        // in New York.
         let now = try UTCDateFixture.utc(2026, 9, 26, 23, 30)
 
         #expect(try TodayTests.inTimeZone("America/New_York") {
@@ -32,7 +32,7 @@ struct TodayTests {
     @Test("A system time zone east of Nepal must not move today's date")
     func todayIgnoresEastOfNPTSystemZone() throws {
         // 10:00 UTC on 27 Sep is 15:45 NPT the same day, but already the 28th
-        // in Kiritimati (+14). A Calendar.current regression would answer the 28th.
+        // in Kiritimati (+14).
         let now = try UTCDateFixture.utc(2026, 9, 27, 10, 0)
 
         #expect(try TodayTests.inTimeZone("Pacific/Kiritimati") {

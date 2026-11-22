@@ -3,17 +3,9 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Tests for `unregister-launchservices.sh`.
 
-The script's job is to prevent a permanent, invisible failure: a bundle
-registered with LaunchServices whose path is later deleted cannot be
-unregistered, so a pipeline that cleans up without unregistering first seeds
-one stale entry per run forever. A test that only confirmed the happy path
-would pass against a script that never unregistered anything, because
-`lsregister -u` on a path with no registration is also a clean no-op.
-
-So the fixtures here register real throwaway bundles under unique bundle ids,
-and the assertions are about the database afterwards. They also drive the
-mistake the script exists to catch — deleting before unregistering — and
-require that the script *report* it rather than pass.
+These register real throwaway bundles with LaunchServices and check the
+database afterwards, including the delete-before-unregister mistake the script
+must report.
 """
 
 from __future__ import annotations
@@ -52,14 +44,8 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 def registered(path: str) -> bool:
-    """Whether any LaunchServices registration names this path.
-
-    Both the given path and its resolved form are checked, because the
-    database records resolved paths while a caller on macOS passes
-    `/var/folders/...` and LaunchServices stores `/private/var/folders/...`.
-    Checking only one of the two makes a surviving registration read as a
-    clean run.
-    """
+    """Whether any LaunchServices registration names this path or its resolved
+    form (the database stores /private/var/... for /var/...)."""
     candidates = {path, str(Path(path).resolve())}
     dump = subprocess.run(
         [LSREGISTER, "-dump"], capture_output=True, text=True, check=True
@@ -84,9 +70,7 @@ class UnregisterLaunchServices(unittest.TestCase):
         self._bundle_ids: list[str] = []
 
     def _remove_workspace(self) -> None:
-        # Unregister before deleting, which is the ordering the script
-        # documents; leaving entries behind would make the next run of this
-        # suite the thing it is testing for.
+        # Unregister before deleting, or the fixtures themselves leave stale entries.
         for bundle in self.workspace.glob("*.app"):
             if bundle.exists():
                 subprocess.run(
@@ -108,10 +92,7 @@ class UnregisterLaunchServices(unittest.TestCase):
         )
         if register:
             subprocess.run([LSREGISTER, "-f", str(bundle)], check=True)
-            # Registration is asynchronous: `lsregister` returns before the
-            # database dump reflects it, so a fixture asserted too early reads
-            # as "never registered" and the test would fail on a machine that
-            # is merely slower than this one.
+            # Registration is asynchronous, so wait for the dump to show it.
             for _ in range(20):
                 if self._bundle_id_registered(self._bundle_ids[-1]):
                     break
@@ -131,8 +112,6 @@ class UnregisterLaunchServices(unittest.TestCase):
         self.assertIn("unregistered:", result.stdout)
 
     def test_a_bundle_that_was_never_registered_is_not_an_error(self) -> None:
-        # Nothing to prove is not a failure: a run that only builds some of
-        # the bundles should not fail on the ones it did not build.
         bundle = self.make_bundle("Never.app", register=False)
 
         result = run(str(bundle))
@@ -140,9 +119,7 @@ class UnregisterLaunchServices(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_a_deleted_bundle_is_reported_rather_than_passed(self) -> None:
-        # The failure this whole script exists to prevent, asked about
-        # directly: the bundle is already gone, so `lsregister -u` cannot
-        # remove its entry, and the only honest answer is failure.
+        # The bundle is already gone, so its entry cannot be removed: must fail.
         bundle = self.make_bundle("Gone.app")
         bundle_id = self._bundle_ids[0]
         backup = self.workspace / "deleted-bundle-backup"
@@ -154,7 +131,6 @@ class UnregisterLaunchServices(unittest.TestCase):
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("already gone", result.stderr)
-        # Named, not just failed: the operator needs to know which path.
         self.assertIn(str(bundle), result.stderr)
         self.assertTrue(
             self._bundle_id_registered(bundle_id),
@@ -174,8 +150,7 @@ class UnregisterLaunchServices(unittest.TestCase):
         self.assertFalse(self._bundle_id_registered(second_id))
 
     def test_one_unremovable_bundle_does_not_hide_the_others(self) -> None:
-        # A deleted path among live ones must not stop the live ones being
-        # cleaned up, or a single early exit would leave the rest registered.
+        # A deleted path must not stop the live ones being cleaned up.
         live = self.make_bundle("Live.app")
         missing = self.workspace / "Missing.app"
 
@@ -200,14 +175,7 @@ class UnregisterLaunchServices(unittest.TestCase):
 
 
 class PackageReleaseWiring(unittest.TestCase):
-    """The release script's unregistration gate must be able to fail.
-
-    package-release.sh wraps unregistration in a function so the EXIT trap
-    can never abort the unmounts beneath it. That same function is the last
-    gate of a successful run, and there a swallowed failure is a false green:
-    a stale registration — the exact thing unregister-launchservices.sh
-    exists to prevent — would ship with the release reporting success.
-    """
+    """package-release.sh's final unregistration gate must be able to fail."""
 
     def function_body(self, name: str = "unregister_launchservices") -> str:
         source = (Path(__file__).resolve().parent / "package-release.sh").read_text()

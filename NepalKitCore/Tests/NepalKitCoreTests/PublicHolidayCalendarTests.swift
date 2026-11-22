@@ -4,8 +4,6 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// The public-holiday lookup, and sweeps over the bundled gazette table that
-/// catch a mistyped row before a reader meets it.
 struct PublicHolidayCalendarTests {
     private let calendar = PublicHolidayCalendar.gazette
 
@@ -21,8 +19,7 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func aDayKeepsEveryGazetteRowButOneScopeEach() {
-        // 18 Baisakh is three nationwide items: Buddha Jayanti, Labour Day,
-        // and Buddha Jayanti again under section 7.
+        // 18 Baisakh is three nationwide items.
         #expect(calendar.holidays(on: day(1, 18)).count == 3)
         #expect(calendar.scopes(on: day(1, 18)) == [.nationwide])
         // 13 Bhadra is Gai Jatra twice, for two different groups.
@@ -55,8 +52,6 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func jitiyaIsOnlyForWomenWhoObserveIt() {
-        // Narrower than Teej: the gazette gives Jitiya to women employees who
-        // observe it, and Teej to women employees.
         #expect(calendar.scopes(on: day(6, 18)) == [.womenObservingJitiya])
         #expect(calendar.scopes(on: day(5, 29)) == [.womenEmployees])
     }
@@ -74,8 +69,6 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func theTableIsTheGazetteAndNotTheWeek() throws {
-        // The grid draws Saturdays itself; the gazette table neither adds them
-        // nor skips a holiday that falls on one.
         let dataset = CalendarDataset.v2
         var saturdaysOff = 0
         var saturdaysListed = 0
@@ -139,8 +132,6 @@ struct PublicHolidayCalendarTests {
     }
 
     @Test func everyHolidayDayHasAFestivalToNameIt() {
-        // The day's details name a holiday through its festivals, so a gazette
-        // day the festival table missed would show an unnamed holiday.
         let missing = calendar.allEntries.map(\.day).filter { holidayDay in
             guard FestivalCalendar.panchanga.festivals(on: holidayDay).isEmpty else { return false }
             // Dashain and Tihar's days between their named ones.
@@ -152,8 +143,7 @@ struct PublicHolidayCalendarTests {
     @Test func aHolidayWithNoFestivalIsNamedByTheGazette() {
         let holidays = PublicHolidayCalendar.gazette
         let festivals = FestivalCalendar.panchanga
-        // Kartik 2, 5 and 6 are Dashain holidays with no festival of their own;
-        // Kartik 26 is the last day of the Tihar holiday.
+        // Dashain and Tihar holiday days with no festival of their own.
         for day in [2, 5, 6] {
             let named = holidays.observances(on: BikramSambatDate(year: 2083, month: 7, day: day), festivals: festivals)
             #expect(named.map(\.nepali) == ["दशैं बिदा"])

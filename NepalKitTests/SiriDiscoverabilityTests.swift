@@ -4,15 +4,8 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// Ticket 11: the discoverability copy, and the claim it makes.
-///
-/// The section in Settings is the only place in the product that tells a user
-/// this feature exists, so what it says is load-bearing in a way a cosmetic
-/// string is not: the prototype established that voice parameter-filling and
-/// what the same App Intents expose to Shortcuts are *different capabilities*
-/// on macOS 26. Copy that implied conversational conversions work by voice
-/// would send people to an answer of "late June or early July" from a web
-/// search, which is the exact gap the feature exists to close.
+/// The Siri and Shortcuts copy in Settings. It is the only place that tells a
+/// user the feature exists, so it must not claim more than works.
 struct SiriDiscoverabilityTests {
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
@@ -34,9 +27,8 @@ struct SiriDiscoverabilityTests {
             Strings.siriShortcutsSummary
                 == "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
         )
-        // The sentence's two halves must stay distinct claims. If either were
-        // dropped the section would imply something the prototype showed does
-        // not work: voice for the conversions, or Shortcuts for today.
+        // Both halves must stay, or the section implies a capability that
+        // doesn't work.
         #expect(Strings.siriShortcutsSummary.contains("Ask Siri"))
         #expect(Strings.siriShortcutsSummary.contains("Shortcuts"))
     }
@@ -70,10 +62,8 @@ struct SiriDiscoverabilityTests {
 
     @Test("The listed phrases are the ones the provider registers")
     func listedPhrasesMatchTheRegisteredShortcuts() throws {
-        // The whole point of showing phrases is that they work. A list typed
-        // out here would be free to drift from `NepalKitShortcuts` — and a
-        // Settings section that teaches a phrase the system does not know is
-        // worse than no section at all, because it is confidently wrong.
+        // A phrase the system doesn't know is worse than none, so the list is
+        // checked against `NepalKitShortcuts`.
         let source = try String(
             contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/AppIntents/NepalKitShortcuts.swift"),
             encoding: .utf8
@@ -95,9 +85,7 @@ struct SiriDiscoverabilityTests {
 
     @Test("No listed phrase is announced as a typographic or symbol-laden string")
     func phrasesAreAnnouncedCleanly() {
-        // The section is the first place a screen-reader user meets this
-        // feature, so a phrase carrying an arrow or an ellipsis would be read
-        // as noise in front of the words that matter.
+        // A screen reader would read arrows or ellipses as noise.
         let forbidden: Set<Character> = [
             "\u{2013}", "\u{2014}", "\u{2192}", "\u{2190}", "\u{2026}", "\u{00B7}",
         ]
@@ -137,10 +125,7 @@ struct SiriDiscoverabilityTests {
 
     @Test("The popover carries no Siri hint")
     func popoverStaysUntouched() throws {
-        // The spec is explicit and gives the reason: the popover footer is
-        // icon-only with no room for a sentence, and the popover stays focused
-        // on the calendar. A hint added there would be the first thing to
-        // appear without a decision being recorded.
+        // The popover footer has no room for a sentence.
         let source = try String(
             contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/PopoverView.swift"),
             encoding: .utf8

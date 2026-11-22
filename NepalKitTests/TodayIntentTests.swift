@@ -5,10 +5,8 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Ticket 08: the today query and the shared App Intents foundation.
-///
-/// Expected answers come from ticket 04's independently computed oracle:
-/// 1 Baisakh 2082 is Monday 14 April 2025 (the dataset anchor);
+/// The today query and the shared App Intents foundation. Expected dates were
+/// computed independently: 1 Baisakh 2082 is Monday 14 April 2025, and
 /// 15 Ashar 2082 is Sunday 29 June 2025.
 struct TodayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
@@ -81,9 +79,8 @@ struct TodayIntentTests {
 
     @Test("Month tokens match exactly, so near-collisions keep their own months")
     func monthTokensMatchExactly() {
-        // "Aso" is Ashar's synonym; "Asoj"/"Asojh" are Ashoj's. Substring
-        // matching resolved both to Ashar, because the lower month number
-        // wins a first-match scan — the spec's deliberate near-collision.
+        // "Aso" is Ashar's synonym; "Asoj"/"Asojh" are Ashoj's, so substring
+        // matching would resolve both to Ashar.
         #expect(BikramSambatDateEntity.parsing("15 Aso 2082")?.month == .ashar)
         #expect(BikramSambatDateEntity.parsing("15 Asoj 2082")?.month == .ashoj)
         #expect(BikramSambatDateEntity.parsing("15 asojh 2082")?.month == .ashoj)
@@ -196,9 +193,7 @@ struct TodayIntentTests {
         let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let strings = catalog?["strings"] as? [String: Any]
 
-        // The spec's seven phrase templates, dollar included; the today
-        // shortcut is registered now, the conversions join in 09/10. The two
-        // conversion short titles land with their tickets.
+        // The phrase templates and short titles, `$` included.
         for key in [
             "What is today's Nepali date with ${applicationName}",
             "What is my ${applicationName} date",
@@ -234,7 +229,7 @@ struct TodayIntentTests {
 
     @Test("Running the intent answers the real today")
     func performAnswersFromTheRealClock() async throws {
-        // perform() reads the stored time reference, so the oracle does too.
+        // perform() reads the stored time reference, so the expectation does too.
         let zone = SettingsStore().timeReference.timeZone
         let before = Date()
         let result = try await TodayInBikramSambatIntent().perform()

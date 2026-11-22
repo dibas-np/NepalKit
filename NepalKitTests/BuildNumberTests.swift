@@ -4,29 +4,12 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// The build number is load-bearing in a way nothing else notices.
-///
-/// Sparkle orders updates on `CFBundleVersion` and requires an increasing,
-/// properly formatted integer. If a release ships the same build number twice,
-/// or a non-integer one, the updater offers no update and the failure looks
-/// like a Sparkle bug rather than a packaging mistake — and it is discovered by
-/// users, not by CI. ADR-0009 records that a test guards this; this is that
-/// test, and it reads the real project file rather than a value supplied to it,
-/// because a test of a hand-copied constant proves nothing. Both literals are
-/// read from the Mac configurations. Watch products have their own versions.
+/// Sparkle orders updates on `CFBundleVersion`, so a repeated or malformed
+/// build number silently stops updates (ADR-0009). These read the real project
+/// file, and only the Mac configurations; watch products have their own versions.
 @MainActor
 struct BuildNumberTests {
-    /// A file relative to the checkout root, found by walking up from this file
-    /// until it appears.
-    ///
-    /// Searched for by what is in each directory rather than by a fixed number
-    /// of hops, because this file sits at a different depth in each of the two
-    /// ways it is compiled: two levels under the repo root in the Xcode
-    /// `NepalKitTests` target, and five in the `scripts/apptests` harness,
-    /// which reaches these sources through a symlink. A fixed hop count was
-    /// right for one of those and overshot the checkout in the other, which made
-    /// every assertion here read `missing` — the test target could not build
-    /// while that was true, so nothing ran it.
+    /// A file relative to the checkout root, found by walking up from this file.
     private static func checkoutFile(_ relativePath: String) -> URL {
         var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while directory.path != "/" {
@@ -34,35 +17,17 @@ struct BuildNumberTests {
             if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
             directory.deleteLastPathComponent()
         }
-        // Unreachable while this test file lives inside the checkout, and the
-        // assertions below report a missing file rather than trapping, so a
-        // relocation fails as a test failure with a readable message.
+        // Outside a checkout; the assertions then report the file as missing.
         return directory.appendingPathComponent(relativePath)
     }
 
     private static var projectFileURL: URL { checkoutFile("NepalKit.xcodeproj/project.pbxproj") }
 
-    /// The pbxproj label of a project-level **build configuration** block.
-    ///
-    /// Spelled `configuration for PBXProject "NepalKit"` rather than the
-    /// shorter `for PBXProject "NepalKit"` on purpose. The shorter form is a
-    /// substring of `Build configuration list for PBXProject "NepalKit"`, the
-    /// `XCConfigurationList` that only *references* the configurations, so it
-    /// matches three blocks instead of two. Harmless while the marker was only
-    /// ever used to take the first setting found — the list holds references,
-    /// not assignments — which is exactly why it went unnoticed until something
-    /// counted the blocks rather than reading from them. The configuration list
-    /// has no build settings of its own, so a marker loose enough to include it
-    /// cannot report a value; it can only misreport how many homes a setting has.
+    /// The label of a project-level build configuration block. The shorter
+    /// `for PBXProject "NepalKit"` would also match the `XCConfigurationList`.
     private static let configurationMarker = "configuration for PBXProject \"NepalKit\" */ = {"
 
     /// The body of every configuration block pbxproj labels with `marker`.
-    ///
-    /// Brace-matched from the label rather than gathered by searching for the
-    /// setting being read, because a search by name cannot report *which*
-    /// configuration it read. That distinction is the whole reason this file
-    /// parses structure instead of grepping, and it has already been got wrong
-    /// here once.
     private static func blocks(in text: String, marker: String) -> [String] {
         var found: [String] = []
         var searchStart = text.startIndex
@@ -86,7 +51,7 @@ struct BuildNumberTests {
         return effectiveValues(key, target: "NepalKit", in: text).first
     }
 
-    /// Effective target values honor target overrides and project inheritance.
+    /// Effective values per configuration, falling back to the project level.
     private static func effectiveValues(_ key: String, target: String, in text: String) -> [String] {
         let projectBlocks = blocks(in: text, marker: configurationMarker)
         let targetBlocks = blocks(in: text, marker: "configuration for PBXNativeTarget \"\(target)\" */ = {")
@@ -123,8 +88,7 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberIsAnInteger() {
-        // Sparkle requires a properly formatted, increasing integer. Anything
-        // else is silently unordered.
+        // Sparkle requires a properly formatted, increasing integer.
         let raw = Self.buildSetting("CURRENT_PROJECT_VERSION")
 
         #expect(raw.flatMap(Int.init) != nil, "CURRENT_PROJECT_VERSION is not an integer: \(raw ?? "missing")")
@@ -137,10 +101,8 @@ struct BuildNumberTests {
     }
 
     @Test func shortVersionIsSemanticVersion() {
-        // ADR-0009: Git tags, the Sparkle enclosure filename and the Homebrew
-        // cask all derive from this value, so its shape is a release contract
-        // rather than a formatting preference. Three numeric components is what
-        // makes "1.3" and "1.3.0" the same release to every one of them.
+        // ADR-0009: tags, the enclosure filename and the Homebrew cask all derive
+        // from this, so it must be three numeric components.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let components = short.split(separator: ".")
 
@@ -151,13 +113,8 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberIsDisjointFromTheShortVersion() {
-        // ADR-0009: the two are tracked independently, so the updater's
-        // comparator can never read one as the other. The hazard is specific —
-        // "1.0" and "1" are different strings and the same number, so a build
-        // number sitting at the short version's value is a release the updater
-        // silently declines to offer. A three-component version cannot be read
-        // as an integer at all, which makes the disjointness structural; this
-        // guards the shape that delivers it rather than re-deriving it.
+        // ADR-0009: "1.0" and "1" are the same number, so a two-part version
+        // could be confused with the build number by the updater.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let build = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? -1
 
@@ -168,14 +125,9 @@ struct BuildNumberTests {
         )
     }
 
-    // 1.3.0 and 1.4.0 both shipped as build 5 because `>=` let equality pass.
-    // Once the feed carries the current version, `>=` is right (HEAD is the
-    // shipped state); an unreleased version must be strictly higher or Sparkle
-    // offers it to nobody.
     @Test func buildNumberHasNotRegressedBelowTheLastReleased() throws {
-        // The monotonic half of the invariant. If someone lowers
-        // CURRENT_PROJECT_VERSION below the highest build the feed has already
-        // offered, every installed copy stops being offered updates, silently.
+        // A build below the feed's stops updates for every install, and an
+        // unreleased version must be strictly higher or Sparkle offers it to no one.
         let current = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? 0
         let floor = try Self.lastReleasedBuildNumber
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
@@ -216,13 +168,7 @@ struct BuildNumberTests {
         }
     }
 
-    /// The highest build number ever published.
-    ///
-    /// A hand-maintained constant, and it has been wrong: it read 3 for several
-    /// releases after build 4 shipped as 1.2, which left this guard
-    /// permitting a drop back to 3. The appcast is the record of what actually
-    /// shipped, so the floor is derived from it — a constant that silently lags
-    /// a release is worse than no guard, because it reads as a guard.
+    /// The highest build number in the committed appcast.
     private static var lastReleasedBuildNumber: Int {
         get throws {
             let appcast = checkoutFile("appcast.xml")

@@ -4,9 +4,7 @@ import Foundation
 import Observation
 import ServiceManagement
 
-/// Testable boundary over the system login-item service.
-/// Production code uses `LiveLoginItemService` (SMAppService);
-/// tests inject a mock. The boundary is never touched by tests.
+/// The system login-item service, injectable for tests.
 protocol LoginItemServicing {
     var isRegistered: Bool { get }
     /// Registered, but held by macOS until the user allows it in System Settings.
@@ -16,12 +14,10 @@ protocol LoginItemServicing {
     func unregister() throws
 }
 
-/// Live login-item service backed by the modern system login-item API.
-/// No entitlement is needed for the main app's own login item.
+/// Login-item service backed by `SMAppService`.
 struct LiveLoginItemService: LoginItemServicing {
-    // A pending approval is a registration waiting on the user in System
-    // Settings: register() returns without throwing for it, so counting it as
-    // unregistered would spring the toggle back with no error to explain why.
+    // A registration awaiting approval counts as registered: `register()` succeeded,
+    // and reporting it as off would flip the toggle back with no explanation.
     var isRegistered: Bool {
         let status = SMAppService.mainApp.status
         return status == .enabled || status == .requiresApproval
@@ -44,30 +40,15 @@ struct LiveLoginItemService: LoginItemServicing {
     }
 }
 
-/// The two ways changing the login item can fail, carrying the system's own
-/// wording as the payload.
-///
-/// Typed rather than a bare `String` so a test can pin *which* operation failed
-/// without matching its message — the same argument as `UpdateOutcome`, the
-/// other Settings-bound service. Two services reporting failure two different
-/// ways leaves the next one no pattern to copy; this is the convergence.
-///
-/// The cases name the operation, not the cause. The errors are opaque
-/// `SMAppService` Cocoa errors with nothing in them to classify, so the
-/// operation is the only distinction the system actually offers, and the
-/// wording is better shown than paraphrased. A registration held for approval
-/// is not a failure (`register()` succeeded); it is the model's
-/// `requiresApproval` state.
+/// A failed login-item change, carrying the system's own message. The errors are
+/// opaque, so the operation is the only distinction worth keeping.
 enum LoginItemFailure: Equatable {
-    /// `register()` was refused, so the login item could not be turned on.
     case registration(String)
-    /// `unregister()` was refused, so the login item could not be turned off.
     case deregistration(String)
 }
 
-/// Owns the launch-at-login toggle. The system is the source of truth for
-/// the on/off state; only the "already configured the default" flag is
-/// persisted, so first launch registers once and never overrides the user.
+/// The launch-at-login toggle. The system owns the on/off state; only the
+/// "default already applied" flag is persisted.
 @MainActor
 @Observable
 final class LoginItemModel {
@@ -75,26 +56,17 @@ final class LoginItemModel {
 
     private(set) var isOn: Bool
 
-    /// The last failure reported by the login-item service, if any. `isOn`
-    /// follows the system either way, so without this a refused registration
-    /// only makes the toggle spring back, never saying why.
+    /// The last failure from the service, shown so a refused change isn't silent.
     private(set) var setupError: LoginItemFailure?
 
-    /// macOS is holding the registration for approval. `isOn` is true, since
-    /// `register()` accepted it, but the app will not launch at login until the
-    /// user allows it.
+    /// Registered, but macOS won't launch the app at login until the user allows it.
     private(set) var requiresApproval: Bool
 
     private let service: any LoginItemServicing
     private let defaults: UserDefaults
 
-    /// Both defaults are built in the body rather than in the signature, for
-    /// the same reason as `DisplaySettingsModel`: a default argument is
-    /// evaluated in a nonisolated context, so defaulting to constructs of
-    /// main-actor-isolated types is fragile under strict isolation checking
-    /// even when the initialiser itself is `@MainActor`. Building them in the
-    /// body is correct under every toolchain setting. Tests still inject
-    /// either one explicitly, so the call sites are unchanged.
+    /// Defaults are built in the body: a default argument is evaluated in a
+    /// nonisolated context.
     init(service: (any LoginItemServicing)? = nil, defaults: UserDefaults? = nil) {
         let service = service ?? LiveLoginItemService()
         let defaults = defaults ?? .standard
@@ -104,12 +76,8 @@ final class LoginItemModel {
         self.requiresApproval = service.requiresApproval
     }
 
-    /// Registers at first launch so the date is in the menu bar from sign-in.
-    /// Runs until it succeeds: afterwards the user's toggle choice is never
-    /// overridden. The flag is set only on confirmed registration, so a
-    /// failed first launch retries on the next launch instead of giving up.
-    /// A refused registration is reported rather than swallowed, so the retry
-    /// is visible instead of silent.
+    /// Registers at first launch. The flag is set only after a confirmed registration,
+    /// so a failure retries next launch; after that the user's choice is never overridden.
     func ensureDefaultOn() {
         guard !defaults.bool(forKey: Self.configuredKey) else { return }
         do {
@@ -124,17 +92,14 @@ final class LoginItemModel {
         }
     }
 
-    /// Re-reads external changes without changing registration or first-launch policy.
     func refreshStatus() {
         readStatus()
     }
 
-    /// Opens System Settings at Login Items, where a held registration is approved.
     func openLoginItemsSettings() {
         service.openLoginItemsSettings()
     }
 
-    /// Reads both together so `isOn` and `requiresApproval` cannot drift apart.
     private func readStatus() {
         isOn = service.isRegistered
         requiresApproval = service.requiresApproval
@@ -142,8 +107,7 @@ final class LoginItemModel {
 
     func setOn(_ on: Bool) {
         do {
-            // The service throws a confusing already-registered error when asked
-            // to restate its current state; only drive it when state must change.
+            // Registering when already registered throws, so only act on a change.
             if on {
                 if !service.isRegistered { try service.register() }
             } else {
@@ -151,23 +115,17 @@ final class LoginItemModel {
             }
             setupError = nil
         } catch {
-            // Which operation failed is the one thing the system does tell us,
-            // and it is what the wording and the test both turn on.
             setupError = Self.failure(from: error, turningOn: on)
         }
         readStatus()
     }
 
-    /// The one mapping from a thrown error to a reported failure. Both call
-    /// paths share it so a refusal at first launch and the same refusal from
-    /// the toggle cannot be worded two different ways.
     private static func failure(from error: any Error, turningOn: Bool) -> LoginItemFailure {
         turningOn ? .registration(error.localizedDescription)
                   : .deregistration(error.localizedDescription)
     }
 
-    /// Binding target for the Settings toggle: writing runs the same
-    /// register/unregister path as `setOn(_:)`.
+    /// Binding target for the Settings toggle.
     var launchAtLogin: Bool {
         get { isOn }
         set { setOn(newValue) }

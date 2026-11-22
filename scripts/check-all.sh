@@ -4,8 +4,7 @@
 # Copyright (C) 2026 Dibas Sigdel
 #
 # Builds the app and runs every local check. The build runs first because the
-# app-layer suite reads the built Info.plist; see ADR-0005 for why that suite
-# runs through a SwiftPM harness.
+# app-layer suite reads the built Info.plist.
 #
 # Not run here: scripts/verify-data-sources.py (needs network) and the
 # release-time scripts.

@@ -6,18 +6,11 @@ import NepalKitCore
 import SwiftUI
 @testable import NepalKitWatchApp
 
-/// The Today lifecycle contract, tested through supplied state: launch and
-/// activation resolve with one clock read, active midnight and clock-change
-/// signals recompute from the current time, deactivation cancels scheduled
-/// work and observation, reactivation resumes immediately across any number
-/// of days, and repeated activation duplicates nothing. Sleep durations and
-/// private task structure are not asserted.
 @MainActor
 struct TodayModelTests {
     // MARK: Fixtures
 
-    /// A clock the test moves between operations. Only the MainActor touches
-    /// it, so plain storage is safe despite the Sendable capture.
+    /// Only the MainActor touches it, so plain storage is safe.
     nonisolated final class MutableClock: @unchecked Sendable {
         var value: Date
         var reads = 0
@@ -32,8 +25,6 @@ struct TodayModelTests {
         }
     }
 
-    /// A lock-guarded Bool the stream's termination handler can set from any
-    /// thread while the MainActor test reads it.
     nonisolated final class FlagBox: @unchecked Sendable {
         private let lock = NSLock()
         private var value = false
@@ -51,9 +42,7 @@ struct TodayModelTests {
         }
     }
 
-    /// The injectable clock-change fixture: the stream the model consumes,
-    /// the continuation the test yields signals into, and a flag set when the
-    /// stream terminates — the deterministic marker that observation ended.
+    /// A clock-change stream the test drives, with a flag set on termination.
     nonisolated final class SignalFixture: @unchecked Sendable {
         let stream: ClockChangeStream
         let continuation: AsyncStream<Void>.Continuation
@@ -68,8 +57,6 @@ struct TodayModelTests {
                     flag.set()
                 }
             }
-            // The stream body runs synchronously, so the continuation always
-            // exists by here.
             guard let captured else {
                 preconditionFailure("AsyncStream must run its body synchronously")
             }
@@ -95,9 +82,7 @@ struct TodayModelTests {
         )
     }
 
-    /// Lets an in-flight event land: the stream handoff crosses one task
-    /// boundary, so a few yields plus a short sleep is the deterministic
-    /// settle.
+    /// Lets an in-flight stream event reach the model.
     private func settle() async {
         for _ in 0 ..< 5 {
             await Task.yield()
@@ -133,8 +118,7 @@ struct TodayModelTests {
         model.activate()
         model.activate()
 
-        // One initial resolution and one from the single event; a duplicated
-        // subscription would have read the clock twice for the event.
+        // A duplicated subscription would read the clock twice for the event.
         signals.continuation.yield()
         await settle()
 
@@ -150,8 +134,6 @@ struct TodayModelTests {
         let model = makeModel(clock: clock, signals: signals)
         model.activate()
 
-        // A forward clock change across a day boundary: the active session
-        // must land on the new Nepal day.
         clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
         signals.continuation.yield()
         await settle()
@@ -173,9 +155,6 @@ struct TodayModelTests {
         model.deactivate()
         let readsAtDeactivation = clock.reads
 
-        // Cancelling the observation task ends the stream; the termination
-        // flag is the deterministic marker that teardown completed, after
-        // which a yielded signal can no longer be consumed.
         try await waitUntil(timeout: .seconds(5)) { signals.terminated.isSet }
         signals.continuation.yield()
         await settle()
@@ -208,8 +187,6 @@ struct TodayModelTests {
         let model = makeModel(
             clock: clock,
             signals: signals,
-            // The next "midnight" is 50 ms away in test time; the wake must
-            // resolve from the clock as it stands then.
             nextMidnight: { $0.addingTimeInterval(0.05) }
         )
         model.activate()
@@ -252,8 +229,7 @@ struct TodayModelTests {
     }
 
     @Test func inactivePhaseKeepsTheMidnightRefresh() async throws {
-        // Always On: a dimmed screen is still visible, so midnight must still
-        // land while the scene is inactive.
+        // Always On: a dimmed screen is still visible.
         let clock = MutableClock(try anchoredInstant())
         let signals = SignalFixture()
         let model = makeModel(
@@ -329,17 +305,13 @@ struct TodayModelTests {
             Issue.record("Expected a calculation error display")
             return
         }
-        // The instant was readable, so the NPT day was derived before the
-        // table failed: the error carries it, and invents nothing beyond it.
+        // The NPT day was derived before the table failed.
         #expect(components.gregorianDay == "२७")
         model.deactivate()
     }
 
     // MARK: Helpers
 
-    /// Polls until the condition holds or the timeout lapses — the bounded
-    /// way to await a scheduled wake or teardown without asserting sleep
-    /// durations.
     private func waitUntil(timeout: Duration, _ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + timeout
         while !condition() && ContinuousClock.now < deadline {
@@ -353,9 +325,7 @@ struct TodayModelTests {
 
 extension TodayModelTests {
     @Test func displayAtAnInstantPastNepalMidnightIsTheNewDay() throws {
-        // Always On renders through `display(at:)` with the timeline's date,
-        // so it alone must cross midnight (18:15 UTC) — no activation, no
-        // clock read.
+        // `display(at:)` alone must cross midnight (18:15 UTC).
         let clock = MutableClock(try anchoredInstant())
         let model = makeModel(clock: clock, signals: SignalFixture())
 

@@ -4,8 +4,6 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// What 0.2 added for apps other than NepalKit: defaults, ordering, coding and
-/// the clock formatter's options.
 struct GeneralAPITests {
     private let newYear = BikramSambatDate(year: 2083, month: 1, day: 1)
 

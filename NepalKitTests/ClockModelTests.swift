@@ -26,8 +26,7 @@ struct ClockModelTests {
         let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
         let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)
 
-        // Through the same formatters the views use, so the test describes
-        // what renders rather than a parallel path.
+        // Through the same formatters the views use.
         let bs = try #require(clock.todayBSDate())
         #expect(bs.formatted(latin) == "11 Ashoj 2083")
         #expect(bs.formatted(devanagari) == "११ असोज २०८३")
@@ -55,21 +54,16 @@ struct ClockModelTests {
         // In Nepal, a second clock showing the same reading is noise.
         let inNepal = try model(at: try TestDates.utc(2026, 9, 27, 12, 0), local: "Asia/Kathmandu")
         #expect(inNepal.localTimeIsRedundant)
-        // The readings are genuinely identical, not merely close.
         #expect(inNepal.localTimeString(digits: .latin) == inNepal.nptTimeString(digits: .latin))
 
-        // Anywhere else the row earns its place.
         #expect(try !model(at: try TestDates.utc(2026, 9, 27, 12, 0)).localTimeIsRedundant)
 
-        // Asia/Kolkata is UTC+5:30, a half hour from Nepal, and a plausible
-        // thing for a Nepali speaker to be travelling in. Not redundant.
+        // Asia/Kolkata is UTC+5:30, a half hour from Nepal.
         #expect(try !model(at: try TestDates.utc(2026, 9, 27, 12, 0), local: "Asia/Kolkata").localTimeIsRedundant)
     }
 
     @Test func redundancyIsComparedByOffsetNotZoneIdentity() throws {
-        // A fixed-offset zone at +05:45 shares Nepal's offset under a
-        // different identifier. Identity comparison would call this
-        // non-redundant and show a duplicated clock; offset comparison does not.
+        // A fixed-offset +05:45 zone shares Nepal's offset under another identifier.
         let zone = try #require(TimeZone(secondsFromGMT: 20700))
         let offsetZone = ClockModel(
             now: try TestDates.utc(2026, 9, 27, 12, 0),
@@ -80,16 +74,9 @@ struct ClockModelTests {
     }
 
     @Test func noForeignZoneEverSharesNepalsOffset() throws {
-        // Pins why the offset comparison cannot be reduced to a DST case.
-        // Nepal is +05:45, a half-hour offset, and a scan of every zone in the
-        // database at two instants finds only Nepal's own two spellings. So
-        // "is the local zone a DST zone that happens to match" has no cases, and
-        // the only redundant readings are genuinely Nepal's own — which is the
-        // situation the popover is hiding the row for.
-        //
-        // The two spellings are the point: they are distinct TimeZone values
-        // that both resolve to +05:45, so an identity comparison against
-        // `TimeZone.nepal` would miss `Asia/Katmandu` entirely.
+        // No other zone shares +05:45, so the only redundant readings are
+        // Nepal's own. Its two spellings are distinct `TimeZone` values, which
+        // is why the comparison is by offset.
         let katmandu = try #require(TimeZone(identifier: "Asia/Katmandu"))
         let london = try #require(TimeZone(identifier: "Europe/London"))
         #expect(ClockModel(now: .now, localTimeZone: katmandu, refreshes: false).localTimeIsRedundant)

@@ -4,14 +4,8 @@ import AppKit
 import Testing
 @testable import NepalKit
 
-/// An unresolvable SF Symbol name renders as *nothing at all* — no error, no
-/// fallback, no warning. A typo is therefore invisible to the compiler and to
-/// every other test, and only shows up when a human looks at the screen. These
-/// tests turn that silent failure into a suite failure.
-///
-/// The second half is the part that cannot be automated: whether a symbol
-/// reinforces its label is a design judgement. It is recorded as a comment on
-/// each name in `Symbols` so it is reviewable, not asserted here.
+/// An unresolvable SF Symbol name renders as nothing, with no error, so these
+/// tests make a typo fail the suite.
 @MainActor
 struct SymbolTests {
     @Test func everySymbolResolves() {
@@ -24,26 +18,14 @@ struct SymbolTests {
     }
 
     @Test func symbolsAreDistinct() {
-        // Two names that collapse to the same glyph would silently lose the
-        // distinction they exist to make.
+        // Two names for one glyph would lose the distinction they exist to make.
         #expect(Set(Symbols.all).count == Symbols.all.count)
     }
 
     @Test func everySymbolIsReachableFromTheApp() throws {
-        // A name in `all` that no view renders is a maintenance trap: the
-        // resolve-and-distinct tests pass on it happily, so it looks maintained
-        // while being unreachable. Four entries were deleted from `Symbols` on
-        // exactly this basis when the popover's clock rows moved from glyphs to
-        // typographic labels.
-        //
-        // Sources are read from disk because SwiftUI builds view trees by type
-        // erasure, leaving nothing to introspect at runtime.
-        //
-        // The comparison is on the constant name, not the SF Symbol string: a
-        // view writes `Symbols.launchAtLogin`, never `"power"`. An earlier
-        // version of this test searched for the symbol string and consequently
-        // reported every surviving symbol as unreachable, which is how it was
-        // caught.
+        // A name no view renders still passes the other tests. Sources are read
+        // from disk because SwiftUI leaves nothing to inspect at runtime, and
+        // matched on the constant name, since views write `Symbols.name`.
         let sources = try Self.appSources()
         #expect(!sources.isEmpty, "found no app sources at all — the path walk is broken")
 
@@ -68,8 +50,7 @@ struct SymbolTests {
             .map { try String(contentsOf: appDir.appendingPathComponent($0), encoding: .utf8) }
     }
 
-    /// Constants declared on `Symbols`, parsed from its source. `all` is a list
-    /// literal, so it is checked separately rather than parsed as a declaration.
+    /// Constants declared on `Symbols`, parsed from its source.
     private static func declaredConstants() throws -> [String] {
         let text = try String(
             contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Symbols.swift"),
@@ -81,9 +62,7 @@ struct SymbolTests {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard trimmed.hasPrefix("static let ") else { return nil }
                 let rest = trimmed.dropFirst("static let ".count)
-                // `all` is a collection, not a symbol: it is the index the
-                // resolve-and-distinct tests iterate, so including it here would
-                // require a view to reference `Symbols.all` and it never does.
+                // `all` is the index of symbols, not a symbol.
                 if rest.hasPrefix("all:") { return nil }
                 let name = rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }
                 return name.isEmpty ? nil : String(name)
@@ -109,15 +88,7 @@ struct SymbolTests {
         )
     }()
 
-    /// The repository root, found by searching upward for the project file.
-    ///
-    /// Hop-counting is what broke twice here. This test compiles through the
-    /// harness at `scripts/apptests/Tests/NepalKitTests/`, and `#filePath` is
-    /// that symlinked path at run time, so two `deletingLastPathComponent` calls
-    /// land in `Tests/` rather than the repository root — and `standardizedFileURL`
-    /// does not help either, because Swift records the path the compiler was
-    /// given. Searching upward from either form until the project file appears
-    /// cannot depend on which one is in effect.
+    /// Searched upward because `#filePath` may be the symlinked harness path.
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()

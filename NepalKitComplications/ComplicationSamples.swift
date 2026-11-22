@@ -4,25 +4,19 @@ import Foundation
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Core-generated states for previews and the development harness. Every
-/// sample resolves through the shared dataset — nothing here hand-maintains
-/// a paired date, so a table change moves the samples with it.
+/// Sample states for previews, resolved through the dataset.
 enum ComplicationSamples {
-    /// The supported sample: 27 September 2026, 11 Ashoj 2083 — the same
-    /// anchored day the provider's preview snapshot renders.
+    /// 27 September 2026, 11 Ashoj 2083.
     static func supportedState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         let provider = TodayComplicationProvider(now: { .distantPast }, dataset: dataset)
         return provider.snapshot(isPreview: true).state
     }
 
-    /// The after-maximum boundary sample: 13 April 2028, the first day past
-    /// the dataset's Gregorian end.
+    /// 13 April 2028, the first day past the dataset's end.
     static func boundaryState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         dayState(for: GregorianDate(year: 2028, month: 4, day: 13), in: dataset)
     }
 
-    /// The calculation-failure sample, with the failed day resolved as
-    /// Gregorian context.
     static func errorState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         .day(watchCalculationErrorDisplay(
             gregorianDay: GregorianDate(year: 2028, month: 4, day: 13),
@@ -30,21 +24,15 @@ enum ComplicationSamples {
         ))
     }
 
-    /// The calculation-failure sample without any resolved Gregorian day.
     static func errorWithoutContextState() -> TodayComplicationState {
         .day(watchCalculationErrorDisplay(gregorianDay: nil, settings: .watch))
     }
 
-    /// The clock-free placeholder sample.
     static func placeholderState() -> TodayComplicationState {
         .placeholder
     }
 
-    /// The worst-case month sample: Kartik, the longest canonical name with
-    /// combining marks. Kartik does not occur naturally until 18 October
-    /// 2026, and the on-device fixture harness cannot reach the extension
-    /// process, so the curved-label and row-width fit is judged through
-    /// previews until then.
+    /// Kartik, the widest month name, for checking corner and row fit.
     static func longestMonthState(in dataset: CalendarDataset = .v2) -> TodayComplicationState {
         dayState(for: GregorianDate(year: 2026, month: 10, day: 20), in: dataset)
     }

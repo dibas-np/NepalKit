@@ -3,14 +3,8 @@
 import Foundation
 import NepalKitCore
 
-/// Persists the two display axes, the time reference and the menu-bar format in
-/// UserDefaults. The store stays dumb and injectable so persistence is testable
-/// without the app running.
-///
-/// `nonisolated` because the Siri intents read it from `perform()`, which
-/// runs off the main actor (ticket 03's mechanic: no UI launch, no actor
-/// hop). UserDefaults operations are thread-safe, and every member is a
-/// trivial value read or write, so nothing here needs an actor.
+/// Persists display settings, the time reference and the menu-bar format in
+/// UserDefaults. `nonisolated` because the Siri intents read it off the main actor.
 nonisolated struct SettingsStore {
     static let digitScriptKey = "digitScript"
     static let monthNameStyleKey = "monthNameStyle"
@@ -23,12 +17,8 @@ nonisolated struct SettingsStore {
 
     private let defaults: UserDefaults
 
-    /// - Parameter defaults: must stay `.standard` in production, which resolves
-    ///   to the app's own preference domain keyed by bundle identifier. A
-    ///   versioned suite name, a build-numbered key, or a custom container would
-    ///   each survive an in-place update and silently reset every user's settings
-    ///   on upgrade, which is invisible from the outside. The injection point
-    ///   exists for tests, which pass a throwaway suite.
+    /// - Parameter defaults: `.standard` in production. A versioned suite or key
+    ///   would silently reset every user's settings on upgrade.
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
@@ -44,8 +34,7 @@ nonisolated struct SettingsStore {
         defaults.set(settings.monthNames.rawValue, forKey: Self.monthNameStyleKey)
     }
 
-    /// Nepal Time when nothing is stored, or something this version does not
-    /// know, so every existing user keeps the behaviour they had (ADR-0017).
+    /// Nepal Time when nothing (or an unknown value) is stored (ADR-0017).
     var timeReference: TimeReference {
         TimeReference(rawValue: defaults.string(forKey: Self.timeReferenceKey) ?? "") ?? .nepal
     }
@@ -54,9 +43,7 @@ nonisolated struct SettingsStore {
         defaults.set(reference.rawValue, forKey: Self.timeReferenceKey)
     }
 
-    /// One Boolean key per option rather than an encoded blob, so a later
-    /// option cannot make an older stored value undecodable. A missing key reads
-    /// as `false`, every option's default, giving `.standard`.
+    /// One Boolean key per option, so a new option never breaks an older stored value.
     var menuBarFormat: MenuBarFormat {
         MenuBarFormat(
             showsWeekday: defaults.bool(forKey: Self.menuBarShowsWeekdayKey),

@@ -6,11 +6,8 @@ import NepalKitCore
 @testable import NepalKit
 
 /// Every surface that reads today, read in the user's own zone (ADR-0017).
-///
 /// Anchor: 23:30 UTC on 26 Sep 2026 is 05:15 NPT on Sunday 27 Sep, 11 Ashoj
-/// 2083, but 19:30 EDT on Saturday 26 Sep, 10 Ashoj 2083 (11 Ashoj 2083 =
-/// 27 Sep 2026, the converter suite's anchor). New York stands in for "my time
-/// zone" because it and Nepal disagree about the day.
+/// 2083, but 19:30 EDT on Saturday 26 Sep, 10 Ashoj 2083.
 @MainActor
 struct TimeReferenceModelTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)

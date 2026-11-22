@@ -4,10 +4,8 @@ import Foundation
 import Testing
 import NepalKitCore
 
-/// Today and its midnight read in a zone other than Nepal Time. Anchor: 23:30
-/// UTC on 26 Sep 2026 is 05:15 NPT on Sunday 27 Sep (11 Ashoj 2083) but 19:30
-/// EDT on Saturday 26 Sep (10 Ashoj 2083), so Nepal and New York disagree
-/// about which day it is.
+/// 23:30 UTC on 26 Sep 2026 is 05:15 NPT on 27 Sep (11 Ashoj 2083) but 19:30
+/// EDT on 26 Sep (10 Ashoj 2083).
 struct TimeZoneTodayTests {
     private static func newYork() throws -> TimeZone {
         try #require(TimeZone(identifier: "America/New_York"))

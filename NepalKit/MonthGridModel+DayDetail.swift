@@ -7,37 +7,28 @@ import NepalKitCore
 /// A day's details, shown and spoken. Built by the model from one date so the
 /// two channels cannot describe different days.
 struct MonthGridDayDetail: Hashable {
-    /// The full Bikram Sambat date as configured; also what Copy copies.
     let bikramSambat: String
-    /// The full Gregorian date with its weekday.
     let gregorian: String
-    /// How far the day is from today: "Today", "In 5 days". Nil only if
-    /// today's Gregorian day could not be read.
+    /// "Today", "In 5 days"; nil only if today's Gregorian day could not be read.
     let relative: String?
     let spokenBikramSambat: String
     let spokenGregorian: String
     let spokenRelative: String?
-    /// The day's festivals and national days, in the month-name setting.
     let festivals: [String]
     let spokenFestivals: [String]
-    /// Who the day is a public holiday for, one line per scope. Shown and
-    /// spoken alike, as there are no digits in them.
     let holidays: [String]
 }
 
 extension MonthGridModel {
     /// Whole civil days from today to `day`: 0 for today, negative before it.
-    /// Nil only if today's Gregorian day is unknown.
     func daysFromToday(_ day: MonthGridDay) -> Int? {
-        // Both instants are noon UTC on their civil day, so their difference is
-        // an exact multiple of a day; rounding only absorbs floating point.
+        // Both instants are noon UTC, so rounding only absorbs floating point.
         guard let todayGregorian, let from = todayGregorian.noonUTC, let to = day.gregorian.noonUTC
         else { return nil }
         return Int((to.timeIntervalSince(from) / 86_400).rounded())
     }
 
-    /// The popover's content for a day, shown as configured and spoken with
-    /// Latin digits (`SpokenDate`'s rule).
+    /// Shown as configured and spoken with Latin digits.
     func detail(for day: MonthGridDay, settings: DisplaySettings) -> MonthGridDayDetail {
         let weekday = BikramSambatDate.weekdayName(day.weekday, style: settings.monthNames)
         let gregorian = day.gregorian.formatted(digits: settings.digits)
@@ -55,15 +46,12 @@ extension MonthGridModel {
         )
     }
 
-    /// Copies the Bikram Sambat date as shown. `pasteboard` is injectable for tests.
     func copy(_ detail: MonthGridDayDetail, to pasteboard: NSPasteboard = .general) {
         pasteboard.clearContents()
         pasteboard.setString(detail.bikramSambat, forType: .string)
     }
 
-    /// The day as an all-day event, titled by its festivals or else its Bikram
-    /// Sambat date. The notes carry both dates and any holiday, so the event
-    /// names the Nepali day however the calendar app shows it.
+    /// An all-day event titled by the day's festivals, else its Bikram Sambat date.
     func calendarEvent(for day: MonthGridDay, settings: DisplaySettings) -> CalendarEvent {
         let detail = detail(for: day, settings: settings)
         let title = detail.festivals.isEmpty ? detail.bikramSambat : detail.festivals.joined(separator: ", ")
@@ -71,9 +59,7 @@ extension MonthGridModel {
         return CalendarEvent(title: title, notes: notes, date: day.gregorian)
     }
 
-    /// Adds `day` to the calendar app; false on failure. A failure is also
-    /// announced, because the card's message appears where VoiceOver's focus
-    /// is not. `open` and `announce` are injectable for tests.
+    /// A failure is also announced, since the card's message is not where VoiceOver focus is.
     func addToCalendar(
         _ day: MonthGridDay, settings: DisplaySettings,
         open: (CalendarEvent) -> Bool = { $0.open() },

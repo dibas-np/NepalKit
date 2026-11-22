@@ -1,50 +1,17 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
-"""Verify a Sparkle appcast before it is allowed to become a public feed.
+"""Verify a Sparkle appcast before it is published.
 
-An appcast is the only thing standing between a tampered binary and an
-auto-installing user, so it gets checked rather than trusted. Four layers, in
-the order they run, each of which catches something the others cannot:
+Checks, in order: the feed parses, the feed's own EdDSA signature, required
+fields, each enclosure's length against its bytes, and each archive's Ed25519
+signature against the public key in Info.plist (using openssl, so no private
+key is needed and it runs in CI).
 
-  1. Well-formedness. Only a feed too broken to parse is reported before the
-     feed's own signature.
-  2. The *feed's* signature, checked before any field the feed declares is
-     read. A signed archive proves the download was not swapped; a signed feed
-     proves the feed did not lie about what the download is. See
-     `extract_feed_signature` for the format. Then the fields Sparkle actually
-     requires: a feed missing an enclosure or a signature makes the app
-     silently check nothing.
-  3. Enclosure consistency: `length` must equal the real byte count of the
-     downloaded file. This is what stops a truncated or substituted download
-     from being accepted.
-  4. Cryptographic verification of each archive's Ed25519 signature against the
-     *committed public key*, using stock openssl. No private key, no keychain,
-     so this runs anywhere - including CI, where the private key must never be
-     present.
-
-Why openssl and not Sparkle's own `sign_update --verify`: verification with
-sign_update needs the private key (`--ed-key-file` is rejected for public keys,
-and without a key it reads the keychain). That makes it unusable in CI by
-design. openssl needs only the public half, which is already committed to the
-repository in Info.plist, so the same key that is baked into the shipped app is
-the key CI checks against.
-
-An item whose bytes were unavailable is a *counted skipped outcome*, not a
-pass: the run says so, names the versions, and exits non-zero. A layer that
-did not run is not a layer that passed.
-
-Exit 0 = every item was byte-verified and signature-verified. Non-zero = do
-not publish, and do not report the run as a check that happened.
-
-`--skip-crypto` is a "check nothing" flag, not a "skip the hard part" flag: it
-suppresses the signature check *and*, through the fetch branch, the byte check
-too, so a run using it verifies structure and nothing else. `--allow-partial`
-is the release-time escape hatch: it reports unverified items and still exits
-0, for the invocation that only has the newly staged archive on disk.
-`--embed-notes <dir>` is not a check at all: it rewrites the feed, injecting
-release-notes HTML into each item's <description>, and exits. The release
-script runs it before its own verification loop.
+Exits non-zero if any item could not be fully verified. `--skip-crypto` checks
+structure only; `--allow-partial` reports unverified items but exits 0;
+`--embed-notes <dir>` writes release notes into each item's <description> and
+exits.
 """
 
 from __future__ import annotations
@@ -64,52 +31,21 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-# --- On the NOSONAR markers in this file --------------------------------------
-# SonarCloud reports eight security findings here that this tool cannot satisfy by
-# changing what it does: `pythonsecurity:S8707` (a path built from a CLI argument)
-# on five lines, `pythonsecurity:S2083` (the same, on the openssl scratch file),
-# and `python:S5332` (a clear-text protocol) on the namespace below.
-#
-# The remedy S8707 asks for is to resolve the path and confine it to a base
-# directory. That would break the release path rather than narrow it:
-# scripts/package-release.sh stages the feed and the archive in a private
-# temporary directory outside the repository, and scripts/verify-appcast.sh runs
-# this tool against exactly those paths. A confinement check would fail every
-# real release, to defend against a caller that already holds the filesystem
-# permissions the check would take away — the operator, CI, and any agent
-# invoking the script all reach the same bytes by the same means.
-#
-# So the lines are marked NOSONAR, and the reasoning is written here rather than
-# left implicit in the marker. Two consequences worth stating rather than
-# leaving for the next reader to discover:
-#
-# - NOSONAR is line-scoped, so it stops travelling when the call moves off its
-#   own line, and it is rule-blind: it silences every rule on that line, not
-#   only the path-injection one. That is why each marker sits on a line whose
-#   only content is the flagged call.
-# - Suppression is the only mechanism available. This project is analysed by
-#   SonarCloud's automatic analysis, which ignores `sonar-project.properties`
-#   and supports neither `sonar.issue.ignore.multicriteria` nor a per-rule
-#   exclusion. If SonarCloud ever offers one, it replaces these markers and
-#   their scope becomes rule-specific rather than line-specific.
+# The NOSONAR markers silence path-injection findings on paths taken from CLI
+# arguments. The release stages its files in a temp directory outside the
+# repository, so confining paths to a base directory would break it.
 
-# The Sparkle XML namespace, which is spelled like a URL because XML namespaces
-# conventionally are, and is never resolved. Nothing in this process connects to
-# it: the string only matches the `sparkle:` prefix on feed elements, and the
-# feed's *enclosure* urls are required to be https separately, below. Rewriting
-# it to https would make every feed Sparkle has ever parsed stop matching.
+# An XML namespace identifier, never fetched.
 SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # NOSONAR
 NS = {"sparkle": SPARKLE_NS}
 
-# The release-notes HTML contract shared with update-changelog.py's
-# FragmentParser: the fragments are written by this project to exactly these
-# tags. The <description> is the one part of a feed item the EdDSA signature
-# does not cover — it is checked against the contract instead of trusted.
+# Must match update-changelog.py. The <description> is not covered by the
+# EdDSA signature, so it is checked against these tags instead.
 NOTES_TAGS = {"b", "li", "p", "ul"}
 MAX_NOTES_CHARS = 8192
 
-# Release and minimumSystemVersion strings. embed_notes also relies on it to keep
-# a feed-supplied version from naming a file outside the notes directory.
+# Release and minimumSystemVersion strings. Also keeps a feed-supplied version
+# from naming a file outside the notes directory.
 NUMERIC_VERSION = r"[0-9]+\.[0-9]+(?:\.[0-9]+)?"
 
 
@@ -124,28 +60,18 @@ class _NotesHTMLCheck(HTMLParser):
 
     handle_startendtag = handle_starttag
 
-# 12-byte DER prefix for an Ed25519 SubjectPublicKeyInfo wrapping a raw 32-byte
-# key, per RFC 8410. Prepended so openssl can read the base64 key straight from
-# Info.plist without a PEM round-trip.
+# DER prefix for an Ed25519 SubjectPublicKeyInfo (RFC 8410), so openssl can
+# read the raw key from Info.plist.
 ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
 
-# --- How Sparkle signs a feed ---------------------------------------------
-# Sparkle 2 does not sign the feed with an XML attribute. `sign_update` appends
-# a trailing comment and signs the bytes that precede it:
+# Sparkle 2 signs a feed by appending a trailing comment block:
 #
 #     <!-- sparkle-signatures:
 #     edSignature: <base64 Ed25519 signature>
 #     length: <byte count of the signed content>
 #     -->
 #
-# The client splits the block off with a *backwards* search for the prefix and
-# verifies the signature over everything before it (SPUExtractSignedFeed.m,
-# SPUExtractAppcastContent, in the pinned Sparkle 2.9.6). So the signed content
-# is the entire feed - channel element, every item, every description - minus
-# that comment. It is not the channel element, and there is no
-# `sparkle:dsaSignature` attribute in this Sparkle version: the DSA fields in
-# it are legacy support for signing *archives*, which `SUAppcastDriver` passes
-# as nil. Do not go looking for the attribute; it is not what gets written.
+# The signature covers every byte before the block (SPUExtractSignedFeed.m).
 FEED_SIGNING_PREFIX = b"<!-- sparkle-signatures:\n"
 FEED_SIGNING_SUFFIX = b"-->"
 
@@ -222,20 +148,14 @@ def fetch(url: str, timeout: int = 60) -> bytes:
 def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
     """Split a feed's signing block off, the way Sparkle's client does.
 
-    Returns `(content, ed_signature_base64, declared_length)`. `content` is the
-    bytes the signature is computed over: everything before the block. The
-    search for the block runs backwards, as Sparkle's does, so a stray earlier
-    occurrence cannot move the boundary. A feed with no block yields the whole
-    file as content and `None, None` - which is why the caller has to treat
-    "no block" as a failure rather than as an empty signature.
+    Returns `(content, ed_signature_base64, declared_length)`. The search runs
+    backwards, as Sparkle's does. A feed with no block yields `None, None`.
     """
     start = raw.rfind(FEED_SIGNING_PREFIX)
     if start == -1:
         return raw, None, None
     end = raw.find(FEED_SIGNING_SUFFIX, start + len(FEED_SIGNING_PREFIX))
     if end == -1:
-        # An unterminated block. Sparkle's extractor returns the data untouched
-        # here, so there is no signature to read out of it.
         return raw, None, None
     block = raw[start + len(FEED_SIGNING_PREFIX) : end].decode("utf-8", "replace")
 
@@ -253,13 +173,7 @@ def extract_feed_signature(raw: bytes) -> tuple[bytes, str | None, int | None]:
 def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
     """Require the feed itself to be signed, and check the signature.
 
-    This runs regardless of `--skip-crypto`, unlike the enclosure checks. The
-    flag exists because the archives are release assets rather than repository
-    files, so their bytes are unavailable in CI; it has nothing to do with the
-    feed, which is the very file under test and is right here. Skipping this
-    layer under `--skip-crypto` would switch off the one check that runs
-    against the published feed in `.github/workflows/pages.yml`, which is the
-    only place in the repository that sees the real thing.
+    Runs even with `--skip-crypto`, which only skips the archive checks.
     """
     content, signature_b64, declared_length = extract_feed_signature(raw)
 
@@ -284,12 +198,8 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
         fail(f"feed signature is {len(signature_bytes)} bytes, expected 64")
 
     if declared_length is not None and declared_length != len(content):
-        # Sparkle reads this only to explain a failure ("the expected content
-        # length ... differs from the downloaded file length"); it verifies the
-        # real bytes either way. So a mismatch here would not by itself stop a
-        # client accepting the feed. It does mean the block was assembled by
-        # something other than `sign_update`, which is precisely the
-        # hand-fabricated-signature case this check exists to refuse.
+        # Sparkle only uses this length in error messages, but a mismatch means
+        # the block was not written by `sign_update`.
         fail(
             f"feed signature block declares {declared_length} bytes of signed "
             f"content but {len(content)} bytes precede it. The block was not "
@@ -309,19 +219,11 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
 
 
 def deployment_floor(override: str | None = None) -> str | None:
-    """The macOS version the app actually ships with, as a dotted string.
+    """The macOS deployment target the app ships with, as a dotted string.
 
-    Read from package-release.sh because that file's DEPLOYMENT_TARGET is the
-    value passed to the build, and Info.plist cannot be used: its
-    LSMinimumSystemVersion is the unexpanded $(MACOSX_DEPLOYMENT_TARGET)
-    substitution, so the source tree does not record the floor anywhere.
-
-    This matters because <sparkle:minimumSystemVersion> is what tells Sparkle
-    which systems an item is for. A feed that understates the floor offers an
-    update to systems the app cannot run on; one that overstates it hides the
-    update from users who could run it. Sparkle 2.10 raised its own minimum to
-    12.0 and tells authors to put 12.0 in the feed, so a bump can silently
-    rewrite this value without anyone editing the feed by hand.
+    Read from package-release.sh: Info.plist's LSMinimumSystemVersion is the
+    unexpanded $(MACOSX_DEPLOYMENT_TARGET), so the source tree records the
+    floor nowhere else.
     """
     if override:
         return override
@@ -337,9 +239,8 @@ def deployment_floor(override: str | None = None) -> str | None:
 def replace_items(raw: str, replace: Callable[[str], str]) -> str:
     """Replace each `<item>...</item>` block in `raw` with `replace(block)`.
 
-    Matches what `re.sub(r"<item>.*?</item>", ..., flags=re.S)` would, without
-    its quadratic rescan from every unclosed <item>. A test holds the two
-    against each other on the inputs where they could differ.
+    Equivalent to `re.sub(r"<item>.*?</item>", ...)` without its quadratic
+    rescan from an unclosed <item>.
     """
     parts: list[str] = []
     position = 0
@@ -357,10 +258,8 @@ def replace_items(raw: str, replace: Callable[[str], str]) -> str:
 def embed_notes(appcast: Path, notes_dir: Path) -> None:
     """Embed scripts/release-notes/<version>.html into each item's <description>.
 
-    Exactly-once by design: an item that already has a description is left
-    untouched, so re-running over a described feed is a no-op. The splice is
-    a targeted text substitution rather than an XML reserialisation, so every
-    other byte of the file — including anything Sparkle wrote — is untouched.
+    Items that already have a description are left alone, and the rest of the
+    file is not reserialised.
     """
     raw = appcast.read_text(encoding="utf-8")  # NOSONAR
 
@@ -372,30 +271,14 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
         if not re.fullmatch(NUMERIC_VERSION, version):
             sys.exit(f"not a numeric release version: {version!r}")
         notes = notes_dir / f"{version}.html"
-        # sys.exit, not fail(): these are release-stopping conditions the
-        # shell's `set -e` turns into a dead pipeline, and the caller's contract
-        # for them is a message on stderr and a non-zero exit. fail() would
-        # print to stdout inside a report that otherwise reads as a list of
-        # checks, implying a check had run and rejected something.
         if not notes.exists():
             sys.exit(f"no release notes for version {version}: expected {notes}")
         body = notes.read_text(encoding="utf-8").strip()
         if "]]>" in body:
             sys.exit(f"{notes.name}: contains ]]>, which would terminate the CDATA "
                      f"block early and corrupt the feed")
-        # The 12-space indent is not cosmetic: the committed feed's formatting
-        # depends on it, and an item spliced at a different indent is a feed
-        # that reads as hand-edited in the middle of a generated document.
-        #
-        # This replaces `re.sub(r"(\s*)<enclosure ", ...)`, and the rewrite is
-        # not cosmetic either. That pattern re-tried every shorter alignment of
-        # the leading `\s*` at every offset in the block, so a long run of
-        # whitespace with no marker after it cost quadratic time to rule out —
-        # and this runs against a feed, which is remote input, at release time.
-        # `find` plus `rstrip` is linear, needs no 3.11-only regex syntax, and
-        # says the same thing: take everything before the first marker, drop the
-        # whitespace run the old pattern's greedy `\s*` would have consumed, and
-        # put back exactly one fixed-indent block.
+        # Linear find + rstrip rather than a `(\s*)<enclosure` regex, which is
+        # quadratic on long whitespace runs. The 12-space indent matches the feed.
         marker = "<enclosure "
         index = block.find(marker)
         if index == -1:
@@ -404,9 +287,7 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
         return (f"{prefix}\n            <description><![CDATA[\n{body}\n]]></description>\n"
                 f"            {marker}{block[index + len(marker):]}")
 
-    # Nothing is written until the whole pass has succeeded: a half-described
-    # feed is a published feed with a silent hole in it, which is strictly worse
-    # than a release that stopped.
+    # Nothing is written unless every item succeeded.
     described = replace_items(raw, describe)
     appcast.write_text(described, encoding="utf-8")  # NOSONAR
     ok(f"embedded release notes from {notes_dir}; already-described items left untouched")
@@ -420,8 +301,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         print(f"App deployment floor: {floor}")
 
     # --- 1. Well-formedness and required fields -----------------------------
-    # Read once and parse only the signed bytes, so what is checked below is what
-    # the feed signature covers. Sparkle's client also drops the trailing block.
+    # Parse only the signed bytes, so what is checked is what the signature covers.
     feed_bytes = appcast.read_bytes()  # NOSONAR
     signed_content, _, _ = extract_feed_signature(feed_bytes)
     try:
@@ -432,8 +312,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail(f"root element is <{root.tag}>, expected an RSS document")
 
     # --- 2. The feed's own signature ----------------------------------------
-    # Before any field is read or url fetched, on every path: `--skip-crypto`
-    # waives only the per-archive checks.
     verify_feed_signature(feed_bytes, info_plist)
 
     items = root.findall("./channel/item")
@@ -441,8 +319,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("feed contains no <item>: an app checking this would see no updates at all")
     ok(f"well-formed, {len(items)} item(s)")
 
-    # Compare release versions numerically so historical feed ordering cannot
-    # change the current floor.
     release_versions = []
     for item in items:
         version = item.findtext("sparkle:shortVersionString", default="", namespaces=NS)
@@ -455,10 +331,8 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         fail("cannot identify a unique newest release")
     current_item = items[release_versions.index(latest_version)]
 
-    # Sparkle offers an update only when its build number is higher than the
-    # installed copy's, so a release reusing the previous build ships to nobody
-    # (1.3.0 and 1.4.0 both published build 5). Only the newest item is checked:
-    # earlier items are published and signed, and not rewritten (ADR-0009).
+    # Sparkle only offers a higher build number, so the newest item's build must
+    # increase. Earlier items are already published and left alone.
     builds = []
     for item in items:
         raw = item.findtext("sparkle:version", default="", namespaces=NS).strip()
@@ -483,10 +357,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
             fail(f"local enclosure {enclosure.name} must match exactly one feed item "
                  f"(found {len(matches)})")
 
-    # The two outcomes that are neither pass nor fail, counted so the run can
-    # report them instead of printing a line and moving on. `verified` counts
-    # items that cleared every layer; `skipped` names the ones where a layer
-    # could not run, which is what used to be a printed line and a green exit.
     verified = 0
     skipped: list[str] = []
     fetching = enclosure is None and not skip_crypto
@@ -502,7 +372,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
             fail(f"version {version}: enclosure has no url")
         parsed = urlparse(url)
         if parsed.scheme != "https":
-            # http here would let a network attacker rewrite the payload.
             fail(f"version {version}: enclosure url is not https ({url})")
 
         length_attr = enclosure_el.get("length")
@@ -556,9 +425,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         # --- 3. Enclosure bytes match the declared length -------------------
         payload: bytes | None = None
         if enclosure is not None:
-            # The feed keeps one item per release ever published, while
-            # verify-appcast.sh runs one invocation per archive; only the item
-            # whose enclosure names this file can be checked against it.
+            # The feed has every release; only the item naming this file can be checked.
             if Path(parsed.path).name == enclosure.name:
                 payload = enclosure.read_bytes()  # NOSONAR
         elif fetching:
@@ -580,9 +447,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
 
             # --- 4. Cryptographic verification ---------------------------
             if skip_crypto:
-                # The bytes were here but the signature was not checked, so
-                # this item cleared only one of its two layers. Counted for the
-                # same reason the missing-bytes case is.
                 skipped.append(version)
                 print(f"  skip  version {version}: signature not checked (--skip-crypto)")
             else:
@@ -649,15 +513,7 @@ def main() -> int:
         print(f"  FAIL  {args.appcast} does not exist")
         return 1
     if args.embed_notes is not None:
-        # Short-circuited here, in main(), rather than inside verify(): this is a
-        # mutation, not a check, and it reads neither the public key nor any
-        # enclosure. Putting it after the --info-plist existence test would fail
-        # a release over a file the run never opens; putting it inside verify()
-        # would leave a mode that can fetch enclosures and sign-check a feed it
-        # is in the middle of rewriting, and would leave verify() reporting on
-        # bytes it had just changed. The script embeds first and verifies each
-        # enclosure in its own loop afterwards, so there is no verdict here to
-        # combine with the injection's.
+        # A mutation, not a check, so it runs before the key or enclosures are read.
         embed_notes(args.appcast, args.embed_notes)
         return 0
     if not args.info_plist.is_file():
@@ -671,7 +527,7 @@ def main() -> int:
         raise
     except Exception as exc:  # noqa: BLE001
         fail(f"unexpected error: {exc}")
-    return 1  # unreachable: fail() exits; here so the return type stays honest
+    return 1  # unreachable: fail() exits
 
 
 if __name__ == "__main__":

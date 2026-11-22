@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Dibas Sigdel
 
-/// Dates and numbers as a screen reader should speak them.
+/// Dates and numbers for accessibility labels.
 ///
-/// Use these for an accessibility label, never for what is shown. Speech
-/// engines do not reliably read Devanagari digits: they come out as silence,
-/// as separate digits, or as a stray character. So the spoken forms always
-/// use Latin digits, while the month name stays in the chosen style. Where
-/// the visible text already uses Latin digits it can be spoken as is.
+/// Speech engines do not reliably read Devanagari digits, so spoken forms
+/// always use Latin digits; month names keep the chosen style.
 public enum SpokenDate {
     /// A Bikram Sambat date to speak, such as "27 Ashoj 2083".
     public static func bikramSambat(_ date: BikramSambatDate, monthNames: MonthNameStyle) -> String {
@@ -24,9 +21,8 @@ public enum SpokenDate {
         DigitScript.latin.format(value)
     }
 
-    /// A festival's name in the given style, with any Devanagari digits in it
-    /// spoken as Latin ones. Some Panchanga names contain numbers
-    /// ("ने.सं.११४७ प्रारम्भ").
+    /// A festival's name in the given style, with Devanagari digits
+    /// ("ने.सं.११४७ प्रारम्भ") converted to Latin.
     public static func festival(_ festival: Festival, monthNames: MonthNameStyle) -> String {
         String(festival.name(style: monthNames).map { character in
             guard ("०" ... "९").contains(character), let value = character.wholeNumberValue else { return character }

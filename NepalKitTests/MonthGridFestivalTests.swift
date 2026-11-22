@@ -30,8 +30,7 @@ struct MonthGridFestivalTests {
         let dashami = try shownDay(model, 4)
         #expect(dashami.festivals.map(\.english) == ["Vijaya Dashami (Dashain Tika)"])
         #expect(dashami.showsFestivalMark)
-        // 9 Kartik: no festival and no holiday. (2 Kartik is a Dashain holiday,
-        // named by the gazette, so it carries the mark.)
+        // 9 Kartik: no festival and no holiday.
         let plain = try shownDay(model, 9)
         #expect(plain.festivals.isEmpty)
         #expect(!plain.showsFestivalMark)

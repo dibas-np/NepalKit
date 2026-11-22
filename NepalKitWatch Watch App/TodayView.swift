@@ -4,15 +4,7 @@ import SwiftUI
 import NepalKitCore
 import NepalKitWatchSupport
 
-/// Today, the Watch app's sole destination: the current Bikram Sambat date
-/// and its corresponding Gregorian date for the Nepal Time day. Complication
-/// taps and app launch both land here; there are no settings, converters or
-/// controls.
-///
-/// The model is owned with `@State`, computes at launch, refreshes at the
-/// next Nepal midnight while active, recomputes on reactivation, and follows
-/// system clock changes — all lifecycle behavior lives in `TodayModel`; this
-/// view only wires the scene phase to it.
+/// The Watch app's only screen: today's Bikram Sambat and Gregorian dates.
 struct TodayView: View {
     #if NEPALKIT_WATCH_FIXTURES
     @State private var model = TodayFixtures.makeModel()
@@ -22,14 +14,10 @@ struct TodayView: View {
     #endif
 
     var body: some View {
-        // The app's name sits under the clock, top trailing and tinted, as on
-        // every app screen in Apple's watchOS 26 kit. Without it the screen is
-        // an unlabelled date that could be any app's.
         NavigationStack {
             Group {
                 #if NEPALKIT_WATCH_FIXTURES
                 if let fixtureNote {
-                    // The active fixture identifies itself on screen.
                     Text(fixtureNote)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -43,9 +31,6 @@ struct TodayView: View {
     }
 }
 
-/// The screen itself: renders the model's display state and wires the scene
-/// phase to the lifecycle, so activation, the midnight refresh and
-/// clock-change handling all follow the app to the foreground and background.
 struct TodayScreen: View {
     let model: TodayModel
     @Environment(\.scenePhase) private var scenePhase
@@ -53,8 +38,7 @@ struct TodayScreen: View {
 
     var body: some View {
         // Always On does not re-render ordinary content, so the dimmed screen
-        // reads its day from the timeline's date (within a minute of Nepal
-        // midnight). Awake, the stored display stays the single source.
+        // reads its day from the timeline's date.
         TimelineView(.everyMinute) { context in
             TodayStateView(display: isLuminanceReduced ? model.display(at: context.date) : model.display)
         }
@@ -69,17 +53,12 @@ struct TodayScreen: View {
     }
 }
 
-/// One display state. Each scrolls rather than clips where it does not fit
-/// under the navigation title.
 struct TodayStateView: View {
     let display: WatchDayDisplay?
 
     var body: some View {
         switch display {
         case nil:
-            // Launch window only: the first activation resolves Today
-            // immediately, so there is nothing to promise here yet, and the
-            // title above already names the app.
             Color.clear
         case .some(.supported(let components)):
             TodaySupportedView(components: components)
@@ -113,10 +92,8 @@ struct TodayFittingView<Content: View>: View {
     }
 }
 
-/// Whether Today keeps its midnight refresh and clock-change observation in
-/// `phase`. `.inactive` stays active: an Always On screen is dimmed but still
-/// visible, and deactivating there would leave yesterday's date on it past
-/// Nepal midnight.
+/// `.inactive` stays active: an Always On screen is dimmed but still visible
+/// and must roll over at Nepal midnight.
 func shouldStayActive(in phase: ScenePhase) -> Bool {
     switch phase {
     case .active, .inactive:
@@ -128,14 +105,8 @@ func shouldStayActive(in phase: ScenePhase) -> Bool {
     }
 }
 
-/// The supported day in the accepted Day-first composition: one weekday, a
-/// prominent Bikram Sambat day, month and year, and the full corresponding
-/// Gregorian date. At large text sizes the hero treatment gives way to full
-/// date lines with scrolling, so every part stays readable — the deterministic
-/// fallback the accepted presentation selected instead of truncation or
-/// shrinking.
-/// Below that size the hero is still shown only where it fits, because the
-/// threshold predates the navigation title.
+/// The supported day. At large text sizes, or wherever the hero does not fit,
+/// it falls back to scrolling date lines rather than truncating.
 struct TodaySupportedView: View {
     let components: WatchDayComponents
 
@@ -187,24 +158,19 @@ struct TodayScrollingDateLinesView: View {
 }
 
 extension WatchDayComponents {
-    /// Today's announcement, shared by the hero and the fallback.
     var todaySpokenLabel: String {
         ComplicationAccessibility.supportedLabel(self, weekday: true, gregorian: true)
     }
 }
 
-/// The threshold where Today switches to its scrollable full-date-lines
-/// fallback; matches the complication threshold (see the extension's
-/// DynamicTypeSize extension). Deliberately duplicated per module: core does
-/// not import SwiftUI.
+/// Matches the complication extension's threshold; duplicated because the
+/// shared package does not import SwiftUI.
 extension DynamicTypeSize {
     var watchLargeTextFallback: Bool {
         self >= .xxLarge
     }
 }
 
-/// The large-text fallback for Today: full date lines, scrollable, nothing
-/// dropped.
 struct TodayDateLinesView: View {
     let components: WatchDayComponents
 
@@ -218,9 +184,6 @@ struct TodayDateLinesView: View {
     }
 }
 
-/// The expected range boundary: a plain statement that the Bikram Sambat date
-/// is unavailable, naming the applicable supported year, beside the Gregorian
-/// date that remains answerable.
 struct TodayBoundaryView: View {
     let boundary: WatchBoundaryComponents
 
@@ -239,9 +202,6 @@ struct TodayBoundaryView: View {
     }
 }
 
-/// A calculation failure: identified as a defect, never disguised as an
-/// ordinary boundary. The Gregorian date appears only when one was actually
-/// resolved.
 struct TodayErrorView: View {
     let components: WatchErrorComponents
 

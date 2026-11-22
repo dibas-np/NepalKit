@@ -42,9 +42,8 @@ extension DigitScript {
 
     /// The clock time at `date` in `timeZone`, written in this script.
     ///
-    /// The 24-hour form pads the hour ("09:05"); the 12-hour form does not
-    /// ("9:05") and carries no AM or PM marker, since there is no established
-    /// Nepali one to pair with Devanagari digits.
+    /// The 12-hour form has no AM/PM marker: there is no established Nepali
+    /// one to pair with Devanagari digits.
     public func formatTime(
         _ date: Date,
         in timeZone: TimeZone = .nepal,
@@ -52,18 +51,14 @@ extension DigitScript {
         showsSeconds: Bool = true
     ) -> String {
         let calendar = ClockCalendars.gregorian(timeZone: timeZone)
-        // `component(_:from:)` is non-optional, unlike `dateComponents`.
         let hour24 = calendar.component(.hour, from: date)
-        // 0 and 12 both read 12 on a 12-hour clock.
         let hour = twentyFourHour ? twoDigits(hour24) : format(hour24 % 12 == 0 ? 12 : hour24 % 12)
         let minute = twoDigits(calendar.component(.minute, from: date))
         guard showsSeconds else { return "\(hour):\(minute)" }
         return "\(hour):\(minute):\(twoDigits(calendar.component(.second, from: date)))"
     }
 
-    /// Renders a Latin-digit string in this script. Only ASCII digits change:
-    /// anything else, such as a minus sign, passes through, because dropping it
-    /// would change the value.
+    /// Renders a Latin-digit string in this script. Non-digits pass through.
     func render(latinDigits: String) -> String {
         switch self {
         case .latin:
@@ -120,14 +115,12 @@ extension BikramSambatDate {
     /// 1–12 is returned as its number rather than trapping.
     public static func monthName(_ month: Int, style: MonthNameStyle) -> String {
         let names = monthNames(style: style)
-        // Checked against `month`, not `month - 1`: subtracting first
-        // overflows for `Int.min`.
+        // Checked before subtracting, which would overflow for `Int.min`.
         guard (1 ... names.count).contains(month) else { return String(month) }
         return names[month - 1]
     }
 
-    /// The seven weekday names, Sunday through Saturday: Nepali, or English
-    /// for the transliterated style.
+    /// The seven weekday names, Sunday through Saturday.
     public static func weekdayNames(style: MonthNameStyle) -> [String] {
         switch style {
         case .nepali: nepaliWeekdayNames
@@ -141,8 +134,7 @@ extension BikramSambatDate {
         return weekdayNames(style: style)[weekday - 1]
     }
 
-    /// A short weekday name: English names are cut to three letters ("Mon");
-    /// Nepali names are already short. Nil outside 1–7.
+    /// A short weekday name ("Mon"), or nil outside 1–7.
     public static func shortWeekdayName(_ weekday: Int, style: MonthNameStyle) -> String? {
         guard let name = weekdayName(weekday, style: style) else { return nil }
         switch style {
@@ -178,10 +170,8 @@ extension GregorianDate {
     }
 }
 
-/// Gregorian calendars for clock formatting and today's date, one per time
-/// zone. Building a `Calendar` per call dominated formatting cost at clock-tick
-/// frequency. Zones are few, so entries never evict. Lock-guarded because
-/// callers may be on any thread.
+/// Cached Gregorian calendars, one per time zone. Building a `Calendar` per
+/// call dominated formatting cost at clock-tick frequency.
 enum ClockCalendars {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var calendars: [String: Calendar] = [:]
@@ -191,9 +181,7 @@ enum ClockCalendars {
         defer { lock.unlock() }
         if let cached = calendars[timeZone.identifier] { return cached }
         var calendar = Calendar(identifier: .gregorian)
-        // A fixed zone, not the one passed in: an autoupdating zone cached
-        // under today's identifier would follow the device to a new zone and
-        // answer for it under the old key.
+        // A fixed zone: an autoupdating one would drift from its cache key.
         calendar.timeZone = TimeZone(identifier: timeZone.identifier) ?? timeZone
         calendars[timeZone.identifier] = calendar
         return calendar

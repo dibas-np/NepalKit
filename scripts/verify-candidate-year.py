@@ -6,10 +6,8 @@
 
 Usage: python3 scripts/verify-candidate-year.py 2085 [month_lengths_csv]
 
-Pins, caching and parsing are shared with verify-data-sources.py. Differences
-are reported rather than resolved. A row in a community table is not proof of
-an official calendar publication. Only 2084 has an explicitly approved local
-projection; a later year needs evidence under ADR-0014 before adoption.
+Differences are reported, not resolved. A later year than 2084 needs evidence
+under ADR-0014 before it is adopted.
 """
 
 from __future__ import annotations
@@ -19,10 +17,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# verify-data-sources.py does `from dataset_table import shipped_table` at import
-# time, so scripts/ must be importable however this file was invoked. Loading it
-# by path mirrors how test_dataset_parsers.py loads it, rather than importing a
-# name that is not a valid module identifier.
+# verify-data-sources.py imports dataset_table, so scripts/ must be on sys.path.
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
@@ -53,11 +48,8 @@ def parse_candidate(text, year):
 
 
 def fetch_row(name, year):
-    """One source's row for `year`, or None if it publishes no such year.
-
-    Raises on a fetch failure: an unreadable source is this script's problem to
-    report as a failure, distinct from a source that simply has nothing to say.
-    """
+    """One source's row for `year`, or None if it has no such year. Raises on a
+    fetch failure."""
     url, repo = vds.PINS[name]
     body = vds.fetch(name, url, False)
     if body is None:
@@ -100,15 +92,11 @@ def main():
         rows[name] = row
         print("%-13s %s" % (name, repo))
         if row is None:
-            # Named explicitly. A source that publishes no row for the year is
-            # not a source that agrees with the others.
             print("  no row for %d BS (this table covers %d-%d BS)"
                   % (year, first, last))
             print()
             continue
         print("  %s  (%d days)" % (row, sum(row)))
-        # Notes the parser raised about the whole table, not this year: a source
-        # that flags its own impossible year is telling you how far to trust it.
         for note in notes:
             print("  elsewhere in this table — %s" % note.strip())
         del vds.NOTES[:]
@@ -136,9 +124,7 @@ def main():
         return 0
 
     print("\nCandidate %d BS: %s  (%d days)" % (year, candidate, sum(candidate)))
-    # Classify whole rows, not months. A source that agrees on eleven months and
-    # is wrong on the twelfth has not agreed, and counting it as agreement would
-    # report a year with a different total as corroborated.
+    # Compare whole rows: agreeing on eleven months is not agreement.
     differing = {name: [i for i in range(12) if row[i] != candidate[i]]
                  for name, row in published.items()}
     differing = {name: idxs for name, idxs in differing.items() if idxs}

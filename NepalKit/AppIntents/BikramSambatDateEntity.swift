@@ -3,12 +3,8 @@
 import AppIntents
 import NepalKitCore
 
-/// A Bikram Sambat date as Shortcuts sees it (ticket 03's structured return).
-///
-/// The fields an automation can read — year, month, day, weekday — while the
-/// display title is the *shown* half of the dialog/display split: rendered
-/// with the user's actual display settings, Devanagari digits included. The
-/// dialog an intent pairs with this entity stays in `SpokenDate` form.
+/// A Bikram Sambat date as Shortcuts sees it. The title uses the user's display
+/// settings; the spoken dialog stays in `SpokenDate` form.
 nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
     private let date: BikramSambatDate
     private let calendarMonth: BikramSambatMonth
@@ -35,7 +31,6 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         hasher.combine(date)
     }
 
-    /// Stable text identity: the Bikram Sambat date it names.
     var id: String { "\(year)-\(month.rawValue)-\(day)" }
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Bikram Sambat date")
@@ -46,7 +41,6 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         DisplayRepresentation(title: "\(bsDay.formatted(SettingsStore().settings))")
     }
 
-    /// The dataset-world day this entity names.
     var bsDay: BikramSambatDate { date }
 
     /// Validates the calendar day and supplies its weekday for every query path.
@@ -58,20 +52,15 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         self.weekdayValue = IntentAnswers.weekdayNameString(gregorian.weekday, monthNames: monthNames)
     }
 
-    /// Today's date, in the zone the user's time reference names (ADR-0017).
-    /// Nil once the current date passes the supported range — the caller
-    /// speaks the boundary statement then.
+    /// Today's date in the user's time reference (ADR-0017), or nil past the supported range.
     static func today() -> BikramSambatDateEntity? {
         let timeZone = SettingsStore().timeReference.timeZone
         guard let bs = BikramSambatDate.today(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
         return BikramSambatDateEntity(bsDay: bs)
     }
 
-    /// Best-effort parse of a typed string like "15 Ashar 2082" — the month
-    /// token must equal a title or synonym exactly (case-insensitive; Latin
-    /// and Devanagari), and the two integers in the string are read as day
-    /// and year. Only Latin digits are parsed; typed Devanagari input is
-    /// accepted by the live Shortcuts UI pickers instead.
+    /// Best-effort parse of text like "15 Ashar 2082". Months match a title or
+    /// synonym exactly; only Latin digits are parsed.
     static func parsing(_ string: String) -> BikramSambatDateEntity? {
         var month: BikramSambatMonth?
         var numbers: [Int] = []
@@ -92,17 +81,14 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         return BikramSambatDateEntity(bsDay: BikramSambatDate(year: year, month: month.rawValue, day: day))
     }
 
-    /// Exact, case-insensitive equality against titles and synonyms — never
-    /// containment. The synonym table's near-collisions ("Aso" for Ashar,
-    /// "Asoj"/"Asojh" for Ashoj) are pairs substring matching resolves
-    /// wrongly, because the lower month number wins a first-match scan.
+    /// Exact matching, never containment: synonyms like "Aso" (Ashar) and "Asoj"
+    /// (Ashoj) would otherwise resolve to the wrong month.
     private static func caseMatches(_ month: BikramSambatMonth, token: String) -> Bool {
         month.candidateStrings.contains { $0.caseInsensitiveCompare(token) == .orderedSame }
     }
 }
 
-/// Resolves Bikram Sambat dates from text and identifiers, so Shortcuts can
-/// hand the entity around and type one in.
+/// Resolves Bikram Sambat dates from typed text and identifiers.
 nonisolated struct BikramSambatDateQuery: EntityStringQuery {
     typealias Entity = BikramSambatDateEntity
 
@@ -120,7 +106,6 @@ nonisolated struct BikramSambatDateQuery: EntityStringQuery {
 }
 
 nonisolated extension BikramSambatDateEntity {
-    /// Rebuilds the entity from its `id` ("year-month-day").
     init?(idString: String) {
         let parts = idString.split(separator: "-", omittingEmptySubsequences: false)
         guard parts.count == 3,

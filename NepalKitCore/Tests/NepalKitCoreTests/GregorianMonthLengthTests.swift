@@ -3,8 +3,6 @@
 import Testing
 import NepalKitCore
 
-/// `GregorianDate.daysInMonth` backs the converter's Gregorian day-picker bounds.
-/// Facts read off any published Gregorian calendar.
 struct GregorianMonthLengthTests {
     @Test func lengthsMatchThePublishedCalendar() {
         // 2026: September 30, December 31; February 28 (2023) and 29 (2024, leap).
@@ -15,8 +13,6 @@ struct GregorianMonthLengthTests {
     }
 
     @Test func impossibleMonthsAreRejected() {
-        // Calendar would silently normalize month 0 into December of the
-        // previous year, so the boundary guard is what keeps this nil.
         #expect(GregorianDate.daysInMonth(year: 2026, month: 0) == nil)
         #expect(GregorianDate.daysInMonth(year: 2026, month: 13) == nil)
     }

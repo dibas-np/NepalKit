@@ -31,10 +31,8 @@ struct DisplaySettingsModelTests {
 
     @Test("An update awaiting attention marks the menu-bar date")
     func updateMarkerPrefixesTheDateRatherThanReplacingIt() throws {
-        // A scheduled check is run by a windowless app, so its alert can go
-        // unseen. The menu bar is the surface this user actually looks at, so
-        // the reminder goes there - and the date stays, because showing today's
-        // date is the reason the item is in the menu bar at all.
+        // A windowless app's alert can go unseen, so the reminder goes in the
+        // menu bar, without hiding the date.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -44,9 +42,7 @@ struct DisplaySettingsModelTests {
 
     @Test("The update marker is announced as words, not as the glyph")
     func updateMarkerIsSpokenAsWords() throws {
-        // A voice cannot read "!", and this is the one thing on the menu bar
-        // that changes what the user should do, so the spoken channel carries
-        // the meaning the glyph carries visually.
+        // A voice cannot read "!", so the spoken title says it in words.
         let bar = try menuBar()
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
@@ -60,10 +56,7 @@ struct DisplaySettingsModelTests {
 
     @Test("The reminder is still announced past the supported range")
     func reminderSurvivesTheRangeBoundary() throws {
-        // The boundary replaces the date with an explanation, which is the
-        // longest thing this label ever says. A reminder that silently
-        // disappeared there would leave the user with no signal at all, in
-        // exactly the state where the menu bar is least useful.
+        // The boundary explanation must still carry the reminder.
         let bar = MenuBarModel(
             now: try TestDates.utc(2030, 1, 15, 6, 0), refreshes: false, schedulesMidnightFire: false
         )
@@ -75,8 +68,7 @@ struct DisplaySettingsModelTests {
 
     @Test("The marker never appears in the spoken channel of an unmarked menu bar")
     func noMarkerWithoutAnUpdate() throws {
-        // The existing sweep forbids typographic punctuation in every spoken
-        // string, so the marker must not leak into one that has no update.
+        // The marker must not leak into the spoken title without an update.
         let bar = try menuBar()
 
         for style in [MonthNameStyle.nepali, .transliterated] {

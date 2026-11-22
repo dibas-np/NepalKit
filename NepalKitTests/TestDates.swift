@@ -3,8 +3,7 @@
 import Foundation
 import Testing
 
-/// Shared UTC instant builder for app tests. One helper instead of a copy
-/// per suite.
+/// Builds UTC instants for the app tests.
 enum TestDates {
     static func utc(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int, _ second: Int = 0) throws -> Date {
         var calendar = Calendar(identifier: .gregorian)

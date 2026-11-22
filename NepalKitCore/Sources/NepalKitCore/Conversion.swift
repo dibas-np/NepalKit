@@ -12,18 +12,14 @@ extension TimeZone {
     }()
 
     /// The first midnight in this zone after `date`, for scheduling a refresh
-    /// when the date changes. Nil only if calendar math fails.
-    ///
-    /// Uses the start of the next day rather than adding 24 hours, so zones
-    /// with daylight saving time get their real midnight on 23- and 25-hour
-    /// days.
+    /// when the date changes. Correct on 23- and 25-hour DST days.
     public func nextMidnight(after date: Date) -> Date? {
         let calendar = ClockCalendars.gregorian(timeZone: self)
         return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date))
     }
 }
 
-/// The Gregorian calendar in UTC: conversion is civil-day math, not instant math.
+/// Conversion is civil-day math, so it runs in UTC.
 let utcGregorian: Calendar = {
     // Not `TimeZone.gmt`, which needs macOS 13.
     guard let utc = TimeZone(secondsFromGMT: 0) else {
@@ -35,12 +31,8 @@ let utcGregorian: Calendar = {
 }()
 
 /// A Gregorian date as a UTC civil day, or nil if the components do not name a
-/// real day.
-///
-/// The single place a `GregorianDate` becomes a `Date`, and therefore the
-/// single place civil-day validity is checked. `Calendar` normalizes
-/// impossible input (February 30 silently becomes March 1), so anything that
-/// does not round-trip exactly is rejected here.
+/// real day. `Calendar` normalizes February 30 to March 1, so anything that
+/// does not round-trip is rejected.
 func utcDate(from date: GregorianDate) -> Date? {
     guard (1 ... 12).contains(date.month) else { return nil }
     var components = DateComponents()
@@ -56,9 +48,7 @@ func utcDate(from date: GregorianDate) -> Date? {
 /// Month lengths for a Bikram Sambat date after range and component
 /// validation, or nil if the date is invalid or outside the table.
 func validatedMonths(for date: BikramSambatDate, in dataset: CalendarDataset) -> [Int]? {
-    // A non-positive month length cannot appear in real data; guarding it
-    // here keeps a corrupt row answering nil instead of building a reversed
-    // range and trapping at conversion time.
+    // A corrupt non-positive length would otherwise build a reversed range and trap.
     guard dataset.supportedRange.contains(date.year),
           let months = dataset.monthLengths(for: date.year),
           months.allSatisfy({ $0 >= 1 }),
@@ -68,8 +58,7 @@ func validatedMonths(for date: BikramSambatDate, in dataset: CalendarDataset) ->
     return months
 }
 
-/// Absolute day index of a Bikram Sambat date within the table (days since
-/// the first day of the supported range), or nil if invalid or outside.
+/// Days since the first day of the supported range, or nil if invalid or outside.
 func absoluteDayIndex(_ date: BikramSambatDate, in dataset: CalendarDataset) -> Int? {
     guard let yearStart = dataset.yearStartIndices[date.year],
           let months = validatedMonths(for: date, in: dataset)
@@ -77,8 +66,7 @@ func absoluteDayIndex(_ date: BikramSambatDate, in dataset: CalendarDataset) -> 
     return yearStart + months.prefix(date.month - 1).reduce(0, +) + date.day - 1
 }
 
-/// Bikram Sambat date at an absolute day index (inverse of absoluteDayIndex),
-/// or nil if the index falls outside the table.
+/// The inverse of `absoluteDayIndex`.
 func bikramSambatDate(at index: Int, in dataset: CalendarDataset) -> BikramSambatDate? {
     guard index >= 0 else { return nil }
     for year in dataset.supportedRange {

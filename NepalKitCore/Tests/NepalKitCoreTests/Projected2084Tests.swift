@@ -3,9 +3,8 @@
 import Testing
 import NepalKitCore
 
-/// Regression contracts for the user-approved provisional 2084 projection.
-/// These fixtures encode that decision, not independently attested calendar data.
-/// Reconcile all twelve months against the official Patro when available.
+/// Pins the provisional 2084 projection, which is not attested calendar data.
+/// Reconcile against the official Patro when available.
 struct Projected2084Tests {
     static let monthStarts: [MonthStartFixture] = [
         .init(bs: BikramSambatDate(year: 2084, month: 1, day: 1), ad: GregorianDate(year: 2027, month: 4, day: 14), label: "Baisakh"),
@@ -50,7 +49,6 @@ struct Projected2084Tests {
         #expect(BikramSambatDate(GregorianDate(year: 2028, month: 4, day: 13), in: .v2) == nil)
     }
 
-    // SOURCES.md: 2084 is the maintainer's projection; 2083 is attested.
     @Test("Only the projected 2084 row is provisional")
     func onlyTheProjectedRowIsProvisional() {
         #expect(CalendarDataset.v2.provisionalYears == [2084])

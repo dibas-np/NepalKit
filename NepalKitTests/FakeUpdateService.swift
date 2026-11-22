@@ -3,9 +3,7 @@
 import Foundation
 @testable import NepalKit
 
-/// Test double, same shape as the `LoginItemServicing` mock. The production
-/// service needs Sparkle and a live updater session, which the harness does not
-/// link, so this is how the model's own logic is covered.
+/// A stand-in for the Sparkle-backed service, which the test harness doesn't link.
 @MainActor
 final class FakeUpdateService: UpdateServicing {
     private(set) var startCount = 0

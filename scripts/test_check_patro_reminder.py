@@ -77,8 +77,6 @@ class LastChecked(unittest.TestCase):
 
 class Main(unittest.TestCase):
     def _use_procedure(self, text: str) -> None:
-        # The script takes no path argument; the test points the module at a
-        # scratch procedure instead and restores it afterwards.
         import tempfile
         handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
         handle.write(text)
@@ -94,9 +92,7 @@ class Main(unittest.TestCase):
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
         self._use_procedure("no record")
-        # Pinned to a table that ends at 2084: once the shipped table reaches
-        # 2085 the reminder goes quiet by design, and this case would stop
-        # exercising the due window.
+        # Pinned to a table ending at 2084, or the reminder would be quiet.
         sys.path.insert(0, str(_SCRIPT.parent))
         import dataset_table
         with mock.patch.object(dataset_table, "shipped_table", return_value={2084: [30] * 12}):

@@ -5,14 +5,8 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The parameterless tomorrow and yesterday answers: Today's Nepal Time civil
-/// day, plus or minus one, in Bikram Sambat.
-///
-/// Date anchors come from ticket 04's oracle, as in `TodayIntentTests`:
-/// 1 Baisakh 2082 is Monday 14 April 2025 (the dataset anchor), so the last
-/// day of 2081, 31 Chaitra, is 13 April 2025; 15 Ashar 2082 is Sunday
-/// 29 June 2025, and Ashar 2082 has 32 days, so 32 Ashar is 16 July 2025 and
-/// 1 Shrawan is 17 July 2025.
+/// The tomorrow and yesterday answers: today's Nepal Time civil day, plus or
+/// minus one, in Bikram Sambat.
 struct RelativeDayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
@@ -102,8 +96,7 @@ struct RelativeDayIntentTests {
 
     @Test("Running the intents answers the days either side of the real today")
     func performAnswersFromTheRealClock() async throws {
-        // perform() reads the stored time reference, so the oracle does too:
-        // a developer who chose their own zone would otherwise see a day apart.
+        // perform() reads the stored time reference, so the expectation does too.
         let zone = SettingsStore().timeReference.timeZone
         let before = Date()
         let tomorrow = try await TomorrowInBikramSambatIntent().perform()

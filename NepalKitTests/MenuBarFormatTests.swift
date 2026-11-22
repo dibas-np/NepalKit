@@ -6,8 +6,8 @@ import NepalKitCore
 @testable import NepalKit
 
 /// The menu-bar title's optional parts. Anchors: 27 Sep 2026 is a Sunday and
-/// 11 Ashoj 2083, 28 Sep 2026 a Monday and 12 Ashoj 2083 (the same anchors as
-/// `WeekdayNameTests` in NepalKitCore). Nepal Time is UTC+5:45, so 05:12:07 UTC reads 10:57:07.
+/// 11 Ashoj 2083, 28 Sep 2026 a Monday and 12 Ashoj 2083. Nepal Time is
+/// UTC+5:45, so 05:12:07 UTC reads 10:57:07.
 struct MenuBarFormatTests {
     private static let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
     private static let devanagari = DisplaySettings(digits: .devanagari, monthNames: .nepali)

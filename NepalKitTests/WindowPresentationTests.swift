@@ -4,15 +4,9 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// ADR-0011: opening a window from this app does not establish activation or
-/// focus, so `WindowPresentation` does it explicitly. Ticket 05 measured *which*
-/// activation actually fronts a menu-bar-only app and found `NSApp.activate()`
-/// cannot: it activates only when no other app is active, and this app is
-/// summoned while one is. Ticket 06 then found the activation request itself is
-/// occasionally refused, which is why this retries rather than sleeping.
-///
-/// These pin the two invariants that carry the weight: activation never runs
-/// ahead of the open, and a refused request is retried but bounded.
+/// ADR-0011: opening a window doesn't front a menu-bar-only app, so
+/// `WindowPresentation` activates explicitly once the open returns, retrying a
+/// refused request a bounded number of times.
 @MainActor
 struct WindowPresentationTests {
     @Test func opensBeforeItActivates() {
@@ -26,10 +20,7 @@ struct WindowPresentationTests {
     }
 
     @Test func activationIsDeferredUntilAfterTheOpenReturns() {
-        // Models re-entrancy precisely: if `activate` ran inline, `open` would
-        // still be executing and `openInProgress` would be true. The scheduler
-        // is where "open has returned" happens, so clearing it there is what
-        // makes the difference observable.
+        // If `activate` ran inline, `open` would still be in progress.
         var openInProgress = false
         var activatedWhileOpenInProgress = false
         WindowPresentation.present(
@@ -56,8 +47,7 @@ struct WindowPresentationTests {
     }
 
     @Test func stopsRetryingOnceActivationSucceeds() {
-        // The common case must cost exactly one activation, not `attempts` of
-        // them. Retrying after success would yank focus repeatedly.
+        // Retrying after success would yank focus repeatedly.
         var activations = 0
         WindowPresentation.present(
             open: {},
@@ -69,9 +59,7 @@ struct WindowPresentationTests {
     }
 
     @Test func retriesWhileTheAppIsNotYetActive() {
-        // The closure reports whether the app came forward, and a `false` —
-        // still not frontmost, the observed failure that leaves the window open
-        // and dead — is what gets retried.
+        // `false` means the app is still not frontmost, so it is retried.
         var activations = 0
         WindowPresentation.present(
             open: {},
@@ -86,8 +74,7 @@ struct WindowPresentationTests {
     }
 
     @Test func retryIsBounded() {
-        // Never retrying forever: a user who has walked away should not leave
-        // the app fighting for focus indefinitely.
+        // A user who walked away shouldn't leave the app fighting for focus.
         var activations = 0
         WindowPresentation.present(
             open: {},

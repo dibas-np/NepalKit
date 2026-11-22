@@ -4,8 +4,7 @@ import Foundation
 import Observation
 import NepalKitCore
 
-/// Observable display settings: persisted through SettingsStore, published
-/// so the menu-bar extra and popover refresh instantly on change.
+/// Observable display settings, persisted through `SettingsStore`.
 @MainActor
 @Observable
 final class DisplaySettingsModel {
@@ -14,20 +13,11 @@ final class DisplaySettingsModel {
     private(set) var timeReference: TimeReference
 
     private let store: SettingsStore
-    /// Models that schedule against the zone (menu-bar clock, popover clock,
-    /// month grid). A timer armed for Nepal's midnight is wrong the moment the
-    /// zone changes, so they are told rather than left to notice at their next
-    /// tick.
+    /// Models that schedule against the zone and must be re-armed when it changes.
     @ObservationIgnored private var timeReferenceObservers: [@MainActor (TimeReference) -> Void] = []
 
-    /// `store` is optional rather than defaulted to `SettingsStore()` in the
-    /// signature. A default argument is evaluated in a nonisolated context,
-    /// so a default that constructs a main-actor-isolated type is fragile
-    /// under strict isolation checking even when the initialiser itself is
-    /// `@MainActor` — whether it warns varies by toolchain and language mode.
-    /// Building the default in the body is correct under every setting, and
-    /// matches `WindowPresentation` and `LoginItemModel`. Tests still inject
-    /// a store explicitly.
+    /// The default store is built in the body: a default argument is evaluated
+    /// nonisolated, so constructing a main-actor type there is fragile.
     init(store: SettingsStore? = nil) {
         let store = store ?? SettingsStore()
         self.store = store
@@ -35,11 +25,8 @@ final class DisplaySettingsModel {
         self.timeReference = store.timeReference
     }
 
-    /// The zone "today" is read in: Nepal Time, or the Mac's own.
     var timeZone: TimeZone { timeReference.timeZone }
 
-    /// Persists the time reference and tells every observer in the same call,
-    /// so everything changes together.
     func save(_ reference: TimeReference) {
         store.save(reference)
         timeReference = reference
@@ -48,8 +35,6 @@ final class DisplaySettingsModel {
         }
     }
 
-    /// Registers a model that must follow the time reference. Called by the app
-    /// scene, the one place that holds every model.
     func observeTimeReference(_ observer: @escaping @MainActor (TimeReference) -> Void) {
         timeReferenceObservers.append(observer)
     }
@@ -67,8 +52,6 @@ final class DisplaySettingsModel {
         save(DisplaySettings(digits: settings.digits, monthNames: monthNames))
     }
 
-    /// Binding targets for the Settings pickers: writing runs the same save
-    /// path as `save(_:)`, so persistence and every reader move together.
     var digits: DigitScript {
         get { settings.digits }
         set { save(digits: newValue) }
@@ -85,16 +68,8 @@ final class DisplaySettingsModel {
     }
 
     #if DEBUG
-    /// A model over a throwaway preferences domain, seeded to the non-default
-    /// pair.
-    ///
-    /// `DisplaySettingsModel()` in a preview reads `UserDefaults.standard`, so
-    /// the canvas shows whatever the developer's own settings happen to be and
-    /// a change in them looks like a change in the view. The domain is named
-    /// apart and cleared first, so the values are fixed and reading them cannot
-    /// depend on anything already stored. Devanagari and Nepali month names are
-    /// the interesting case: they exercise the non-Latin paths, which the
-    /// defaults would never show.
+    /// A model over a throwaway preferences domain seeded with Devanagari digits and
+    /// Nepali month names, so previews don't depend on the developer's own settings.
     static var preview: DisplaySettingsModel {
         let suite = "NepalKit.PreviewSettings"
         guard let defaults = UserDefaults(suiteName: suite) else {

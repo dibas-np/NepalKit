@@ -5,14 +5,11 @@ import Testing
 import NepalKitCore
 import WidgetKit
 
-/// The provider adapter contract: one clock read per operation, callbacks
-/// derived entirely from the deterministic paths, clock-free previews and
-/// placeholders, and snapshot failures that stay errors.
 struct TodayComplicationProviderTests {
     private let dataset = CalendarDataset.v2
 
     @Test func widgetKindIsPinned() {
-        // Renaming the kind silently removes placed complications on upgrade.
+        // Renaming the kind removes placed complications on upgrade.
         #expect(TodayComplication.kind == "NepalKitTodayComplication")
     }
 
@@ -50,14 +47,12 @@ struct TodayComplicationProviderTests {
 
         let entry = provider.snapshot(isPreview: true)
 
-        // The preview never touches the clock: it renders the fixed sample
-        // day through core.
         #expect(clock.value == 0)
         guard case .day(.supported(let components)) = entry.state else {
             Issue.record("Expected the preview sample to resolve as a supported day")
             return
         }
-        // 27 September 2026 resolves through the shared dataset to 11 Ashoj 2083.
+        // 27 September 2026 is 11 Ashoj 2083.
         #expect(components.bikramSambatDay == "११")
         #expect(components.bikramSambatMonthName == "असोज")
         #expect(components.bikramSambatYear == "२०८३")
@@ -80,10 +75,6 @@ struct TodayComplicationProviderTests {
     }
 
     @Test func snapshotFailureStaysAnErrorAndCarriesTheDerivedDay() throws {
-        // A table whose supported-range year has zero-length months cannot
-        // resolve anything: the snapshot must report the calculation error,
-        // not a boundary or a fabricated sample. The NPT day itself was
-        // derived, so the error carries it as context.
         let broken = CalendarDataset(
             version: "broken-snapshot-test",
             years: [1975: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
@@ -91,8 +82,7 @@ struct TodayComplicationProviderTests {
             anchorGregorian: GregorianDate(year: 1918, month: 4, day: 13),
             supportedRange: 1975 ... 1975
         )
-        // 26 Sep 2026, 18:30 UTC: the NPT day 2026-09-27 is derived before
-        // the table fails to answer it.
+        // 26 Sep 2026, 18:30 UTC is 27 Sep in Nepal Time.
         let now = try UTCWatchFixture.utc(2026, 9, 26, 18, 30)
         let provider = TodayComplicationProvider(now: { now }, dataset: broken)
 

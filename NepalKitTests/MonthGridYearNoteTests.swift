@@ -5,8 +5,7 @@ import NepalKitCore
 @testable import NepalKit
 
 /// The notes under the month grid: a provisional year, and a year with no
-/// festival or holiday list, which would otherwise read as a year with no
-/// festivals at all.
+/// festival or holiday list.
 @MainActor
 struct MonthGridYearNoteTests {
     private static let listedOnly2083 = "Festivals and holidays are listed for 2083 BS only."

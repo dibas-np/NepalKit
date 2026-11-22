@@ -3,44 +3,18 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// The built Info.plist, when a build is available.
-///
-/// This exists because of a demonstrated, silent failure. `INFOPLIST_KEY_*`
-/// honours only a fixed allowlist of Apple-known names, and a name outside it is
-/// **accepted by the build and discarded with no warning**: setting
-/// `INFOPLIST_KEY_SUPublicEDKey` produced a successful build and an app with no
-/// `SUPublicEDKey` in it at all. A shipped app in that state could not verify a
-/// single update, and the only evidence anything was wrong was a green build.
-///
-/// So these tests read the product, not the project. With no build available
-/// they are skipped with a stated reason, which is not the same as passing —
-/// a skipped test still counts as passed, and for a while that was the only
-/// thing that happened: nothing set `NEPAKIT_BUILT_PLIST`, every run skipped
-/// these tests, and the release-critical keys they guard went unchecked while
-/// the suite reported green. `run-app-tests.sh` now discovers a product and
-/// CI exports one, so the checks actually run.
+/// Checks the built app's Info.plist. `INFOPLIST_KEY_*` silently drops keys
+/// outside Apple's allowlist, so these read the product, not the project.
+/// Skipped when no built product is available.
 struct InfoPlistKeysTests {
-    /// The app's bundle identifier, which is what tells the app's own Info.plist
-    /// apart from some other bundle's.
     nonisolated private static let appBundleIdentifier = "com.dibas.NepalKit.NepalKit"
 
-    /// The built app's Info.plist, or nil when no product is available.
-    ///
-    /// Two sources, in order. `NEPAKIT_BUILT_PLIST` is an explicit override for
-    /// a build somewhere else — the harness, and CI, which builds to a
-    /// `-derivedDataPath` of its own. Failing that, Xcode's test target is
-    /// *hosted by* the app it tests (`TEST_HOST`), so the product under
-    /// examination is this very process's bundle and needs no configuration.
-    ///
-    /// The identifier check is not a nicety. Under the SwiftPM harness
-    /// `Bundle.main` is the test runner, not the app, and reading its plist
-    /// would compare the app's release-critical keys against an unrelated
-    /// bundle — failing on every key, or worse, passing on none of them. Only
-    /// a plist that names the app counts as the app's.
+    /// The built app's Info.plist: `NEPAKIT_BUILT_PLIST` if set, otherwise the
+    /// host app's bundle. Only a plist naming the app's bundle identifier
+    /// counts, since under SwiftPM `Bundle.main` is the test runner.
     nonisolated private static let builtPlist: URL? = resolvedPlist.url
 
     /// True when `NEPAKIT_BUILT_PLIST` names no readable Info.plist for the app.
-    /// Computed in the same pass as `builtPlist` so the two cannot disagree.
     nonisolated private static let overrideWasUnusable: Bool = resolvedPlist.overrideWasUnusable
 
     nonisolated private static let resolvedPlist: (url: URL?, overrideWasUnusable: Bool) = {
@@ -63,13 +37,7 @@ struct InfoPlistKeysTests {
         return NSDictionary(contentsOf: builtPlist) as? [String: Any]
     }
 
-    /// The repository root, found by walking up from this file.
-    ///
-    /// Not a fixed number of `deletingLastPathComponent` calls: the harness
-    /// compiles these tests through a symlink, so `#filePath` may name either
-    /// `NepalKitTests/` or `scripts/apptests/Tests/NepalKitTests/`, and a depth
-    /// that works for one is wrong for the other. Walking up to a file that
-    /// only exists at the root is correct either way.
+    /// Searched upward because `#filePath` may be the symlinked harness path.
     private static var repositoryRoot: URL {
         var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0 ..< 8 {
@@ -82,23 +50,15 @@ struct InfoPlistKeysTests {
         return URL(fileURLWithPath: "/")
     }
 
-    /// The key the release artifacts are signed with. Committed deliberately:
-    /// it is public, and it is what lets an installed copy verify a download.
+    /// The public key release artifacts are signed with.
     private static let expectedPublicKey = "HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA="
 
-    /// Checks the built product rather than the project settings, so a value
-    /// the build discards cannot pass. Gated on a build existing: with none,
-    /// the test is *skipped with a reason* rather than failed, because "cannot
-    /// check" is not "the key is missing" and conflating them would make the gate
-    /// useless the first time someone runs the harness without building.
-    /// The trait's comment must be a compile-time literal, so the path cannot
-    /// appear in it; the test name and the skip reason carry the meaning.
+    /// Without a build the product checks are skipped rather than failed.
     nonisolated private static var hasBuiltProduct: Bool { builtInfo != nil }
 
     @Test func anExplicitBuiltProductMustBeReadable() {
-        // Skipping is right when nothing was built, not when the caller named a
-        // product: CI exports a fixed path, and a layout change would turn seven
-        // release-key checks into silent skips on a green required check.
+        // Skipping is for when nothing was built. A named product that can't be
+        // read would otherwise turn the release-key checks into silent skips.
         #expect(!Self.overrideWasUnusable,
                 "NEPAKIT_BUILT_PLIST is set but names no readable Info.plist for \(Self.appBundleIdentifier)")
     }
@@ -115,12 +75,7 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func thePlistIsAuthoritativeInTheBuiltProduct() throws {
-        // The plist states every key itself now (GENERATE_INFOPLIST_FILE is
-        // off), so there is no merge to survive — but the keys still have to
-        // reach the product intact, and the version keys still arrive
-        // substituted from build settings (ADR-0009). Losing LSUIElement would
-        // silently turn NepalKit into a Dock app — the single most visible
-        // regression available to this change — and the build would stay green.
+        // Version keys arrive substituted from build settings (ADR-0009).
         let info = try #require(Self.builtInfo)
 
         #expect(info["LSUIElement"] as? Bool == true, "menu-bar-only would be lost")
@@ -136,9 +91,7 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func feedURLIsStableHTTPSAndAbsolute() throws {
-        // A feed URL that moves strands every existing installation, so the
-        // shape is pinned: HTTPS (Sparkle refuses insecure feeds), absolute, and
-        // served from this repository rather than a host that could vanish.
+        // A feed URL that moves strands every existing installation.
         let info = try #require(Self.builtInfo)
         let feed = try #require(info["SUFeedURL"] as? String, "SUFeedURL is absent")
 
@@ -149,15 +102,8 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func theSignedFeedIsRequiredInTheBuiltProduct() throws {
-        // The producer half of update security is CI's: verify-appcast.py fails
-        // the build when the published feed carries no signature. This is the
-        // consumer half, and without it CI's gate can be defeated without
-        // forging anything — an attacker who rewrites the feed in transit
-        // deletes the signature block, and a client that merely *can* verify a
-        // signature (SUPublicEDKey) but does not *require* one reads the
-        // stripped feed happily. So the key must be true, not merely present:
-        // `false` is the silent-wrong value, and it is the value that leaves the
-        // app exactly as unprotected as before while looking configured.
+        // Being able to verify isn't enough: unless a signature is required, a
+        // feed stripped of it in transit is read happily.
         let info = try #require(Self.builtInfo)
         let value = info["SURequireSignedFeed"].map { "\($0)" } ?? "absent"
 
@@ -167,16 +113,8 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func updatesAreVerifiedBeforeExtractionInTheBuiltProduct() throws {
-        // Sparkle's documented prerequisite for SURequireSignedFeed, and a hard
-        // one: with this off, Sparkle refuses to check for updates *at all* and
-        // reports "For security reasons, SUVerifyUpdateBeforeExtraction needs to
-        // also be enabled if SURequireSignedFeed is enabled" instead. That is a
-        // total loss of updating rather than a weakened setting, and it is the
-        // state plan 038 shipped — the pair was set independently and the
-        // dependency was not found until a user hit it in the field.
-        //
-        // `true`, not merely present: absent and `false` fail identically here,
-        // and `false` is the value that looks deliberately configured.
+        // Sparkle refuses to check for updates at all when SURequireSignedFeed
+        // is on and this is off.
         let info = try #require(Self.builtInfo)
         let value = info["SUVerifyUpdateBeforeExtraction"].map { "\($0)" } ?? "absent"
 
@@ -184,32 +122,17 @@ struct InfoPlistKeysTests {
                 "the updater cannot check for updates at all: SUVerifyUpdateBeforeExtraction is \(value)")
     }
 
-    /// The feed's declared home. Changing it is a release decision: every
-    /// installed copy reads this URL, so a change breaks updates for all of them
-    /// at once.
+    /// Every installed copy reads this URL; changing it breaks all their updates.
     private static let expectedFeedURL = "https://dibas-np.github.io/NepalKit/appcast.xml"
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func theCopyrightLineReachesTheBuiltProduct() throws {
-        // The About surfaces render NSHumanReadableCopyright, and the value is
-        // only correct if it survives the plist merge. Set through INFOPLIST_KEY_
-        // it could be dropped silently, with a green build — the exact failure
-        // documented at the top of Info.plist. Checked against the built product.
         let info = try #require(Self.builtInfo)
         let copyright = try #require(info["NSHumanReadableCopyright"] as? String, "copyright line is absent")
 
         #expect(copyright == "Copyright (C) 2026 Dibas Sigdel")
 
-        // It must match what the source files declare, or the app and the
-        // repository name different holders. The GPL's guidance puts the notice
-        // in the source headers and leaves LICENSE as the licence text alone —
-        // prepending a project notice to LICENSE stops GitHub's Licensee from
-        // identifying the licence.
-        // Any source header carrying the same holder satisfies the check: the
-        // intent is "the app and the repository name the same rights holder",
-        // not "this one file does". Pinning a specific file made the most
-        // heavily edited file in the repo a single point of failure for an
-        // unrelated plist assertion.
+        // A source header must name the same rights holder as the app.
         let appSources = try FileManager.default.contentsOfDirectory(atPath: Self.repositoryRoot.appendingPathComponent("NepalKit").path)
             .filter { $0.hasSuffix(".swift") }
         #expect(!appSources.isEmpty, "no app sources found beside the project")
@@ -226,13 +149,7 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func theLicenceTravelsWithTheBinary() throws {
-        // GPL-3.0 requires the licence to accompany the work, not just to sit in
-        // the repository. For a distributed .app that means inside the bundle:
-        // a user who has the binary has to be able to read what they may do
-        // with it, offline, without a network round trip to the source.
-        //
-        // Checked in the built product, because the interesting failure is a
-        // resource build phase that quietly stopped copying the file.
+        // GPL-3.0 requires the licence to accompany the binary.
         let bundle = try #require(Self.builtPlist)
             .deletingLastPathComponent()
             .deletingLastPathComponent()   // NepalKit.app
@@ -246,17 +163,8 @@ struct InfoPlistKeysTests {
         #expect(text.contains("TERMS AND CONDITIONS"))
         #expect(text.contains("END OF TERMS AND CONDITIONS"))
 
-        // It must be the licence and nothing else. Anything prepended — a project
-        // notice, a README extract — stops GitHub's Licensee from identifying
-        // it, and the repository then shows NOASSERTION: this project was
-        // published that way until this assertion existed. The GPL asks for the
-        // notice in the source headers, not in the licence file.
-        //
-        // Compared as the first non-empty line, trimmed of its own indentation.
-        // The canonical file indents the title by 20 spaces, so trimming the
-        // whole text and then asserting a prefix *containing* that indentation
-        // could never pass — the original form of this assertion was provably
-        // dead and only went unnoticed because it is gated on a built product.
+        // Anything prepended stops GitHub's Licensee from identifying it. The
+        // canonical file indents its title, so compare the trimmed first line.
         let firstNonEmptyLine = text
             .split(whereSeparator: \.isNewline)
             .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }

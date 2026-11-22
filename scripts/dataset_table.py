@@ -3,12 +3,7 @@
 # Copyright (C) 2026 Dibas Sigdel
 """Parse the shipped month-length table out of CalendarDataset.swift.
 
-One parser for both provenance scripts: verify-data-sources.py compares this
-table against pinned community sources, and check-kathmandu-calendar.py
-spot-checks it against the live KMC calendar. Two copies drifted in technique
-(see the git history of load_shipped vs shipped_table); a reformat of the
-dataset literal that broke only one would produce contradictory provenance
-evidence, so there is exactly one.
+Shared by verify-data-sources.py and check-kathmandu-calendar.py.
 """
 
 import pathlib
@@ -19,11 +14,8 @@ DATASET = pathlib.Path(__file__).resolve().parent.parent / "NepalKitCore" / "Sou
 
 
 def shipped_table(dataset_path=DATASET):
-    """Year -> twelve month lengths, parsed from the dataset literal.
-
-    sys.exits rather than returning {}: a comparison that silently compared
-    nothing reports success having checked nothing.
-    """
+    """Year -> twelve month lengths, parsed from the dataset literal. Exits
+    rather than returning an empty table."""
     text = pathlib.Path(dataset_path).read_text(encoding="utf-8")
     # Anchor on the literal's own line: `years: [` alone also matches the
     # declaration and the init's parameter further up the file.

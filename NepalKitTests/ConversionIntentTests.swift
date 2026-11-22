@@ -5,11 +5,9 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Tickets 09 and 10: the two Shortcuts conversions.
-///
-/// Expected answers come from ticket 04's independently computed oracle:
-/// 15 March 2025 is Saturday 2 Chaitra 2081; 15 Ashar 2082 is Sunday
-/// 29 June 2025; 1 Baisakh 2082 is the dataset anchor (Monday 14 April 2025).
+/// The two Shortcuts conversions. Expected dates were computed independently:
+/// 15 March 2025 is Saturday 2 Chaitra 2081, 15 Ashar 2082 is Sunday 29 June
+/// 2025, and 1 Baisakh 2082 is Monday 14 April 2025.
 struct ConversionIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
@@ -153,8 +151,7 @@ struct ConversionIntentTests {
 
     @Test("Invalid Bikram Sambat day names the month's real length")
     func bikramSambatInvalidDay() async throws {
-        // The prototype corrected ticket 03's example here: 32 Ashar 2082 is
-        // valid (Ashar 2082 has 32 days), so the invalid example is 31 Kartik.
+        // Ashar 2082 has 32 days, so the invalid example is 31 Kartik.
         #expect(dataset.monthLengths(for: 2082)?[2] == 32)
         #expect(dataset.monthLengths(for: 2082)?[6] == 30)
 

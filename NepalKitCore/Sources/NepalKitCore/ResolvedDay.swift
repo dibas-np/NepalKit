@@ -2,18 +2,13 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
-/// One civil day with both calendar identities resolved, for code that must
-/// tell "outside the supported range" from "something is wrong".
+/// One civil day with both calendar identities resolved.
 ///
-/// The conversion initializers return nil for both. A `ResolvedDay` always
-/// carries the Gregorian date and its weekday, which stay answerable outside
-/// the dataset, and reports the Bikram Sambat side as supported or as an
-/// expected boundary. Invalid input and a broken dataset throw
-/// `DayResolutionError` instead, so a boundary is never mistaken for an error
-/// or the reverse.
+/// Unlike the conversion initializers, which return nil for any failure, this
+/// tells "outside the supported range" apart from invalid input or a broken
+/// dataset, which throw `DayResolutionError`.
 public struct ResolvedDay: Sendable, Hashable {
-    /// The Bikram Sambat side of the day. A range boundary is an expected
-    /// result, not an error.
+    /// The Bikram Sambat side of the day.
     public enum BikramSambatStatus: Sendable, Hashable {
         /// The day is inside the dataset's supported range.
         case supported(BikramSambatDate)
@@ -23,7 +18,7 @@ public struct ResolvedDay: Sendable, Hashable {
         case afterSupportedRange
     }
 
-    /// The Gregorian date. Always present.
+    /// The Gregorian date.
     public let gregorian: GregorianDate
 
     /// The weekday, 1 (Sunday) through 7 (Saturday), shared by both calendars.
@@ -33,10 +28,6 @@ public struct ResolvedDay: Sendable, Hashable {
 
     /// Resolves a Gregorian date.
     ///
-    /// The boundary is decided from the dataset's exact Gregorian bounds,
-    /// never from a failed conversion, which would conflate "outside the
-    /// table" with "the table is broken".
-    ///
     /// - Throws: `DayResolutionError`.
     public init(_ date: GregorianDate, in dataset: CalendarDataset = .bundled) throws {
         guard utcDate(from: date) != nil else {
@@ -45,8 +36,6 @@ public struct ResolvedDay: Sendable, Hashable {
         guard let weekday = date.weekday else {
             throw DayResolutionError.calendarCalculationFailure(date)
         }
-        // Each bound is derived only when needed, so a day before the range
-        // still resolves when the end of the table is what is broken.
         guard let start = dataset.gregorianStart else {
             throw DayResolutionError.datasetAssumptionFailure(date)
         }
@@ -79,28 +68,21 @@ public struct ResolvedDay: Sendable, Hashable {
     }
 }
 
-/// Why a day could not be resolved. Every case is invalid input or a defect;
-/// a date outside the supported range is a `ResolvedDay` boundary instead.
+/// Why a day could not be resolved: invalid input or a defect.
 public enum DayResolutionError: Error, Sendable, Hashable {
-    /// The components do not name a real Gregorian day (February 30, month
-    /// 13, day 0).
+    /// The components do not name a real Gregorian day.
     case invalidCivilDay(GregorianDate)
 
-    /// The dataset failed to answer a day it claims to cover, or its bounds
-    /// could not be derived.
+    /// The dataset failed to answer a day it claims to cover.
     case datasetAssumptionFailure(GregorianDate)
 
-    /// Calendar arithmetic failed for a valid day. Unreachable while
-    /// Foundation behaves.
+    /// Calendar arithmetic failed for a valid day.
     case calendarCalculationFailure(GregorianDate)
 
-    /// The civil day could not be read from the instant. Unreachable while
-    /// Foundation behaves.
+    /// The civil day could not be read from the instant.
     case unreadableInstant(Date)
 
-    /// The valid Gregorian date the failure happened on, if there was one.
-    /// Nil for invalid input, so an error display never shows a date that
-    /// does not exist.
+    /// The valid Gregorian date the failure happened on; nil for invalid input.
     public var resolvedGregorianDay: GregorianDate? {
         switch self {
         case .datasetAssumptionFailure(let day), .calendarCalculationFailure(let day):

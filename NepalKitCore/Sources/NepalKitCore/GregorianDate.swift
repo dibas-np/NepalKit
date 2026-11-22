@@ -2,13 +2,10 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
-/// A date in the Gregorian calendar: a year, a month from 1 (January) through
-/// 12 (December), and a day of that month.
+/// A civil day in the Gregorian calendar, independent of any time zone.
 ///
-/// A civil day, not an instant: it names a day on a calendar, independent of
-/// any time zone. The value holds whatever components it was given; anything
-/// computed from it returns nil when they do not name a real day, such as
-/// February 30.
+/// The components are stored unchecked; anything computed from an impossible
+/// date such as February 30 returns nil.
 public struct GregorianDate: Hashable, Sendable, Codable {
     public let year: Int
     public let month: Int
@@ -40,8 +37,7 @@ extension GregorianDate {
         self = converted
     }
 
-    /// The civil day at `now` in `timeZone`, Nepal Time by default. Nil only
-    /// if calendar math fails.
+    /// The civil day at `now` in `timeZone`, Nepal Time by default.
     public static func today(now: Date = Date(), timeZone: TimeZone = .nepal) -> GregorianDate? {
         let components = ClockCalendars.gregorian(timeZone: timeZone).dateComponents([.year, .month, .day], from: now)
         guard let year = components.year, let month = components.month, let day = components.day else { return nil }
@@ -49,17 +45,13 @@ extension GregorianDate {
     }
 
     /// The weekday, 1 (Sunday) through 7 (Saturday), or nil if the date does
-    /// not exist.
-    ///
-    /// A weekday belongs to the civil day, not to either calendar, so it needs
-    /// no dataset and stays answerable outside the supported range.
+    /// not exist. Needs no dataset.
     public var weekday: Int? {
         utcDate(from: self).map { utcGregorian.component(.weekday, from: $0) }
     }
 
     /// The date `days` days later (earlier, for a negative value), or nil if
-    /// this date does not exist. Civil-day arithmetic, so the result does not
-    /// depend on a time zone.
+    /// this date does not exist.
     public func advanced(byDays days: Int) -> GregorianDate? {
         utcDate(from: self)
             .flatMap { utcGregorian.date(byAdding: .day, value: days, to: $0) }
@@ -68,9 +60,8 @@ extension GregorianDate {
 
     /// The date as an instant at noon UTC, or nil if it does not exist.
     ///
-    /// Noon keeps the instant on the named day in every zone from UTC−12
-    /// through UTC+11:59. Further east no single instant can: it falls on the
-    /// following local day.
+    /// Noon keeps the instant on the named day in zones from UTC−12 through
+    /// UTC+11:59.
     public var noonUTC: Date? {
         utcDate(from: self)?.addingTimeInterval(12 * 60 * 60)
     }

@@ -2,127 +2,60 @@
 // Copyright (C) 2026 Dibas Sigdel
 import NepalKitCore
 
-/// User-facing strings in one place. Not a localization system: the app ships
-/// one UI language (the month-name language setting is a date-presentation
-/// setting, not a second UI language).
+/// User-facing strings. The app ships one UI language; this is not a localization system.
 nonisolated enum Strings {
     static let bsDateUnavailable = "Bikram Sambat date unavailable"
-    /// Separator between a date and its weekday on a shown date line.
-    ///
-    /// Shared by every place the pairing appears — the popover's hero date and
-    /// its Gregorian line past the range, which lay the two halves out as
-    /// separate `Text`s in an `HStack` so they wrap independently, and the
-    /// converter's shown result, which composes them through
-    /// `datedWithWeekday`. The popover therefore does not call the composer;
-    /// what must not drift is the separator itself, because the spoken channel
-    /// has to avoid it in all of them.
+    /// Separator between a date and its weekday. The spoken channel must avoid it.
     static let weekdaySeparator = "·"
     static func datedWithWeekday(_ date: String, _ weekday: String) -> String {
         "\(date) \(weekdaySeparator) \(weekday)"
     }
-    /// Honors the digit-script setting like every other number the app renders.
     static func supportedThrough(_ bsYear: Int, digits: DigitScript) -> String {
         "Supported through \(digits.format(bsYear)) BS"
     }
-    /// Compact menu-bar marker for the range boundary. The popover states the
-    /// boundary in words; the menu bar only has room to avoid looking broken.
     static let menuBarBeyondRange = "n/a"
-    /// Prefix on the menu-bar date while a scheduled update is still awaiting
-    /// the user's attention. A scheduled check is run by a windowless app, so
-    /// its alert is easy to never see; the menu bar is the one surface this user
-    /// actually looks at. Carries its own trailing space, so the prefix stays
-    /// one unit rather than a glyph and a separator at the call site.
+    /// Prefix on the menu-bar date while a scheduled update awaits attention.
+    /// Carries its own trailing space.
     static let menuBarUpdateMarker = "! "
-    /// Spoken form of the same reminder. Said in words rather than read as the
-    /// glyph, for the same reason the date is spoken and not spelled out: a
-    /// voice cannot read "!", and this is the one thing on the menu bar that
-    /// changes what the user should do. A clause rather than a sentence, since
-    /// `SpokenDate.menuBar` composes it between the app name and the date.
     static let updateAvailableSpoken = "update available"
     static let digitScriptLabel = "Digits"
     static let digitsLatin = "Latin 0–9"
-    /// Spoken form of the Latin digit option. The shown label keeps its en dash
-    /// for the same reason `digitsDevanagariSpoken` keeps its Devanagari digits:
-    /// on screen the label is describing the range it selects, and only the
-    /// announcement is made pronounceable.
     static let digitsLatinSpoken = "Latin 0-9"
     static let digitsDevanagari = "Devanagari ०–९"
-    /// Spoken form of the Devanagari digit option. The shown label deliberately
-    /// shows the digits it selects, but those are exactly the characters a voice
-    /// may not read, which would leave the option unidentifiable when the two
-    /// Settings pickers are read aloud. Same rule as the dates: the screen keeps
-    /// the characters, only the announcement is made pronounceable.
-    ///
-    /// The separator is a plain hyphen for the reason `supportedRangeSpoken`
-    /// spells its dash out: an en dash is unpredictable aloud — some voices say
-    /// "0 dash 9", some pause, some drop it. This string exists only to be
-    /// spoken, so unlike `digitsLatin` there is no shown counterpart whose
-    /// punctuation it has to keep.
+    /// Spoken form of the Devanagari option: a voice may not read the digits,
+    /// and an en dash is read unpredictably.
     static let digitsDevanagariSpoken = "Devanagari 0-9"
     static let monthNameLabel = "Month names"
     static let monthsNepali = "Nepali"
     static let monthsTransliterated = "Transliterated"
-    /// The Display section's live example: today's date rendered with whatever
-    /// the two pickers currently select. "Example" would undersell it — the row
-    /// shows the real rendering, not a made-up sample.
     static let displayPreviewLabel = "Preview"
     static let nepalTimeLabel = "Nepal Time"
     static let localTimeLabel = "Local"
     static let todayLabel = "Today"
     static let launchAtLoginLabel = "Launch at login"
-    /// Shown while macOS holds the login item for approval: the toggle reads on,
-    /// yet nothing launches until the user allows it in System Settings.
     static let loginItemNeedsApproval = "NepalKit will not open at login until you allow it in System Settings, under Login Items."
     static let openLoginItemsSettings = "Open Login Items Settings"
     static let converterLabel = "Converter"
-    /// Names the direction toggle. Distinguishes it from the popover's own
-    /// Today/Converter switcher, which is a different control directly above.
     static let converterDirectionLabel = "Direction"
-    /// Names the pair of destinations the popover's segmented control switches
-    /// between. The two segments are read out as bare words otherwise, which
-    /// does not convey that they are a choice between views.
     static let popoverDestinationsLabel = "Destination"
-    /// The app's own name, for the popover header. Spoken-channel safe: this is
-    /// visible, and the name is what a screen-reader user needs to confirm which
-    /// app the popover belongs to, since a menu-bar extra has no Dock icon or
-    /// window title to carry it.
     static let appName = "NepalKit"
-    /// Shown on the direction toggle's segments, so abbreviated: the two full
-    /// calendar names do not fit a segmented control inside a 340pt popover and
-    /// the framework clips rather than wraps. "Bikram Sambat → Gregorian"
-    /// rendered as "ikram Sambat → Gregorian".
-    ///
-    /// The abbreviations are spoken in full - see `bsToADSpoken` - because
-    /// "BS" and "AD" are not self-evident aloud, and this is the control that
-    /// says which calendar the result will be in.
+    /// Abbreviated to fit the segmented control; spoken in full via `bsToADSpoken`.
     static let bsToAD = "BS → AD"
     static let adToBS = "AD → BS"
-    /// Spoken form of the direction segments, which the abbreviations are not
-    /// enough to convey. Read aloud, "BS to AD" gives no clue what either
-    /// letter stands for, and the result line it governs is the whole point of
-    /// the tab.
     static let bsToADSpoken = "Bikram Sambat to Gregorian"
     static let adToBSSpoken = "Gregorian to Bikram Sambat"
     static let yearLabel = "Year"
     static let monthLabel = "Month"
     static let dayLabel = "Day"
     static let converterOutOfRange = "Outside supported range"
-    /// Secondary line under a converter result whose Bikram Sambat side falls
-    /// in a provisional year (`CalendarDataset.provisionalYears`). Names no
-    /// year: the result line above already shows it.
     static let converterProvisionalNote = "Provisional projection, not yet in the official Nepali Patro"
-    /// The month grid's navigation; previous and next are announced names for
-    /// chevron-only buttons.
     static let previousMonthLabel = "Previous Month"
     static let nextMonthLabel = "Next Month"
-    /// Returns the grid to today's month. The visible title is `todayLabel`.
     static let showTodayHelp = "Shows the month containing today"
     static let monthGridDaysLabel = "Days" // names the weekday header and the grid for VoiceOver
-    /// The day popover's distance from today. Today reuses `todayLabel`.
     static let tomorrowLabel = "Tomorrow"
     static let yesterdayLabel = "Yesterday"
-    /// "In 5 days", "3 days ago". The count honours the digit setting on
-    /// screen; the spoken channel passes `.latin`.
+    /// The count honours the digit setting on screen; the spoken channel passes `.latin`.
     static func relativeDays(_ days: Int, digits: DigitScript) -> String {
         switch days {
         case 0: todayLabel
@@ -132,81 +65,37 @@ nonisolated enum Strings {
         default: "\(digits.format(-days)) days ago"
         }
     }
-    /// The day popover's actions. Copy takes the Bikram Sambat date as shown.
     static let copyDateLabel = "Copy"
     static let copyDateHelp = "Copies the Bikram Sambat date"
     static let closeDayDetailsLabel = "Close Day Details" // the details card under the grid
     static let monthGridDayHelp = "Shows this day's details" // a grid day is a button that shows them
-    /// A day's festivals as one line; a comma, not a middle dot, so shown and spoken share it.
     static func festivalNames(_ names: [String]) -> String { names.joined(separator: ", ") }
-    /// Range boundary state on the month grid: today is past the supported
-    /// range, so the grid shows the last supported month instead.
     static func monthGridPastRange(_ bsYear: Int, digits: DigitScript) -> String {
         "Today is past the supported range. \(supportedThrough(bsYear, digits: digits))."
     }
-    /// The menu command's title, in the app menu. Apple's convention there is the
-    /// app's own name: "Quit NepalKit".
     static let quitLabel = "Quit NepalKit"
-    /// The popover footer's Quit, where the app name is neither needed nor
-    /// wanted — the button sits beside the app's own popover, so naming the app
-    /// again is the visual equivalent of "NepalKit" appearing twice in the menu
-    /// bar. Still announced as `quitLabel` by the caller.
     static let quitFooterLabel = "Quit"
-    /// Spoken purposes for the two footer buttons that are always on screen. The
-    /// update button's hint lives further down, with its own reasoning. A symbol
-    /// with no accessible name is the worst case in the whole app: a screen-reader
-    /// user hears "button" twice and cannot tell the actions apart, while a sighted
-    /// user reads the marks instantly. So the Settings button is drawn as a bare
-    /// glyph and still *named* here — that is the whole reason the string survives
-    /// the text being removed.
+    /// Help strings for the footer buttons. The Settings button is a bare glyph,
+    /// so these are its only accessible description.
     static let settingsHelp = "Opens the Settings window"
     static let quitHelp = "Quits NepalKit"
-    /// Unused as drawn: the footer's Settings button shows the glyph alone. Kept
-    /// because it is the announced name, and a button whose label is only ever
-    /// spoken still needs the string.
+    /// The footer draws only the glyph; this is the announced name.
     static let settingsLabel = "Settings…"
-    /// Spoken form: the ellipsis is a visual affordance marking an action that
-    /// continues past the footer, and there is nothing to add by saying it —
-    /// "Settings" is the whole action.
     static let settingsLabelSpoken = "Settings"
 
-    /// The footer's update button, which exists only while a check has found
-    /// something to install.
-    ///
-    /// The word "Update" rather than "Check for Updates", which belongs to
-    /// Settings where asking the question is the action — here the answer is
-    /// already known. The ellipsis is this file's convention for work continuing
-    /// past the surface it is drawn on, and this button qualifies: the framework
-    /// presents the install flow in its own window.
+    /// The footer's update button, shown only once a check has found an update.
     static let updateButtonLabel = "Update…"
-    /// Spoken form: the ellipsis is a visual affordance and reads as a pause with
-    /// no meaning, so the announcement drops it.
     static let updateButtonLabelSpoken = "Update"
-    /// Deliberately not "installs the update". One click asks the updater to
-    /// present the update it has already found; the install happens on the user
-    /// choosing Install in the framework's own alert. A hint promising a single tap
-    /// is the kind of thing a screen-reader user acts on and then finds did not
-    /// happen, on the one control whose consequence is replacing the app.
+    /// Not "installs the update": the install happens in the updater's own alert.
     static let updateButtonHelp = "Shows the available update and its install options"
-    // Spoken-channel strings. These are *said*, never shown: the visual date
-    // always renders as configured, and only the accessibility representation
-    // differs (SpokenDate).
+    // Spoken-channel strings: said, never shown (see `SpokenDate`).
     static let appNameForSpeech = "NepalKit"
-    /// Introduces the converter's result when spoken. On screen the result is
-    /// self-evident next to the pickers that produced it; read aloud it is a
-    /// bare date with no way to tell which calendar it is in.
     static let converterResultLabel = "Result"
-    /// Spoken form of the range boundary. The Gregorian end date is passed in
-    /// rather than spelled here: it is derived from the dataset (ADR-0010), so
-    /// no literal in this file can drift from the shipped table.
+    /// The Gregorian end date is derived from the dataset (ADR-0010), not spelled here.
     static func spokenDateBeyondRange(_ gregorianEnd: String) -> String {
         "date unavailable, calendar data ends \(gregorianEnd)"
     }
     // MARK: - Settings window
-    //
-    // Three tabs, in sidebar order. The titles are deliberately short: a sidebar
-    // row is one line, and "Software Update" as a tab name would truncate while
-    // its own Section header below still spells it out in full.
     static let menuBarTabTitle = "Menu Bar"
     static let generalTabTitle = "General"
     static let aboutTabTitle = "About"
@@ -223,19 +112,10 @@ nonisolated enum Strings {
 
     // MARK: - Siri & Shortcuts
 
-    // Kept on one line each: `SpokenDateTests` parses this file and treats a
-    // declaration whose value it cannot read off the line as unclassified,
-    // which fails the sweep rather than passing unchecked.
+    // One line per declaration: `SpokenDateTests` parses this file and fails on
+    // any `static let` whose value it cannot read off the line.
     static let siriShortcutsSection = "Siri & Shortcuts"
-    /// The spec's sentence, with tomorrow and yesterday added: it states what
-    /// actually works. Voice parameter-filling for the conversions is an OS
-    /// behaviour the app does not control, so implying conversions work by
-    /// voice would advertise something that answers "late June or early July"
-    /// from a web search.
     static let siriShortcutsSummary = "Ask Siri for today's, tomorrow's or yesterday's Nepali date; run the conversions from Shortcuts."
-    /// What each capability is, in the user's terms. Kept beside the phrases
-    /// they introduce rather than in the view, so a phrase and the sentence
-    /// naming it are read together and one cannot move without the other.
     static let siriTodayCapability = "Today's date in Bikram Sambat"
     static let siriTomorrowCapability = "Tomorrow's date in Bikram Sambat"
     static let siriYesterdayCapability = "Yesterday's date in Bikram Sambat"
@@ -243,33 +123,16 @@ nonisolated enum Strings {
     static let siriConvertToGregorianCapability = "Convert a Bikram Sambat date to Gregorian"
 
     /// One capability and the phrase that invokes it.
-    ///
-    /// A type rather than three rows written out inline, because each row is a
-    /// title, a phrase and an announcement: three strings that must agree, and
-    /// a list is the only place that agreement can be stated once.
     struct Capability: Identifiable {
-        /// What the capability does, in the product's own vocabulary.
         let title: String
-        /// The registered phrase, with `\(.applicationName)` written out as the
-        /// app's name — the form a person would say or type.
+        /// The registered phrase with `\(.applicationName)` written out.
         let phrase: String
-        /// One string, because the title and the phrase are announced together
-        /// and read in sequence; announcing the bare phrase alone would leave a
-        /// screen-reader user with no idea what it does.
         var spokenDescription: String { "\(title). \(phrase)" }
         var id: String { phrase }
     }
 
-    /// The five capabilities this build registers, in the order they appear in
-    /// Settings.
-    ///
-    /// Computed rather than stored, and that is a deliberate answer to the
-    /// spoken-channel sweep in `SpokenDateTests`, which parses this file and
-    /// fails on any `static let` whose value it cannot read off one line. A
-    /// stored array of `Capability` would be exactly that: an unreadable
-    /// constant, needing an exemption that would then be a hole. Composed from
-    /// the ten string constants above — every one of which the sweep reads and
-    /// checks on its own — it holds no literal of its own to escape the check.
+    /// The capabilities this build registers, in Settings order. Computed so
+    /// the `SpokenDateTests` sweep sees no unreadable stored constant.
     static var siriShortcutCapabilities: [Capability] {
         [
             Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
@@ -280,9 +143,7 @@ nonisolated enum Strings {
         ]
     }
 
-    /// The phrase templates as they are registered, with the application-name
-    /// token spelled out. The token is the framework's, not this app's: it
-    /// resolves to whatever the app is called, which here is `appName`.
+    /// Phrase templates as registered, with the application-name token spelled out.
     static let siriTodayPhrase = "What is today's Nepali date with \(appName)"
     static let siriTomorrowPhrase = "What is tomorrow's Nepali date with \(appName)"
     static let siriYesterdayPhrase = "What was yesterday's Nepali date with \(appName)"
@@ -291,65 +152,30 @@ nonisolated enum Strings {
     static let updatesSection = "Software Update"
     static let updateAutomaticallyLabel = "Check automatically"
     static let checkForUpdatesLabel = "Check for Updates…"
-    /// Spoken form: the ellipsis is a visual affordance, not a spoken one. Shown,
-    /// it marks a control that opens a sheet elsewhere; aloud it buys a pause and
-    /// no meaning.
     static let checkForUpdatesLabelSpoken = "Check for Updates"
     static let updateStatusNotChecked = "Not checked yet"
     static let updateStatusUpToDate = "NepalKit is up to date"
     static let updateStatusUpdateAvailable = "An update is available"
-    /// A failed check is not the same answer as an up-to-date one, and saying
-    /// so is the whole point: "could not check" must never read as "current".
+    /// Must never read as "up to date".
     static let updateStatusFailed = "Could not check for updates"
 
-    /// The reason is the framework's own description of what went wrong.
-    /// Shown, not swallowed: "could not check" without a why is undebuggable,
-    /// both for the user reporting it and for the maintainer reading the report.
-    ///
-    /// The reason is presented as a quoted detail rather than spliced into the
-    /// sentence, so the framework's wording stays separable from the app's.
+    /// Quotes the updater's own reason so it stays separable from the app's wording.
     static func updateStatusFailedReason(_ reason: String) -> String {
         "\(updateStatusFailed). The updater reported: “\(reason)”"
     }
 
-    /// "Up to date" is a claim; the check date is its evidence. A current
-    /// answer from a check two minutes ago is a different fact from one whose
-    /// age nobody can name, and the difference is what makes the status
-    /// trustworthy rather than merely reassuring. The date string is formatted
-    /// by the caller in the user's own locale and calendar.
+    /// The date is formatted by the caller in the user's locale and calendar.
     static func updateLastChecked(_ date: String) -> String {
         "Last checked: \(date)"
     }
 
-    /// Refused rather than failed: the check was declined before it ran, because
-    /// this build could not have acted on any answer. Said rather than silent,
-    /// because a user who asked to check and got nothing back cannot tell that
-    /// apart from a network problem.
-    ///
-    /// Ours rather than the framework's — the reason beside it is the one the
-    /// updater phrases for itself and this file only passes along, and this is
-    /// the single sentence the app raises itself. So it lives here with the rest
-    /// instead of as a literal at the throw site.
-    ///
-    /// One line with its literal on purpose: `SpokenDateTests` parses this file
-    /// to sweep the spoken channel, and a declaration it cannot read a value out
-    /// of fails that test rather than going unchecked.
+    /// The check was declined because this build cannot update itself in place.
     static let updateCheckSkippedTransientLaunch = "Skipped: this build cannot update itself in place"
 
-    /// A refused register/unregister is invisible on the toggle: `isOn` follows
-    /// the system, so the toggle springs back without ever saying why. This
-    /// sentence is where the reason lands.
-    ///
-    /// Parenthetical rather than a second clause, so the direction of the change
-    /// is readable while the toggle is still mid-rebound — "turning it on" beside
-    /// a control that just sprang back to off is the whole ambiguity.
+    /// Shown because a refused register/unregister just springs the toggle back.
     static let loginItemFailed = "Could not change launch at login"
 
-    /// The system reports an opaque Cocoa error, so the sentence around it is
-    /// the app's and the payload is quoted rather than spliced in, for the same
-    /// reason as `updateStatusFailedReason`: the system's phrasing is written
-    /// for the login-item machinery, not for this sentence, and quoting keeps
-    /// the two claims separable if it turns out to contradict ours.
+    /// Quotes the system's reason, as `updateStatusFailedReason` does.
     static func loginItemFailureReason(_ failure: LoginItemFailure) -> String {
         switch failure {
         case .registration(let reason):
@@ -359,22 +185,15 @@ nonisolated enum Strings {
         }
     }
 
-    /// About surface. The calendar range is formatted from the dataset's own
-    /// bounds, so narrowing or extending the table moves this line with it.
     static func versionLabel(_ version: String) -> String { "Version \(version)" }
     static func supportedRange(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound)–\(range.upperBound) BS"
     }
-    /// Spoken form of the supported range. The shown form uses an en dash,
-    /// which is right on screen but which voices read unpredictably — some say
-    /// "1975 dash 2084", some pause, some drop it. "to" is unambiguous in every
-    /// case. Spoken only; the screen keeps the dash.
+    /// Says "to" instead of the en dash, which voices read unpredictably.
     static func supportedRangeSpoken(_ range: ClosedRange<Int>) -> String {
         "\(range.lowerBound) to \(range.upperBound) BS"
     }
-    /// About surface: the projection caveat, generated from the dataset's
-    /// provisional years so attesting a row updates it. Nil when every row is
-    /// attested.
+    /// Generated from the dataset's provisional years; nil when every row is attested.
     static func provisionalYearsNote(_ years: Set<Int>) -> String? {
         guard !years.isEmpty else { return nil }
         // Joined by hand: this file does not import Foundation.
@@ -387,8 +206,6 @@ nonisolated enum Strings {
     static let datasetVersionLabel = "Dataset version"
     static let supportedRangeLabel = "Supported range"
     static let repositoryLabel = "Source repository"
-    /// Shown on the Settings sidebar link. Short because the sidebar row is
-    /// narrow and the full phrase wraps; `repositoryLabel` is what gets
-    /// announced, because "Source" alone does not say what it points at.
+    /// Short for the narrow sidebar row; `repositoryLabel` is what gets announced.
     static let sourceLinkTitle = "Source"
 }

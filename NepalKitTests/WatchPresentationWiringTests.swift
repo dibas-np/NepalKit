@@ -4,34 +4,11 @@ import Foundation
 import Testing
 
 /// Which weekday and Gregorian detail each complication family announces, and
-/// that the two copies of the large-text threshold still agree.
-///
-/// **Derived from the source, not enumerated.** A hand-written list of the five
-/// `supportedLabel` calls pins the wiring reviewed today and says nothing about
-/// the call site added tomorrow, which is exactly the gap this closes: flipping
-/// rectangular's `weekday: true` to `false` leaves the whole suite green while
-/// the one family that shows a weekday stops announcing it. So the call sites
-/// are *parsed*, each is classified by the family and large-text side enclosing
-/// it, and a site matching no expectation — or colliding with another site under
-/// one key — is an offender rather than something that goes unchecked. The shape
-/// `SpokenDateTests.stringsConstantsReachingTheSpokenChannel` argues for.
-///
-/// **What this deliberately does not prove.** The families are SwiftUI `View`s,
-/// and nothing can ask a view which arguments it passed a helper without either
-/// rendering it or adding a view-inspection dependency. Rendering is
-/// unavailable here — this file is read by a SwiftPM harness with no preview or
-/// snapshot harness, and `AGENTS.md` forbids a third-party framework without
-/// asking — so the claim that the announced detail *matches what is drawn*
-/// belongs where it always did: a real device and a real screen reader. The parser is line-based and
-/// follows no indirection; its exemption set covers a shape it cannot read and
-/// is empty today, which is the honest way to say "none" while leaving the
-/// mechanism in place.
+/// that the two copies of the large-text threshold agree. Call sites are parsed
+/// from source, so a new or changed site can't slip through unchecked.
 struct WatchPresentationWiringTests {
     @Test func everySupportedStateCallSiteMatchesTheFamilyThatMakesIt() throws {
         // Each family announces the weekday exactly where it draws one.
-        // Rectangular's default body puts the weekday on the year line, and its
-        // large-text fallback drops it along with the Gregorian detail that body
-        // never drew. Inline, circular and corner show neither.
         let expected: [String: (weekday: Bool?, gregorian: Bool)] = [
             "TodayRectangularComplication.standard": (true, false),
             "TodayRectangularComplication.largeText": (false, false),
@@ -50,9 +27,7 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func everyBoundaryCallSiteMatchesTheFamilyThatMakesIt() throws {
-        // Past the supported range there is no date to announce, so the boundary
-        // label retains the support context. Only the corner family draws a
-        // Gregorian day/month and includes it in speech.
+        // Only the corner family draws a Gregorian day/month past the range.
         let expected: [String: (weekday: Bool?, gregorian: Bool)] = [
             "TodayRectangularComplication.standard": (nil, false),
             "TodayInlineComplication.standard": (nil, false),
@@ -69,11 +44,8 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func everyErrorStateAnnouncesItsSpokenDescription() throws {
-        // The error state is the one a family can lose silently: it carries no
-        // flags, just a label, so a family whose error branch stops labelling
-        // itself reads out as a bare "Date calculation failed". Every family
-        // needs one, and the families are the same set the supported sweep
-        // classifies, so a family added tomorrow is checked here too.
+        // A family whose error branch loses its label reads out as a bare
+        // "Date calculation failed".
         let file = ComplicationWiringSource.complicationSource
         var owners: [String: [Int]] = [:]
         for call in try ComplicationWiringSource.spokenDescriptionCalls() {
@@ -98,10 +70,8 @@ struct WatchPresentationWiringTests {
     }
 
     @Test func bothCopiesOfTheLargeTextThresholdAgree() throws {
-        // Declared once per module on purpose: the two watchOS products cannot
-        // share a framework target, and `NepalKitCore` is Foundation-only. Two
-        // copies with nothing between them drift silently, and then every family
-        // switches composition at a different text size.
+        // Declared once per module because the two watchOS products can't share
+        // a framework target, so the copies have to be kept in step here.
         let complication = ComplicationWiringSource.complicationSource
         let today = ComplicationWiringSource.todaySource
         var offenders: [String] = []
@@ -113,7 +83,6 @@ struct WatchPresentationWiringTests {
             }
             bodies[file] = found.first
         }
-        // Both paths are named whether or not they disagree.
         if bodies[complication] != bodies[today] {
             offenders.append("the two watchLargeTextFallback bodies disagree, so families switch composition at different text sizes:\n  \(complication): \(bodies[complication] ?? "absent")\n  \(today): \(bodies[today] ?? "absent")")
         }
@@ -132,10 +101,7 @@ struct WiringCall {
     let gregorian: Bool?
     var site: String { "\(path):\(line)" }
 
-    /// The family, qualified by the large-text side where the family has one. A
-    /// family with no conditional keeps the bare name; inline's single label
-    /// sits on the `Group` wrapping both of its compositions, so it takes the
-    /// side its nearest preceding branch token names.
+    /// The family, qualified by the large-text side where the family has one.
     var key: String {
         branch.map { "\(type).\($0.rawValue)" } ?? type
     }
@@ -147,22 +113,13 @@ enum Branch: String {
     case standard
 }
 
-/// Reads the complication wiring out of source, classifying every call site by
-/// the family and large-text side that enclose it.
-///
-/// Line-based, and deliberately so: a call wrapped across lines, or one whose
-/// flag comes from a computed variable, is reported as unreadable rather than
-/// guessed at, so the shape this cannot follow fails the test instead of being
-/// mis-read. `flagShapesTheParserCannotRead` is the exemption mechanism for such
-/// a case once someone has judged it; it is empty today, and an empty set is the
-/// honest way to say "none" while leaving the mechanism in place.
+/// Reads the complication wiring out of source, line by line. A call it can't
+/// read is reported rather than guessed at.
 enum ComplicationWiringSource {
     static let complicationSource = "NepalKitComplications/TodayComplicationView.swift"
     static let todaySource = "NepalKitWatch Watch App/TodayView.swift"
 
-    /// The families `TodayComplicationView` routes to. `TodayComplicationView`
-    /// itself is the dispatcher, not a family, so it is excluded when the
-    /// declarations are read back.
+    /// The families `TodayComplicationView` dispatches to.
     static let families: Set<String> = [
         "TodayRectangularComplication",
         "TodayInlineComplication",
@@ -172,9 +129,7 @@ enum ComplicationWiringSource {
     private static let dispatcher = "TodayComplicationView"
     static let flagShapesTheParserCannotRead: Set<String> = []
 
-    /// The families present in the source but not declared here, and the declared
-    /// ones no longer present — so a family added or removed tomorrow is caught
-    /// rather than leaving the call-site sweeps nothing to hold.
+    /// Families present in source but not declared here, and vice versa.
     static func undeclaredFamilies() throws -> [String] {
         var offenders: [String] = []
         var found: Set<String> = []
@@ -192,10 +147,8 @@ enum ComplicationWiringSource {
         return offenders
     }
 
-    /// Every way a call site's flags disagree with its family's declared
-    /// expectation, plus the two ways this sweep could lose a site outright: a
-    /// declared expectation with no call behind it, and two sites sharing one key
-    /// so that a single entry cannot describe both.
+    /// Every call site whose flags disagree with its family's expectation, plus
+    /// expectations with no call site and keys shared by two sites.
     static func wiringOffenders(
         label: String,
         expected: [String: (weekday: Bool?, gregorian: Bool)],
@@ -238,9 +191,7 @@ enum ComplicationWiringSource {
 
     static func supportedLabelCalls() throws -> [WiringCall] {
         try calls(marker: "ComplicationAccessibility.supportedLabel(") { arguments in
-            // `components, weekday: <bool>, gregorian: <bool>`. The flags are the
-            // point of the assertion, so the receiver's name is deliberately not
-            // pinned; the arity and both flag names are.
+            // `components, weekday: <bool>, gregorian: <bool>`
             let parts = split(arguments)
             guard parts.count == 3,
                   let weekday = boolean(parts[1], named: "weekday"),
@@ -252,10 +203,8 @@ enum ComplicationWiringSource {
 
     static func boundaryLabelCalls() throws -> [WiringCall] {
         try calls(marker: "ComplicationAccessibility.boundaryLabel(") { arguments in
-            // The bare form is a real form — `boundaryLabel(boundary)` means no
-            // Gregorian context — so a missing flag is `false`, not unreadable.
-            // Any third shape is unreadable, so the completeness check fires
-            // instead of the sweep silently defaulting it.
+            // `boundaryLabel(boundary)` means no Gregorian context, so a missing
+            // flag is `false`; any other shape is unreadable.
             let parts = split(arguments)
             switch parts.count {
             case 1: return (nil, false)
@@ -270,11 +219,7 @@ enum ComplicationWiringSource {
     }
 
     /// Every line carrying `marker`, classified by its enclosing
-    /// `struct …: View` and by the large-text side within that struct's own body.
-    ///
-    /// The backward scan is bounded by the enclosing declaration, so a type that
-    /// never branches cannot inherit the previous type's `} else {` and file its
-    /// call under a key that reads as a branch it does not have.
+    /// `struct …: View` and by the large-text side within that struct's body.
     private static func calls(
         marker: String,
         flags: (String) -> (weekday: Bool?, gregorian: Bool?)
@@ -305,8 +250,7 @@ enum ComplicationWiringSource {
         return name.isEmpty ? nil : String(name)
     }
 
-    /// The name and index of the nearest `struct …: View` above `index` — the
-    /// family a call site belongs to.
+    /// The nearest `struct …: View` above `index`: the call site's family.
     private static func enclosingDeclaration(
         before index: Int,
         in lines: [String]
@@ -327,12 +271,8 @@ enum ComplicationWiringSource {
         return nil
     }
 
-    /// The text between a call marker and the parenthesis closing it.
-    ///
-    /// A marker that is already a whole call — `.accessibilityLabel(x)` — has no
-    /// argument list to read. Anything else must close on the same line: a call
-    /// wrapped across lines yields an empty string, which the caller's arity
-    /// check turns into a named, unreadable site rather than a silent skip.
+    /// The text between a call marker and the parenthesis closing it, or an
+    /// empty string when the call wraps across lines.
     private static func arguments(in line: String, marker: String) -> String {
         guard !marker.hasSuffix(")") else { return "" }
         guard let opening = line.range(of: marker),
@@ -358,9 +298,7 @@ enum ComplicationWiringSource {
         lines.map(String.init).joined(separator: ", ")
     }
 
-    /// The body of every `watchLargeTextFallback` in `path`, trimmed. A list
-    /// rather than a single value, so a second copy in one module is an offender
-    /// instead of an arbitrary pick between the two.
+    /// The body of every `watchLargeTextFallback` in `path`, trimmed.
     static func largeTextThresholdBodies(in path: String) throws -> [String] {
         let lines = try sourceLines(path)
         var bodies: [String] = []
@@ -377,13 +315,7 @@ enum ComplicationWiringSource {
             .components(separatedBy: "\n")
     }
 
-    /// The repository root, found by searching upward for the project file.
-    ///
-    /// The same walk `SymbolTests` documents: this test compiles through the
-    /// harness at `scripts/apptests/Tests/NepalKitTests/`, so `#filePath` is the
-    /// symlinked path at run time and hop-counting lands in `Tests/` instead of
-    /// the root. Searching upward from either form cannot depend on which one is
-    /// in effect.
+    /// Searched upward because `#filePath` may be the symlinked harness path.
     private static var repositoryRoot: URL {
         for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
             var dir = base.deletingLastPathComponent()

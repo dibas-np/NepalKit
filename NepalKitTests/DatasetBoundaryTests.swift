@@ -5,10 +5,8 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// The bundled dataset ends at 2084 BS, which is 2028-04-12 Gregorian. Past
-/// that the app has no Bikram Sambat answer, but the Gregorian date, its
-/// weekday, and the clocks are all still perfectly well defined — so they must
-/// keep working. These tests pin that boundary from both sides.
+/// The dataset ends at 2084 BS (2028-04-12). Past that there is no Bikram
+/// Sambat answer, but the Gregorian date, weekday and clocks must keep working.
 @MainActor
 struct DatasetBoundaryTests {
     private let lastSupportedAD = GregorianDate(year: 2028, month: 4, day: 12)
@@ -73,7 +71,6 @@ struct DatasetBoundaryTests {
     }
 
     @Test func weekdayIsUnchangedAcrossTheBoundary() throws {
-        // The two dates are consecutive, so consecutive weekdays.
         #expect(try clock(firstUnsupportedAD).weekdayString(style: .transliterated) == "Thursday")
         #expect(try clock(lastSupportedAD).weekdayString(style: .transliterated) == "Wednesday")
     }

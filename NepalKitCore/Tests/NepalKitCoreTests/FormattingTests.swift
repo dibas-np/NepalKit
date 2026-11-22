@@ -27,10 +27,6 @@ struct FormattingTests {
         #expect(Self.date.formatted(testCase.settings, includesYear: false) == testCase.expected)
     }
 
-    /// One instant across two fixed zones pins the time-zone handling — the
-    /// epoch reads 05:45:00 at Nepal's UTC+5:45 and 01:00:00 at UTC+1 — and the
-    /// two scripts pin digit rendering. The zone pair also deliberately hits
-    /// the calendar cache once as a miss and once as a reuse.
     @Test func clockRendersInTheGivenZoneAndScript() throws {
         let epoch = Date(timeIntervalSince1970: 0)
         let nepal = try #require(TimeZone(secondsFromGMT: 20_700))
@@ -40,14 +36,8 @@ struct FormattingTests {
         #expect(DigitScript.latin.formatTime(epoch, in: utcPlusOne) == "01:00:00")
     }
 
-    /// Switching digit script must change the glyphs, never the value. An
-    /// earlier implementation dropped every non-digit character, so -42
-    /// rendered as "४२" — the same digits with the sign gone. This is also
-    /// where the pass-through rule is covered: the arguments include negatives,
-    /// so the sign (the one non-digit `formatNumber` can ever receive) must
-    /// survive transliteration. Deeper pass-through cases (separators, other
-    /// scripts) live in the internal `render` and are deliberately not tested
-    /// here: these suites cover the public API only.
+    /// Switching digit script changes the glyphs, never the value: a minus
+    /// sign must survive.
     @Test(arguments: [-1, -42, -2084, 0, 7, 2084, 999_999])
     func digitScriptPreservesValueAndLength(value: Int) {
         let latin = DigitScript.latin.format(value)
@@ -60,17 +50,6 @@ struct FormattingTests {
         }
     }
 
-    /// Month 1 and month 12 are the two ends the name lookups accept, and they
-    /// are the ends a bounds check is easiest to get wrong: these two functions
-    /// used to test `indices.contains(month - 1)` and now test
-    /// `(1 ... names.count).contains(month)`, and only these two months tell an
-    /// off-by-one in the new form apart from the old one. Neither end is
-    /// covered elsewhere — `fullFormat` and `shortFormat` only ever render
-    /// month 6.
-    ///
-    /// The anchor is the tables themselves: 1 is Baisakh and 12 is Chaitra,
-    /// Baisakh through Chaitra being the twelve months the Nepali Patro
-    /// declares.
     @Test(arguments: [
         (1, "Baisakh", "January"),
         (12, "Chaitra", "December"),
@@ -81,18 +60,8 @@ struct FormattingTests {
         #expect(GregorianDate.monthName(month) == expectedAD)
     }
 
-    /// The documented pass-through rule: an out-of-range month renders as its
-    /// own number rather than a name, and — the reason the rule exists at all —
-    /// it returns instead of trapping.
-    ///
-    /// The anchor is the two functions' own doc comments, which promise exactly
-    /// this ("Out-of-range months render as their number", and the pass-through
-    /// rule `devanagariString` uses). `Int.min` and `Int.max` are the cases
-    /// that motivated the change: the guard used to evaluate `month - 1` before
-    /// bounds-checking it, so `Int.min` overflowed and trapped inside the
-    /// function whose comment promised it would never trap. A sweep that
-    /// stopped at month 13 would pass against that old form too, so the
-    /// extremes are the load-bearing arguments here, not decoration.
+    /// An out-of-range month renders as its number instead of trapping;
+    /// `Int.min` would overflow a guard that subtracts first.
     @Test(arguments: [
         (0, "0", "no month 0"),
         (-1, "-1", "below the first month"),

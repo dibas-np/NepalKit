@@ -8,21 +8,17 @@
 #   scripts/release-core.sh --dry-run 0.2.0   # every check, nothing pushed
 #   scripts/release-core.sh 0.2.0
 #
-# SwiftPM needs a package at a repository root, so releases go to a mirror,
-# dibas-np/NepalKitCore, whose main is `git subtree split --prefix=NepalKitCore`
-# of this repository. The run splits HEAD, signs v<version> on the split and
-# core-v<version> on HEAD, verifies both against the key in
-# docs/release-verification.md, runs the core suite on macOS, iOS and watchOS in
-# a clone of the split, then pushes the mirror atomically, the source tag, and
-# the GitHub release. Nothing is pushed before every check passes. A rerun
-# verifies whatever is already published and pushes only what is missing.
+# SwiftPM needs a package at a repository root, so releases go to the
+# dibas-np/NepalKitCore mirror, whose main is `git subtree split
+# --prefix=NepalKitCore` of this repository. Tags are signed and verified
+# against the key in docs/release-verification.md, the core suite runs on the
+# split, and nothing is pushed until every check passes. Reruns are safe.
 #
-# Tags are staged under refs/release-core/ and never under refs/tags: a v* tag
-# here is an app release and starts release-tag.yml.
+# Tags are staged under refs/release-core/ because a v* tag in this repository
+# starts an app release.
 #
-# Overrides (for other machines and scripts/test_release_core.py):
-# CORE_RELEASE_BRANCH, CORE_MIRROR_REPO, CORE_MIRROR_URL, CORE_IOS_DESTINATION,
-# CORE_WATCHOS_DESTINATION, CORE_SIGNING_FINGERPRINT.
+# Overrides: CORE_RELEASE_BRANCH, CORE_MIRROR_REPO, CORE_MIRROR_URL,
+# CORE_IOS_DESTINATION, CORE_WATCHOS_DESTINATION, CORE_SIGNING_FINGERPRINT.
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
@@ -30,11 +26,9 @@ PREFIX=NepalKitCore
 MIRROR_REPO="${CORE_MIRROR_REPO:-dibas-np/NepalKitCore}"
 MIRROR_URL="${CORE_MIRROR_URL:-https://github.com/$MIRROR_REPO.git}"
 BRANCH="${CORE_RELEASE_BRANCH:-develop}"
-# The runtimes on the release machine. The floors below them (iOS 15, watchOS
-# 9) are compile-checked only.
+# Runtimes on the release machine; older floors are only compile-checked.
 IOS_DESTINATION="${CORE_IOS_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=27.0}"
 WATCHOS_DESTINATION="${CORE_WATCHOS_DESTINATION:-platform=watchOS Simulator,name=Apple Watch SE 3 (44mm),OS=26.0}"
-# The key docs/release-verification.md publishes.
 EXPECTED_FINGERPRINT="${CORE_SIGNING_FINGERPRINT:-SHA256:HS2j4+5KUI65IlJo6M6Lr5DOlVufdBzIHGWp0JY7Jik}"
 STAGING=refs/release-core
 
@@ -56,8 +50,7 @@ fail() {
     exit 1
 }
 
-# Fatal for a release; a warning in a dry run, so the script can be tried
-# before its own commit is pushed.
+# Fatal for a release; a warning in a dry run.
 fail_unless_dry_run() {
     if (( DRY_RUN )); then
         print -u2 "release-core: warning (dry run): $1"
@@ -70,9 +63,8 @@ step() {
     print "\n==> $1"
 }
 
-# Prints "<object> <commit>" for a remote ref, or nothing if it is absent. An
-# unreachable remote fails rather than reading as absent.
-# Call as `x="$(remote_ref …)" || exit 1`.
+# Prints "<object> <commit>" for a remote ref, or nothing if absent; fails if
+# the remote is unreachable. Call as `x="$(remote_ref …)" || exit 1`.
 remote_ref() {
     local url="$1" ref="$2" out="" object="" peeled=""
     local -i code=0
@@ -98,8 +90,7 @@ release_exists() {
     fail "cannot ask GitHub whether $MIRROR_REPO has a $TAG release: $out"
 }
 
-# Copies every user.* and gpg.* setting into a private repository, so it signs
-# exactly as this one does. Relative paths are made absolute.
+# Copies user.* and gpg.* settings into a private repository so it signs the same way.
 inherit_signing_config() {
     local repo="$1" key="" value=""
     { git config --get-regexp '^(user|gpg)\.' || true; } | while read -r key value; do
@@ -154,7 +145,6 @@ HEAD_SHA="$(git rev-parse HEAD)"
 [[ "$HEAD_SHA" == "$(git rev-parse "origin/$BRANCH")" ]] \
     || fail_unless_dry_run "HEAD is not origin/$BRANCH; push it, or check out the commit being released"
 
-# A machine that cannot verify a tag cannot release.
 [[ "$(git config gpg.format || true)" == ssh ]] \
     || fail "gpg.format is not ssh; release tags are SSH-signed (docs/release-verification.md)"
 git config user.signingkey > /dev/null || fail "no user.signingkey; release tags are signed"
@@ -183,7 +173,6 @@ SPLIT_SHA="$(git subtree split --quiet --prefix="$PREFIX" HEAD)"
 print "split: $SPLIT_SHA (source $HEAD_SHA)"
 git cat-file -e "${SPLIT_SHA}:Package.swift" 2>/dev/null || fail "the split has no Package.swift at its root"
 
-# Holds only the split: the suites run in a clone of it, and v* is signed in it.
 SPLIT_REPO="$WORK/split.git"
 git init --quiet --bare --initial-branch=main "$SPLIT_REPO"
 git push --quiet "$SPLIT_REPO" "${SPLIT_SHA}:refs/heads/main"
@@ -204,7 +193,6 @@ LOCAL_SOURCE_OBJECT="$(git rev-parse --quiet --verify "refs/tags/$SOURCE_TAG" ||
 [[ -z "$LOCAL_SOURCE_OBJECT" || "$LOCAL_SOURCE_OBJECT" == "$SOURCE_TAG_OBJECT" ]] \
     || fail "$SOURCE_TAG exists in this repository but is not the tag origin has; delete it (git tag -d $SOURCE_TAG) and rerun"
 
-# Push main if it is behind the split; leave it if it already contains it.
 MAIN_NEEDS_PUSH=1
 if [[ -n "$MIRROR_MAIN" ]]; then
     git fetch --quiet --no-tags "$MIRROR_URL" "+refs/heads/main:$STAGING/mirror-main"

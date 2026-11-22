@@ -3,9 +3,7 @@
 import Foundation
 import NepalKitCore
 
-/// Development-only identification for fixture-built complications. Always
-/// compiled so views can reference it; the marker is empty in every
-/// nondevelopment build.
+/// Marks fixture-built complications; empty outside fixture builds.
 enum ComplicationFixtureMarker {
     static var suffix: String {
         #if NEPALKIT_WATCH_FIXTURES
@@ -17,18 +15,8 @@ enum ComplicationFixtureMarker {
 }
 
 #if NEPALKIT_WATCH_FIXTURES
-/// Development-only fixture wiring for the complication extension. Compiled
-/// only under `NEPALKIT_WATCH_FIXTURES`; a nondevelopment build contains none
-/// of it, so `TodayComplication` simply constructs the ordinary provider.
-///
-/// The fixture's fixed instant and timeline failure injection flow through
-/// the production builder's seams. The selected instant is identifiable in
-/// the rendered complications by its pinned date and, where the family has
-/// room, by the fixture marker; the Today screen carries the explicit fixture
-/// banner for the paired app process.
+/// Debug-only fixture wiring for the complication extension.
 enum ComplicationFixtures {
-    /// The provider wired to the fixture — the process launch arguments by
-    /// default — or the ordinary provider when no fixture is present.
     nonisolated static func makeProvider(arguments: [String] = ProcessInfo.processInfo.arguments) -> TodayComplicationProvider {
         guard let fixture = WatchFixtureControl.fixture(arguments: arguments) else {
             return TodayComplicationProvider()

@@ -2,13 +2,9 @@
 // Copyright (C) 2026 Dibas Sigdel
 import NepalKitCore
 
-/// The public-holiday wording for the day's details and today's line.
-///
-/// Unlike the rest of the UI, these follow the month-name setting, as the
-/// festival names beside them do, so they are never the one line in the
-/// wrong language.
+/// Public-holiday wording. Unlike the rest of the UI, it follows the
+/// month-name setting, as the festival names beside it do.
 nonisolated extension Strings {
-    /// One line per scope in the day's details: who the day is a holiday for.
     static func publicHoliday(_ scope: PublicHoliday.Scope, monthNames: MonthNameStyle) -> String {
         guard let wording = publicHolidayWording[scope] else {
             preconditionFailure("No public-holiday wording for \(scope)")
@@ -16,21 +12,18 @@ nonisolated extension Strings {
         return monthNames == .nepali ? wording.nepali : wording.english
     }
 
-    /// The phrase as a clause in a spoken list: "…, Vijaya Dashami, public
-    /// holiday". Only English has a capital to drop.
+    /// The phrase as a clause in a spoken list.
     static func publicHolidaySpoken(_ scope: PublicHoliday.Scope, monthNames: MonthNameStyle) -> String {
         let phrase = publicHoliday(scope, monthNames: monthNames)
         return phrase.prefix(1).lowercased() + phrase.dropFirst()
     }
 
-    /// Today's line under the hero: the festivals, then "Public holiday" on a
-    /// nationwide holiday. A limited holiday is left to the day's details.
+    /// Today's festivals, plus "Public holiday" on a nationwide holiday.
     static func todayFestivalLine(_ names: [String], isPublicHoliday: Bool, monthNames: MonthNameStyle) -> String {
         festivalNames(names + (isPublicHoliday ? [publicHoliday(.nationwide, monthNames: monthNames)] : []))
     }
 
-    /// Each scope's phrase, English then Nepali, side by side for checking;
-    /// the tests hold it to every case of the scope.
+    /// Checked against every case of the scope by the tests.
     private static let publicHolidayWording: [PublicHoliday.Scope: (english: String, nepali: String)] = [
         .nationwide: ("Public holiday", "सार्वजनिक बिदा"),
         .newarCommunity: ("Public holiday for the Newar community", "नेवार समुदायका लागि बिदा"),
@@ -47,31 +40,25 @@ nonisolated extension Strings {
         .gauraRegion: ("Public holiday where Gaura is observed", "गौरा पर्व मनाउने क्षेत्रमा बिदा"),
     ]
 
-    /// Under the month grid when the shown year has neither list, so it does
-    /// not look like a year with no festivals. Names the years that are listed,
-    /// so it is true under any year.
+    /// Shown under the month grid when the year has neither list.
     static func festivalsAndHolidaysListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
         "Festivals and holidays are listed for \(yearList(years, digits: digits)) BS only."
     }
 
-    /// Only the festival list is missing: the Panchanga and the gazette are
-    /// published at different times.
+    /// The Panchanga and the gazette are published at different times.
     static func festivalsListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
         "Festivals are listed for \(yearList(years, digits: digits)) BS only."
     }
 
-    /// Only the holiday list is missing.
     static func holidaysListedOnly(for years: Set<Int>, digits: DigitScript) -> String {
         "Public holidays are listed for \(yearList(years, digits: digits)) BS only."
     }
 
-    /// Under the month grid when the shown year is a provisional projection.
     static func monthGridProvisionalYear(_ year: Int, digits: DigitScript) -> String {
         "\(digits.format(year)) BS is a projection, not yet in the official Nepali Patro."
     }
 
-    /// "2083", "2083 and 2084", "2083, 2084 and 2085". Joined by hand, as
-    /// `provisionalYearsNote` is, not with Foundation list formatting.
+    /// "2083", "2083 and 2084", "2083, 2084 and 2085".
     private static func yearList(_ years: Set<Int>, digits: DigitScript) -> String {
         let sorted = years.sorted().map { digits.format($0) }
         guard let last = sorted.last else { return "" }

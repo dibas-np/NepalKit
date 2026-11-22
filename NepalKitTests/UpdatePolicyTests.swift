@@ -26,7 +26,7 @@ struct UpdatePolicyTests {
     }
 
     @Test func onlyAScheduledCheckIsVetoedOnATransientLaunch() {
-        // d4c87d7: on a transient launch only the scheduled check is refused.
+        // On a transient launch only the scheduled check is refused.
         let transient = "/Users/dev/Library/Developer/Xcode/DerivedData/NepalKit-abc/Build/Products/Debug/NepalKit.app"
         #expect(UpdatePolicy.vetoesCheck(isScheduled: true, installPath: transient))
         #expect(!UpdatePolicy.vetoesCheck(isScheduled: false, installPath: transient))
@@ -50,8 +50,7 @@ struct UpdatePolicyTests {
             == .failed(reason: "feed unreachable"))
         #expect(UpdatePolicy.outcome(forAbortedCheckDomain: "NSURLErrorDomain", code: -1009, description: "offline")
             == .failed(reason: "offline"))
-        // The app's own transient-skip error is reported too, or a user who
-        // asked would get no answer.
+        // The app's own transient-skip error is reported too.
         #expect(UpdatePolicy.outcome(forAbortedCheckDomain: "NepalKit.Update", code: 1, description: "skipped")
             == .failed(reason: "skipped"))
     }

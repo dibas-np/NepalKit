@@ -3,9 +3,7 @@
 import Foundation
 import NepalKitCore
 
-/// Which optional parts the menu-bar title carries beside the Bikram Sambat
-/// date, modelled on the macOS menu-bar clock's options. Every option defaults
-/// off, so `.standard` is the original short "day month" title.
+/// Optional parts of the menu-bar title, after the macOS menu-bar clock's options.
 nonisolated struct MenuBarFormat: Sendable, Hashable {
     /// The short weekday name before the date ("Mon", "सोम").
     var showsWeekday: Bool
@@ -32,16 +30,11 @@ nonisolated struct MenuBarFormat: Sendable, Hashable {
         self.showsSeconds = showsSeconds
     }
 
-    /// The title the menu bar showed before any of these options existed.
     static let standard = MenuBarFormat()
 }
 
-/// The menu-bar title for the instant `now`: weekday, date, year, time, each
-/// part present only if the format asks for it, in that fixed order.
-///
-/// Every part is read in `timeZone` (default Nepal Time; ADR-0017) from the
-/// one instant, so the parts cannot disagree around midnight. Nil outside the
-/// supported range.
+/// The menu-bar title for `now`, or nil outside the supported range. Every part is
+/// read from the one instant so they cannot disagree around midnight.
 nonisolated func formatMenuBarTitle(
     now: Date,
     timeZone: TimeZone = .nepal,
@@ -72,10 +65,8 @@ nonisolated private func todayWeekday(now: Date, timeZone: TimeZone) -> Int? {
 }
 
 extension SpokenDate {
-    /// The spoken form of `formatMenuBarTitle`: the same parts in order, with
-    /// Latin digits and the full weekday name, since a voice may spell out "Mon".
-    /// The year is always included, like every spoken Bikram Sambat date:
-    /// `showsYear` exists to save menu-bar width, which does not apply aloud.
+    /// The spoken form of `formatMenuBarTitle`. Always includes the year:
+    /// `showsYear` only saves menu-bar width.
     nonisolated static func menuBarDate(
         now: Date,
         timeZone: TimeZone = .nepal,
@@ -96,7 +87,7 @@ extension SpokenDate {
                 twentyFourHour: format.usesTwentyFourHourClock,
                 showsSeconds: format.showsSeconds
             )
-            // Spoken only: a listener cannot glance to tell AM from PM.
+            // A listener cannot glance to tell AM from PM.
             if format.usesTwentyFourHourClock {
                 parts.append(time)
             } else {
