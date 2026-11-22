@@ -4,7 +4,7 @@
 """Fail when the monthly Nepali Patro check is overdue.
 
 The shipped table ends at 2084 BS, a projection; only the Samiti's published
-almanac (expected around January 2027) makes a new year shippable (ADR-0014).
+almanac (expected around January 2027) makes a new year shippable.
 So this requires the `last_checked:` line in docs/updating-calendar-data.md to
 be no older than 35 days. Quiet before 2027-01-01 and once the table reaches 2085.
 

@@ -4,7 +4,7 @@ import AppIntents
 import NepalKitCore
 
 /// Answers today's date in Bikram Sambat, in the user's time reference: Nepal Time
-/// unless they chose their own (ADR-0017).
+/// unless they chose their own.
 struct TodayInBikramSambatIntent: AppIntent {
     static let title: LocalizedStringResource = "What is today's Nepali date"
 

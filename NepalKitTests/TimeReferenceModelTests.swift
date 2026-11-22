@@ -5,7 +5,7 @@ import Testing
 import NepalKitCore
 @testable import NepalKit
 
-/// Every surface that reads today, read in the user's own zone (ADR-0017).
+/// Every surface that reads today, read in the user's own zone.
 /// Anchor: 23:30 UTC on 26 Sep 2026 is 05:15 NPT on Sunday 27 Sep, 11 Ashoj
 /// 2083, but 19:30 EDT on Saturday 26 Sep, 10 Ashoj 2083.
 @MainActor

@@ -446,7 +446,7 @@ class RealRepositoryTests(unittest.TestCase):
         self.assertEqual(code, 0, captured.getvalue())
 
     def test_the_repository_project_format_is_one_the_floor_job_can_read(self) -> None:
-        # ADR-0007: Xcode 26 cannot open an objectVersion 110 project.
+        # Xcode 26 cannot open an objectVersion 110 project.
         with contextlib.redirect_stdout(io.StringIO()):
             problem = vdf._project_format_problem(
                 vdf.PROJECT.read_text(encoding="utf-8"))

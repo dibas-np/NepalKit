@@ -3,7 +3,7 @@
 import AppIntents
 import NepalKitCore
 
-/// The Bikram Sambat date a whole number of civil days from today (ADR-0017).
+/// The Bikram Sambat date a whole number of civil days from today.
 /// Advances the Gregorian day rather than adding seconds, which breaks across DST.
 nonisolated enum RelativeDay {
     struct Answer {

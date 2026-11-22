@@ -24,7 +24,7 @@ Changes to month lengths, the supported range or conversion need evidence, not r
 - Use the terms in [docs/glossary.md](../docs/glossary.md) (Bikram Sambat, Gregorian, Nepal Time).
 - Tests use Swift Testing (`@Test`, `#expect`), not XCTest.
 - Comment the why, not the what.
-- A change to the supported range, licence or a platform requirement gets a short record in [docs/adr/](../docs/adr/).
+- Explain non-obvious decisions (supported range, licence, platform requirements) in the pull request description.
 
 ## Pull requests
 

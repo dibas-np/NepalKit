@@ -110,7 +110,7 @@ extension View {
 // MARK: - Header Bar
 
 /// Identity on the left, the live clock on the right: Nepal Time, or the
-/// Mac's own time when the user chose it (ADR-0017).
+/// Mac's own time when the user chose it.
 private struct HeaderBar: View {
     let clock: ClockModel
     let settings: DisplaySettings
@@ -150,8 +150,8 @@ private struct HeaderClockTime: View {
 
 // MARK: - Clocks
 
-/// The other clock: the Mac's local time beside Nepal Time, or the reverse
-/// (ADR-0017). VoiceOver reads it in Latin digits so a time is never misheard.
+/// The other clock: the Mac's local time beside Nepal Time, or the reverse.
+/// VoiceOver reads it in Latin digits so a time is never misheard.
 private struct ClocksSection: View {
     let clock: ClockModel
     let settings: DisplaySettings

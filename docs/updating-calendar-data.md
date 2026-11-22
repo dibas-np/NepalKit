@@ -1,6 +1,5 @@
 # Updating the calendar data
 
-Current source policy: [ADR-0014](adr/0014-calendar-base-and-local-exceptions.md).
 Current values, pin, licence notice and exceptions: [SOURCES.md](../SOURCES.md).
 
 ## Reconcile provisional 2084 first
@@ -29,9 +28,9 @@ Do not describe 2084 as attested until that comparison is complete.
    the complete notice, and compare every existing year before changing the pin.
 4. Add only the reviewed year to the shared table. Keep all local corrections
    explicit. No general projection rule or automatic fetching is introduced.
-5. Version the dataset under ADR-0009. Keep the public major-version symbol
+5. Bump the dataset version. Keep the public major-version symbol
    consistent with the data contract; narrow the range when evidence requires
-   it, as recorded historically in ADR-0010.
+   it.
 6. Derive the Gregorian bounds through CalendarDataset. Update boundary fixtures,
    README and SOURCES.md when the supported contract changes.
 7. Regenerate the comparison baseline deliberately in the same change:
@@ -51,7 +50,7 @@ Watch validation when those deliverables are in scope; a source comparison does
 not substitute for them.
 
 The release notes of any release that changes calendar data must say that the
-Watch app gets the correction only when it is rebuilt from source (ADR-0015):
+Watch app gets the correction only when it is rebuilt from source:
 Sparkle updates the Mac app, and nothing updates a Watch install.
 
 The current last supported Gregorian day is 2028-04-12. An extension should
@@ -61,13 +60,12 @@ schedule automatic checks of a third-party website.
 ## Festivals and public holidays for a new year
 
 Festivals and public holidays are separate from the month lengths and are
-listed one year at a time ([ADR-0016](adr/0016-festivals-from-the-national-panchanga.md)
-and its amendment). Only 2083 is listed. From 1 Baisakh 2084 (14 April 2027)
+listed one year at a time under the rule in SOURCES.md. Only 2083 is listed. From 1 Baisakh 2084 (14 April 2027)
 the month grid shows no festival marks or red holidays and says "Festivals and
 holidays are listed for 2083 BS only." It does not fail; it says what is missing.
 
 1. When the year's Panchanga is published, select its festivals and national
-   days under ADR-0016's rule into `FestivalsYYYY.swift`, beside
+   days under SOURCES.md's selection rule into `FestivalsYYYY.swift`, beside
    `Festivals2083.swift`, and pin the PDF's SHA-256 in SOURCES.md.
 2. When the Ministry of Home Affairs publishes the year's gazette notice of
    public holidays (2083's was dated 2082-11-18, early March 2026), transcribe it
@@ -84,7 +82,7 @@ holidays are listed for 2083 BS only." It does not fail; it says what is missing
 The Nepal Panchanga Nirnayak Samiti's determination of 2084 BS is expected
 around Magh 2083 BS (January to February 2027), about three months before 2084
 begins on 14 April 2027. Its published almanac is the only thing that can
-attest the provisional 2084 row or make 2085 shippable (ADR-0014). Once a
+attest the provisional 2084 row or make 2085 shippable. Once a
 month from 1 January 2027, until the dataset reaches 2085:
 
 1. Read the Samiti's publication notices on `npns.gov.np`. A missing notice in

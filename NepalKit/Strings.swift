@@ -91,7 +91,7 @@ nonisolated enum Strings {
     // Spoken-channel strings: said, never shown (see `SpokenDate`).
     static let appNameForSpeech = "NepalKit"
     static let converterResultLabel = "Result"
-    /// The Gregorian end date is derived from the dataset (ADR-0010), not spelled here.
+    /// The Gregorian end date is derived from the dataset, not spelled here.
     static func spokenDateBeyondRange(_ gregorianEnd: String) -> String {
         "date unavailable, calendar data ends \(gregorianEnd)"
     }

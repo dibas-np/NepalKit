@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  NepalKit runs sandboxed (ADR-0008). The project set ENABLE_APP_SANDBOX = YES
+  NepalKit runs sandboxed. The project set ENABLE_APP_SANDBOX = YES
   long before it shipped any entitlements, so the setting and the signature
   disagreed and the signed app carried no sandbox entitlement at all. This file
   is that decision, made concrete.

@@ -345,7 +345,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
     if newest_build <= highest_other:
         fail(f"newest release declares build {newest_build}, which is not higher than build "
              f"{highest_other} already offered; Sparkle will offer this update to nobody. "
-             f"Bump CURRENT_PROJECT_VERSION (ADR-0009).")
+             f"Bump CURRENT_PROJECT_VERSION.")
     ok(f"newest build {newest_build} is higher than every earlier build")
 
     if enclosure is not None:

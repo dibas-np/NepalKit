@@ -30,7 +30,7 @@ struct AppMetadataTests {
     }
 
     @Test func versionDescriptionCarriesBothNumbers() {
-        // ADR-0009: About shows both the short version and the build number.
+        // About shows both the short version and the build number.
         let metadata = AppMetadata(info: info(short: "0.9.1", build: "137"), applicationIcon: nil)
 
         #expect(metadata.versionDescription == "0.9.1 (137)")

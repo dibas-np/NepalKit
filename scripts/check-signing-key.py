@@ -6,7 +6,7 @@
 Signs a scratch file with the pinned `sign_update` and verifies the signature
 against `SUPublicEDKey` in NepalKit/Info.plist. --key-file signs with a backup
 copy instead of the login keychain, so a restore can be tested without
-importing anything (ADR-0012).
+importing anything.
 
     scripts/check-signing-key.py                      # the keychain key
     scripts/check-signing-key.py --key-file PATH      # a backup copy

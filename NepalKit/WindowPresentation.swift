@@ -3,8 +3,8 @@
 import AppKit
 
 /// Activates the app and focuses a window opened from the menu-bar-only context.
-/// Without this the window opens but the app stays behind the frontmost one
-/// (ADR-0011). `NSApp.activate()` won't come forward while another app is active,
+/// Without this the window opens but the app stays behind the frontmost one.
+/// `NSApp.activate()` won't come forward while another app is active,
 /// so this uses the soft-deprecated `activate(ignoringOtherApps:)` and retries a
 /// bounded number of times until `NSApp.isActive`.
 @MainActor

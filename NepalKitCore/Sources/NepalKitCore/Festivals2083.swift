@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 
 // Festivals and national days for 2083 BS from the national Panchanga
-// (pinned in SOURCES.md), selected under ADR-0016, in the Panchanga's wording
+// (pinned and with its selection rule in SOURCES.md), in the Panchanga's wording
 // with outer brackets dropped. Every gazetted day is included; the two the
 // Panchanga does not print are marked `source: .gazette`.
 

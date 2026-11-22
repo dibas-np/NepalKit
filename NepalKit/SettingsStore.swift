@@ -34,7 +34,7 @@ nonisolated struct SettingsStore {
         defaults.set(settings.monthNames.rawValue, forKey: Self.monthNameStyleKey)
     }
 
-    /// Nepal Time when nothing (or an unknown value) is stored (ADR-0017).
+    /// Nepal Time when nothing (or an unknown value) is stored.
     var timeReference: TimeReference {
         TimeReference(rawValue: defaults.string(forKey: Self.timeReferenceKey) ?? "") ?? .nepal
     }

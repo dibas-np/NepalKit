@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Publishes NepalKitCore as a Swift package release (ADR-0018).
+# Publishes NepalKitCore as a Swift package release.
 #
 #   scripts/release-core.sh --dry-run 0.2.0   # every check, nothing pushed
 #   scripts/release-core.sh 0.2.0

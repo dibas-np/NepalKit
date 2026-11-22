@@ -55,7 +55,7 @@ jobs:
 
           lowest="$(printf '%s\n%s\n' "$XCODE_FLOOR" "$resolved" | sort -V | awk 'NR == 1 { print }')"
           if [ "$lowest" != "$XCODE_FLOOR" ]; then
-            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump. See ADR-0007."
+            echo "::error::Resolved Xcode $resolved is below the ${XCODE_FLOOR} floor this gate asserts. Either the image regressed, or this gate's floor needs re-evaluating - which is a decision about the deployment-floor claim, not a routine bump."
             exit 1
           fi
           printf '%s\n' "$version_output"

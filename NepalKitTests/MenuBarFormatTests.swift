@@ -127,7 +127,7 @@ struct MenuBarFormatTests {
     }
 
     /// 23:30 UTC on 26 Sep 2026 is Sunday 27 Sep in Nepal but Saturday 26 Sep,
-    /// 19:30, in New York (ADR-0017).
+    /// 19:30, in New York.
     @Test func menuBarTitleReadsEveryPartInTheGivenZone() throws {
         let now = try TestDates.utc(2026, 9, 26, 23, 30)
         let newYork = try #require(TimeZone(identifier: "America/New_York"))

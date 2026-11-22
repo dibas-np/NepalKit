@@ -29,7 +29,7 @@ struct MonthGridDay: Hashable {
     let isToday: Bool
     /// False for neighbouring months' days that pad the first and last weeks.
     let isInShownMonth: Bool
-    /// Empty for a year whose Panchanga has not been read (ADR-0016).
+    /// Empty for a year whose Panchanga has not been read.
     let festivals: [Festival]
     let holidayScopes: [PublicHoliday.Scope]
 
@@ -47,7 +47,7 @@ struct MonthGridDay: Hashable {
 }
 
 /// The month grid's state: the shown month, bounded navigation, and the weeks.
-/// Today is read in `timeZone` (ADR-0017); `refreshToday(now:)` moves the today
+/// Today is read in `timeZone`; `refreshToday(now:)` moves the today
 /// marking without changing the shown month.
 @MainActor
 @Observable

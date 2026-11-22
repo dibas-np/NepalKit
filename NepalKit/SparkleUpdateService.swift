@@ -4,10 +4,10 @@
 // The decisions it relies on live in `UpdatePolicy.swift`, which is tested.
 import Sparkle
 
-/// The production `UpdateServicing`, backed by Sparkle 2.10.0 (ADR-0012).
+/// The production `UpdateServicing`, backed by Sparkle 2.10.0.
 /// Uses the standard controller so Sparkle supplies its own update UI. Its user
 /// driver already activates the app before showing a window, so no extra fronting
-/// is needed for an `LSUIElement` app (see ADR-0011).
+/// is needed for an `LSUIElement` app.
 @MainActor
 final class SparkleUpdateService: NSObject, UpdateServicing {
     /// Assigned after `super.init()` because the controller needs `self` as its delegate.

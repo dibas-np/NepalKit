@@ -5,7 +5,7 @@ import Foundation
 import NepalKitCore
 
 /// An all-day event handed to the calendar app as an iCalendar file, which needs
-/// no calendar access or extra sandbox entitlement (ADR-0008).
+/// no calendar access or extra sandbox entitlement.
 struct CalendarEvent: Equatable {
     let title: String
     let notes: String

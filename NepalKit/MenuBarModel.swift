@@ -8,8 +8,8 @@ import NepalKitCore
 /// Drives the menu-bar label's refresh with timers.
 /// A `TimelineView` inside a `MenuBarExtra` label sends SwiftUI into a runaway
 /// launch loop at 100% CPU, so the label reads state refreshed by timers instead:
-/// a 30s backstop poll, a one-shot fire just after midnight in `timeZone`
-/// (ADR-0017), and a minute or second tick only while the title shows the time.
+/// a 30s backstop poll, a one-shot fire just after midnight in `timeZone`,
+/// and a minute or second tick only while the title shows the time.
 /// Wake and clock or time zone changes re-read the clock and reschedule.
 @MainActor
 @Observable

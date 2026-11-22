@@ -149,7 +149,7 @@ struct ConverterModelTests {
         #expect(model.adDate == GregorianDate(year: 2026, month: 9, day: 27))
     }
 
-    /// Picker bounds come from the dataset, not a constant (ADR-0010). The
+    /// Picker bounds come from the dataset, not a constant. The
     /// fixture's dates follow from its anchor, 1 Baisakh 2000, and a 365-day year.
     @Test func pickerSpanFollowsTheDatasetNotAConstant() {
         let narrow = CalendarDataset(

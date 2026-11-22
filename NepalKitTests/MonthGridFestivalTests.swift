@@ -5,7 +5,7 @@ import NepalKitCore
 @testable import NepalKit
 
 /// Festivals and national days on the month grid: which cells carry the mark,
-/// what a cell says, the day details, and today's announcement (ADR-0016).
+/// what a cell says, the day details, and today's announcement.
 @MainActor
 struct MonthGridFestivalTests {
     private let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)

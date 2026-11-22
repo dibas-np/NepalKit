@@ -8,7 +8,7 @@ import SwiftUI
 @main
 struct NepalKitApp: App {
     /// Built in `init` so the models that read today follow the settings model's
-    /// time reference (ADR-0017).
+    /// time reference.
     @State private var settingsModel: DisplaySettingsModel
     @State private var menuBarModel: MenuBarModel
     @State private var clockModel: ClockModel
@@ -17,7 +17,7 @@ struct NepalKitApp: App {
     /// Built in `init` so the default-on registration runs before it is read.
     @State private var loginItemModel: LoginItemModel
     /// Started at launch so the background check runs without Settings ever opening.
-    /// The feed URL and public key are pinned in Info.plist (ADR-0012).
+    /// The feed URL and public key are pinned in Info.plist.
     @State private var updateCheckModel: UpdateCheckModel
     /// Owned here so the cached metadata outlives each Settings presentation.
     @State private var metadataCache = DeferredAppMetadata()
@@ -76,7 +76,7 @@ struct NepalKitApp: App {
                     .keyboardShortcut("q")
             }
         }
-        // The native Settings scene (ADR-0011); About is one of its tabs.
+        // The native Settings scene; About is one of its tabs.
         Settings {
             SettingsView(
                 settings: settingsModel,

@@ -5,7 +5,7 @@ import Testing
 @testable import NepalKit
 
 /// Sparkle orders updates on `CFBundleVersion`, so a repeated or malformed
-/// build number silently stops updates (ADR-0009). These read the real project
+/// build number silently stops updates. These read the real project
 /// file, and only the Mac configurations; watch products have their own versions.
 @MainActor
 struct BuildNumberTests {
@@ -101,7 +101,7 @@ struct BuildNumberTests {
     }
 
     @Test func shortVersionIsSemanticVersion() {
-        // ADR-0009: tags, the enclosure filename and the Homebrew cask all derive
+        // Tags, the enclosure filename and the Homebrew cask all derive
         // from this, so it must be three numeric components.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let components = short.split(separator: ".")
@@ -113,7 +113,7 @@ struct BuildNumberTests {
     }
 
     @Test func buildNumberIsDisjointFromTheShortVersion() {
-        // ADR-0009: "1.0" and "1" are the same number, so a two-part version
+        // "1.0" and "1" are the same number, so a two-part version
         // could be confused with the build number by the updater.
         let short = Self.buildSetting("MARKETING_VERSION") ?? ""
         let build = Int(Self.buildSetting("CURRENT_PROJECT_VERSION") ?? "") ?? -1
@@ -145,7 +145,7 @@ struct BuildNumberTests {
         } else {
             #expect(
                 current > floor,
-                "build number \(current) must be higher than the last released \(floor): \(short) is not in the feed yet, and Sparkle offers an update only on a higher build (ADR-0009)"
+                "build number \(current) must be higher than the last released \(floor): \(short) is not in the feed yet, and Sparkle offers an update only on a higher build"
             )
         }
     }

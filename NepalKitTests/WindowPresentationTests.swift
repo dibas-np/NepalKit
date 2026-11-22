@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import NepalKit
 
-/// ADR-0011: opening a window doesn't front a menu-bar-only app, so
+/// Opening a window doesn't front a menu-bar-only app, so
 /// `WindowPresentation` activates explicitly once the open returns, retrying a
 /// refused request a bounded number of times.
 @MainActor

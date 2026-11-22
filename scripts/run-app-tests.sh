@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Dibas Sigdel
 #
-# Runs the app-layer test suite through the SwiftPM harness in scripts/apptests
-# (see docs/adr/0005-app-layer-test-execution.md).
+# Runs the app-layer test suite through the SwiftPM harness in scripts/apptests.
 #
 # Usage: scripts/run-app-tests.sh [extra swift test args]
 

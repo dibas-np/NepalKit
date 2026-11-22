@@ -34,7 +34,7 @@ jobs:
           python3 scripts/verify-data-sources.py --baseline scripts/data-sources-baseline.json
 
   sparkle-pin-freshness:
-    name: Sparkle pin is still current (ADR-0012)
+    name: Sparkle pin is still current
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -59,7 +59,7 @@ jobs:
           if kind.group(1) != "exactVersion" or not version:
               raise SystemExit(
                   f"Sparkle is pinned as {kind.group(1)}, not exactVersion; "
-                  "ADR-0012 requires an exact pin and this check assumes one")
+                  "this check assumes an exact pin")
           print(version.group(1))
           PY
           )
@@ -83,7 +83,7 @@ jobs:
           )
           echo "pinned=$PINNED latest=$LATEST"
           if [ "$PINNED" != "$LATEST" ]; then
-            echo "::notice::Sparkle $LATEST is available; the pin is $PINNED. ADR-0012 owns the bump decision."
+            echo "::notice::Sparkle $LATEST is available; the pin is $PINNED. Review its release notes before bumping."
             exit 1
           fi
           echo "Sparkle pin is current"

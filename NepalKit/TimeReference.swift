@@ -4,7 +4,7 @@ import Foundation
 import NepalKitCore
 
 /// Which clock the Mac app's "today" follows: Nepal Time, or the Mac's own time
-/// zone (ADR-0017).
+/// zone.
 ///
 /// `nonisolated` because the Siri intents read it off the main actor.
 nonisolated enum TimeReference: String, CaseIterable, Sendable {

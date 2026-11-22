@@ -4,7 +4,7 @@ import Foundation
 
 /// Every SF Symbol the app uses, named once.
 /// `SymbolTests` resolves every name in `all`, so a typo fails the suite instead
-/// of rendering nothing. Monochrome inline icons per ADR-0004.
+/// of rendering nothing. Inline icons are monochrome.
 enum Symbols {
     static let launchAtLogin = "power"
 

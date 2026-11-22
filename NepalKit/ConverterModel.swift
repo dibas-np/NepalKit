@@ -65,7 +65,7 @@ final class ConverterModel {
 
     private let dataset: CalendarDataset
 
-    /// - Parameter timeZone: the zone "today" is read in (ADR-0017).
+    /// - Parameter timeZone: the zone "today" is read in.
     init(
         direction: ConverterDirection = .bsToAD,
         bsYear: Int? = nil, bsMonth: Int? = nil, bsDay: Int? = nil,

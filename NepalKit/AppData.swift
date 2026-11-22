@@ -4,7 +4,7 @@ import Foundation
 import NepalKitCore
 
 /// The dataset the app converts with. The only place that names a
-/// `CalendarDataset.v*` constant (ADR-0002, ADR-0010).
+/// `CalendarDataset.v*` constant.
 enum AppData {
     // `nonisolated` because the target defaults to MainActor isolation, and models
     // use this as a default argument, which is evaluated outside that isolation.

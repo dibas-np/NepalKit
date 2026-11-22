@@ -16,8 +16,7 @@ length, Gregorian anchor, supported range or dataset version.
 The complete upstream notice is retained in
 [AskBuddie-LICENSE.txt](NepalKitCore/Sources/NepalKitCore/Resources/AskBuddie-LICENSE.txt).
 SwiftPM copies it into the shared core resource bundle for app distributions.
-NepalKitCore, the package that carries the table, is MIT-licensed
-([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md)). The rest of
+NepalKitCore, the package that carries the table, is MIT-licensed. The rest of
 NepalKit's code and its documentation remain GPL-3.0-or-later. The upstream
 MIT notice and permission conditions remain applicable to upstream material.
 
@@ -26,7 +25,7 @@ current table has been checked against the askbuddie pin and can be reproduced
 from that base with exactly the exceptions below. This records the current
 reference, not a claim that earlier work was independently created or that
 changing references alone resolves every provenance question. Historical
-source decisions remain in git history and superseded ADRs.
+source decisions remain in git history.
 
 ## Retained historical corrections
 
@@ -69,14 +68,24 @@ row stays a projection until the 2084 Panchanga is published.
 
 ### Festivals and national days
 
-Festivals and national days come from the same national Panchanga, one year at
-a time, under [ADR-0016](docs/adr/0016-festivals-from-the-national-panchanga.md).
+Festivals and national days come only from the national Panchanga for the
+year; no other calendar, website or app is used for dates. A year gets
+festivals only once its Panchanga is published, so the provisional 2084 row has
+none.
+
+The selection is once-a-year festivals observed across Nepal or by a large
+community (New Year, Buddha Jayanti, Teej, Dashain, Tihar, Chhath, Lhosar,
+Holi and so on) and Nepal's national days. It leaves out fortnightly and
+monthly observances (Ekadashi, Pradosh, monthly Purnima, Aunsi and Sankranti),
+local jatras, international days and timing notes. The Panchanga's bold type is
+not used as a guide: it prints प्रदोषव्रत in bold and the New Year in regular type.
+
 For 2083 every day's observances were typed in from the PDF pinned above, 57
-were selected under the ADR's rule, and a second, independent read of the page
+were selected under that rule, and a second, independent read of the page
 images confirmed each one's day and wording, including three printed as
-overflow in another day's row. The ADR's amendment gives every holiday or
-national day in the gazette notice below a name, bringing the list to 67
-entries: the Panchanga's wording where it prints the day, and the gazette's for
+overflow in another day's row. Every holiday or national day in the gazette
+notice below also gets a name, so a red day is never unnamed, bringing the list
+to 67 entries: the Panchanga's wording where it prints the day, and the gazette's for
 the two it does not (जेनजी सहिद दिवस, ज्यापू दिवस), which are marked with the
 gazette as their source. The data is
 in [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
@@ -85,8 +94,10 @@ No other source is used for festival dates.
 ### Public holidays
 
 Which days are public holidays, and for whom, comes from the Ministry of Home
-Affairs notice for the year in the Nepal Gazette, under the ADR-0016
-amendment. For 2083 that is खण्ड ७५ संख्या ६७, भाग ५, dated 2082-11-18:
+Affairs notice for the year in the Nepal Gazette, and the app says "public
+holiday" only where the Gazette does. Only nationwide holidays are red in the
+month grid; limited ones are named in the day's details. Holidays the Gazette
+lists "on the day" with no date are left out. For 2083 that is खण्ड ७५ संख्या ६७, भाग ५, dated 2082-11-18:
 
 - File read: [`२०८३_सालको_सार्वजनिक_विदा_(67_11_18).pdf`](https://moha.gov.np/upload/e66443e81e8cc9c4fa5c099a1fb1bb87/files/%E0%A5%A8%E0%A5%A6%E0%A5%AE%E0%A5%A9_%E0%A4%B8%E0%A4%BE%E0%A4%B2%E0%A4%95%E0%A5%8B_%E0%A4%B8%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%B5%E0%A4%9C%E0%A4%A8%E0%A4%BF%E0%A4%95_%E0%A4%B5%E0%A4%BF%E0%A4%A6%E0%A4%BE_(67_11_18).pdf),
   12 pages, image only, SHA-256 `ffbabf83cad254b485504627f9e47fce6c1a7a28e2693a399ae88bf9c0279a29`.
@@ -159,7 +170,7 @@ through 2028-04-12.
 
 The projection is retained for development/testing pending official-calendar
 comparison. This cleanup does not authorize public distribution or clear the
-Watch acceptance blocker. See [ADR-0014](docs/adr/0014-calendar-base-and-local-exceptions.md).
+Watch acceptance blocker.
 
 ## Reproduce the comparison
 

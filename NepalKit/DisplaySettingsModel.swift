@@ -9,7 +9,7 @@ import NepalKitCore
 @Observable
 final class DisplaySettingsModel {
     private(set) var settings: DisplaySettings
-    /// Whether today follows Nepal Time or the Mac's own zone (ADR-0017).
+    /// Whether today follows Nepal Time or the Mac's own zone.
     private(set) var timeReference: TimeReference
 
     private let store: SettingsStore

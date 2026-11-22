@@ -198,8 +198,7 @@ defaults read /Applications/NepalKit.app/Contents/Info SUPublicEDKey
 
 ## Verifying a NepalKitCore release
 
-<https://github.com/dibas-np/NepalKitCore> mirrors `NepalKitCore/`
-([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Each `v<version>`
+<https://github.com/dibas-np/NepalKitCore> mirrors `NepalKitCore/`. Each `v<version>`
 there has a `core-v<version>` here on the source commit. Check that both are
 signed with the key from step 2, and that the mirror's commit is the split of
 this repository. Build `nepalkit-allowed-signers` as in step 2, then, with full
@@ -227,7 +226,7 @@ Every check above also runs mechanically, so you do not have to:
 | Check | Where | When |
 | --- | --- | --- |
 | Codesign identity, hardened runtime, notarization, stapling | `scripts/package-release.sh` | Every release build |
-| DMG layout, window geometry, icon placement | `scripts/package-release.sh`, ADR-0013 | Every release build |
+| DMG layout, window geometry, icon placement | `scripts/package-release.sh` | Every release build |
 | Appcast structure, enclosure lengths, and the EdDSA signature over the real bytes | `scripts/verify-appcast.py`, run by `pages.yml` | Every change to `appcast.xml`, and on demand |
 | Downloaded `.app` identity, version, and `sha256` for the cask | `scripts/update-cask.sh` | Every `v*` tag |
 | Deployment floor agreement across project, script, and built product | `scripts/verify-deployment-floor.py` | Every pull request |

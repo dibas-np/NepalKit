@@ -109,7 +109,7 @@ official use, consult the Panchanga Nirnayak Samiti's published Nepali Patro.
 
 This is a read-only mirror of `NepalKitCore/` in
 [dibas-np/NepalKit](https://github.com/dibas-np/NepalKit), where issues and pull
-requests go and where the source comments' SOURCES.md and `docs/adr/` live. Its
+requests go and where SOURCES.md lives. Its
 history is a reproducible `git subtree split`, and its tags are signed;
 [Verifying a NepalKitCore release](https://github.com/dibas-np/NepalKit/blob/develop/docs/release-verification.md#verifying-a-nepalkitcore-release)
 gives the commands.

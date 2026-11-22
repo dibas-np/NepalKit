@@ -6,8 +6,8 @@
 
 Usage: python3 scripts/verify-candidate-year.py 2085 [month_lengths_csv]
 
-Differences are reported, not resolved. A later year than 2084 needs evidence
-under ADR-0014 before it is adopted.
+Differences are reported, not resolved. A later year than 2084 needs official
+evidence (see SOURCES.md) before it is adopted.
 """
 
 from __future__ import annotations
@@ -170,7 +170,7 @@ def main():
               "365 or 366\ndays. Re-read the row before shipping it.")
     print("\nAttestation is not what this script measures. Agreement between "
           "projections is\nnot attestation: only the Samiti's published almanac "
-          "attests a year. See ADR-0014 and SOURCES.md.")
+          "attests a year. See SOURCES.md.")
 
 
 if __name__ == "__main__":

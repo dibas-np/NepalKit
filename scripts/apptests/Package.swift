@@ -3,8 +3,7 @@
 // App-layer test harness.
 //
 // Introduced after a hosted Xcode test-runner hang. The hosted suite now also
-// passes; this harness runs app logic without launching the application host
-// (see docs/adr/0005-app-layer-test-execution.md).
+// passes; this harness runs app logic without launching the application host.
 //
 // Both target directories are symlinks to the real `NepalKit/` and
 // `NepalKitTests/` directories, so the harness compiles the actual app
@@ -20,7 +19,7 @@ import PackageDescription
 
 let package = Package(
     name: "NepalKitAppTests",
-    // Matches the app's real deployment floor (ADR-0003), so the harness is a
+    // Matches the app's real deployment floor, so the harness is a
     // faithful compile check rather than a laxer one. Anything the app can build
     // at macOS 26, this can build.
     platforms: [.macOS(.v26)],

@@ -39,7 +39,7 @@ public struct Festival: Hashable, Sendable {
     }
 }
 
-/// Festivals and national days by Bikram Sambat date. ADR-0016 records which
+/// Festivals and national days by Bikram Sambat date. SOURCES.md records which
 /// entries are selected.
 public struct FestivalCalendar: Sendable {
     /// Years with festival data. A missing year is a gap, not a year without

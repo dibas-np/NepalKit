@@ -5,7 +5,7 @@ import Observation
 import NepalKitCore
 
 /// Ticks while the popover is visible so its clocks stay live and the date
-/// flips at midnight in the chosen time reference (ADR-0017).
+/// flips at midnight in the chosen time reference.
 @MainActor
 @Observable
 final class ClockModel {

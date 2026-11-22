@@ -75,7 +75,7 @@ struct InfoPlistKeysTests {
 
     @Test(.enabled(if: hasBuiltProduct, "no built product to check — run a build first"))
     func thePlistIsAuthoritativeInTheBuiltProduct() throws {
-        // Version keys arrive substituted from build settings (ADR-0009).
+        // Version keys arrive substituted from build settings.
         let info = try #require(Self.builtInfo)
 
         #expect(info["LSUIElement"] as? Bool == true, "menu-bar-only would be lost")

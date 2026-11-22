@@ -9,7 +9,7 @@
 // Finder centres the background in the window's content area at its logical
 // size (a `@2x` file counts as half its pixels), and places icons by their
 // centres in y-down content coordinates. With the path bar hidden the content
-// area is taller and the icons sit slightly above the arrow (ADR-0013).
+// area is taller and the icons sit slightly above the arrow.
 //
 // Usage:
 //   scripts/make-dmg-artwork.swift <output.png> <app name>

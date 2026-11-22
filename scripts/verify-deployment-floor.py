@@ -163,7 +163,7 @@ def watchos_declared_floors() -> tuple[list[tuple[str, str]], tuple[int, str] | 
 
 # The newest project format CI's Xcode can read. Older toolchains fail with an
 # unhelpful "future Xcode project file format" error, so it is checked here.
-# Raise it together with CI's Xcode (ADR-0007).
+# Raise it together with CI's Xcode.
 MAX_OBJECT_VERSION = 110
 
 
@@ -181,9 +181,7 @@ def _project_format_problem(text: str) -> str | None:
         "A newer Xcode rewrites this format simply by opening the project, so it "
         "changes without an edit to it. Either set objectVersion back to "
         f"{MAX_OBJECT_VERSION}, or - if the project now needs a feature only the "
-        "newer format has - move CI's Xcode floor up in the same change. "
-        "ADR-0007 records that raising the floor is a re-evaluation of the "
-        "deployment-floor claim, not a routine bump."
+        "newer format has - move CI's Xcode floor up in the same change."
     )
 
 
@@ -244,7 +242,7 @@ def main() -> int:
             "  offers updates to systems that cannot launch the build. Fix every\n"
             "  source above to the same value, then re-sign appcast.xml if you moved\n"
             "  its <sparkle:minimumSystemVersion> - editing a feed invalidates its\n"
-            "  signature. ADR-0003 records why this gate exists."
+            "  signature."
         )
         return 1
 

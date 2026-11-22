@@ -32,7 +32,7 @@ VERSION="${VERSION#v}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
     echo "'$VERSION' is not a three-component version." >&2
     echo "Releases 1.0 to 1.2 shipped two-component versions and are not" >&2
-    echo "rewritten; semver starts at 1.3.0 (ADR-0009)." >&2
+    echo "rewritten; semver starts at 1.3.0." >&2
     exit 1
 }
 

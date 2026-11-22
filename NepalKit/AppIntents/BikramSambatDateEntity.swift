@@ -52,7 +52,7 @@ nonisolated struct BikramSambatDateEntity: AppEntity, Hashable, Sendable {
         self.weekdayValue = IntentAnswers.weekdayNameString(gregorian.weekday, monthNames: monthNames)
     }
 
-    /// Today's date in the user's time reference (ADR-0017), or nil past the supported range.
+    /// Today's date in the user's time reference, or nil past the supported range.
     static func today() -> BikramSambatDateEntity? {
         let timeZone = SettingsStore().timeReference.timeZone
         guard let bs = BikramSambatDate.today(now: Date(), timeZone: timeZone, in: AppData.dataset) else { return nil }
