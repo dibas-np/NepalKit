@@ -51,12 +51,12 @@ if [[ -z "${NEPAKIT_BUILT_PLIST:-}" ]]; then
     done
 
     if [[ -z "$product" ]]; then
-        echo "==> no built product found, so the seven plist tests will skip"
+        echo "==> no built product found, so the built-product plist tests will skip"
     elif [[ -n "$newest_mtime" ]] && [[ "$product_mtime" -lt "$newest_mtime" ]]; then
         echo "==> not using the built product at $product, because it is stale"
         echo "    product $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$product/Contents/MacOS/NepalKit")"
         echo "    source  $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$newest_path")"
-        echo "    rebuild, or point NEPAKIT_BUILT_PLIST at a current product; the seven plist tests skip"
+        echo "    rebuild, or point NEPAKIT_BUILT_PLIST at a current product; the built-product plist tests skip"
     else
         NEPAKIT_BUILT_PLIST="$product/Contents/Info.plist"
         export NEPAKIT_BUILT_PLIST

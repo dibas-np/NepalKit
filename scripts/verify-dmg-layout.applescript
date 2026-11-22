@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 -- Copyright (C) 2026 Dibas Sigdel
 --
--- Usage: osascript scripts/verify-dmg-layout.applescript <volume> <app> <layout.json>
+-- Usage: osascript scripts/verify-dmg-layout.applescript <volume> <app> <layout-json>
 -- Exits 0 if the window matches, 1 with the list of mismatches otherwise.
 
 use framework "Foundation"

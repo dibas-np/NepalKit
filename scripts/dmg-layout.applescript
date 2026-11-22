@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: GPL-3.0-or-later
 -- Copyright (C) 2026 Dibas Sigdel
 --
--- Usage: osascript scripts/dmg-layout.applescript <volume> <app> <background.png> <layout.json>
+-- Usage: osascript scripts/dmg-layout.applescript <volume> <app> <background.png> <layout-json>
 
 use framework "Foundation"
 

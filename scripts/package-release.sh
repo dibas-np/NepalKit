@@ -55,8 +55,15 @@ trap 'cleanup; exit 143' TERM
 
 NOTARY_PROFILE="${NOTARY_PROFILE:-NepalKit-notary}"
 
-if [[ -z "${TEAM_ID:-}" ]]; then
-    echo "TEAM_ID is required for Developer ID signing/export."
+PROJECT_TEAM="$(grep -o 'DEVELOPMENT_TEAM = [A-Z0-9]*;' "$ROOT/$APP.xcodeproj/project.pbxproj" \
+    | sed 's/DEVELOPMENT_TEAM = //; s/;//' | sort -u || true)"
+if [[ -z "$PROJECT_TEAM" || "$PROJECT_TEAM" == *$'\n'* ]]; then
+    echo "the project must state exactly one DEVELOPMENT_TEAM; found: ${PROJECT_TEAM:-none}"
+    exit 2
+fi
+TEAM_ID="${TEAM_ID:-$PROJECT_TEAM}"
+if [[ "$TEAM_ID" != "$PROJECT_TEAM" ]]; then
+    echo "TEAM_ID=$TEAM_ID does not match the project's DEVELOPMENT_TEAM=$PROJECT_TEAM."
     exit 2
 fi
 
