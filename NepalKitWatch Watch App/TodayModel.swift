@@ -15,8 +15,8 @@ final class TodayModel {
     private let nextMidnight: @Sendable (Date) -> Date?
     private let displayFor: @Sendable (Date) -> WatchDayDisplay
 
-    private var midnightTask: Task<Void, Never>?
-    private var clockChangeTask: Task<Void, Never>?
+    private(set) var midnightTask: Task<Void, Never>?
+    private(set) var clockChangeTask: Task<Void, Never>?
 
     init(
         now: @escaping @Sendable () -> Date = { Date.now },

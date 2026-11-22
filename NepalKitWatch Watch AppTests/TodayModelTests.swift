@@ -4,42 +4,44 @@ import Foundation
 import Testing
 import NepalKitCore
 import SwiftUI
+import Synchronization
 @testable import NepalKitWatchApp
 
 @MainActor
 struct TodayModelTests {
-    nonisolated final class MutableClock: @unchecked Sendable {
-        var value: Date
-        var reads = 0
+    nonisolated final class MutableClock: Sendable {
+        private let state: Mutex<(value: Date, reads: Int)>
 
         init(_ value: Date) {
-            self.value = value
+            state = Mutex((value, 0))
         }
+
+        var value: Date {
+            get { state.withLock { $0.value } }
+            set { state.withLock { $0.value = newValue } }
+        }
+
+        var reads: Int { state.withLock { $0.reads } }
 
         func read() -> Date {
-            reads += 1
-            return value
+            state.withLock {
+                $0.reads += 1
+                return $0.value
+            }
         }
     }
 
-    nonisolated final class FlagBox: @unchecked Sendable {
-        private let lock = NSLock()
-        private var value = false
+    nonisolated final class FlagBox: Sendable {
+        private let value = Mutex(false)
 
         func set() {
-            lock.lock()
-            value = true
-            lock.unlock()
+            value.withLock { $0 = true }
         }
 
-        var isSet: Bool {
-            lock.lock()
-            defer { lock.unlock() }
-            return value
-        }
+        var isSet: Bool { value.withLock { $0 } }
     }
 
-    nonisolated final class SignalFixture: @unchecked Sendable {
+    nonisolated final class SignalFixture: Sendable {
         let stream: ClockChangeStream
         let continuation: AsyncStream<Void>.Continuation
         let terminated = FlagBox()
@@ -78,11 +80,10 @@ struct TodayModelTests {
         )
     }
 
-    private func settle() async {
-        for _ in 0 ..< 5 {
-            await Task.yield()
-        }
-        try? await Task.sleep(for: .milliseconds(50))
+    /// Ends the stream and waits for the model to process everything sent before.
+    private func drain(_ signals: SignalFixture, _ model: TodayModel) async {
+        signals.continuation.finish()
+        await model.clockChangeTask?.value
     }
 
     @Test func activationResolvesTodayWithOneClockRead() throws {
@@ -112,7 +113,7 @@ struct TodayModelTests {
         model.activate()
 
         signals.continuation.yield()
-        await settle()
+        await drain(signals, model)
 
         #expect(clock.reads == 2)
         model.deactivate()
@@ -126,7 +127,7 @@ struct TodayModelTests {
 
         clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
         signals.continuation.yield()
-        await settle()
+        await drain(signals, model)
 
         #expect(clock.reads == 2)
         guard case .supported(let components) = model.display else {
@@ -142,12 +143,13 @@ struct TodayModelTests {
         let signals = SignalFixture()
         let model = makeModel(clock: clock, signals: signals)
         model.activate()
+        let observation = model.clockChangeTask
         model.deactivate()
         let readsAtDeactivation = clock.reads
 
-        try await waitUntil(timeout: .seconds(5)) { signals.terminated.isSet }
+        await observation?.value
+        #expect(signals.terminated.isSet)
         signals.continuation.yield()
-        await settle()
 
         #expect(clock.reads == readsAtDeactivation)
     }
@@ -161,8 +163,9 @@ struct TodayModelTests {
 
         clock.value = try UTCWatchFixture.utc(2026, 9, 27, 18, 30)
         signals.continuation.yield()
+        let observation = model.clockChangeTask
         model.deactivate()
-        await settle()
+        await observation?.value
 
         #expect(clock.reads == 1)
         #expect(model.display == displayAtDeactivation)
@@ -199,9 +202,10 @@ struct TodayModelTests {
             nextMidnight: { $0.addingTimeInterval(0.05) }
         )
         model.activate()
+        let midnight = model.midnightTask
         model.deactivate()
 
-        try await Task.sleep(for: .milliseconds(300))
+        await midnight?.value
 
         #expect(clock.reads == 1)
     }

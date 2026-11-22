@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 import Testing
+import Synchronization
 import NepalKitCore
 import WidgetKit
 
@@ -246,15 +247,17 @@ struct TodayTimelineBuilderTests {
     }
 }
 
-nonisolated final class CallCounter: @unchecked Sendable {
-    private var count = 0
+nonisolated final class CallCounter: Sendable {
+    private let count = Mutex(0)
 
-    var value: Int { count }
+    var value: Int { count.withLock { $0 } }
 
     @discardableResult
     func increment() -> Int {
-        count += 1
-        return count
+        count.withLock {
+            $0 += 1
+            return $0
+        }
     }
 }
 
