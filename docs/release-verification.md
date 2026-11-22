@@ -6,8 +6,7 @@ the project published — and that it came from the person who publishes it.
 You can skip all of this. macOS already does it: a notarized, stapled build that
 has been signed by a Developer ID certificate passes Gatekeeper on first launch
 without a prompt. This document exists for the cases where you **want** to check
-rather than trust the check having happened, and for the Homebrew path, where
-there is no signature check at all.
+rather than trust the check having happened.
 
 ## What you are verifying, and against what
 
@@ -43,8 +42,8 @@ On a Mac, with the DMG in `~/Downloads`. None of these steps installs anything.
 ### 1. Check what you actually have
 
 ```sh
-ls -l ~/Downloads/NepalKit-*.dmg
-shasum -a 256 ~/Downloads/NepalKit-*.dmg
+ls -l ~/Downloads/NepalKit.dmg
+shasum -a 256 ~/Downloads/NepalKit.dmg
 ```
 
 If you installed with Homebrew, compare that digest against the one recorded in
@@ -55,7 +54,7 @@ verified:
 brew cat --cask dibas-np/tap/nepalkit | grep -A2 sha256
 ```
 
-### 2. Check the tag signature, then the archive signature
+### 2. Check the tag signature
 
 A release carries two signatures. The **tag** says who cut the release; the
 **archive** says what is inside it. Checking only the second tells you the bytes
@@ -102,26 +101,34 @@ git cat-file -t v<version>     # tag    -> annotated (may or may not be signed)
 
 **A `.dmg` carries no code signature of its own, by design.** `codesign` on the
 image reports nothing useful, and `spctl` on the image always says "no usable
-signature" — which is why step 4 below mounts first and assesses the `.app`
-inside. So the identity check runs against the app, not the disk image:
+signature" — which is why step 5 below assesses the `.app` inside. So the
+identity check runs against the app, not the disk image:
 
 ```sh
-hdiutil attach ~/Downloads/NepalKit-*.dmg -nobrowse -readonly
-codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | head -20
+hdiutil attach ~/Downloads/NepalKit.dmg -nobrowse -readonly
+codesign --verify --deep --strict --verbose=2 /Volumes/NepalKit/NepalKit.app
+codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | grep -E 'TeamIdentifier|Authority|flags'
 ```
+
+The first command must report the app valid on disk: the signature verifies, so
+the app is unmodified.
 
 Expect `TeamIdentifier=CA89X9954L`; that is the value to match. The Authority
 line names the organisation that holds the team: 1.6.0 prints
 `Authority=Developer ID Application: Finnove Technologies (CA89X9954L)`. **A different team here is a failure, not a
 warning** — stop and read [SECURITY.md](../SECURITY.md).
 
+`flags` must include `runtime` — the hardened runtime. `package-release.sh` fails
+the release if it is missing, because without it the hardened-runtime guarantees
+the notarization rests on do not apply.
+
 The volume name is `NepalKit` for every release; if `hdiutil attach` mounts it
-somewhere else, use the path it prints. Leave it mounted for steps 5 and 6.
+somewhere else, use the path it prints. Leave it mounted for step 5.
 
 ### 4. Check the notarization ticket, offline
 
 ```sh
-xcrun stapler validate ~/Downloads/NepalKit-*.dmg
+xcrun stapler validate ~/Downloads/NepalKit.dmg
 ```
 
 This must succeed with the machine offline. A ticket that validates only with a
@@ -142,55 +149,30 @@ but not notarized reports `source=Developer ID Application` or
 `Unnotarized Developer ID`, and Gatekeeper will refuse it on another user's Mac
 even though it opens on yours.
 
-### 6. Confirm the inner app is intact
-
-The identity check in step 2 answers *who* signed it. This one answers *is it
-unmodified*: the signature verifies, and the hardened runtime is present. It is
-what `scripts/update-cask.sh` automates before it records a digest:
-
-```sh
-codesign --verify --deep --strict --verbose=2 /Volumes/NepalKit/NepalKit.app
-codesign -dv --verbose=4 /Volumes/NepalKit/NepalKit.app 2>&1 | grep -E 'TeamIdentifier|flags'
-```
-
-`flags` must include `runtime` — the hardened runtime. `package-release.sh` fails
-the release if it is missing, because without it the hardened-runtime guarantees
-the notarization rests on do not apply.
-
 ## Verifying the update feed
 
 If you are already running NepalKit, the app verifies the feed and the archive
 for you and refuses both when a signature is missing. To check the feed
-independently:
+independently, run the verifier from a clone of this repository. It checks the
+feed's signature, then fetches each enclosure and checks its Ed25519 signature
+against the committed public key:
 
 ```sh
-curl -sS https://dibas-np.github.io/NepalKit/appcast.xml | head -40
+python3 scripts/verify-appcast.py appcast.xml --info-plist NepalKit/Info.plist
 ```
 
-You are looking for an `edSignature` element on the `<channel>` or on each
-`<item>`.
+That is the same check CI runs on every change to the feed
+(`.github/workflows/pages.yml`) and the same one the release machine runs
+before publishing.
 
-> **This step checks presence, not cryptography.** `curl | head` cannot verify
-> anything — it shows you whether a signature field exists, and nothing about
-> whether it is valid. Do not read a signature element here as a verified feed.
-> For the real check, run the verifier, which fetches each enclosure and checks
-> its Ed25519 signature against the committed public key:
->
-> ```sh
-> python3 scripts/verify-appcast.py appcast.xml --info-plist NepalKit/Info.plist
-> ```
->
-> That is the same check CI runs on every change to the feed
-> (`.github/workflows/pages.yml`) and the same one the release machine runs
-> before publishing.
-
-**`SUPublicEDKey` on its own is not enough** either: it means the app is *able*
+**`SUPublicEDKey` on its own is not enough**: it means the app is *able*
 to verify a signature, not that it insists on one. An app that only verifies
 downloads trusts whatever the feed names — so a tampered feed could point an
 installation at a different archive. NepalKit refuses an unsigned feed, which is
 what the 1.4.1 release added.
 
-The public key lives inside the installed app, not in this repository:
+The public key is `SUPublicEDKey` in `NepalKit/Info.plist`; compare it with the
+installed app's copy:
 
 ```sh
 defaults read /Applications/NepalKit.app/Contents/Info SUPublicEDKey
@@ -219,29 +201,10 @@ Expect a `Good "git" signature` for both tags, then `mirror matches`. The
 mirror's commits are unsigned (the split rewrites them); the signed tag covers
 the tree.
 
-## What this repository automates
-
-Every check above also runs mechanically, so you do not have to:
-
-| Check | Where | When |
-| --- | --- | --- |
-| Codesign identity, hardened runtime, notarization, stapling | `scripts/package-release.sh` | Every release build |
-| DMG layout, window geometry, icon placement | `scripts/package-release.sh` | Every release build |
-| Appcast structure, enclosure lengths, and the EdDSA signature over the real bytes | `scripts/verify-appcast.py`, run by `pages.yml` | Every change to `appcast.xml`, and on demand |
-| Downloaded `.app` identity, version, and `sha256` for the cask | `scripts/update-cask.sh` | Every `v*` tag |
-| Deployment floor agreement across the Xcode project and built product | `scripts/verify-deployment-floor.py` | Every pull request |
-| NepalKitCore suite on macOS, iOS and watchOS, run in the split that is published, and both tags verified against the key above before anything is pushed | `scripts/release-core.sh`, tested by `scripts/test_release_core.py` | Every NepalKitCore release |
-
 ## Where the trust actually comes from
 
-Honesty about this, because a verification document that implies it is the
-trust anchor is worse than none.
-
-**This file is not a trust anchor.** It is in the same repository as the pipeline
-that produces the releases, so anyone who can rewrite `main` can rewrite this
-page. The same is true of the Team ID, which is printed on every signed build.
-Verifying a digest against a value from the same place you downloaded the file
-proves only that the file matches itself.
+**This file is not a trust anchor.** It lives in the same repository as the
+release pipeline, so anyone who can rewrite `main` can rewrite this page.
 
 What actually carries the trust:
 
@@ -251,18 +214,11 @@ What actually carries the trust:
   have an Apple Developer account with notarization capability. The ticket is
   checked against Apple's infrastructure on a machine you trust — which is why it
   validates offline.
-- **The Homebrew cask**, in a separate repository, whose digest is reviewed
-  independently of this one and is the only check the `brew` path performs. That
-  is why `update-cask.sh` refuses to compute a digest over bytes that have not
-  already passed every other check.
 - **The Ed25519 key**, whose private half is in one machine's keychain and is
   not in GitHub, in CI, or in this repository.
 
 If you want independence from this repository entirely, the check to make is
-step 3 and step 4 above — Apple's verdict — plus, if you are technical enough to
-want it, Apple's
-[notarization transparency log](https://developer.apple.com/news/?id=notary-log),
-which is a public append-only record independent of both Apple and this project.
+steps 4 and 5 above — Apple's verdict.
 
 ## If a check fails
 
