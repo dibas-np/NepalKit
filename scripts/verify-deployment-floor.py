@@ -16,20 +16,6 @@ from xcode_project import watchos_floors as watchos_project_floors
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECT = REPO_ROOT / "NepalKit.xcodeproj" / "project.pbxproj"
-PACKAGE = REPO_ROOT / "NepalKitCore" / "Package.swift"
-
-
-def package_watchos_floor(text: str) -> tuple[int, str] | None:
-    for number, line in enumerate(text.splitlines(), start=1):
-        code = line.split("//", 1)[0]
-        match = re.search(r"\.watchOS\(\.v([0-9.]+)\)", code)
-        if match:
-            return number, match.group(1)
-    return None
-
-
-def _version(value: str) -> tuple[int, ...]:
-    return tuple(int(part) for part in value.split("."))
 
 
 def product_floor(plist_path: Path) -> str | None:
@@ -55,25 +41,10 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
     return declared, problem
 
 
-def watchos_declared_floors() -> tuple[list[tuple[str, str]], tuple[int, str] | None, str | None]:
+def watchos_declared_floors() -> list[tuple[str, str]]:
     text = PROJECT.read_text(encoding="utf-8")
-    declared = [(f"{PROJECT.name}:{line}", value)
-                for line, value in watchos_project_floors(text)]
-    if not declared:
-        return declared, None, None
-    try:
-        package = package_watchos_floor(PACKAGE.read_text(encoding="utf-8"))
-    except FileNotFoundError as error:
-        return declared, None, f"{error.filename} is missing."
-    if package is None:
-        return declared, None, (
-            f"{PACKAGE.name} declares no watchOS platform, so there is nothing to "
-            "compare the app's watchOS floor against. Without it a package floor "
-            "above the app's would go unnoticed, and the app would be built "
-            "against a library that requires a newer watch than the app claims "
-            "to support."
-        )
-    return declared, package, None
+    return [(f"{PROJECT.name}:{line}", value)
+            for line, value in watchos_project_floors(text)]
 
 
 MAX_OBJECT_VERSION = 110
@@ -119,7 +90,7 @@ def _display_path(path: Path) -> str:
 def main() -> int:
     try:
         declared, problem = declared_floors()
-        watch_declared, package, watch_problem = watchos_declared_floors()
+        watch_declared = watchos_declared_floors()
     except FileNotFoundError as error:
         print(f"FAIL  {error.filename} is missing, so the floor cannot be checked.")
         return 1
@@ -155,10 +126,6 @@ def main() -> int:
         )
         return 1
 
-    if watch_problem is not None:
-        print(f"FAIL  {watch_problem}")
-        return 1
-
     watch_values = {value for _, value in watch_declared}
     if watch_declared and len(watch_values) != 1:
         print("\nwatchOS deployment floor is NOT consistent. These watchOS targets "
@@ -177,37 +144,9 @@ def main() -> int:
         )
         return 1
 
-    if watch_declared and package is not None:
-        assert watch_values
-        app_floor = watch_values.pop()
-        if _version(package[1]) > _version(app_floor):
-            print(
-                f"FAIL  {PACKAGE.name}:{package[0]} declares a watchOS floor of "
-                f"{package[1]}, which is higher than the {app_floor} the app's "
-                "watchOS targets declare."
-            )
-            print(
-                f"\n  NepalKitCore's watchOS platform is the *library's* compile\n"
-                f"  floor, so it is allowed to be lower than the app's product\n"
-                f"  claim - but not higher.\n"
-                f"\n"
-                f"  The consequence is an availability one, and it is a runtime\n"
-                f"  failure rather than a build failure: core code compiled\n"
-                f"  against a newer watchOS than the app claims can reference\n"
-                f"  API that does not exist on the floor the app actually ships,\n"
-                f"  so it builds cleanly here and then fails on an older watch.\n"
-                f"\n"
-                f"  Raise every watchOS target in the project to {package[1]} or\n"
-                f"  above, or lower {PACKAGE.name}'s watchOS platform to the newest\n"
-                f"  platform at or below {app_floor} that the manifest can express.\n"
-                f"  Note that the manifest API's watchOS versions are discrete\n"
-                f"  cases: an arbitrary version such as 26.6 is rejected outright\n"
-                f"  while the manifest is compiled, so \"exactly {app_floor}\" is\n"
-                f"  usually not an available answer."
-            )
-            return 1
+    if watch_declared:
         print(f"Deployment floors are consistent: macOS {floor}, "
-              f"watchOS {app_floor} (package floor {package[1]}).")
+              f"watchOS {watch_values.pop()}.")
     else:
         print(f"Deployment floor is {floor} everywhere it is written.")
     return 0

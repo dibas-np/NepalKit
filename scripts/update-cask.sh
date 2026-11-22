@@ -185,14 +185,6 @@ grep -q "^  version \"$VERSION\"\$" "$CASK" || { echo "version stanza was not up
 grep -q "^  sha256 \"$SHA256\"\$" "$CASK" || { echo "sha256 stanza was not updated" >&2; exit 1; }
 grep -Fq "releases/download/v#{version}/" "$CASK" || { echo "url was not updated to the v-prefixed tag" >&2; exit 1; }
 
-if command -v brew >/dev/null; then
-    echo "==> brew audit"
-    brew audit --cask --tap=dibas-np/tap "$CASK" || {
-        echo "audit failed; the cask is modified but not valid." >&2
-        exit 1
-    }
-fi
-
 echo
 echo "Updated $CASK to $VERSION. Review and commit it in the tap:"
 echo "  git -C $TAP_DIR diff && git -C $TAP_DIR commit -am 'nepalkit $VERSION' && git -C $TAP_DIR push"

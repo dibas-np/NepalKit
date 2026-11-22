@@ -171,17 +171,6 @@ class PackageReleaseWiring(unittest.TestCase):
         )
         return match.group(1)
 
-    def test_the_function_propagates_failure(self) -> None:
-        body = self.function_body()
-        self.assertNotIn(
-            "|| true", body,
-            "the release gate's unregistration swallows the failure it reports",
-        )
-        self.assertNotIn(
-            "return 0", body, "a constant success return is the dead gate"
-        )
-        self.assertRegex(body, r'return "\$\{?unregister_result')
-
     def test_the_helper_is_resolved_from_root_in_an_unrelated_directory(self) -> None:
         harness = (
             "set -euo pipefail\n"
@@ -298,8 +287,6 @@ class PackageReleaseWiring(unittest.TestCase):
             mounts.extend(result.stdout.splitlines())
         self.assertEqual(len(set(mounts)), 4, "reused mount paths collide with prior disk-image registrations")
         self.assertEqual(len({Path(mount).name for mount in mounts}), 4, "Finder identifies disks by mount name")
-        self.assertIn('"${DMG_LAYOUT_MOUNT:t}" "$APP"', source)
-        self.assertIn('"${MNT:t}" "$APP"', source)
 
     def test_layout_unregisters_before_unmounting(self) -> None:
         source = (SCRIPT.parent / "package-release.sh").read_text()

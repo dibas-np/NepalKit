@@ -20,6 +20,7 @@ import sys
 import urllib.error
 import urllib.request
 
+from data_sources import MONTHS
 from dataset_table import shipped_table
 
 BASE = "https://kathmandu.gov.np/en/calendar?view=bs&year={year}&month={month}"
@@ -80,18 +81,16 @@ def main():
         note = "" if total in (365, 366) else "  <-- IMPOSSIBLE YEAR LENGTH"
         print("%d BS: %s  (%d days)%s" % (year, table, total, note))
         if year not in shipped:
-            print("        not in the shipped table (range is 1975-2084)")
+            print("        not in the shipped table (range is %d-%d)" % (min(shipped), max(shipped)))
             continue
         mine = shipped[year]
         if mine == table:
             print("        matches the shipped table exactly")
         else:
-            months = ["Baisakh", "Jestha", "Ashadh", "Shrawan", "Bhadra", "Ashwin",
-                      "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"]
             print("        DIFFERS from the shipped table:")
             for index, (ours, theirs) in enumerate(zip(mine, table)):
                 if ours != theirs:
-                    print("          %-9s shipped=%d  kmc=%d" % (months[index], ours, theirs))
+                    print("          %-9s shipped=%d  kmc=%d" % (MONTHS[index], ours, theirs))
             print("        year totals: shipped=%d kmc=%d%s"
                   % (sum(mine), total,
                      "  <-- a different year length, not a transposition"

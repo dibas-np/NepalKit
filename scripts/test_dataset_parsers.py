@@ -93,9 +93,6 @@ class ShippedTableTests(unittest.TestCase):
 
 
 class SourceParserTests(unittest.TestCase):
-    def setUp(self):
-        del vds.NOTES[:]
-
     def test_askbuddie_quoted_year_rows(self):
         self.assertEqual(
             vds.parse_askbuddie(ASKBUDDIE_BODY),

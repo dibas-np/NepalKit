@@ -20,7 +20,7 @@ import data_sources as vds
 MONTHS = vds.MONTHS
 
 
-def parse_candidate(text, year):
+def parse_candidate(text):
     parts = [p for p in text.replace(" ", "").split(",") if p]
     if len(parts) != 12:
         sys.exit("a candidate year has 12 months; got %d from %r"
@@ -36,13 +36,12 @@ def fetch_row(name, year):
     body = vds.fetch(name, url, False)
     if body is None:
         raise OSError("could not fetch %s (%s)" % (name, url))
-    del vds.NOTES[:]
     table = vds.parse_askbuddie(body)
     if not table:
         raise ValueError("%s fetched, but no rows parsed — the file's shape "
                          "changed and the comparison would be silently empty"
                          % name)
-    return repo, table.get(year), list(vds.NOTES), min(table), max(table)
+    return repo, table.get(year), min(table), max(table)
 
 
 def main():
@@ -54,7 +53,7 @@ def main():
         year = int(args[0])
     except ValueError:
         sys.exit("the year must be a whole BS year, e.g. 2085; got %r" % args[0])
-    candidate = parse_candidate(args[1], year) if len(args) > 1 else None
+    candidate = parse_candidate(args[1]) if len(args) > 1 else None
 
     print("What the pinned sources publish for %d BS\n" % year)
     if candidate is None:
@@ -66,7 +65,7 @@ def main():
     failed = []
     for name in vds.PINS:
         try:
-            repo, row, notes, first, last = fetch_row(name, year)
+            repo, row, first, last = fetch_row(name, year)
         except (OSError, ValueError) as exc:
             print("%-13s ERROR  %s" % (name, exc))
             failed.append(name)
@@ -79,11 +78,7 @@ def main():
             print()
             continue
         print("  %s  (%d days)" % (row, sum(row)))
-        for note in notes:
-            print("  elsewhere in this table — %s" % note.strip())
-        del vds.NOTES[:]
-        vds.check_impossible({year: row})
-        for note in vds.NOTES:
+        for note in vds.check_impossible({year: row}):
             print(note)
 
     published = {name: row for name, row in rows.items() if row is not None}
@@ -139,14 +134,13 @@ def main():
               "shipped\ntable's corrections and projection; add this one "
               "there rather than\nresolving it here.")
 
-    del vds.NOTES[:]
-    vds.check_impossible({year: candidate})
+    notes = vds.check_impossible({year: candidate})
     print("\nCandidate year total: %d day(s)%s"
           % (sum(candidate),
              " — POSSIBLE" if sum(candidate) in (365, 366) else ""))
-    for note in vds.NOTES:
+    for note in notes:
         print(note)
-    if vds.NOTES:
+    if notes:
         print("The candidate cannot be transcribed as it stands: a BS year is "
               "365 or 366\ndays. Re-read the row before shipping it.")
     print("\nAttestation is not what this script measures. Agreement between "

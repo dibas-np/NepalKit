@@ -17,9 +17,6 @@ PINS = {
                   "askbuddie/bikram-sambat"),
 }
 
-NOTES = []
-
-
 def cache_dir():
     root = os.environ.get("NEPAKIT_DATA_CACHE") or str(Path.home() / ".cache" / "nepalkit-data-sources")
     path = Path(root)
@@ -45,10 +42,9 @@ def fetch(name, url, offline):
 
 
 def check_impossible(rows):
-    for year, values in sorted(rows.items()):
-        if sum(values) not in (365, 366):
-            NOTES.append("  note: %d BS sums to %d days, which is impossible; "
-                         "the source table contains an error" % (year, sum(values)))
+    return ["  note: %d BS sums to %d days, which is impossible; "
+            "the source table contains an error" % (year, sum(values))
+            for year, values in sorted(rows.items()) if sum(values) not in (365, 366)]
 
 
 def parse_askbuddie(body):

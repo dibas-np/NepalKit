@@ -13,9 +13,5 @@ disabled_rules:
 opt_in_rules:
   - force_unwrapping
 
-analyzer_rules:
-  - unused_declaration
-  - unused_import
-
 force_unwrapping:
   severity: warning

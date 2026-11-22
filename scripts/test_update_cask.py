@@ -60,7 +60,7 @@ class CaskIdentityTests(unittest.TestCase):
             stub = binaries / "stub"
             stub.write_text(STUB)
             stub.chmod(0o755)
-            for name in ("curl", "hdiutil", "spctl", "xcrun", "codesign", "shasum", "brew"):
+            for name in ("curl", "hdiutil", "spctl", "xcrun", "codesign", "shasum"):
                 (binaries / name).symlink_to(stub)
             log = tmp / "commands"
             team = re.findall(r"DEVELOPMENT_TEAM = ([^;]+);",

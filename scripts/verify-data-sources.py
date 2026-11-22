@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-from data_sources import MONTHS, NOTES, PINS, fetch, parse_askbuddie
+from data_sources import MONTHS, PINS, fetch, parse_askbuddie
 from dataset_table import shipped_table
 
 DATASET = "NepalKitCore/Sources/NepalKitCore/CalendarDataset.swift"
@@ -130,7 +130,6 @@ def main():
                 "uncovered": sorted(shipped),
             }
             continue
-        del NOTES[:]
         table = parse_askbuddie(body)
         if not table:
             print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
@@ -155,8 +154,6 @@ def main():
         }
 
         print("%s  (%s)" % (repo, url.split("/blob/")[0].split("raw.githubusercontent.com/")[-1]))
-        for note in NOTES:
-            print(note)
         print("  covers %d-%d BS; %d years overlap the shipped range"
               % (min(table), max(table), len(shared)))
         uncovered = sorted(set(shipped) - set(table))

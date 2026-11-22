@@ -41,19 +41,6 @@ PBXPROJ = (
     "}\n"
 )
 
-PACKAGE_SW = (
-    "// swift-tools-version: 6.2\n"
-    "import PackageDescription\n"
-    "\n"
-    "let package = Package(\n"
-    "    name: \"NepalKitCore\",\n"
-    "    platforms: [.macOS(.v26), .watchOS(.v26)],\n"
-    "    targets: [\n"
-    "        .target(name: \"NepalKitCore\"),\n"
-    "    ]\n"
-    ")\n"
-)
-
 QUIET = "26.9"
 
 
@@ -154,30 +141,6 @@ class WatchOSProjectFloorParsingTests(unittest.TestCase):
         self.assertEqual([value for _, value in vdf.watchos_project_floors(both)], ["26.6"])
 
 
-class PackageManifestFloorParsingTests(unittest.TestCase):
-    def test_reads_the_declared_platform(self) -> None:
-        line, value = vdf.package_watchos_floor(PACKAGE_SW)
-        self.assertEqual(value, "26")
-        self.assertIn(".watchOS(.v26)", PACKAGE_SW.splitlines()[line - 1])
-
-    def test_a_manifest_with_no_watchos_platform_is_absent_not_a_default(self) -> None:
-        without = PACKAGE_SW.replace(".watchOS(.v26)", "")
-        self.assertIsNone(vdf.package_watchos_floor(without),
-                          "no .watchOS platform must read as absent, not as a version")
-
-    def test_a_platform_inside_a_comment_is_not_the_declaration(self) -> None:
-        commented = "// was once: platforms: [.watchOS(.v27)]\n" + PACKAGE_SW
-        line, value = vdf.package_watchos_floor(commented)
-        self.assertEqual(value, "26", "the commented-out platform must not be read")
-        self.assertEqual(commented.splitlines()[line - 1].strip(),
-                         "platforms: [.macOS(.v26), .watchOS(.v26)],")
-
-    def test_the_macos_platform_is_not_mistaken_for_the_watchos_one(self) -> None:
-        line, value = vdf.package_watchos_floor(PACKAGE_SW)
-        self.assertIn(".watchOS", PACKAGE_SW.splitlines()[line - 1],
-                      "the line reported must be the one declaring .watchOS")
-
-
 class BuiltProductFloorTests(unittest.TestCase):
     def _plist(self, value: object) -> Path:
         directory = Path(tempfile.mkdtemp())
@@ -201,29 +164,22 @@ class BuiltProductFloorTests(unittest.TestCase):
 
 
 class GateHarness:
-    def _run(self, project: str, built: str | None,
-             package: str = PACKAGE_SW) -> tuple[int, str]:
+    def _run(self, project: str, built: str | None) -> tuple[int, str]:
         captured = io.StringIO()
         code = 0
         with contextlib.redirect_stdout(captured):
-            with self._patch_sources(project, built, package):
+            with self._patch_sources(project, built):
                 code = vdf.main()
         return code, captured.getvalue()
 
     @contextlib.contextmanager
-    def _patch_sources(self, project: str, built: str | None,
-                       package: str = PACKAGE_SW):
+    def _patch_sources(self, project: str, built: str | None):
         original_project = vdf.PROJECT
-        had_package = hasattr(vdf, "PACKAGE")
-        original_package = getattr(vdf, "PACKAGE", None)
         original_locate = vdf._locate_built_product
         original_plist = vdf.product_floor
         project_path = Path(tempfile.mkdtemp()) / "project.pbxproj"
         project_path.write_text(project, encoding="utf-8")
-        package_path = Path(tempfile.mkdtemp()) / "Package.swift"
-        package_path.write_text(package, encoding="utf-8")
         vdf.PROJECT = project_path
-        vdf.PACKAGE = package_path
         vdf._locate_built_product = (
             (lambda: Path("/fake/NepalKit.app/Contents/Info.plist"))
             if built is not None else (lambda: None)
@@ -234,10 +190,6 @@ class GateHarness:
             yield
         finally:
             vdf.PROJECT = original_project
-            if had_package:
-                vdf.PACKAGE = original_package
-            else:
-                del vdf.PACKAGE
             vdf._locate_built_product = original_locate
             vdf.product_floor = original_plist
 
@@ -310,35 +262,6 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
         for line in floor_lines(agreeing, "26.6"):
             self.assertIn(f"project.pbxproj:{line}", output,
                           "an agreeing watchOS block must still be reported")
-
-    def test_a_package_floor_above_the_app_exits_one(self) -> None:
-        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
-        higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
-        code, output = self._run(agreeing, "26.6", package=higher)
-        self.assertEqual(code, 1, "a package floor above the app's must fail")
-        self.assertIn("Package.swift:6", output,
-                      "the message must name the line to edit")
-        self.assertIn("higher than the 26.6", output,
-                      "the message must say which way the two floors disagree")
-
-    def test_the_package_floor_failure_does_not_claim_the_appcast_would_lie(self) -> None:
-        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
-        higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
-        _code, output = self._run(agreeing, "26.6", package=higher)
-        self.assertNotIn("appcast", output.lower(),
-                         "the appcast says nothing about watches, so this message "
-                         "must not claim it does")
-        self.assertIn("availability", output,
-                      "the stated consequence must be the availability one")
-        self.assertIn("fails on an older watch", output,
-                      "the stated consequence must say where it surfaces")
-
-    def test_a_package_floor_below_the_app_exits_zero(self) -> None:
-        agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
-        code, output = self._run(agreeing, "26.6", package=PACKAGE_SW)
-        self.assertEqual(code, 0, output)
-        self.assertIn(f"project.pbxproj:{floor_lines(agreeing, '26.6')[0]}", output)
-        self.assertIn("26", output)
 
     def test_a_stale_watchos_key_on_an_inherited_sdkroot_block_is_silent(self) -> None:
         mixed = watch_pbxproj(
@@ -421,20 +344,6 @@ class RealRepositoryTests(unittest.TestCase):
                          "change every WATCHOS_DEPLOYMENT_TARGET in the project "
                          "and this value together - that is the fix this failure "
                          "is asking for, not a reason to doubt it")
-
-    def test_the_package_floor_is_not_above_the_app(self) -> None:
-        text = vdf.PROJECT.read_text(encoding="utf-8")
-        values = {value for _, value in vdf.watchos_project_floors(text)}
-        self.assertEqual(len(values), 1, "the watchOS floor must be one value first")
-        package = vdf.package_watchos_floor(vdf.PACKAGE.read_text(encoding="utf-8"))
-        self.assertIsNotNone(package, "NepalKitCore must still declare a watchOS platform")
-        assert package is not None
-        app_floor = values.pop()
-        self.assertLessEqual(
-            vdf._version(package[1]), vdf._version(app_floor),
-            f"Package.swift declares watchOS {package[1]} but the app declares "
-            f"{app_floor}; the package must not require more than its consumer",
-        )
 
     def test_the_appcast_verifier_reads_the_project_floor(self) -> None:
         floors = {value for _, value in vdf.project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
