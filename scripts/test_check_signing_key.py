@@ -176,6 +176,19 @@ class PinnedTools(unittest.TestCase):
         self.pin(self.revision, "https://github.com/someone/Sparkle")
         self.assertIn("does not come from", self.problem())
 
+    def mirror_checkout(self, mirror):
+        subprocess.run(["git", "clone", "-q", "--bare", str(self.checkout), str(mirror)], check=True)
+        subprocess.run(["git", "-C", str(mirror), "remote", "set-url", "origin", self.ORIGIN], check=True)
+        subprocess.run(["git", "-C", str(self.checkout), "remote", "set-url", "origin", str(mirror)], check=True)
+
+    def test_a_checkout_of_swiftpms_mirror_follows_the_mirrors_origin(self):
+        self.mirror_checkout(Path(self._tmp.name) / "SourcePackages/repositories/Sparkle-0")
+        self.assertIsNone(self.problem())
+
+    def test_a_checkout_of_a_mirror_elsewhere_is_refused(self):
+        self.mirror_checkout(Path(self._tmp.name) / "elsewhere/Sparkle-0")
+        self.assertIn("does not come from", self.problem())
+
     def test_a_checkout_without_the_pinned_tag_is_refused(self):
         subprocess.run(["git", "-C", str(self.checkout), "tag", "-d", "2.10.0"], check=True, capture_output=True)
         self.assertIn("not tagged 2.10.0", self.problem())

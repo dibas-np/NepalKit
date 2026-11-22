@@ -57,7 +57,12 @@ def tool_problem(tool: Path, project: Path = PROJECT, resolved: Path = RESOLVED)
         return f"no Sparkle source checkout at {checkout}; cannot confirm {tool.name} is {version}"
     if _git(checkout, "rev-parse", "HEAD") != revision:
         return f"the Sparkle checkout is not at the pinned revision {revision}"
-    if not _same_origin(_git(checkout, "remote", "get-url", "origin"), location):
+    origin = _git(checkout, "remote", "get-url", "origin")
+    # SwiftPM clones the checkout from its own mirror under SourcePackages/repositories.
+    mirrors = (checkout.parents[1] / "repositories").resolve()
+    if origin.startswith("/") and Path(origin).resolve().parent == mirrors:
+        origin = _git(Path(origin), "remote", "get-url", "origin")
+    if not _same_origin(origin, location):
         return f"the Sparkle checkout does not come from {location}"
     if _git(checkout, "describe", "--tags", "--exact-match") != version:
         return f"the Sparkle checkout is not tagged {version}"

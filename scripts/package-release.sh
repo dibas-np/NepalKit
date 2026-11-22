@@ -63,7 +63,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     echo "the working tree has uncommitted changes; release a clean checkout" >&2
     exit 2
 fi
-STRAY="$(git status --porcelain --ignored -- "$APP" ':(exclude,glob)**/.DS_Store')"
+STRAY="$(git status --porcelain --ignored -- "$APP" ":(exclude,glob)$APP/**/.DS_Store")"
 if [[ -n "$STRAY" ]]; then
     echo "ignored or untracked files under $APP/ would be built into the app:" >&2
     echo "$STRAY" >&2

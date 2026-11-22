@@ -4,6 +4,22 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.8.0 — unreleased
+
+### A cleaner popover
+
+Today and Converter are now picked with the standard macOS segmented control, and the date and headings use the system's emphasized text styles.
+
+### Siri and Shortcuts
+
+Tomorrow's and yesterday's dates are now one Shortcuts action with a Day option. Siri understands the same phrases as before. If a shortcut used the old Tomorrow or Yesterday action, add the new action to it again.
+
+### Fixes
+
+- Updates are accepted only from a feed whose signature checks out, with no grace period after repeated failures.
+- Turning Launch at Login off is remembered, even if NepalKit's first launch did not finish.
+- With My time zone set, the date moves to the new day on time where a daylight-saving change happens at midnight.
+
 ## 1.7.0 — 2026-10-12
 
 ### A month calendar in Today
