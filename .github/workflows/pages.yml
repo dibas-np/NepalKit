@@ -39,6 +39,19 @@ jobs:
           set -euo pipefail
           python3 scripts/test_verify_deployment_floor.py
 
+      - name: The app ships the pinned public key
+        env:
+          # Deliberately a second copy: a commit that changes the key and re-signs the
+          # feed with it would otherwise verify against itself and deploy.
+          PINNED_KEY: HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=
+        run: |
+          set -euo pipefail
+          key="$(python3 -c 'import plistlib; print(plistlib.load(open("NepalKit/Info.plist", "rb"))["SUPublicEDKey"])')"
+          if [[ "$key" != "$PINNED_KEY" ]]; then
+            echo "::error::SUPublicEDKey in NepalKit/Info.plist is not the key pinned in pages.yml"
+            exit 1
+          fi
+
       - name: Verify the appcast
         run: |
           set -euo pipefail
