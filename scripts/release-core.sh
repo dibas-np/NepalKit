@@ -30,8 +30,8 @@ PREFIX=NepalKitCore
 MIRROR_REPO="${CORE_MIRROR_REPO:-dibas-np/NepalKitCore}"
 MIRROR_URL="${CORE_MIRROR_URL:-https://github.com/$MIRROR_REPO.git}"
 BRANCH="${CORE_RELEASE_BRANCH:-develop}"
-# The runtimes on the release machine. No iOS 26 runtime is installed, so the
-# iOS 26 floor is compile-checked only.
+# The runtimes on the release machine. The floors below them (iOS 15, watchOS
+# 9) are compile-checked only.
 IOS_DESTINATION="${CORE_IOS_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=27.0}"
 WATCHOS_DESTINATION="${CORE_WATCHOS_DESTINATION:-platform=watchOS Simulator,name=Apple Watch SE 3 (44mm),OS=26.0}"
 # The key docs/release-verification.md publishes.
@@ -171,6 +171,8 @@ awk -v heading="## $VERSION — " '
     found { print }
 ' "$WORK/CHANGELOG.md" > "$NOTES"
 [[ -n "$(tr -d '[:space:]' < "$NOTES")" ]] || fail "$PREFIX/CHANGELOG.md has no '## $VERSION — <date>' entry"
+grep -qxE "## ${VERSION//./\\.} — [0-9]{4}-[0-9]{2}-[0-9]{2}" "$WORK/CHANGELOG.md" \
+    || fail "$PREFIX/CHANGELOG.md's $VERSION heading has no YYYY-MM-DD release date"
 
 gh repo view "$MIRROR_REPO" --json name > /dev/null 2>&1 \
     || fail "$MIRROR_REPO does not exist or gh cannot reach it"
@@ -255,6 +257,15 @@ for destination in "$IOS_DESTINATION" "$WATCHOS_DESTINATION"; do
         -destination "$destination" -derivedDataPath "$WORK/DerivedData") > "$log" 2>&1 \
         || { tail -40 "$log" >&2; fail "the core suite failed on $destination"; }
     grep -E "Test run with [1-9][0-9]* tests" "$log" || fail "no tests ran on $destination"
+done
+
+# No simulator runtimes for these here, so they are built, not tested.
+for platform in tvOS visionOS; do
+    step "Core build for $platform"
+    log="$WORK/xcodebuild-$(( ++run )).log"
+    (cd "$CHECKOUT" && xcodebuild build -scheme NepalKitCore \
+        -destination "generic/platform=$platform" -derivedDataPath "$WORK/DerivedData") > "$log" 2>&1 \
+        || { tail -40 "$log" >&2; fail "the core did not build for $platform"; }
 done
 
 if (( DRY_RUN )); then

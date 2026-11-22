@@ -175,6 +175,17 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertIn("no '## 0.2.0 — <date>' entry", result.stderr)
         self.assertNothingPublished()
 
+    def test_an_undated_changelog_entry_is_refused(self) -> None:
+        (self.world.repo / "NepalKitCore" / "CHANGELOG.md").write_text(
+            CHANGELOG.replace("## 0.1.0", "## 0.2.0 — Unreleased\n\n- The second.\n\n## 0.1.0"),
+            encoding="utf-8")
+        self.world.commit("0.2.0")
+        git("push", "--quiet", "origin", "develop", cwd=self.world.repo)
+        result = self.world.run("0.2.0")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("heading has no YYYY-MM-DD release date", result.stderr)
+        self.assertNothingPublished()
+
     def test_a_release_publishes_the_split_and_both_signed_tags(self) -> None:
         result = self.world.run("0.1.0")
         self.assertEqual(result.returncode, 0, result.stderr)
