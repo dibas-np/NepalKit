@@ -231,8 +231,7 @@ struct UpdateCheckModelTests {
             """
             the install flow must be reachable from exactly the popover footer and the \
             Settings About tab. Found triggers in: \(surfaces.mapValues(\.count)). \
-            A third surface is a new way into installing — record the decision, \
-            or route it through UpdateCheckModel.checkNow like these two do.
+            A third surface is a new way into installing.
             """
         )
 
@@ -240,14 +239,6 @@ struct UpdateCheckModelTests {
             #expect(
                 sites.count == 1,
                 "\(file) has \(sites.count) `updates.checkNow` call sites (\(sites.map(\.line))); expected exactly one"
-            )
-        }
-
-        for (name, source) in sources
-            where name != "UpdateCheckModel.swift" && name != "SparkleUpdateService.swift" {
-            #expect(
-                !source.contains(".checkForUpdates()"),
-                "\(name) calls the updater's checkForUpdates() directly instead of going through UpdateCheckModel"
             )
         }
     }

@@ -19,9 +19,9 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .general: Symbols.general
-        case .menuBar: Symbols.menuBar
-        case .about: Symbols.about
+        case .general: Symbols.general.rawValue
+        case .menuBar: Symbols.menuBar.rawValue
+        case .about: Symbols.about.rawValue
         }
     }
 

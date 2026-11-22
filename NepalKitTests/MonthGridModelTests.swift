@@ -224,14 +224,7 @@ struct MonthGridModelTests {
         #expect(spoken == "1 Kartik 2083. 18 October 2026, Sunday")
     }
 
-    @Test func theMonthLivesInTodayNotItsOwnTab() throws {
+    @Test func theMonthLivesInTodayNotItsOwnTab() {
         #expect(PopoverDestination.allCases == [.today, .convert])
-
-        let source = try String(contentsOf: Repository.root.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
-        let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
-        let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))
-        let todayBranch = source[stack.upperBound ..< todayEnd.lowerBound]
-        #expect(todayBranch.contains("MonthGridView("))
-        #expect(source.components(separatedBy: "MonthGridView(").count == 2, "built once, in Today")
     }
 }

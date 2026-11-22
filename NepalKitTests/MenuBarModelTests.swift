@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import Synchronization
 import NepalKitCore
 @testable import NepalKit
 
@@ -21,9 +22,11 @@ struct MidnightFireIntervalTests {
     }
 }
 
-nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable {
-    private(set) var added = 0
-    private(set) var removed = 0
+nonisolated final class RecordingCenter: NotificationCenter {
+    private let counts = Mutex((added: 0, removed: 0))
+
+    var added: Int { counts.withLock { $0.added } }
+    var removed: Int { counts.withLock { $0.removed } }
 
     override func addObserver(
         forName name: NSNotification.Name?,
@@ -31,12 +34,12 @@ nonisolated final class RecordingCenter: NotificationCenter, @unchecked Sendable
         queue: OperationQueue?,
         using block: @escaping @Sendable (Notification) -> Void
     ) -> any NSObjectProtocol {
-        added += 1
+        counts.withLock { $0.added += 1 }
         return super.addObserver(forName: name, object: obj, queue: queue, using: block)
     }
 
     override func removeObserver(_ observer: Any) {
-        removed += 1
+        counts.withLock { $0.removed += 1 }
         super.removeObserver(observer)
     }
 }

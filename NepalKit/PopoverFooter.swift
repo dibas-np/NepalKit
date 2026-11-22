@@ -27,7 +27,7 @@ struct PopoverFooter: View {
     }
 
     private var updateButton: some View {
-        Button(Strings.updateButtonLabel, systemImage: Symbols.update, action: updates.checkNow)
+        Button(Strings.updateButtonLabel, systemImage: Symbols.update.rawValue, action: updates.checkNow)
             .buttonStyle(.glassProminent)
             .font(.caption)
             .symbolRenderingMode(.monochrome)
@@ -36,7 +36,7 @@ struct PopoverFooter: View {
     }
 
     private var settingsButton: some View {
-        Button(Strings.settingsLabel, systemImage: Symbols.settings) {
+        Button(Strings.settingsLabel, systemImage: Symbols.settings.rawValue) {
             WindowPresentation.present(open: openSettings)
         }
         .labelStyle(.iconOnly)

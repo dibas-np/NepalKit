@@ -2,28 +2,15 @@
 // Copyright (C) 2026 Dibas Sigdel
 import Foundation
 
-enum Symbols {
-    static let launchAtLogin = "power"
-
-    static let settings = "gearshape"
-
-    static let about = "info.circle"
-
-    static let menuBar = "menubar.rectangle"
-
-    static let general = "slider.horizontal.3"
-
-    static let repository = "chevron.left.forwardslash.chevron.right"
-
-    static let update = "arrow.down.circle"
-
-    static let previousMonth = "chevron.left"
-    static let nextMonth = "chevron.right"
-
-    static let closeDetails = "xmark.circle.fill"
-
-    static let all: [String] = [
-        launchAtLogin, settings, about, menuBar, general, repository, update,
-        previousMonth, nextMonth, closeDetails
-    ]
+enum Symbols: String, CaseIterable {
+    case launchAtLogin = "power"
+    case settings = "gearshape"
+    case about = "info.circle"
+    case menuBar = "menubar.rectangle"
+    case general = "slider.horizontal.3"
+    case repository = "chevron.left.forwardslash.chevron.right"
+    case update = "arrow.down.circle"
+    case previousMonth = "chevron.left"
+    case nextMonth = "chevron.right"
+    case closeDetails = "xmark.circle.fill"
 }

@@ -19,7 +19,7 @@ struct MonthGridDayDetailCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityLabel(detail.spokenBikramSambat)
                     Spacer(minLength: 0)
-                    Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails, action: close)
+                    Button(Strings.closeDayDetailsLabel, systemImage: Symbols.closeDetails.rawValue, action: close)
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                 }

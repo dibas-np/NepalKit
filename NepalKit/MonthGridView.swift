@@ -134,11 +134,11 @@ private struct MonthGridHeader: View {
             .accessibilityHidden(model.isShowingTodayMonth)
             .accessibilityHint(Strings.showTodayHelp)
 
-            Button(Strings.previousMonthLabel, systemImage: Symbols.previousMonth, action: model.showPreviousMonth)
+            Button(Strings.previousMonthLabel, systemImage: Symbols.previousMonth.rawValue, action: model.showPreviousMonth)
                 .labelStyle(.iconOnly)
                 .disabled(!model.canShowPreviousMonth)
 
-            Button(Strings.nextMonthLabel, systemImage: Symbols.nextMonth, action: model.showNextMonth)
+            Button(Strings.nextMonthLabel, systemImage: Symbols.nextMonth.rawValue, action: model.showNextMonth)
                 .labelStyle(.iconOnly)
                 .disabled(!model.canShowNextMonth)
         }

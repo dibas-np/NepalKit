@@ -57,7 +57,7 @@ struct GeneralSettingsView: View {
 
             Section(Strings.startupSection) {
                 Toggle(isOn: $loginItem.launchAtLogin) {
-                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin)
+                    Label(Strings.launchAtLoginLabel, systemImage: Symbols.launchAtLogin.rawValue)
                         .symbolRenderingMode(.monochrome)
                 }
                 .accessibilityLabel(Strings.launchAtLoginLabel)
