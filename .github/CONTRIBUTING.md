@@ -12,7 +12,7 @@ Before opening a pull request, run:
 ./scripts/check-all.sh
 ```
 
-It builds the app and runs SwiftLint and every test suite.
+It builds the app and runs SwiftLint and the macOS test suites (the OpenSSL ones run in CI).
 
 ## Calendar data
 
