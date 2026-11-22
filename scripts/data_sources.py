@@ -8,7 +8,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashwin",
+MONTHS = ["Baisakh", "Jestha", "Ashar", "Shrawan", "Bhadra", "Ashoj",
           "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"]
 
 PINS = {

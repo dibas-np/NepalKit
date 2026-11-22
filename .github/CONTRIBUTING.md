@@ -1,31 +1,31 @@
 # Contributing
 
-Issues and pull requests are welcome. For a wrong date, include the date and what the official Nepali Patro says.
+Issues and pull requests are welcome. To report a wrong date, include the date and what the official Nepali Patro says for it.
 
-## Setup
+## Build and test
 
-Xcode 27 or later. Open `NepalKit.xcodeproj` and run the **NepalKit** scheme (or **NepalKitWatch Watch App** for the watch).
+You need Xcode 27 or later. Open `NepalKit.xcodeproj` and run the **NepalKit** scheme. For the Watch app, run the **NepalKitWatch Watch App** scheme.
 
-Before opening a pull request, run:
+Before you open a pull request, run:
 
 ```sh
 ./scripts/check-all.sh
 ```
 
-It builds the app and runs SwiftLint and the macOS test suites (the OpenSSL ones run in CI).
+The script builds the app and runs SwiftLint, the Swift test suites, and the Python script tests. Its last step runs the Watch tests on the Apple Watch SE 3 (40mm) simulator with watchOS 27.0. CI runs the appcast and signing-key tests on Linux, because they need OpenSSL 3.
 
-## Calendar data
+## Change the calendar data
 
-Changes to month lengths, the supported range or conversion need evidence, not reasoning. Run `python3 scripts/verify-data-sources.py` and record the source in [SOURCES.md](../SOURCES.md). See [docs/updating-calendar-data.md](../docs/updating-calendar-data.md).
+A change to month lengths, the supported range, or conversion needs a published source, not an argument. Run `python3 scripts/verify-data-sources.py`, and record the source in [SOURCES.md](../SOURCES.md). For the full steps, see [Updating the calendar data](../docs/updating-calendar-data.md).
 
-## Style
+## Follow the code style
 
-- `NepalKitCore` is pure Foundation logic; UI and app state live in `NepalKit/`.
-- Use the terms in [docs/glossary.md](../docs/glossary.md) (Bikram Sambat, Gregorian, Nepal Time).
-- Tests use Swift Testing (`@Test`, `#expect`), not XCTest.
-- Comment the why, not the what.
-- Explain non-obvious decisions (supported range, licence, platform requirements) in the pull request description.
+- `NepalKitCore` holds the calendar logic and depends only on Foundation. UI and app state live in `NepalKit/`.
+- Use the terms in the [glossary](../docs/glossary.md), such as Bikram Sambat, Gregorian, and Nepal Time.
+- Write tests with Swift Testing (`@Test`, `#expect`), not XCTest.
+- Write comments that say why the code does something, not what it does.
+- In the pull request description, explain any decision a reviewer can't see from the code, such as a change to the supported range, the license, or the platform requirements.
 
-## Pull requests
+## Open a pull request
 
-Keep each pull request to one change and sign off your commits (`git commit -s`, [DCO](https://developercertificate.org/)). Contributions are licensed like the files they change (see the [README](../README.md#license)).
+Keep each pull request to one change. Sign off each commit with `git commit -s` to certify the [Developer Certificate of Origin](https://developercertificate.org/). A contribution is licensed like the files it changes. See the [license section of the README](../README.md#license).
