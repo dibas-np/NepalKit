@@ -15,7 +15,7 @@ extension TimeZone {
     /// when the date changes. Correct on 23- and 25-hour DST days.
     public func nextMidnight(after date: Date) -> Date? {
         let calendar = ClockCalendars.gregorian(timeZone: self)
-        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date))
+        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date)).map(calendar.startOfDay(for:))
     }
 }
 

@@ -30,11 +30,8 @@ public struct ResolvedDay: Sendable, Hashable {
     ///
     /// - Throws: `DayResolutionError`.
     public init(_ date: GregorianDate, in dataset: CalendarDataset = .bundled) throws {
-        guard utcDate(from: date) != nil else {
-            throw DayResolutionError.invalidCivilDay(date)
-        }
         guard let weekday = date.weekday else {
-            throw DayResolutionError.calendarCalculationFailure(date)
+            throw DayResolutionError.invalidCivilDay(date)
         }
         guard let start = dataset.gregorianStart else {
             throw DayResolutionError.datasetAssumptionFailure(date)
@@ -76,16 +73,13 @@ public enum DayResolutionError: Error, Sendable, Hashable {
     /// The dataset failed to answer a day it claims to cover.
     case datasetAssumptionFailure(GregorianDate)
 
-    /// Calendar arithmetic failed for a valid day.
-    case calendarCalculationFailure(GregorianDate)
-
     /// The civil day could not be read from the instant.
     case unreadableInstant(Date)
 
     /// The valid Gregorian date the failure happened on; nil for invalid input.
     public var resolvedGregorianDay: GregorianDate? {
         switch self {
-        case .datasetAssumptionFailure(let day), .calendarCalculationFailure(let day):
+        case .datasetAssumptionFailure(let day):
             day
         case .invalidCivilDay, .unreadableInstant:
             nil

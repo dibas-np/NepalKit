@@ -27,6 +27,12 @@ struct FormattingTests {
         #expect(Self.date.formatted(testCase.settings, includesYear: false) == testCase.expected)
     }
 
+    @Test func gregorianFormatsInEitherDigitScript() {
+        let date = GregorianDate(year: 2026, month: 9, day: 27)
+        #expect(date.formatted(digits: .latin) == "27 September 2026")
+        #expect(date.formatted(digits: .devanagari) == "२७ September २०२६")
+    }
+
     @Test func clockRendersInTheGivenZoneAndScript() throws {
         let epoch = Date(timeIntervalSince1970: 0)
         let nepal = try #require(TimeZone(secondsFromGMT: 20_700))

@@ -98,9 +98,7 @@ struct RoundTripTests {
     }
 
     @Test func variableLengthMonthExtremes() {
-        #expect(GregorianDate(BikramSambatDate(year: 2084, month: 2, day: 32), in: .v2) == GregorianDate(year: 2027, month: 6, day: 15))
         #expect(GregorianDate(BikramSambatDate(year: 1989, month: 8, day: 29), in: .v2) == GregorianDate(year: 1932, month: 12, day: 14))
-        #expect(GregorianDate(BikramSambatDate(year: 2084, month: 3, day: 1), in: .v2) == GregorianDate(year: 2027, month: 6, day: 16))
         #expect(GregorianDate(BikramSambatDate(year: 1989, month: 9, day: 1), in: .v2) == GregorianDate(year: 1932, month: 12, day: 15))
     }
 

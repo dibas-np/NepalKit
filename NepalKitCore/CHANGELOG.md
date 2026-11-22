@@ -13,7 +13,7 @@ site; the table below maps each old name to its replacement.
   are now members of the types they act on.
 - Every `in dataset:` parameter defaults to the new `CalendarDataset.bundled`,
   currently `v2`.
-- `BikramSambatDate` and `GregorianDate` are `Comparable` and `Codable`;
+- `BikramSambatDate` is now `Comparable`, and both date types are `Codable`;
   `DigitScript`, `MonthNameStyle` and `DisplaySettings` are `Codable`.
 - `DigitScript.formatTime` replaces `formatClock` and adds a 12-hour clock and
   an option to drop the seconds.
@@ -23,7 +23,11 @@ site; the table below maps each old name to its replacement.
   `formatMenuBarTitle`, `formatClockTime`, `SpokenDate.menuBarDate`,
   `SpokenDate.gregorianAnnouncement`, `WatchDayDisplay` and its components,
   `watchDayDisplay`, `watchCalculationErrorDisplay`, `WatchDayCopy`,
-  `ComplicationAccessibility`, `DisplaySettings.watch` and `nextNPTMidnight`.
+  `ComplicationAccessibility` and `DisplaySettings.watch`.
+- `DayResolutionError.calendarCalculationFailure` is removed; nothing could
+  throw it.
+- `TimeZone.nextMidnight(after:)` returns midnight, not 01:00, after a day
+  whose clocks change at midnight, as in Havana or Santiago.
 
 | 0.1 | 0.2 |
 |---|---|

@@ -39,4 +39,10 @@ struct TimeZoneTodayTests {
         #expect(try zone.nextMidnight(after: UTCDateFixture.utc(2026, 10, 31, 12, 0)) == UTCDateFixture.utc(2026, 11, 1, 4, 0))
         #expect(try zone.nextMidnight(after: UTCDateFixture.utc(2026, 11, 1, 12, 0)) == UTCDateFixture.utc(2026, 11, 2, 5, 0))
     }
+
+    @Test("Midnight after a day that starts at 01:00: Havana springs forward at midnight on 8 Mar 2026")
+    func nextMidnightAfterAMidnightTransition() throws {
+        let zone = try #require(TimeZone(identifier: "America/Havana"))
+        #expect(try zone.nextMidnight(after: UTCDateFixture.utc(2026, 3, 8, 12, 0)) == UTCDateFixture.utc(2026, 3, 9, 4, 0))
+    }
 }

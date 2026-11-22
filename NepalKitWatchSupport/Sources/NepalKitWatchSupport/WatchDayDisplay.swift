@@ -107,17 +107,10 @@ public func watchDayDisplay(
     settings: DisplaySettings,
     in dataset: CalendarDataset
 ) -> WatchDayDisplay {
-    do {
-        let day = try ResolvedDay(now: instant, in: dataset)
-        return watchDayDisplay(for: day, settings: settings, in: dataset)
-    } catch let error as DayResolutionError {
-        return watchCalculationErrorDisplay(
-            gregorianDay: error.resolvedGregorianDay,
-            settings: settings
-        )
-    } catch {
+    guard let day = GregorianDate.today(now: instant) else {
         return watchCalculationErrorDisplay(gregorianDay: nil, settings: settings)
     }
+    return watchDayDisplay(for: day, settings: settings, in: dataset)
 }
 
 public func watchDayDisplay(

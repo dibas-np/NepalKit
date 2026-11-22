@@ -47,10 +47,4 @@ struct GeneralAPITests {
         #expect(try DigitScript.latin.formatTime(UTCDateFixture.utc(2026, 9, 27, 6, 15), twentyFourHour: false, showsSeconds: false) == "12:00")
         #expect(try DigitScript.latin.formatTime(UTCDateFixture.utc(2026, 9, 27, 18, 15), showsSeconds: false) == "00:00")
     }
-
-    @Test func formattedCanDropTheYear() {
-        let latin = DisplaySettings(digits: .latin, monthNames: .transliterated)
-        #expect(newYear.formatted(latin) == "1 Baisakh 2083")
-        #expect(newYear.formatted(latin, includesYear: false) == "1 Baisakh")
-    }
 }

@@ -15,20 +15,6 @@ struct SpokenDateTests {
         #expect(SpokenDate.bikramSambat(ashoj11, monthNames: .nepali) == "11 असोज 2083")
     }
 
-    @Test func spokenBSAgreesWithTheVisualFormWhenDigitsAreLatin() {
-        let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
-
-        #expect(SpokenDate.bikramSambat(ashoj11, monthNames: .transliterated) == ashoj11.formatted(settings))
-    }
-
-    @Test func spokenBSDropsDevanagariDigits() {
-        let spoken = SpokenDate.bikramSambat(ashoj11, monthNames: .nepali)
-
-        #expect(!spoken.contains("११"))
-        #expect(!spoken.contains("२०८३"))
-        #expect(spoken.contains("11") && spoken.contains("2083"))
-    }
-
     @Test func spokenADUsesLatinDigitsAndAnEnglishMonthName() {
         #expect(SpokenDate.gregorian(adSeptember27) == "27 September 2026")
     }

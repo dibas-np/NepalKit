@@ -29,8 +29,9 @@ public struct CalendarDataset: Sendable {
     public let provisionalYears: Set<Int>
 
     let yearStartIndices: [Int: Int]
-    /// Supported years whose month lengths are all positive. Conversion reads
-    /// only these rows, so a corrupt row yields nil instead of a wrong date.
+    /// Supported years whose month lengths are all positive. Dates in other
+    /// rows do not convert, and Gregorian→BS stops at the first one. Later
+    /// rows' start offsets still include their sums.
     let validYears: Set<Int>
 
     /// Builds a dataset. Traps unless every year in `supportedRange` has a
