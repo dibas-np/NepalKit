@@ -145,10 +145,14 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
         )
 
 
-def deployment_floor(override: str | None = None) -> str | None:
+def deployment_floor(override: str | None = None) -> str:
     if override:
         return override
-    return macos_floor()
+    floor = macos_floor()
+    if floor is None:
+        fail("the Xcode project declares no single macOS deployment floor; "
+             "run scripts/verify-deployment-floor.py")
+    return floor
 
 
 def replace_items(raw: str, replace: Callable[[str], str]) -> str:
@@ -299,9 +303,6 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
             fail(f"version {version}: malformed minimumSystemVersion {minimum!r}")
         if item is not current_item:
             ok(f"version {version}: historical minimumSystemVersion {minimum}")
-        elif floor is None:
-            print(f"  ..    version {version}: minimumSystemVersion {minimum} "
-                  f"unchecked (no deployment floor available)")
         elif minimum != floor:
             fail(f"version {version}: minimumSystemVersion is {minimum} but the app "
                  f"ships as {floor}. The feed would offer this update to systems "

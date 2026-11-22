@@ -407,6 +407,13 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertEqual(va.deployment_floor(), "26.6")
         self.assertEqual(va.deployment_floor("15.0"), "15.0")
 
+    def test_a_project_without_one_floor_fails_rather_than_skipping(self) -> None:
+        with mock.patch.object(va, "macos_floor", return_value=None), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises(SystemExit):
+                va.deployment_floor()
+        self.assertIn("no single macOS deployment floor", output.getvalue())
+
     def test_feed_floor_must_match_the_apps_floor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
