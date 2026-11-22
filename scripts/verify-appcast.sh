@@ -33,34 +33,16 @@ fi
 
 # The binaries have no version flag, so check the tag of the source checkout
 # beside them against the pinned version.
-if [[ "${SPARKLE_BIN_UNPINNED:-}" != "1" ]]; then
-    PINNED_SPARKLE="$(python3 - "$ROOT/NepalKit.xcodeproj/project.pbxproj" <<'PY'
-import pathlib, re, sys
-text = pathlib.Path(sys.argv[1]).read_text()
-block = re.search(
-    r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
-    r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
-    text, re.S)
-kind = block and re.search(r'kind = (\w+);', block.group(1))
-if not kind:
-    raise SystemExit("no Sparkle package requirement found in project.pbxproj")
-version = re.search(r'version = ([\d.]+);', block.group(1))
-if kind.group(1) != "exactVersion" or not version:
-    raise SystemExit("Sparkle is pinned as %s, not exactVersion" % kind.group(1))
-print(version.group(1))
-PY
-)"
-    SPARKLE_CHECKOUT="$(dirname "$GENERATE_APPCAST")/../../../../checkouts/Sparkle"
-    if [[ ! -d "$SPARKLE_CHECKOUT" ]]; then
-        echo "no Sparkle source checkout at $SPARKLE_CHECKOUT; cannot confirm the tools match the $PINNED_SPARKLE pin." >&2
-        echo "Set SPARKLE_BIN_UNPINNED=1 only for a CI image whose tools live elsewhere, never on the release machine." >&2
-        exit 1
-    fi
-    FOUND_SPARKLE="$(git -C "$SPARKLE_CHECKOUT" describe --tags --exact-match 2>/dev/null || true)"
-    if [[ "$FOUND_SPARKLE" != "$PINNED_SPARKLE" ]]; then
-        echo "Sparkle tools belong to '${FOUND_SPARKLE:-unknown}', but the pin is $PINNED_SPARKLE; refusing to use them." >&2
-        exit 1
-    fi
+PINNED_SPARKLE="$(python3 "$ROOT/scripts/xcode_project.py" sparkle-pin)"
+SPARKLE_CHECKOUT="$(dirname "$GENERATE_APPCAST")/../../../../checkouts/Sparkle"
+if [[ ! -d "$SPARKLE_CHECKOUT" ]]; then
+    echo "no Sparkle source checkout at $SPARKLE_CHECKOUT; cannot confirm the tools match the $PINNED_SPARKLE pin." >&2
+    exit 1
+fi
+FOUND_SPARKLE="$(git -C "$SPARKLE_CHECKOUT" describe --tags --exact-match 2>/dev/null || true)"
+if [[ "$FOUND_SPARKLE" != "$PINNED_SPARKLE" ]]; then
+    echo "Sparkle tools belong to '${FOUND_SPARKLE:-unknown}', but the pin is $PINNED_SPARKLE; refusing to use them." >&2
+    exit 1
 fi
 TOOL_DIR="${GENERATE_APPCAST:h:A}"
 for tool in "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"; do
@@ -115,15 +97,12 @@ APPCAST="$ARCHIVES_DIR/appcast.xml"
 python3 "$PY" "$APPCAST" --embed-notes "${0:A:h}/release-notes"
 
 SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"
-if [[ -x "$SIGN_UPDATE" ]]; then
-  echo "signing the feed: ${SIGN_UPDATE##*/}"
-  "$SIGN_UPDATE" "$APPCAST" || {
-      echo "sign_update failed; refusing to report a publishable release" >&2
-      exit 1
-  }
-else
-  echo "no sign_update at $SIGN_UPDATE; verifying the feed as committed (CI path)"
-fi
+[[ -x "$SIGN_UPDATE" ]] || { echo "no sign_update at $SIGN_UPDATE" >&2; exit 1; }
+echo "signing the feed: ${SIGN_UPDATE##*/}"
+"$SIGN_UPDATE" "$APPCAST" || {
+    echo "sign_update failed; refusing to report a publishable release" >&2
+    exit 1
+}
 
 STATUS=0
 VERIFIED_VERSIONS=""

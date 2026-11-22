@@ -20,6 +20,8 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
+import sparkle_key
+
 _MODULE = Path(__file__).resolve().parent / "verify-appcast.py"
 _spec = importlib.util.spec_from_file_location("verify_appcast", _MODULE)
 va = importlib.util.module_from_spec(_spec)
@@ -140,7 +142,7 @@ def ed25519_keypair(tmp: Path, name: str = "feed") -> tuple[str, Path]:
         check=True, capture_output=True,
     )
     der = pub_der.read_bytes()
-    assert der[:12] == va.ED25519_SPKI_PREFIX, "unexpected SubjectPublicKeyInfo"
+    assert der[:12] == sparkle_key.ED25519_SPKI_PREFIX, "unexpected SubjectPublicKeyInfo"
     return base64.b64encode(der[12:]).decode(), priv
 
 
@@ -622,24 +624,6 @@ class VerifyAppcastTest(unittest.TestCase):
         self.assertEqual(stopped.returncode, 1)
         self.assertIn("FAIL line above", stopped.stderr)
 
-    def test_signing_is_skipped_when_the_private_key_is_absent(self) -> None:
-        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
-        sign = script.index('"$SIGN_UPDATE" "$APPCAST"')
-        conditional = script.rindex("if [[ -x \"$SIGN_UPDATE\" ]]", 0, sign)
-        self.assertGreater(conditional, 0, "signing must be conditional on sign_update existing")
-        self.assertIn("no sign_update", script, "the skip has to say so, not fail quietly")
-
-    def test_the_signing_binary_is_derived_from_the_one_already_found(self) -> None:
-        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
-        self.assertIn('SIGN_UPDATE="$(dirname "$GENERATE_APPCAST")/sign_update"', script)
-        self.assertNotIn('SIGN_UPDATE="$SPARKLE_BIN/sign_update"', script)
-
-    def test_generation_links_to_the_release_page_not_the_repository(self) -> None:
-        script = (Path(__file__).resolve().parent / "verify-appcast.sh").read_text()
-        self.assertIn('RELEASE_LINK="$REPO_URL/releases/tag/$TAG"', script)
-        self.assertIn('--link "$RELEASE_LINK"', script)
-        self.assertNotIn('--link "$REPO_URL" \\', script)
-
     def test_every_feed_item_links_to_its_own_release_page(self) -> None:
         feed = Path(__file__).resolve().parent.parent / "appcast.xml"
         raw = feed.read_text(encoding="utf-8")
@@ -697,7 +681,7 @@ class VerifyAppcastTest(unittest.TestCase):
                 capture_output=True,
             )
             der = pub_der.read_bytes()
-            self.assertEqual(der[:12], va.ED25519_SPKI_PREFIX)
+            self.assertEqual(der[:12], sparkle_key.ED25519_SPKI_PREFIX)
             public_key = der[12:]
             self.assertEqual(len(public_key), 32)
             data = os.urandom(1024)

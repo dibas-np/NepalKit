@@ -43,24 +43,7 @@ jobs:
       - name: Compare the pinned Sparkle version against the latest release
         run: |
           set -euo pipefail
-          PINNED=$(python3 - <<'PY'
-          import pathlib, re
-          text = pathlib.Path("NepalKit.xcodeproj/project.pbxproj").read_text()
-          block = re.search(
-              r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
-              r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
-              text, re.S)
-          kind = block and re.search(r'kind = (\w+);', block.group(1))
-          if not kind:
-              raise SystemExit("no Sparkle package requirement found in project.pbxproj")
-          version = re.search(r'version = ([\d.]+);', block.group(1))
-          if kind.group(1) != "exactVersion" or not version:
-              raise SystemExit(
-                  f"Sparkle is pinned as {kind.group(1)}, not exactVersion; "
-                  "this check assumes an exact pin")
-          print(version.group(1))
-          PY
-          )
+          PINNED=$(python3 scripts/xcode_project.py sparkle-pin)
           RESPONSE="$RUNNER_TEMP/sparkle-latest-release.json"
           curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
             https://api.github.com/repos/sparkle-project/Sparkle/releases/latest \

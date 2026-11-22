@@ -8,8 +8,10 @@ fields, each enclosure's length against its bytes, and each archive's Ed25519
 signature against the public key in Info.plist (using openssl, so no private
 key is needed and it runs in CI).
 
-Exits non-zero if any item could not be fully verified. `--skip-crypto` checks
-structure only; `--allow-partial` reports unverified items but exits 0;
+Exits non-zero if any item could not be fully verified. `--skip-crypto` skips
+fetching enclosures and checking archive signatures; the feed signature and any
+`--enclosure` length are still checked, and skipped items exit non-zero;
+`--allow-partial` reports unverified items but exits 0;
 `--embed-notes <dir>` writes release notes into each item's <description> and
 exits.
 """
@@ -29,7 +31,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from release_notes import ALLOWED_TAGS as NOTES_TAGS
-from sparkle_key import ED25519_SPKI_PREFIX, fail, load_public_key, ok, verify_signature
+from sparkle_key import fail, load_public_key, ok, verify_signature
 from xcode_project import macos_floor
 
 SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # NOSONAR
@@ -208,8 +210,7 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
            minimum_system_version: str | None = None, allow_partial: bool = False) -> int:
     print(f"Verifying {appcast}")
     floor = deployment_floor(minimum_system_version)
-    if floor:
-        print(f"App deployment floor: {floor}")
+    print(f"App deployment floor: {floor}")
 
     feed_bytes = appcast.read_bytes()  # NOSONAR
     signed_content, _, _ = extract_feed_signature(feed_bytes)
@@ -387,8 +388,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--skip-crypto", action="store_true",
-        help="check structure only: skips the signature check and the byte check, so "
-             "the run verifies nothing and exits non-zero",
+        help="skip fetching enclosures and checking archive signatures; the feed "
+             "signature and any --enclosure length are still checked, and skipped "
+             "items exit non-zero",
     )
     parser.add_argument(
         "--allow-partial", action="store_true",

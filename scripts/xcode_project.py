@@ -12,6 +12,10 @@ PROJECT = Path(__file__).resolve().parent.parent / "NepalKit.xcodeproj" / "proje
 WATCHOS_SDKROOT = re.compile(r"^\s*SDKROOT = watchos;")
 WATCHOS_TARGET = re.compile(r"WATCHOS_DEPLOYMENT_TARGET = ([0-9.]+);")
 MACOS_TARGET = re.compile(r"MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);")
+SPARKLE_REFERENCE = re.compile(
+    r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
+    r'((?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
+    re.S)
 
 
 def configuration_blocks(text: str) -> list[tuple[int, list[str]]]:
@@ -61,3 +65,23 @@ def macos_floor(project: Path = PROJECT) -> str | None:
     except OSError:
         return None
     return values.pop() if len(values) == 1 else None
+
+
+def sparkle_pin(text: str) -> str:
+    """The Sparkle version the project pins; SystemExit unless it is an exactVersion pin."""
+    block = SPARKLE_REFERENCE.search(text)
+    kind = block and re.search(r"kind = (\w+);", block.group(1))
+    if not kind:
+        raise SystemExit("no Sparkle package requirement found in project.pbxproj")
+    version = re.search(r"version = ([\d.]+);", block.group(1))
+    if kind.group(1) != "exactVersion" or not version:
+        raise SystemExit(f"Sparkle pin kind is {kind.group(1)}, expected exactVersion")
+    return version.group(1)
+
+
+if __name__ == "__main__":
+    import sys
+
+    if sys.argv[1:] != ["sparkle-pin"]:
+        raise SystemExit("usage: python3 scripts/xcode_project.py sparkle-pin")
+    print(sparkle_pin(PROJECT.read_text(encoding="utf-8")))

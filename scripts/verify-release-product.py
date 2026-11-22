@@ -7,10 +7,11 @@ import argparse
 import base64
 import binascii
 import plistlib
-import re
 import subprocess
 import sys
 from pathlib import Path
+
+from xcode_project import sparkle_pin
 
 FEED_URL = "https://dibas-np.github.io/NepalKit/appcast.xml"
 SPARKLE_FRAMEWORK_PLIST = "Contents/Frameworks/Sparkle.framework/Resources/Info.plist"
@@ -84,28 +85,19 @@ def check_sparkle_keys(info):
 
 
 def check_sparkle_version(app, pbxproj_text):
-    block = re.search(
-        r'/\* XCRemoteSwiftPackageReference "Sparkle" \*/ = \{'
-        r'(?P<body>(?:(?!/\* (?:XCRemoteSwiftPackageReference|End )).)*)',
-        pbxproj_text, re.S)
-    kind = block and re.search(r'kind = (\w+);', block["body"])
-    if not kind:
-        return [("FAIL", "no Sparkle package requirement found in the project")]
-    version = re.search(r'version = ([\d.]+);', block["body"])
-    results = []
-    if kind[1] != "exactVersion" or not version:
-        return [("FAIL", f"Sparkle pin kind is {kind[1]}, expected exactVersion")]
+    try:
+        pinned = sparkle_pin(pbxproj_text)
+    except SystemExit as exc:
+        return [("FAIL", str(exc))]
     plist_path = app / SPARKLE_FRAMEWORK_PLIST
     try:
         with open(plist_path, "rb") as fh:  # NOSONAR
             embedded = plistlib.load(fh).get("CFBundleShortVersionString")
     except OSError as exc:
-        return results + [("FAIL", f"embedded Sparkle framework plist unreadable: {exc}")]
-    if embedded != version[1]:
-        results.append(("FAIL", f"embedded Sparkle is {embedded}, project pins {version[1]}"))
-    elif not results:
-        results.append(("ok", f"embedded Sparkle {embedded} matches the exactVersion pin"))
-    return results
+        return [("FAIL", f"embedded Sparkle framework plist unreadable: {exc}")]
+    if embedded != pinned:
+        return [("FAIL", f"embedded Sparkle is {embedded}, project pins {pinned}")]
+    return [("ok", f"embedded Sparkle {embedded} matches the exactVersion pin")]
 
 
 def verify(app, project, entitlements, run=subprocess.run):

@@ -61,4 +61,11 @@ def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
             capture_output=True,
             text=True,
         )
-    return result.returncode == 0
+    if result.returncode == 0:
+        return True
+    if "Signature Verification Failure" in result.stdout:
+        return False
+    first_error = next(iter(result.stderr.strip().splitlines()), "no error output")
+    fail(f"openssl could not check the signature ({first_error}). Ed25519 needs "
+         "OpenSSL 3+ (macOS /usr/bin/openssl is LibreSSL); put Homebrew openssl "
+         "first on PATH")
