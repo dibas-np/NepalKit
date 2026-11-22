@@ -403,7 +403,7 @@ class VerifyAppcastTest(unittest.TestCase):
                 va.verify(feed, write_plist_with_key(tmp_path, key), None, True)
             self.assertIn("release notes match the notes contract", buf.getvalue())
 
-    def test_deployment_floor_is_read_from_the_release_script(self) -> None:
+    def test_deployment_floor_is_read_from_the_project(self) -> None:
         self.assertEqual(va.deployment_floor(), "26.6")
         self.assertEqual(va.deployment_floor("15.0"), "15.0")
 

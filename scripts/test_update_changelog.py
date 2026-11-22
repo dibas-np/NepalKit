@@ -72,6 +72,7 @@ def make_sandbox(
     (root / "scripts").mkdir()
     script = root / "scripts" / _SCRIPT.name
     shutil.copy(_SCRIPT, script)
+    shutil.copy(_SCRIPT.parent / "release_notes.py", root / "scripts")
     if notes is not None:
         notes_dir = root / "scripts" / "release-notes"
         notes_dir.mkdir()

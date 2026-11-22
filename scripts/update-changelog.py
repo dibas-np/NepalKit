@@ -13,6 +13,8 @@ from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
+from release_notes import LIST_TAGS, TEXT_TAGS
+
 ROOT = Path(__file__).resolve().parent.parent
 NOTES_DIR = ROOT / "scripts" / "release-notes"
 CHANGELOG = ROOT / "CHANGELOG.md"
@@ -35,10 +37,10 @@ class FragmentParser(HTMLParser):
         self._context: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag in ("b", "li", "p") and self._context is None:
+        if tag in TEXT_TAGS and self._context is None:
             self._context = tag
             self._buffer = []
-        elif tag not in ("ul",):
+        elif tag not in LIST_TAGS:
             raise ValueError(f"unsupported tag <{tag}> in release notes")
 
     def handle_endtag(self, tag: str) -> None:
@@ -56,12 +58,16 @@ class FragmentParser(HTMLParser):
         if self._context is not None:
             self._buffer.append(data)
 
+    @property
+    def open_tag(self) -> str | None:
+        return self._context
+
 
 def render_fragment(path: Path) -> str:
     parser = FragmentParser()
     parser.feed(path.read_text(encoding="utf-8"))
-    if parser._context is not None or parser._buffer:  # noqa: SLF001
-        raise ValueError(f"{path.name}: ends inside an unfinished <{parser._context}>")
+    if parser.open_tag is not None:
+        raise ValueError(f"{path.name}: ends inside an unfinished <{parser.open_tag}>")
     if not parser.blocks:
         raise ValueError(f"{path.name}: no content")
     lines: list[str] = []

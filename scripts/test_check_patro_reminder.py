@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
-import sys
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -90,7 +89,6 @@ class Main(unittest.TestCase):
 
     def test_a_missing_line_fails_once_a_check_is_due(self):
         self._use_procedure("no record")
-        sys.path.insert(0, str(_SCRIPT.parent))
         import dataset_table
         with mock.patch.object(dataset_table, "shipped_table", return_value={2084: [30] * 12}):
             with self.assertRaises(SystemExit):

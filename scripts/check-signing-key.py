@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import importlib.util
 import os
 import re
 import subprocess
@@ -23,13 +22,12 @@ import tempfile
 from pathlib import Path
 from typing import Callable
 
+from sparkle_key import load_public_key, verify_signature
+
 ROOT = Path(__file__).resolve().parent.parent
 SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
                else ROOT / "DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update")
 
-_spec = importlib.util.spec_from_file_location("verify_appcast", ROOT / "scripts" / "verify-appcast.py")
-_va = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_va)
 
 
 SIGN_TIMEOUT_SECONDS = 120
@@ -70,7 +68,7 @@ def withhold_key_material(text: str, key_file: Path | None) -> str:
 
 
 def check(info_plist: Path, sign: Callable[[Path], str]) -> tuple[bool, str]:
-    public_key = _va.load_public_key(info_plist)
+    public_key = load_public_key(info_plist)
     with tempfile.TemporaryDirectory() as tmp:
         scratch = Path(tmp) / "scratch.bin"
         data = os.urandom(4096)
@@ -79,7 +77,7 @@ def check(info_plist: Path, sign: Callable[[Path], str]) -> tuple[bool, str]:
             signature = base64.b64decode(sign(scratch), validate=True)
         except Exception as exc:  # noqa: BLE001 - reported as a failure
             return False, f"could not sign a scratch file: {exc}"
-    if _va.verify_signature(public_key, data, signature):
+    if verify_signature(public_key, data, signature):
         return True, "the private key signs what the shipped SUPublicEDKey verifies"
     return False, "the private key does NOT match SUPublicEDKey in Info.plist; it cannot sign updates"
 

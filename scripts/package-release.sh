@@ -7,7 +7,6 @@ set -euo pipefail
 ROOT="${0:A:h:h}"
 APP=NepalKit
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/NepalKit-release.XXXXXXXX")"
-DEPLOYMENT_TARGET=26.6
 ARCHIVE="$WORK/$APP.xcarchive"
 EXPORT_DIR="$WORK/${APP}-export"
 APP_PATH="$EXPORT_DIR/$APP.app"
@@ -87,7 +86,7 @@ cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 </plist>
 EOF
 
-MACOSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
+xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
     -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive

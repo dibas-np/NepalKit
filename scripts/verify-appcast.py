@@ -18,24 +18,23 @@ from __future__ import annotations
 
 import argparse
 import base64
-import hashlib
 import re
-import subprocess
 import sys
-import tempfile
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
-from typing import NoReturn
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
+from release_notes import ALLOWED_TAGS as NOTES_TAGS
+from sparkle_key import ED25519_SPKI_PREFIX, fail, load_public_key, ok, verify_signature
+from xcode_project import macos_floor
+
 SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"  # NOSONAR
 NS = {"sparkle": SPARKLE_NS}
 
-NOTES_TAGS = {"b", "li", "p", "ul"}
 MAX_NOTES_CHARS = 8192
 
 NUMERIC_VERSION = r"[0-9]+\.[0-9]+(?:\.[0-9]+)?"
@@ -52,10 +51,6 @@ class _NotesHTMLCheck(HTMLParser):
 
     handle_startendtag = handle_starttag
 
-# DER prefix for an Ed25519 SubjectPublicKeyInfo (RFC 8410), so openssl can
-# read the raw key from Info.plist.
-ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
-
 # Sparkle 2 signs a feed by appending a trailing comment block:
 #
 #     <!-- sparkle-signatures:
@@ -66,55 +61,6 @@ ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
 # The signature covers every byte before the block (SPUExtractSignedFeed.m).
 FEED_SIGNING_PREFIX = b"<!-- sparkle-signatures:\n"
 FEED_SIGNING_SUFFIX = b"-->"
-
-
-def fail(message: str) -> NoReturn:
-    print(f"  FAIL  {message}")
-    raise SystemExit(1)
-
-
-def ok(message: str) -> None:
-    print(f"  ok    {message}")
-
-
-def load_public_key(info_plist: Path) -> bytes:
-    text = info_plist.read_text(encoding="utf-8")  # NOSONAR
-    marker = "SUPublicEDKey</key>"
-    if marker not in text:
-        fail(f"{info_plist} has no SUPublicEDKey")
-    tail = text.split(marker, 1)[1]
-    start = tail.find("<string>")
-    end = tail.find("</string>")
-    if start == -1 or end == -1:
-        fail("SUPublicEDKey is not wrapped in a <string> element")
-    encoded = tail[start + len("<string>") : end].strip()
-    try:
-        key = base64.b64decode(encoded, validate=True)
-    except Exception as exc:  # noqa: BLE001
-        fail(f"SUPublicEDKey is not valid base64: {exc}")
-    if len(key) != 32:
-        fail(f"SUPublicEDKey decodes to {len(key)} bytes, expected 32 for Ed25519")
-    return key
-
-
-def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        (tmp_path / "spki.der").write_bytes(ED25519_SPKI_PREFIX + public_key)
-        (tmp_path / "data.bin").write_bytes(data)  # NOSONAR
-        (tmp_path / "sig.bin").write_bytes(signature)
-        result = subprocess.run(
-            [
-                "openssl", "pkeyutl", "-verify",
-                "-pubin", "-inkey", str(tmp_path / "spki.der"),
-                "-keyform", "DER", "-rawin",
-                "-in", str(tmp_path / "data.bin"),
-                "-sigfile", str(tmp_path / "sig.bin"),
-            ],
-            capture_output=True,
-            text=True,
-        )
-    return result.returncode == 0
 
 
 class _HTTPSOnlyRedirects(urllib.request.HTTPRedirectHandler):
@@ -202,13 +148,7 @@ def verify_feed_signature(raw: bytes, info_plist: Path) -> None:
 def deployment_floor(override: str | None = None) -> str | None:
     if override:
         return override
-    script = Path(__file__).resolve().parent / "package-release.sh"
-    try:
-        text = script.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    match = re.search(r"^DEPLOYMENT_TARGET=(\S+)", text, re.M)
-    return match.group(1) if match else None
+    return macos_floor()
 
 
 def replace_items(raw: str, replace: Callable[[str], str]) -> str:
@@ -459,7 +399,7 @@ def main() -> int:
     parser.add_argument(
         "--minimum-system-version", default=None,
         help="the macOS version the app ships as; defaults to DEPLOYMENT_TARGET "
-             "in scripts/package-release.sh",
+             "in the Xcode project",
     )
     parser.add_argument(
         "--embed-notes", type=Path, default=None,

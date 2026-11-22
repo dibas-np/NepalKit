@@ -20,6 +20,8 @@ assert _spec and _spec.loader
 vdf = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(vdf)
 
+import xcode_project  # noqa: E402
+
 PBXPROJ = (
     "// !$*UTF8*$!\n"
     "{ objects = 1A2B3C /* Begin XCBuildConfiguration section */\n"
@@ -39,7 +41,6 @@ PBXPROJ = (
     "}\n"
 )
 
-RELEASE_SH = "#!/bin/sh\nDEPLOYMENT_TARGET=26.6\nARCHIVE=x\n"
 PACKAGE_SW = (
     "// swift-tools-version: 6.2\n"
     "import PackageDescription\n"
@@ -177,19 +178,6 @@ class PackageManifestFloorParsingTests(unittest.TestCase):
                       "the line reported must be the one declaring .watchOS")
 
 
-class ReleaseScriptFloorParsingTests(unittest.TestCase):
-    def test_reads_the_declared_target(self) -> None:
-        line, value = vdf.release_script_floor(RELEASE_SH)
-        self.assertEqual(value, "26.6")
-        self.assertIn("DEPLOYMENT_TARGET", RELEASE_SH.splitlines()[line - 1])
-
-    def test_a_target_inside_a_comment_is_not_the_declaration(self) -> None:
-        commented = "#DEPLOYMENT_TARGET=26.0\n" + RELEASE_SH
-        line, value = vdf.release_script_floor(commented)
-        self.assertEqual(value, "26.6", "the commented-out line must not be read")
-        self.assertTrue(commented.splitlines()[line - 1].startswith("DEPLOYMENT_TARGET"))
-
-
 class BuiltProductFloorTests(unittest.TestCase):
     def _plist(self, value: object) -> Path:
         directory = Path(tempfile.mkdtemp())
@@ -213,30 +201,28 @@ class BuiltProductFloorTests(unittest.TestCase):
 
 
 class GateHarness:
-    def _run(self, project: str, release: str, built: str | None,
+    def _run(self, project: str, built: str | None,
              package: str = PACKAGE_SW) -> tuple[int, str]:
         captured = io.StringIO()
         code = 0
         with contextlib.redirect_stdout(captured):
-            with self._patch_sources(project, release, built, package):
+            with self._patch_sources(project, built, package):
                 code = vdf.main()
         return code, captured.getvalue()
 
     @contextlib.contextmanager
-    def _patch_sources(self, project: str, release: str, built: str | None,
+    def _patch_sources(self, project: str, built: str | None,
                        package: str = PACKAGE_SW):
-        original_project, original_release = vdf.PROJECT, vdf.RELEASE_SCRIPT
+        original_project = vdf.PROJECT
         had_package = hasattr(vdf, "PACKAGE")
         original_package = getattr(vdf, "PACKAGE", None)
         original_locate = vdf._locate_built_product
         original_plist = vdf.product_floor
         project_path = Path(tempfile.mkdtemp()) / "project.pbxproj"
         project_path.write_text(project, encoding="utf-8")
-        release_path = Path(tempfile.mkdtemp()) / "package-release.sh"
-        release_path.write_text(release, encoding="utf-8")
         package_path = Path(tempfile.mkdtemp()) / "Package.swift"
         package_path.write_text(package, encoding="utf-8")
-        vdf.PROJECT, vdf.RELEASE_SCRIPT = project_path, release_path
+        vdf.PROJECT = project_path
         vdf.PACKAGE = package_path
         vdf._locate_built_product = (
             (lambda: Path("/fake/NepalKit.app/Contents/Info.plist"))
@@ -247,7 +233,7 @@ class GateHarness:
         try:
             yield
         finally:
-            vdf.PROJECT, vdf.RELEASE_SCRIPT = original_project, original_release
+            vdf.PROJECT = original_project
             if had_package:
                 vdf.PACKAGE = original_package
             else:
@@ -257,38 +243,27 @@ class GateHarness:
 
 class DriftDetectionTests(GateHarness, unittest.TestCase):
     def test_all_sources_agreeing_passes(self) -> None:
-        code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, "26.6")
+        code, output = self._run(PBXPROJ.replace("26.0", "26.6"), "26.6")
         self.assertEqual(code, 0, output)
         self.assertIn("everywhere it is written", output)
 
     def test_a_project_level_config_behind_the_app_target_fails(self) -> None:
-        code, output = self._run(PBXPROJ, RELEASE_SH, "26.6")
+        code, output = self._run(PBXPROJ, "26.6")
         self.assertEqual(code, 1, "a project-level config behind the target must fail")
         self.assertIn("NOT consistent", output)
 
-    def test_the_release_script_behind_the_project_fails(self) -> None:
-        code, output = self._run(
-            PBXPROJ.replace("26.0", "26.6"), "DEPLOYMENT_TARGET=26.0\n", "26.6"
-        )
-        self.assertEqual(code, 1, "verify-appcast.py trusts this file; it must agree")
-
     def test_a_built_product_behind_both_sources_fails(self) -> None:
         code, output = self._run(
-            PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, "26.0"
+            PBXPROJ.replace("26.0", "26.6"), "26.0"
         )
         self.assertEqual(code, 1, "the built product is the ground truth, not a bystander")
         self.assertIn("built product", output)
 
     def test_every_disagreeing_source_is_named_not_just_the_first(self) -> None:
-        code, output = self._run(PBXPROJ, "DEPLOYMENT_TARGET=26.1\n", "26.0")
+        code, output = self._run(PBXPROJ, "26.1")
         self.assertEqual(code, 1)
         for expected in ("26.6", "26.0", "26.1"):
             self.assertIn(expected, output, f"{expected} missing from the report")
-
-    def test_a_release_script_with_no_target_is_a_failure_not_a_skip(self) -> None:
-        code, output = self._run(PBXPROJ.replace("26.0", "26.6"), "#!/bin/sh\nARCHIVE=x\n", None)
-        self.assertNotEqual(code, 0)
-        self.assertIn("DEPLOYMENT_TARGET", output)
 
     def test_the_format_xcode_27_writes_is_the_one_ci_can_read(self) -> None:
         self.assertEqual(vdf.MAX_OBJECT_VERSION, 110)
@@ -320,7 +295,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
         self.assertIsNone(vdf._project_format_problem("{ objects = 1; }\n"))
 
     def test_watchos_blocks_that_disagree_fail_and_name_both(self) -> None:
-        code, output = self._run(THREE_SHAPES, RELEASE_SH, "26.6")
+        code, output = self._run(THREE_SHAPES, "26.6")
         self.assertEqual(code, 1, "two watchOS blocks at different floors must fail")
         for value in ("26.6", "26.0"):
             self.assertIn(value, output, f"{value} missing from the report")
@@ -330,7 +305,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
             ("Watch App Debug", "watchos", "26.6"),
             ("NepalKitComplications Debug", "watchos", "26.6"),
         )
-        code, output = self._run(agreeing, RELEASE_SH, "26.6")
+        code, output = self._run(agreeing, "26.6")
         self.assertEqual(code, 0, output)
         for line in floor_lines(agreeing, "26.6"):
             self.assertIn(f"project.pbxproj:{line}", output,
@@ -339,7 +314,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
     def test_a_package_floor_above_the_app_exits_one(self) -> None:
         agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
         higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
-        code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
+        code, output = self._run(agreeing, "26.6", package=higher)
         self.assertEqual(code, 1, "a package floor above the app's must fail")
         self.assertIn("Package.swift:6", output,
                       "the message must name the line to edit")
@@ -349,7 +324,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
     def test_the_package_floor_failure_does_not_claim_the_appcast_would_lie(self) -> None:
         agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
         higher = PACKAGE_SW.replace(".watchOS(.v26)", ".watchOS(.v27)")
-        _code, output = self._run(agreeing, RELEASE_SH, "26.6", package=higher)
+        _code, output = self._run(agreeing, "26.6", package=higher)
         self.assertNotIn("appcast", output.lower(),
                          "the appcast says nothing about watches, so this message "
                          "must not claim it does")
@@ -360,7 +335,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
 
     def test_a_package_floor_below_the_app_exits_zero(self) -> None:
         agreeing = watch_pbxproj(("Watch App Debug", "watchos", "26.6"))
-        code, output = self._run(agreeing, RELEASE_SH, "26.6", package=PACKAGE_SW)
+        code, output = self._run(agreeing, "26.6", package=PACKAGE_SW)
         self.assertEqual(code, 0, output)
         self.assertIn(f"project.pbxproj:{floor_lines(agreeing, '26.6')[0]}", output)
         self.assertIn("26", output)
@@ -370,7 +345,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
             ("Watch App Debug", "watchos", "26.6"),
             ("NepalKit Mac App Debug", None, QUIET),
         )
-        code, output = self._run(mixed, RELEASE_SH, "26.6")
+        code, output = self._run(mixed, "26.6")
         self.assertEqual(code, 0, output)
         self.assertIn(f"project.pbxproj:{floor_lines(mixed, '26.6')[0]}", output,
                       "the watchos block must be reported")
@@ -384,7 +359,7 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
             ("Watch App Debug", "watchos", "26.6"),
             ("NepalKitWatch Debug", "iphoneos", QUIET),
         )
-        code, output = self._run(mixed, RELEASE_SH, "26.6")
+        code, output = self._run(mixed, "26.6")
         self.assertEqual(code, 0, output)
         self.assertIn(f"project.pbxproj:{floor_lines(mixed, '26.6')[0]}", output,
                       "the watchos block must be reported")
@@ -398,13 +373,13 @@ class DriftDetectionTests(GateHarness, unittest.TestCase):
             ("NepalKitComplications Debug", "watchos", "26.0"),
             ("NepalKitWatchTests Debug", "watchos", "26.1"),
         )
-        code, output = self._run(three, RELEASE_SH, "26.6")
+        code, output = self._run(three, "26.6")
         self.assertEqual(code, 1)
         for value in ("26.6", "26.0", "26.1"):
             self.assertIn(value, output, f"{value} missing from the report")
 
     def test_the_gate_passes_with_no_built_product(self) -> None:
-        code, output = self._run(PBXPROJ.replace("26.0", "26.6"), RELEASE_SH, None)
+        code, output = self._run(PBXPROJ.replace("26.0", "26.6"), None)
         self.assertEqual(code, 0, output)
         self.assertNotIn("built product", output)
 
@@ -461,10 +436,9 @@ class RealRepositoryTests(unittest.TestCase):
             f"{app_floor}; the package must not require more than its consumer",
         )
 
-    def test_the_release_script_floor_is_what_the_verifier_reads(self) -> None:
-        verifier = (vdf.REPO_ROOT / "scripts" / "verify-appcast.py").read_text(encoding="utf-8")
-        self.assertIn("package-release.sh", verifier)
-        self.assertIn("DEPLOYMENT_TARGET", verifier)
+    def test_the_appcast_verifier_reads_the_project_floor(self) -> None:
+        floors = {value for _, value in vdf.project_floors(vdf.PROJECT.read_text(encoding="utf-8"))}
+        self.assertEqual({xcode_project.macos_floor()}, floors)
 
 
 if __name__ == "__main__":

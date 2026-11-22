@@ -5,14 +5,13 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+import dataset_table
+
 HERE = Path(__file__).resolve().parent
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
 
 
 def load(name):
@@ -21,8 +20,6 @@ def load(name):
     spec.loader.exec_module(module)
     return module
 
-
-import dataset_table  # noqa: E402
 
 vds = load("verify-data-sources.py")
 ckc = load("check-kathmandu-calendar.py")

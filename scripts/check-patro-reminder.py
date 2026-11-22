@@ -59,7 +59,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--today", type=datetime.date.fromisoformat, default=datetime.date.today())
     args = parser.parse_args(argv)
 
-    sys.path.insert(0, str(ROOT / "scripts"))
     from dataset_table import shipped_table
 
     last_year = max(shipped_table())

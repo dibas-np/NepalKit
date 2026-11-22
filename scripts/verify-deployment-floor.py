@@ -11,51 +11,12 @@ import re
 import sys
 from pathlib import Path
 
+from xcode_project import macos_floors as project_floors
+from xcode_project import watchos_floors as watchos_project_floors
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECT = REPO_ROOT / "NepalKit.xcodeproj" / "project.pbxproj"
-RELEASE_SCRIPT = REPO_ROOT / "scripts" / "package-release.sh"
 PACKAGE = REPO_ROOT / "NepalKitCore" / "Package.swift"
-
-WATCHOS_SDKROOT = re.compile(r"^\s*SDKROOT = watchos;")
-WATCHOS_TARGET = re.compile(r"WATCHOS_DEPLOYMENT_TARGET = ([0-9.]+);")
-
-
-def _configuration_blocks(text: str) -> list[tuple[int, list[str]]]:
-    lines = text.splitlines()
-    blocks: list[tuple[int, list[str]]] = []
-    index = 0
-    while index < len(lines):
-        if "isa = XCBuildConfiguration;" not in lines[index]:
-            index += 1
-            continue
-        end = index
-        while end < len(lines) and "};" not in lines[end]:
-            end += 1
-        blocks.append((index, lines[index:min(end, len(lines))]))
-        index = end + 1
-    return blocks
-
-
-def project_floors(text: str) -> list[tuple[int, str]]:
-    found: list[tuple[int, str]] = []
-    for start, body in _configuration_blocks(text):
-        for offset, line in enumerate(body, start=start):
-            match = re.search(r"MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);", line)
-            if match:
-                found.append((offset + 1, match.group(1)))
-    return found
-
-
-def watchos_project_floors(text: str) -> list[tuple[int, str]]:
-    found: list[tuple[int, str]] = []
-    for start, body in _configuration_blocks(text):
-        if not any(WATCHOS_SDKROOT.search(line) for line in body):
-            continue
-        for offset, line in enumerate(body, start=start):
-            match = WATCHOS_TARGET.search(line)
-            if match:
-                found.append((offset + 1, match.group(1)))
-    return found
 
 
 def package_watchos_floor(text: str) -> tuple[int, str] | None:
@@ -69,14 +30,6 @@ def package_watchos_floor(text: str) -> tuple[int, str] | None:
 
 def _version(value: str) -> tuple[int, ...]:
     return tuple(int(part) for part in value.split("."))
-
-
-def release_script_floor(text: str) -> tuple[int, str] | None:
-    for number, line in enumerate(text.splitlines(), start=1):
-        match = re.match(r"^DEPLOYMENT_TARGET=(\S+)", line)
-        if match:
-            return number, match.group(1)
-    return None
 
 
 def product_floor(plist_path: Path) -> str | None:
@@ -93,14 +46,6 @@ def declared_floors() -> tuple[list[tuple[str, str]], str | None]:
     declared: list[tuple[str, str]] = []
     for line, value in project_floors(PROJECT.read_text(encoding="utf-8")):
         declared.append((f"{PROJECT.name}:{line}", value))
-    script = release_script_floor(RELEASE_SCRIPT.read_text(encoding="utf-8"))
-    if script is None:
-        return declared, (
-            f"{RELEASE_SCRIPT.name} declares no DEPLOYMENT_TARGET. "
-            "verify-appcast.py reads the floor from this file, so without it the "
-            "appcast gate compares the feed against nothing."
-        )
-    declared.append((f"{RELEASE_SCRIPT.name}:{script[0]}", script[1]))
     plist_path = _locate_built_product()
     if plist_path is not None:
         built = product_floor(plist_path)
