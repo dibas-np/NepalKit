@@ -102,6 +102,7 @@ final class LoginItemModel {
         } catch {
             setupError = Self.failure(from: error, turningOn: on)
         }
+        defaults.set(true, forKey: Self.configuredKey)
         readStatus()
     }
 

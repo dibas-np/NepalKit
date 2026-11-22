@@ -9,10 +9,9 @@ extension MenuBarModel {
         in dataset: CalendarDataset = AppData.dataset,
         updateAvailable: Bool = false
     ) -> String {
-        guard let date = formatMenuBarTitle(now: now, timeZone: timeZone, format: format, settings: settings, in: dataset) else {
-            return Strings.menuBarBeyondRange
-        }
-        return updateAvailable ? Strings.menuBarUpdateMarker + date : date
+        let text = formatMenuBarTitle(now: now, timeZone: timeZone, format: format, settings: settings, in: dataset)
+            ?? Strings.menuBarBeyondRange
+        return updateAvailable ? Strings.menuBarUpdateMarker + text : text
     }
 
     func spokenTitle(

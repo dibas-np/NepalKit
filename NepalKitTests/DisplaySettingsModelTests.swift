@@ -58,6 +58,7 @@ struct DisplaySettingsModelTests {
         let settings = DisplaySettings(digits: .latin, monthNames: .transliterated)
 
         #expect(bar.title(settings: settings) == Strings.menuBarBeyondRange)
+        #expect(bar.title(settings: settings, updateAvailable: true) == Strings.menuBarUpdateMarker + Strings.menuBarBeyondRange)
         #expect(bar.spokenTitle(settings: settings, updateAvailable: true).contains(Strings.updateAvailableSpoken))
     }
 
