@@ -1,22 +1,7 @@
-# Publish the Sparkle appcast as the update feed, alongside the landing page
-# in site/ (with the README screenshots from docs/img).
-#
-# The feed is what every install polls for updates, so it is verified here
-# rather than deployed on trust. Verification uses the public key committed to
-# Info.plist, so this job needs no secrets - which is the point. The private key
-# exists only on the release machine, and this workflow has no way to sign
-# anything even if it wanted to.
-#
-# Publishing is a commit. The appcast is verified by
-# scripts/package-release.sh on the release machine, then committed here, and
-# this workflow re-verifies and deploys it. Two independent checks of the same
-# file, one of them on the machine that holds the signing key.
 name: publish appcast
 
 on:
   push:
-    # Only when the feed, the landing page or a screenshot it shows changes;
-    # a README text fix does not redeploy. The feed is re-verified either way.
     paths:
       - appcast.xml
       - site/**
@@ -24,18 +9,11 @@ on:
       - docs/img/watch-today.png
       - docs/img/watch-complications.png
     branches: [main]
-  # Re-run the check on demand, without publishing: the deploy job runs only
-  # for a push to main. Useful after changing the verifier itself.
   workflow_dispatch:
 
-# Least privilege: verify runs untrusted-by-default repo content and needs
-# nothing but a read; only deploy touches Pages, so the write scopes live on
-# that job and are not inherited by verify.
 permissions:
   contents: read
 
-# One deployment at a time: two concurrent publishes could interleave and leave
-# the live feed pointing at the older release.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -46,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      # A dispatch with no committed feed has nothing to publish.
       publish: ${{ steps.check.outputs.publish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -68,18 +45,6 @@ jobs:
           set -euo pipefail
           python3 scripts/test_verify_appcast.py
 
-      # Runs unconditionally, before the feed check, because the feed check
-      # trusts a floor this one establishes. The drift that motivated it: the app
-      # target built at 26.6 while package-release.sh said 26.0, so the feed
-      # verified as "26.0 matches the app's floor" and shipped an update to
-      # systems that could not launch the build. Every other gate agreed, because
-      # they all compared the feed against a declared number rather than
-      # comparing the sources to each other.
-      #
-      # No NEPAKIT_BUILT_PLIST here, so the built product is skipped and the
-      # sources are compared to each other - which is the drift that actually
-      # happened, and it needs no build. The full three-way check including the
-      # product is check-all.sh's first gate, which builds first.
       - name: Deployment floor is one number everywhere
         run: |
           set -euo pipefail
@@ -94,19 +59,6 @@ jobs:
         if: steps.check.outputs.publish == 'true'
         run: |
           set -euo pipefail
-          # No --enclosure: the archives are release assets, not repository
-          # files, so there is nothing local to hand the verifier. It fetches
-          # each enclosure url instead, which is the check itself - the declared
-          # length against the real byte count, and the Ed25519 signature
-          # against the public key committed to Info.plist. Verification needs
-          # only that public half, so this job can run the real thing without a
-          # secret, and it is the same check the release machine ran.
-          #
-          # --skip-crypto used to be passed here. It suppresses the signature
-          # check and, with no --enclosure to read, the byte check too, so this
-          # step was verifying structure while reporting the appcast sound. Do
-          # not add it back: a skipped item now exits non-zero, and this job
-          # depends on the verifier reaching a verdict about the real bytes.
           python3 scripts/verify-appcast.py appcast.xml \
             --info-plist NepalKit/Info.plist
 
@@ -131,16 +83,11 @@ jobs:
 
       - name: Stage the Pages artifact
         if: steps.check.outputs.publish == 'true'
-        # upload-pages-artifact runs `tar --directory "$INPUT_PATH"`, so it needs
-        # a directory. Passing the file directly fails with
-        # "tar: appcast.xml: Cannot open: Not a directory".
         run: |
           set -euo pipefail
           mkdir -p _site/img
           cp -R site/. _site/
-          # Only the screenshots the page shows, not every image in docs/img.
           cp docs/img/popover.png docs/img/watch-today.png docs/img/watch-complications.png _site/img/
-          # Copied last so nothing in site/ can shadow the verified feed.
           cp appcast.xml _site/
           ls -la _site
 
@@ -153,10 +100,6 @@ jobs:
   deploy:
     name: deploy to Pages
     needs: verify
-    # A push to main only. A dispatch, from any ref, verifies and stops here:
-    # the github-pages environment also admits only main, but a branch's own
-    # copy of this file could drop this line, so the environment is the guard
-    # and this keeps the code honest to the comment on workflow_dispatch.
     if: needs.verify.outputs.publish == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
