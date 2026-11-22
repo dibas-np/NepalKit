@@ -98,7 +98,8 @@ jobs:
             -project NepalKit.xcodeproj \
             -scheme NepalKit \
             -configuration Debug \
-            -destination 'platform=macOS,arch=arm64' \
+            -destination 'generic/platform=macOS' \
+            ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Perform CodeQL Analysis
