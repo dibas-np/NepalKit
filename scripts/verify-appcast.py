@@ -12,6 +12,7 @@ Exits non-zero if any item could not be fully verified. `--skip-crypto` skips
 fetching enclosures and checking archive signatures; the feed signature and any
 `--enclosure` length are still checked, and skipped items exit non-zero;
 `--allow-partial` reports unverified items but exits 0;
+`--newest` requires the `--enclosure` archive to be the feed's newest item;
 `--embed-notes <dir>` writes release notes into each item's <description> and
 exits.
 """
@@ -207,7 +208,8 @@ def embed_notes(appcast: Path, notes_dir: Path) -> None:
 
 
 def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto: bool,
-           minimum_system_version: str | None = None, allow_partial: bool = False) -> int:
+           minimum_system_version: str | None = None, allow_partial: bool = False,
+           newest: bool = False) -> int:
     print(f"Verifying {appcast}")
     floor = deployment_floor(minimum_system_version)
     print(f"App deployment floor: {floor}")
@@ -263,6 +265,10 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
         if len(matches) != 1:
             fail(f"local enclosure {enclosure.name} must match exactly one feed item "
                  f"(found {len(matches)})")
+        if newest and matches[0] is not current_item:
+            newest = current_item.findtext("sparkle:shortVersionString", default="?", namespaces=NS)
+            fail(f"local enclosure {enclosure.name} is not the feed's newest release ({newest}); "
+                 f"the archive being released must be the newest item")
 
     verified = 0
     skipped: list[str] = []
@@ -387,6 +393,10 @@ def main() -> int:
         help="local enclosure file to verify; if omitted the URL is fetched",
     )
     parser.add_argument(
+        "--newest", action="store_true",
+        help="require --enclosure to be the feed's newest release (the archive being released)",
+    )
+    parser.add_argument(
         "--skip-crypto", action="store_true",
         help="skip fetching enclosures and checking archive signatures; the feed "
              "signature and any --enclosure length are still checked, and skipped "
@@ -423,7 +433,7 @@ def main() -> int:
 
     try:
         return verify(args.appcast, args.info_plist, args.enclosure, args.skip_crypto,
-                      args.minimum_system_version, args.allow_partial)
+                      args.minimum_system_version, args.allow_partial, args.newest)
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001

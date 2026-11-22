@@ -55,6 +55,12 @@ URL_PREFIX="${URL_PREFIX%/}/"
 # generate_appcast only keeps history if an appcast is already in the
 # directory, so seed it with the committed feed.
 if [[ -f "$ROOT/appcast.xml" ]]; then
+    # Its items are about to be signed again, so they must carry a valid signature now.
+    if ! seed_check=$(python3 "$PY" "$ROOT/appcast.xml" --info-plist "$PLIST" --skip-crypto --allow-partial 2>&1); then
+        printf '%s\n' "$seed_check" >&2
+        echo "the committed appcast.xml does not verify; refusing to carry it forward" >&2
+        exit 1
+    fi
     cp "$ROOT/appcast.xml" "$ARCHIVES_DIR/appcast.xml"
     chmod u+w "$ARCHIVES_DIR/appcast.xml"
     echo "carried forward $(grep -c '<item>' "$ROOT/appcast.xml") existing feed item(s)"
@@ -94,7 +100,7 @@ for archive in ${ARCHIVES_DIR}/*.(zip|dmg)(N); do
     echo
     echo "verifying against $archive:t"
     ARCHIVES_CHECKED=$(( ARCHIVES_CHECKED + 1 ))
-    output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --allow-partial) || STATUS=1
+    output=$(python3 "$PY" "$APPCAST" --info-plist "$PLIST" --enclosure "$archive" --newest --allow-partial) || STATUS=1
     printf '%s\n' "$output"
     VERIFIED_VERSIONS="$VERIFIED_VERSIONS
 $(printf '%s\n' "$output" | sed -n 's/^.*version \([^:]*\): enclosure length matches.*/\1/p')"

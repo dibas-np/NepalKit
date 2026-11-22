@@ -520,7 +520,7 @@ class VerifyAppcastTest(unittest.TestCase):
         assert self_check in block
         return block.replace(self_check, ":") if drop_chmod else block
 
-    def _run_seed(self, block: str) -> Path:
+    def _run_seed(self, block: str, feed_verifies: bool = True, check: bool = True):
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
         tmp = Path(scratch.name)
@@ -529,9 +529,17 @@ class VerifyAppcastTest(unittest.TestCase):
         feed = tmp / "root" / "appcast.xml"
         feed.write_text("<rss><channel><item></item></channel></rss>")
         feed.chmod(0o444)
-        subprocess.run(["bash", "-c", block], check=True, capture_output=True,
-                       env={**os.environ, "ROOT": str(tmp / "root"), "ARCHIVES_DIR": str(tmp / "archives")})
-        return tmp / "archives" / "appcast.xml"
+        verifier = tmp / "verifier.py"
+        verifier.write_text(f"raise SystemExit({0 if feed_verifies else 1})\n")
+        result = subprocess.run(["bash", "-c", block], check=check, capture_output=True, text=True,
+                                env={**os.environ, "ROOT": str(tmp / "root"), "ARCHIVES_DIR": str(tmp / "archives"),
+                                     "PY": str(verifier), "PLIST": str(tmp / "Info.plist")})
+        return result if not check else tmp / "archives" / "appcast.xml"
+
+    def test_a_committed_feed_that_does_not_verify_is_not_carried_forward(self) -> None:
+        result = self._run_seed(self._seed_block(), feed_verifies=False, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing to carry it forward", result.stderr)
 
     def test_a_read_only_committed_feed_is_seeded_writable(self) -> None:
         self.assertTrue(os.access(self._run_seed(self._seed_block()), os.W_OK))
@@ -784,6 +792,22 @@ class FeedSignatureTest(unittest.TestCase):
         self.assertIn("feed signature verifies against the committed public key",
                       output)
         self.assertIn("Appcast is sound.", output)
+
+    def test_a_local_enclosure_that_is_not_the_newest_release_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = b"the older archive"
+            archive = tmp_path / "NepalKit-1.0.zip"
+            archive.write_bytes(payload)
+            key, priv = ed25519_keypair(tmp_path)
+            signature = base64.b64encode(ed25519_sign(priv, tmp_path, payload)).decode()
+            body = (make_item(url="https://example.com/NepalKit-9.9.zip", version="9.9")
+                    + make_item(length=str(len(payload)), signature=signature))
+            feed = sign_feed(tmp_path, body, priv)
+            buf = io.StringIO()
+            with self.assertRaises(SystemExit), contextlib.redirect_stdout(buf):
+                va.verify(feed, write_plist_with_key(tmp_path, key), archive, False, newest=True)
+        self.assertIn("is not the feed's newest release (9.9)", buf.getvalue())
 
     def test_unsigned_feed_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
