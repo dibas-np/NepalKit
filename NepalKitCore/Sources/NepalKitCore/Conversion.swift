@@ -44,9 +44,8 @@ func utcDate(from date: GregorianDate) -> Date? {
 }
 
 func validatedMonths(for date: BikramSambatDate, in dataset: CalendarDataset) -> [Int]? {
-    guard dataset.supportedRange.contains(date.year),
+    guard dataset.validYears.contains(date.year),
           let months = dataset.monthLengths(for: date.year),
-          months.allSatisfy({ $0 >= 1 }),
           (1 ... 12).contains(date.month),
           (1 ... months[date.month - 1]).contains(date.day)
     else { return nil }
@@ -63,9 +62,9 @@ func absoluteDayIndex(_ date: BikramSambatDate, in dataset: CalendarDataset) -> 
 func bikramSambatDate(at index: Int, in dataset: CalendarDataset) -> BikramSambatDate? {
     guard index >= 0 else { return nil }
     for year in dataset.supportedRange {
-        guard let yearStart = dataset.yearStartIndices[year],
-              let months = dataset.monthLengths(for: year),
-              months.allSatisfy({ $0 >= 1 })
+        guard dataset.validYears.contains(year),
+              let yearStart = dataset.yearStartIndices[year],
+              let months = dataset.monthLengths(for: year)
         else { return nil }
         guard index >= yearStart + months.reduce(0, +) else {
             var remaining = index - yearStart

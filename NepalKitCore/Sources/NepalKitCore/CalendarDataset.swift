@@ -29,6 +29,9 @@ public struct CalendarDataset: Sendable {
     public let provisionalYears: Set<Int>
 
     let yearStartIndices: [Int: Int]
+    /// Supported years whose month lengths are all positive. Conversion reads
+    /// only these rows, so a corrupt row yields nil instead of a wrong date.
+    let validYears: Set<Int>
 
     /// Builds a dataset. Traps unless every year in `supportedRange` has a
     /// twelve-month row.
@@ -47,15 +50,18 @@ public struct CalendarDataset: Sendable {
         self.anchorGregorian = anchorGregorian
         self.supportedRange = supportedRange
         var starts: [Int: Int] = [:]
+        var valid: Set<Int> = []
         var cursor = 0
         for year in supportedRange {
             starts[year] = cursor
             guard let lengths = years[year], lengths.count == 12 else {
                 preconditionFailure("CalendarDataset \(version): supported-range year \(year) does not have a twelve-month row")
             }
+            if lengths.allSatisfy({ $0 >= 1 }) { valid.insert(year) }
             cursor += lengths.reduce(0, +)
         }
         self.yearStartIndices = starts
+        self.validYears = valid
     }
 
     /// The twelve month lengths of a Bikram Sambat year, or nil if the table
