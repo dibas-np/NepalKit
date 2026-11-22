@@ -161,10 +161,20 @@ jobs:
       - name: Reverify the release ref
         env:
           GH_TOKEN: ${{ github.token }}
+          PREFLIGHT_SHA: ${{ needs.preflight.outputs.commit_sha }}
         run: |
           set -euo pipefail
           COMMIT_SHA="$(git rev-parse 'HEAD^{commit}')"
-          REMOTE_COMMIT="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq '.sha')"
+          if [[ "$COMMIT_SHA" != "$PREFLIGHT_SHA" ]]; then
+            echo "Checked out $COMMIT_SHA, but the preflight verified $PREFLIGHT_SHA" >&2
+            exit 1
+          fi
+          # Read the tag ref itself; commits/<name> would also match a branch of that name.
+          read -r TYPE REMOTE_COMMIT < <(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" \
+            --jq '.object.type + " " + .object.sha')
+          if [[ "$TYPE" == tag ]]; then
+            REMOTE_COMMIT="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$REMOTE_COMMIT" --jq '.object.sha')"
+          fi
           if [[ "$REMOTE_COMMIT" != "$COMMIT_SHA" ]]; then
             echo "Release tag moved after the preflight: $COMMIT_SHA -> $REMOTE_COMMIT" >&2
             exit 1
