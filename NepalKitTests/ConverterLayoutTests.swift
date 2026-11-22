@@ -32,16 +32,16 @@ struct ConverterLayoutTests {
     @Test func everyMonthNameFitsTheMonthPicker() {
         for month in GregorianDate.monthNames {
             #expect(
-                Self.controlChrome + Self.width(of: month) <= 112,
-                "'\(month)' needs ~\(Int(Self.controlChrome + Self.width(of: month)))pt, floor is 112pt"
+                Self.controlChrome + Self.width(of: month) <= PickerWidth.wide,
+                "'\(month)' needs ~\(Int(Self.controlChrome + Self.width(of: month)))pt, floor is \(Int(PickerWidth.wide))pt"
             )
         }
         for month in 1 ... 12 {
             for style in [MonthNameStyle.nepali, .transliterated] {
                 let name = BikramSambatDate.monthName(month, style: style)
                 #expect(
-                    Self.controlChrome + Self.width(of: name) <= 112,
-                    "'\(name)' needs ~\(Int(Self.controlChrome + Self.width(of: name)))pt, floor is 112pt"
+                    Self.controlChrome + Self.width(of: name) <= PickerWidth.wide,
+                    "'\(name)' needs ~\(Int(Self.controlChrome + Self.width(of: name)))pt, floor is \(Int(PickerWidth.wide))pt"
                 )
             }
         }
@@ -49,7 +49,7 @@ struct ConverterLayoutTests {
 
     @Test func yearAndDayValuesFitTheirPickers() {
         for style in [DigitScript.latin, .devanagari] {
-            let yearFloor: CGFloat = 68
+            let yearFloor = PickerWidth.narrow
             #expect(
                 Self.controlChrome + Self.width(of: style.format(2084)) <= yearFloor,
                 "\(style.format(2084)) does not fit the \(Int(yearFloor))pt year picker"

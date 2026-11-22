@@ -4,6 +4,8 @@ import NepalKitCore
 import SwiftUI
 
 struct SettingsView: View {
+    private static let minimumSize = CGSize(width: 640, height: 440)
+
     @Environment(\.scenePhase) private var scenePhase
     @Bindable var settings: DisplaySettingsModel
     @Bindable var loginItem: LoginItemModel
@@ -28,7 +30,7 @@ struct SettingsView: View {
 
             SettingsIdentityStrip(metadata: metadataCache.value)
         }
-        .frame(minWidth: 640, minHeight: 440)
+        .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
         .task { loginItem.refreshStatus() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -107,7 +109,7 @@ private struct SourceLink: View {
     var body: some View {
         Link(destination: repository) {
             HStack(spacing: 4) {
-                Image(systemName: Symbols.repository)
+                Image(systemName: Symbols.repository.rawValue)
                     .symbolRenderingMode(.monochrome)
                 Text(Strings.sourceLinkTitle)
             }
