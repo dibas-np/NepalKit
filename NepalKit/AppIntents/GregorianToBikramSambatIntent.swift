@@ -32,9 +32,6 @@ struct GregorianToBikramSambatIntent: AppIntent {
             }
             return .result(value: entity, dialog: IntentDialog(Self.successDialog(bs, weekday: ad.weekday, in: dataset)))
         }
-        if let invalid = Self.invalidDayDialog(ad) {
-            throw SiriIntentError(dialog: invalid)
-        }
         throw SiriIntentError(dialog: Self.outOfRangeDialog(ad, in: dataset))
     }
 
@@ -52,14 +49,6 @@ struct GregorianToBikramSambatIntent: AppIntent {
             return nil
         }
         return GregorianDate(year: year, month: month, day: day)
-    }
-
-    static func invalidDayDialog(_ ad: GregorianDate) -> LocalizedStringResource? {
-        guard let length = GregorianDate.daysInMonth(year: ad.year, month: ad.month), length < ad.day else {
-            return nil
-        }
-        let name = GregorianDate.monthName(ad.month)
-        return "There is no \(ad.day) \(name) \(IntentAnswers.number(ad.year)) — \(name) \(IntentAnswers.number(ad.year)) has \(length) days."
     }
 
     static func outOfRangeDialog(_ ad: GregorianDate, in dataset: CalendarDataset) -> LocalizedStringResource {

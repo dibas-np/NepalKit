@@ -219,7 +219,7 @@ struct MonthGridModelTests {
         let clock = ClockModel(now: try TestDates.utc(2026, 10, 18, 6, 0), refreshes: false)
         let bs = try #require(clock.todayBSDate())
         let weekday = try #require(clock.weekdayString(style: .transliterated))
-        let spoken = SpokenDate.today(bs, gregorian: clock.todayADDate(), weekday: weekday, monthNames: .transliterated)
+        let spoken = SpokenDate.today(bs, gregorian: clock.today, weekday: weekday, monthNames: .transliterated)
         #expect(spoken.components(separatedBy: weekday).count == 2)
         #expect(spoken == "1 Kartik 2083. 18 October 2026, Sunday")
     }

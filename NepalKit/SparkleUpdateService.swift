@@ -24,13 +24,13 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
         controller.updater.lastUpdateCheckDate
     }
 
-    init(startingUpdater: Bool = true) {
+    override init() {
         let driver = SparkleUserDriverDelegate()
         userDriverDelegate = driver
         super.init()
         driver.onReminderChange = { [weak self] showing in self?.onReminder?(showing) }
         controller = SPUStandardUpdaterController(
-            startingUpdater: startingUpdater,
+            startingUpdater: false,
             updaterDelegate: self,
             userDriverDelegate: driver
         )
@@ -77,8 +77,7 @@ extension SparkleUpdateService: SPUUpdaterDelegate {
     nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
         let rawReason = ((error as NSError).userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)?.intValue
         MainActor.assumeIsolated {
-            let kind = UpdatePolicy.noUpdateKind(rawReason: rawReason)
-            onOutcome?(UpdatePolicy.outcome(forNoUpdateFound: kind,
+            onOutcome?(UpdatePolicy.outcome(forNoUpdateReason: rawReason,
                                             failureReason: error.localizedDescription))
         }
     }
@@ -112,11 +111,6 @@ private final class SparkleUserDriverDelegate: NSObject, SPUStandardUserDriverDe
     var onReminderChange: (@MainActor (Bool) -> Void)?
 
     var supportsGentleScheduledUpdateReminders: Bool { true }
-
-    nonisolated func standardUserDriverShouldHandleShowingScheduledUpdate(
-        _ update: SUAppcastItem,
-        andInImmediateFocus immediateFocus: Bool
-    ) -> Bool { true }
 
     nonisolated func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,

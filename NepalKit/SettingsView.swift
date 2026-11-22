@@ -7,8 +7,8 @@ struct SettingsView: View {
     private static let minimumSize = CGSize(width: 640, height: 440)
 
     @Environment(\.scenePhase) private var scenePhase
-    @Bindable var settings: DisplaySettingsModel
-    @Bindable var loginItem: LoginItemModel
+    let settings: DisplaySettingsModel
+    let loginItem: LoginItemModel
     let updates: UpdateCheckModel
     let menuBar: MenuBarModel
     let metadataCache: DeferredAppMetadata
@@ -86,9 +86,7 @@ private struct SettingsIdentityStrip: View {
 
             Spacer(minLength: 12)
 
-            if let repository = metadata.repositoryURL {
-                SourceLink(repository: repository)
-            }
+            SourceLink(repository: AppMetadata.repositoryURL)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)

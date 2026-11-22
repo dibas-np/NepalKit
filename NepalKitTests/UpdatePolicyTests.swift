@@ -18,13 +18,6 @@ struct UpdatePolicyTests {
         #expect(!UpdatePolicy.isTransientLaunch(installPath: "/Applications/tmp-tests/NepalKit.app"))
     }
 
-    @Test func noUpdateFoundClassifiesByReason() {
-        #expect(UpdatePolicy.outcome(forNoUpdateFound: .onLatestVersion, failureReason: "x") == .upToDate)
-        #expect(UpdatePolicy.outcome(forNoUpdateFound: .onNewerThanLatestVersion, failureReason: "x") == .upToDate)
-        #expect(UpdatePolicy.outcome(forNoUpdateFound: .other, failureReason: "feed unreachable")
-            == .failed(reason: "feed unreachable"))
-    }
-
     @Test func onlyAScheduledCheckIsVetoedOnATransientLaunch() {
         let transient = "/Users/dev/Library/Developer/Xcode/DerivedData/NepalKit-abc/Build/Products/Debug/NepalKit.app"
         #expect(UpdatePolicy.vetoesCheck(isScheduled: true, installPath: transient))
@@ -33,13 +26,14 @@ struct UpdatePolicyTests {
         #expect(!UpdatePolicy.vetoesCheck(isScheduled: false, installPath: "/Applications/NepalKit.app"))
     }
 
-    @Test func noUpdateKindIsReadFromTheFrameworksRawReason() {
+    @Test func noUpdateFoundClassifiesByTheFrameworksRawReason() {
         // SPUNoUpdateFoundReason raw values, SUErrors.h in Sparkle 2.10.0.
-        #expect(UpdatePolicy.noUpdateKind(rawReason: 1) == .onLatestVersion)
-        #expect(UpdatePolicy.noUpdateKind(rawReason: 2) == .onNewerThanLatestVersion)
-        #expect(UpdatePolicy.noUpdateKind(rawReason: 0) == .other)
-        #expect(UpdatePolicy.noUpdateKind(rawReason: 3) == .other)
-        #expect(UpdatePolicy.noUpdateKind(rawReason: nil) == .other)
+        #expect(UpdatePolicy.outcome(forNoUpdateReason: 1, failureReason: "x") == .upToDate)
+        #expect(UpdatePolicy.outcome(forNoUpdateReason: 2, failureReason: "x") == .upToDate)
+        #expect(UpdatePolicy.outcome(forNoUpdateReason: 0, failureReason: "feed unreachable")
+            == .failed(reason: "feed unreachable"))
+        #expect(UpdatePolicy.outcome(forNoUpdateReason: 3, failureReason: "x") == .failed(reason: "x"))
+        #expect(UpdatePolicy.outcome(forNoUpdateReason: nil, failureReason: "x") == .failed(reason: "x"))
     }
 
     @Test func anAbortedCheckIsAFailureUnlessTheFrameworkAlreadyAnsweredIt() {

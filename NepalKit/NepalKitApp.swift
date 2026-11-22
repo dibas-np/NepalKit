@@ -36,7 +36,7 @@ struct NepalKitApp: App {
         let login = LoginItemModel()
         login.ensureDefaultOn()
         _loginItemModel = State(initialValue: login)
-        let updates = UpdateCheckModel(service: SparkleUpdateService(startingUpdater: false))
+        let updates = UpdateCheckModel(service: SparkleUpdateService())
         updates.start()
         _updateCheckModel = State(initialValue: updates)
     }

@@ -68,22 +68,22 @@ struct TodaySection: View {
                 .accessibilityLabel(
                     "\(Strings.bsDateUnavailable). \(Strings.supportedThrough(lastSupportedBSYear, digits: .latin))"
                 )
-            }
 
-            if clock.todayBSDate(in: dataset) == nil, let todayAD = clock.todayADDate() {
-                let weekday = clock.weekdayString(style: settings.monthNames)
-                HStack(spacing: 4) {
-                    Text(todayAD.formatted(digits: settings.digits))
-                    if let weekday {
-                        Text("\(Strings.weekdaySeparator) \(weekday)")
+                if let todayAD = clock.today {
+                    let weekday = clock.weekdayString(style: settings.monthNames)
+                    HStack(spacing: 4) {
+                        Text(todayAD.formatted(digits: settings.digits))
+                        if let weekday {
+                            Text("\(Strings.weekdaySeparator) \(weekday)")
+                        }
                     }
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(
+                        SpokenDate.gregorianAnnouncement(date: todayAD, weekday: weekday)
+                    )
                 }
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(
-                    SpokenDate.gregorianAnnouncement(date: todayAD, weekday: weekday)
-                )
             }
         }
     }
@@ -92,7 +92,7 @@ struct TodaySection: View {
 extension TodaySection {
     fileprivate func heroAnnouncement(_ todayBS: BikramSambatDate, observances: TodayObservances) -> String {
         SpokenDate.today(
-            todayBS, gregorian: clock.todayADDate(),
+            todayBS, gregorian: clock.today,
             weekday: clock.weekdayString(style: settings.monthNames), monthNames: settings.monthNames,
             festivals: observances.festivals, isPublicHoliday: observances.saysPublicHoliday
         )

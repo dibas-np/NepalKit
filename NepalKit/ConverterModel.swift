@@ -163,21 +163,8 @@ final class ConverterModel {
         } else if date > maxAD {
             date = maxAD
         }
-        if !adMonths(year: date.year).contains(date.month) {
-            let fallback = adMonths(year: date.year).first ?? date.month
-            let maxDay = daysInADMonth(year: date.year, month: fallback)
-            date = GregorianDate(year: date.year, month: fallback, day: min(max(date.day, 1), maxDay))
-        }
-        var day = min(max(date.day, 1), daysInADMonth(year: date.year, month: date.month))
-        if date.year == minAD.year, date.month == minAD.month {
-            day = max(day, minAD.day)
-        }
-        if date.year == maxAD.year, date.month == maxAD.month {
-            day = min(day, maxAD.day)
-        }
-        let clamped = GregorianDate(year: date.year, month: date.month, day: day)
-        if clamped != adDate {
-            adDate = clamped
+        if date != adDate {
+            adDate = date
         }
     }
 

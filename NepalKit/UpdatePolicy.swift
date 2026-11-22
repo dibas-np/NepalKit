@@ -10,30 +10,16 @@ enum UpdatePolicy {
             || installPath.contains("/DerivedData/")
     }
 
-    enum NoUpdateFoundKind {
-        case onLatestVersion
-        case onNewerThanLatestVersion
-        case other
-    }
-
-    static func outcome(forNoUpdateFound kind: NoUpdateFoundKind, failureReason: String) -> UpdateOutcome {
-        switch kind {
-        case .onLatestVersion, .onNewerThanLatestVersion: return .upToDate
-        case .other: return .failed(reason: failureReason)
-        }
-    }
-
     static func vetoesCheck(isScheduled: Bool, installPath: String) -> Bool {
         isScheduled && isTransientLaunch(installPath: installPath)
     }
 
     /// Classified by raw value: an `NSNumber` held in `Any` does not cast to an
     /// imported `NS_ENUM`, so casting would treat "on the latest version" as a failure.
-    static func noUpdateKind(rawReason: Int?) -> NoUpdateFoundKind {
+    static func outcome(forNoUpdateReason rawReason: Int?, failureReason: String) -> UpdateOutcome {
         switch rawReason {
-        case SparkleCode.noUpdateOnLatestVersion: .onLatestVersion
-        case SparkleCode.noUpdateOnNewerThanLatestVersion: .onNewerThanLatestVersion
-        default: .other
+        case SparkleCode.noUpdateOnLatestVersion, SparkleCode.noUpdateOnNewerThanLatestVersion: .upToDate
+        default: .failed(reason: failureReason)
         }
     }
 

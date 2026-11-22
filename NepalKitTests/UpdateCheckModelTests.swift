@@ -88,7 +88,7 @@ struct UpdateCheckModelTests {
         let model = UpdateCheckModel(service: service)
 
         service.report(.failed(reason: "You're up to date!"))
-        let text = model.statusText ?? ""
+        let text = model.statusText
         #expect(text.contains(Strings.updateStatusFailed))
         #expect(text.contains("You're up to date!"))
         #expect(text.contains("“"))

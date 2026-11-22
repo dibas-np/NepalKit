@@ -61,7 +61,7 @@ final class UpdateCheckModel {
             self?.refreshLastCheckDate()
         }
         self.service.onReminder = { [weak self] showing in
-            if showing { self?.showReminder() } else { self?.dismissReminder() }
+            self?.isShowingReminder = showing
         }
     }
 
@@ -80,17 +80,9 @@ final class UpdateCheckModel {
         automaticallyChecks = service.automaticallyChecksForUpdates
     }
 
-    func showReminder() {
-        isShowingReminder = true
-    }
-
-    func dismissReminder() {
-        isShowingReminder = false
-    }
-
     var isUpdateAvailable: Bool { outcome == .updateAvailable }
 
-    var statusText: String? {
+    var statusText: String {
         switch outcome {
         case nil: Strings.updateStatusNotChecked
         case .upToDate: Strings.updateStatusUpToDate

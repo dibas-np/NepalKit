@@ -10,7 +10,7 @@ struct ClockModelTests {
 
     private func model(at date: Date, local: String = "America/New_York") throws -> ClockModel {
         let zone = try #require(TimeZone(identifier: local))
-        return ClockModel(now: date, localTimeZone: zone, refreshes: false)
+        return ClockModel(now: date, systemZone: { zone }, refreshes: false)
     }
 
     @Test func bsDateFlipsAtNPTMidnight() throws {
@@ -29,7 +29,7 @@ struct ClockModelTests {
         let bs = try #require(clock.todayBSDate())
         #expect(bs.formatted(latin) == "11 Ashoj 2083")
         #expect(bs.formatted(devanagari) == "११ असोज २०८३")
-        let ad = try #require(clock.todayADDate())
+        let ad = try #require(clock.today)
         #expect(ad.formatted(digits: latin.digits) == "27 September 2026")
         #expect(ad.formatted(digits: devanagari.digits) == "२७ September २०२६")
     }
@@ -58,20 +58,21 @@ struct ClockModelTests {
     }
 
     @Test func redundancyIsComparedByOffsetNotZoneIdentity() throws {
-        let zone = try #require(TimeZone(secondsFromGMT: 20700))
+        let zone = try #require(TimeZone(secondsFromGMT: TimeZone.nepal.secondsFromGMT()))
         let offsetZone = ClockModel(
             now: try TestDates.utc(2026, 9, 27, 12, 0),
-            localTimeZone: zone,
+            systemZone: { zone },
             refreshes: false
         )
         #expect(offsetZone.localTimeIsRedundant)
     }
 
-    @Test func noForeignZoneEverSharesNepalsOffset() throws {
+    @Test func theLegacyKatmanduSpellingCountsAsNepal() throws {
+        let now = try TestDates.utc(2026, 9, 27, 12, 0)
         let katmandu = try #require(TimeZone(identifier: "Asia/Katmandu"))
         let london = try #require(TimeZone(identifier: "Europe/London"))
-        #expect(ClockModel(now: .now, localTimeZone: katmandu, refreshes: false).localTimeIsRedundant)
-        #expect(!ClockModel(now: .now, localTimeZone: london, refreshes: false).localTimeIsRedundant)
+        #expect(ClockModel(now: now, systemZone: { katmandu }, refreshes: false).localTimeIsRedundant)
+        #expect(!ClockModel(now: now, systemZone: { london }, refreshes: false).localTimeIsRedundant)
     }
 
     @Test func localZoneFollowsAMidSessionSystemZoneChange() throws {
@@ -87,19 +88,6 @@ struct ClockModelTests {
         current = try #require(TimeZone(identifier: "Asia/Kathmandu"))
         #expect(clock.localTimeIsRedundant)
         #expect(clock.localTimeString(digits: .latin) == clock.nptTimeString(digits: .latin))
-    }
-
-    @Test func anInjectedZoneStillWinsOverTheSystemZone() throws {
-        let systemZone = try #require(TimeZone(identifier: "America/New_York"))
-        let localZone = try #require(TimeZone(identifier: "Asia/Kolkata"))
-        let clock = ClockModel(
-            now: try TestDates.utc(2026, 9, 27, 12, 0),
-            localTimeZone: localZone,
-            systemZone: { systemZone },
-            refreshes: false
-        )
-        #expect(clock.localTimeString(digits: .latin) == "17:30:00")
-        #expect(clock.localTimeZone.identifier == "Asia/Kolkata")
     }
 
     @Test func defaultClockFollowsTheSystemZone() throws {
@@ -151,7 +139,7 @@ struct ClockModelTests {
         await task?.value
         #expect(reads == 4)
         #expect(sleeps == 4)
-        #expect(clock.todayADDate() == GregorianDate(year: 2026, month: 9, day: 28))
+        #expect(clock.today == GregorianDate(year: 2026, month: 9, day: 28))
         task = nil
     }
 

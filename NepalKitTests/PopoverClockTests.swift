@@ -14,7 +14,7 @@ struct PopoverClockTests {
     private func clock(now: Date, tickTo instant: Date, local: String = "America/New_York") throws -> ClockModel {
         let zone = try #require(TimeZone(identifier: local))
         return ClockModel(
-            now: now, localTimeZone: zone,
+            now: now, systemZone: { zone },
             currentTime: { instant },
             sleep: { _ in throw CancellationError() }
         )

@@ -43,11 +43,9 @@ struct AboutSettingsView: View {
                     Text(Strings.updateAutomaticallyLabel)
                 }
 
-                if let status = updates.statusText {
-                    Text(status)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                Text(updates.statusText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
 
                 if let lastCheck = updates.lastCheckDate {
                     Text(Strings.updateLastChecked(lastCheck.formatted(date: .abbreviated, time: .shortened)))

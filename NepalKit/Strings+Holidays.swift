@@ -51,7 +51,7 @@ nonisolated extension Strings {
         "\(digits.format(year)) BS is a projection, not yet in the official Nepali Patro."
     }
 
-    private static func yearList(_ years: Set<Int>, digits: DigitScript) -> String {
+    static func yearList(_ years: Set<Int>, digits: DigitScript) -> String {
         let sorted = years.sorted().map { digits.format($0) }
         guard let last = sorted.last else { return "" }
         return sorted.count == 1 ? last : "\(sorted.dropLast().joined(separator: ", ")) and \(last)"

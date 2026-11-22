@@ -108,7 +108,7 @@ nonisolated enum Strings {
             Capability(title: siriTodayCapability, phrase: siriTodayPhrase),
             Capability(title: siriTomorrowCapability, phrase: siriTomorrowPhrase),
             Capability(title: siriYesterdayCapability, phrase: siriYesterdayPhrase),
-        Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
+            Capability(title: siriConvertToBSCapability, phrase: siriConvertToBSPhrase),
             Capability(title: siriConvertToGregorianCapability, phrase: siriConvertToGregorianPhrase),
         ]
     }
@@ -157,8 +157,7 @@ nonisolated enum Strings {
     }
     static func provisionalYearsNote(_ years: Set<Int>) -> String? {
         guard !years.isEmpty else { return nil }
-        let sorted = years.sorted().map(String.init)
-        let list = sorted.count == 1 ? sorted[0] : "\(sorted.dropLast().joined(separator: ", ")) and \(sorted[sorted.count - 1])"
+        let list = yearList(years, digits: .latin)
         return years.count == 1
             ? "\(list) BS is a provisional projection until the official Nepali Patro is published."
             : "\(list) BS are provisional projections until the official Nepali Patro is published."

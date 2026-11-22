@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  It is authoritative for every key, including
+  This file is authoritative for every key, including
   the Apple-defined ones, and `GENERATE_INFOPLIST_FILE` stays off: with it on,
   the generator owns Apple-known keys and silently overwrites this file's
   values for them. `INFOPLIST_KEY_*` settings are consumed by that same

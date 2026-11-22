@@ -23,7 +23,7 @@ nonisolated enum BikramSambatMonth: Int, AppEnum, CaseIterable {
     )
 
     static let caseDisplayRepresentations: [BikramSambatMonth: DisplayRepresentation] = [
-        .baisakh: DisplayRepresentation(
+            .baisakh: DisplayRepresentation(
                 title: "Baisakh",
                 synonyms: ["Baishakh", "Baisak", "Vaishakh", "Vaishakha", "Vaisakha", "बैशाख", "वैशाख"]
             ),

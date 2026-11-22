@@ -52,7 +52,7 @@ nonisolated func formatMenuBarTitle(
 }
 
 nonisolated private func todayWeekday(now: Date, timeZone: TimeZone) -> Int? {
-    GregorianDate.today(now: now, timeZone: timeZone).flatMap { ($0).weekday }
+    GregorianDate.today(now: now, timeZone: timeZone).flatMap { $0.weekday }
 }
 
 extension SpokenDate {

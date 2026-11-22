@@ -10,6 +10,6 @@ enum DisplayPreview {
         in dataset: CalendarDataset,
         settings: DisplaySettings
     ) -> String? {
-        BikramSambatDate.today(now: now, timeZone: timeZone, in: dataset).map { ($0).formatted(settings) }
+        BikramSambatDate.today(now: now, timeZone: timeZone, in: dataset).map { $0.formatted(settings) }
     }
 }

@@ -7,17 +7,17 @@ import Testing
 
 struct SpokenDateTests {
     private let ashoj11 = BikramSambatDate(year: 2083, month: 6, day: 11)
-    private let adSeptember27 = GregorianDate(year: 2026, month: 9, day: 27)
 
     @Test func menuBarNamesTheAppSoItIsIdentifiableOutOfContext() {
-        let spoken = SpokenDate.menuBar(today: ashoj11, monthNames: .transliterated, dataset: .v2)
+        let spoken = SpokenDate.menuBar(
+            spokenDate: SpokenDate.bikramSambat(ashoj11, monthNames: .transliterated), dataset: .v2
+        )
 
         #expect(spoken == "NepalKit, 11 Ashoj 2083")
-        #expect(spoken.hasPrefix("NepalKit"))
     }
 
     @Test func menuBarExplainsTheBoundaryRatherThanSayingNothing() {
-        let spoken = SpokenDate.menuBar(today: nil, monthNames: .transliterated, dataset: .v2)
+        let spoken = SpokenDate.menuBar(spokenDate: nil, dataset: .v2)
 
         #expect(spoken.hasPrefix("NepalKit"))
         #expect(spoken != "NepalKit, n/a")
@@ -27,8 +27,8 @@ struct SpokenDateTests {
 
 @MainActor
 struct SpokenSurfaceTests {
-    @Test func menuBarAnnouncementUsesPronounceableDigitsAndNamesTheApp() {
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_792_272_000), schedulesMidnightFire: false)
+    @Test func menuBarAnnouncementUsesPronounceableDigitsAndNamesTheApp() throws {
+        let model = MenuBarModel(now: try TestDates.utc(2026, 10, 17, 21, 20), refreshes: false, schedulesMidnightFire: false)
 
         let spoken = model.spokenTitle(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated))
         let shown = model.title(settings: DisplaySettings(digits: .devanagari, monthNames: .transliterated))
@@ -40,7 +40,7 @@ struct SpokenSurfaceTests {
     }
 
     @Test func menuBarAnnouncementPastTheRangeExplainsItself() throws {
-        let model = MenuBarModel(now: try TestDates.utc(2028, 7, 25, 0, 0), schedulesMidnightFire: false)
+        let model = MenuBarModel(now: try TestDates.utc(2028, 7, 25, 0, 0), refreshes: false, schedulesMidnightFire: false)
 
         let spoken = model.spokenTitle(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
 
@@ -127,8 +127,8 @@ struct SpokenOptionLabelTests {
         for style in [MonthNameStyle.nepali, .transliterated] {
             for spoken in [
                 SpokenDate.bikramSambat(bs, monthNames: style),
-                SpokenDate.menuBar(today: bs, monthNames: style, dataset: .v2),
-                SpokenDate.menuBar(today: nil, monthNames: style, dataset: .v2),
+                SpokenDate.menuBar(spokenDate: SpokenDate.bikramSambat(bs, monthNames: style), dataset: .v2),
+                SpokenDate.menuBar(spokenDate: nil, dataset: .v2),
             ] where spoken.contains(where: { forbidden.contains($0) }) {
                 offenders.append("bs spoken form \(spoken)")
             }
@@ -143,7 +143,6 @@ struct SpokenOptionLabelTests {
         forbidden: Set<Character>
     ) throws -> [String] {
         let shownThatNeverAnnounces: Set<String> = ["weekdaySeparator"]
-        let proseTheParserCannotRead: Set<String> = []
 
         var offenders: [String] = []
         let constants = try declaredStringConstants()
@@ -156,7 +155,7 @@ struct SpokenOptionLabelTests {
                 offenders.append("\(name) is announced as shown and has no spoken form")
             }
         }
-        for name in try unparsedConstantNames() where !proseTheParserCannotRead.contains(name) {
+        for name in try unparsedConstantNames() {
             offenders.append("\(name) is a `static let` this sweep cannot read; classify it")
         }
         return offenders
@@ -219,12 +218,6 @@ struct SpokenOptionLabelTests {
             }
         }
         return nil
-    }
-
-    @Test func spokenSupportedRangeAvoidsTheEnDash() {
-        let spoken = Strings.supportedRangeSpoken(1975 ... 2084)
-        #expect(!spoken.contains("\u{2013}"), "en dash survives in the spoken range: \(spoken)")
-        #expect(spoken == "1975 to 2084 BS")
     }
 
     @Test func gregorianAnnouncementFoldsInTheWeekdayWhenThereIsOne() {

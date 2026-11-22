@@ -46,9 +46,8 @@ struct TodayInBikramSambatIntent: AppIntent {
         in dataset: CalendarDataset
     ) -> LocalizedStringResource {
         let gregorianToday = GregorianDate.today(now: now, timeZone: timeZone)
-        let prefix = IntentAnswers.weekdayPrefix(gregorianToday.flatMap { ($0).weekday })
+        let prefix = IntentAnswers.weekdayPrefix(gregorianToday.flatMap { $0.weekday })
         let spokenToday = gregorianToday.map { IntentAnswers.spoken($0) } ?? ""
-        // Interpolated as a string; a bare Int would format as "2,084".
-        return "NepalKit's Bikram Sambat data covers up to the year \(String(dataset.supportedRange.upperBound)). Today is \(prefix)\(spokenToday)."
+        return "NepalKit's Bikram Sambat data covers up to the year \(IntentAnswers.number(dataset.supportedRange.upperBound)). Today is \(prefix)\(spokenToday)."
     }
 }

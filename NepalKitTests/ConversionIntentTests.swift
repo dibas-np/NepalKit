@@ -76,19 +76,6 @@ struct ConversionIntentTests {
         #expect(beforeDialog.contains("back to 13 April 1918"))
     }
 
-    @Test("A Gregorian date naming no civil day gets the month-length statement")
-    func gregorianInvalidDay() throws {
-        #expect(GregorianDate.daysInMonth(year: 2025, month: 2) == 28)
-
-        let dialog = try #require(GregorianToBikramSambatIntent.invalidDayDialog(GregorianDate(year: 2025, month: 2, day: 30)))
-        let text = String(localized: dialog)
-        #expect(text.contains("30 February 2025"))
-        #expect(text.contains("28 days"))
-        #expect(!text.contains("2,025"))
-
-        #expect(GregorianToBikramSambatIntent.invalidDayDialog(GregorianDate(year: 2025, month: 3, day: 15)) == nil)
-    }
-
     @Test("Oracle: 15 Ashar 2082 converts to 29 June 2025 at noon in the user's zone")
     func bikramSambatToGregorianOracle() async throws {
         let converted = try #require(GregorianDate(BikramSambatDate(year: 2082, month: 3, day: 15), in: dataset))

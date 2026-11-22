@@ -14,7 +14,7 @@ struct DatasetBoundaryTests {
         let zone = try #require(TimeZone(identifier: "America/New_York"))
         return ClockModel(
             now: try TestDates.utc(date.year, date.month, date.day, 6, 0),
-            localTimeZone: zone,
+            systemZone: { zone },
             refreshes: false
         )
     }
@@ -48,7 +48,7 @@ struct DatasetBoundaryTests {
 
     @Test func gregorianAndClocksSurviveTheBoundary() throws {
         let model = try clock(firstUnsupportedAD)
-        let ad = try #require(model.todayADDate())
+        let ad = try #require(model.today)
         #expect(ad.formatted(digits: DisplaySettings(digits: .latin, monthNames: .transliterated).digits) == "13 April 2028")
         #expect(model.nptTimeString(digits: .latin) == "11:45:00")
     }

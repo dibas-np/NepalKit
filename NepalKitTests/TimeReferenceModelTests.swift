@@ -49,7 +49,7 @@ struct TimeReferenceModelTests {
 
     private func clock(_ reference: TimeReference, local: String = "America/New_York") throws -> ClockModel {
         let zone = try #require(TimeZone(identifier: local))
-        return ClockModel(now: try Self.disagreeing(), localTimeZone: zone, timeReference: reference, refreshes: false)
+        return ClockModel(now: try Self.disagreeing(), timeReference: reference, systemZone: { zone }, refreshes: false)
     }
 
     @Test func clockReadsTodayInTheChosenZone() throws {
@@ -57,7 +57,7 @@ struct TimeReferenceModelTests {
         let local = try clock(.local)
         #expect(nepal.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 11))
         #expect(local.todayBSDate() == BikramSambatDate(year: 2083, month: 6, day: 10))
-        #expect(local.todayADDate() == GregorianDate(year: 2026, month: 9, day: 26))
+        #expect(local.today == GregorianDate(year: 2026, month: 9, day: 26))
         #expect(nepal.weekdayString(style: .transliterated) == "Sunday")
         #expect(local.weekdayString(style: .transliterated) == "Saturday")
     }

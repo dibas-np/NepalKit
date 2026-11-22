@@ -4,19 +4,6 @@ import NepalKitCore
 
 extension SpokenDate {
     static func menuBar(
-        today: BikramSambatDate?,
-        monthNames: MonthNameStyle,
-        dataset: CalendarDataset,
-        updateAvailable: Bool = false
-    ) -> String {
-        menuBar(
-            spokenDate: today.map { bikramSambat($0, monthNames: monthNames) },
-            dataset: dataset,
-            updateAvailable: updateAvailable
-        )
-    }
-
-    static func menuBar(
         spokenDate: String?,
         dataset: CalendarDataset,
         updateAvailable: Bool = false

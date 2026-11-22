@@ -11,7 +11,6 @@ final class ClockModel {
     private(set) var today: GregorianDate?
     private(set) var showsSecondaryClock = false
     private(set) var timeReference: TimeReference
-    private let injectedLocalTimeZone: TimeZone?
     /// Injected so tests can change the system zone mid-session: mutating
     /// `NSTimeZone.default` does not move `TimeZone.current` on this platform.
     private let systemZone: () -> TimeZone
@@ -23,7 +22,6 @@ final class ClockModel {
 
     init(
         now: Date = .now,
-        localTimeZone: TimeZone? = nil,
         timeReference: TimeReference = .nepal,
         systemZone: @escaping () -> TimeZone = { .autoupdatingCurrent },
         refreshInterval: TimeInterval = 1,
@@ -32,7 +30,6 @@ final class ClockModel {
         sleep: @escaping @MainActor (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.now = now
-        self.injectedLocalTimeZone = localTimeZone
         self.timeReference = timeReference
         self.systemZone = systemZone
         self.refreshInterval = .seconds(refreshInterval)
@@ -57,7 +54,7 @@ final class ClockModel {
     }
 
     var localTimeZone: TimeZone {
-        injectedLocalTimeZone ?? systemZone()
+        systemZone()
     }
 
     func setTimeReference(_ timeReference: TimeReference) {
@@ -83,12 +80,8 @@ final class ClockModel {
         today.flatMap { BikramSambatDate($0, in: dataset) }
     }
 
-    func todayADDate() -> GregorianDate? {
-        today
-    }
-
     func weekdayString(style: MonthNameStyle) -> String? {
-        guard let day = todayADDate(), let weekday = day.weekday else { return nil }
+        guard let day = today, let weekday = day.weekday else { return nil }
         return BikramSambatDate.weekdayName(weekday, style: style)
     }
 

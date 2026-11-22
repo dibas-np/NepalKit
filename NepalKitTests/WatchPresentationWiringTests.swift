@@ -93,7 +93,6 @@ enum ComplicationWiringSource {
         "TodayCornerComplication",
     ]
     private static let dispatcher = "TodayComplicationView"
-    static let flagShapesTheParserCannotRead: Set<String> = []
 
     static func undeclaredFamilies() throws -> [String] {
         var offenders: [String] = []
@@ -121,7 +120,6 @@ enum ComplicationWiringSource {
         var found: [String: WiringCall] = [:]
         var collisions: [String: [Int]] = [:]
         for call in calls {
-            guard !flagShapesTheParserCannotRead.contains(call.site) else { continue }
             collisions[call.key, default: []].append(call.line)
             found[call.key] = call
             guard let want = expected[call.key] else {
