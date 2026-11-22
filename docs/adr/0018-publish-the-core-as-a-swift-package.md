@@ -1,7 +1,8 @@
 # Publish the core as a Swift package
 
 Date: 2026-11-04
-Status: accepted
+Status: accepted; the API notes in point 2 and the platforms in point 4 are
+superseded by [ADR-0019](0019-a-general-purpose-core-api.md)
 
 ## Context
 

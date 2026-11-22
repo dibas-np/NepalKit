@@ -21,11 +21,13 @@ standalone Apple Watch app with four complication styles. See
 ### NepalKitCore 1.0
 
 The core is published at 0.x
-([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)), with app-only
-types like `MenuBarFormat` and module-level functions like `bsToAD` still public.
+([ADR-0018](adr/0018-publish-the-core-as-a-swift-package.md)). Its API was
+reviewed for outside use in 0.2
+([ADR-0019](adr/0019-a-general-purpose-core-api.md)): app-only code moved out,
+the types and functions were renamed, and the floors were lowered.
 
-*Blocked on:* an API review deciding what stays public and how the conversion
-functions are named.
+*Blocked on:* use by at least one app other than NepalKit, so the 0.2 names are
+tested by someone who did not write them before 1.0 freezes them.
 
 ### App Store distribution for the Watch app — deferred
 

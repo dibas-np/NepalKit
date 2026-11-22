@@ -159,8 +159,8 @@ date.
 transliterated month names because Devanagari digits are not reliably
 pronounced; the spoken form is a separate code path from the visual one rather
 than a formatting flag; neither conversion path produces a plausible wrong
-answer: `bsToAD` and `adToBS` return `nil` for invalid or out-of-range input,
-and the Watch's `resolvedDay(...)` reports a range boundary as a result and
+answer: the `GregorianDate` and `BikramSambatDate` conversion initializers
+return `nil` for invalid or out-of-range input, and `ResolvedDay` reports a range boundary as a result and
 throws `DayResolutionError` for invalid input or a calculation failure;
 accessibility labels are covered by tests.
 

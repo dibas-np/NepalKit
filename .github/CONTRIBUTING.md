@@ -87,7 +87,7 @@ One command runs every automated gate, and names each one as it goes:
 ./scripts/check-all.sh
 ```
 
-It runs these seventeen, in this order:
+It runs these eighteen, in this order:
 
 ```sh
 # 1. compile and link the app and Xcode test bundle
@@ -96,8 +96,8 @@ xcodebuild -project NepalKit.xcodeproj -scheme NepalKit -configuration Debug \
 python3 scripts/test_swiftlint.py          # 2. the bootstrap's own suite, then all maintained Swift files
 ./scripts/swiftlint.sh lint --strict
 
-swift test --package-path NepalKitCore      # 3. the calendar: 148 tests
-./scripts/run-app-tests.sh                  # 4. the app: 368 tests
+swift test --package-path NepalKitCore      # 3. the calendar: 129 tests
+./scripts/run-app-tests.sh                  # 4. the app: 384 tests
 python3 scripts/test_dataset_parsers.py     # 5. the month table against the parsers
 python3 scripts/test_update_cask.py         # 6. downloaded app identity and version
 python3 scripts/test_update_changelog.py    # 7. the changelog generator
@@ -111,10 +111,11 @@ python3 scripts/measure-coverage.py    # 14. coverage has not fallen below its f
 python3 scripts/test_verify_deployment_floor.py
 python3 scripts/verify-deployment-floor.py  # 15. the floor is one number everywhere
 python3 scripts/test_release_core.py        # 16. the NepalKitCore release script
+swift test --package-path NepalKitWatchSupport  # 17. the Watch display meaning: 8 tests
 xcodebuild test -project NepalKit.xcodeproj -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
-    CODE_SIGNING_ALLOWED=NO                   # 17. the Watch app and its complications: 60 tests
+    CODE_SIGNING_ALLOWED=NO                   # 18. the Watch app and its complications: 60 tests
 ```
 
 Gate 8 is the only one that touches the machine rather than the repository: it
@@ -141,7 +142,7 @@ and unused-declaration checks, run `./scripts/swiftlint.sh analyze
 The counts are what the runners printed when this was written. A pull request
 that changes them re-pins both numbers in the same commit.
 
-Two of those seventeen are the direct consequence of gates that once reported green
+Two of those eighteen are the direct consequence of gates that once reported green
 while something was wrong, so they are worth explaining rather than just
 listing.
 
@@ -186,7 +187,7 @@ runner does not have, and the coverage floor (gate 14) needs the macOS
 toolchain and about six minutes from a cold build (seconds once cached). CI runs every other gate in the workflow that
 owns it; gate 1 runs as `build-for-testing` in `macos26-floor.yml`, so the
 hosted test bundle compiles on every pull request. This command is the local half and not a replacement:
-it is the only thing that runs all seventeen in one pass.
+it is the only thing that runs all eighteen in one pass.
 
 The two Swift suites stay separate on purpose: one is the calendar, the other is
 the application.
@@ -256,7 +257,7 @@ Add or update tests for:
 - Layout and visual design. **A warning:** this repository has already had a gate
   report green while something was wrong, twice, and both times because a check
   was measuring the wrong thing. If you cannot test it, do not claim it is
-  tested. Gate 17 above and the fresh-Mac procedure exist because app-layer and
+  tested. Gate 18 above and the fresh-Mac procedure exist because app-layer and
   on-device behaviour has limits, and those limits are documented rather than
   papered over.
 
@@ -274,7 +275,7 @@ commands:
   test that cannot check something must not report that it did. If you see a
   skip, fix the preconditions rather than reading it as a pass.
 - **Run the suite locally before opening the pull request.** CI runs every one
-  of these seventeen gates except the two local-only ones (8 and 14), and a red local run is a faster red than a red one after
+  of these eighteen gates except the two local-only ones (8 and 14), and a red local run is a faster red than a red one after
   review.
 
 ### Why a test-only commit is still welcome

@@ -27,11 +27,14 @@ forms in beside the formatters they mirror, so a reader deciding where
 
 Use the glossary in `CONTEXT.md` — Bikram Sambat, Gregorian, Nepal Time, Nepali
 Patro, digit script, month-name setting, supported range — in types, functions,
-tests, and comments. Never use a term listed under a `_Avoid_` line. "BS" and
-"AD" are acceptable in identifiers where `BikramSambat` would be unwieldy
-(`BSDay`, `GADay`, `bsToAD`); the Avoid list targets prose.
+tests, and comments. Never use a term listed under a `_Avoid_` line. NepalKitCore's
+public names spell the calendars out (`BikramSambatDate`, `GregorianDate`),
+because other apps read them; inside the app, "BS" and "AD" are acceptable in
+identifiers where `BikramSambat` would be unwieldy (`bsDay`, `todayAD`). The
+Avoid list targets prose.
 
-Use `.gmt` for UTC and `try #require(...)` for optional test fixtures, including
+Use `.gmt` for UTC outside NepalKitCore (its floor predates `.gmt`, so it uses
+`TimeZone(secondsFromGMT: 0)`), and `try #require(...)` for optional test fixtures, including
 time zones, dates, and preferences domains. Unrecoverable production invariants
 use a narrow `guard` with `preconditionFailure` and a concrete diagnostic;
 recoverable absence is bound or returned as an optional.
@@ -42,9 +45,10 @@ outside the program, bounds-check it (`indices.contains(value)`), as
 `devanagariString` does.
 
 When a check belongs at a boundary, put it there once. `utcDate(from:)` is the
-single place a `GADay` becomes a `Date` and therefore the single place civil-day
-validity is enforced; `adToBS` and `weekday(of:)` rely on it rather than each
-repeating a round-trip comparison.
+single place a `GregorianDate` becomes a `Date` and therefore the single place
+civil-day validity is enforced; `BikramSambatDate(_:in:)` and
+`GregorianDate.weekday` rely on it rather than each repeating a round-trip
+comparison.
 
 ## Pure functions over throwing ones
 
@@ -52,9 +56,9 @@ The core returns optionals and never throws. There is no error type and no
 `try` in `NepalKitCore`. Invalid or out-of-range input yields `nil`:
 
 ```swift
-public func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay?
-public func adToBS(_ ad: GADay, in dataset: CalendarDataset) -> BSDay?
-public func weekdayName(for weekday: Int, style: MonthNameStyle) -> String?
+public init?(_ bikramSambat: BikramSambatDate, in dataset: CalendarDataset = .bundled) // GregorianDate
+public init?(_ gregorian: GregorianDate, in dataset: CalendarDataset = .bundled)       // BikramSambatDate
+public static func weekdayName(_ weekday: Int, style: MonthNameStyle) -> String?
 ```
 
 Views then decide how to present a `nil`, which is where user-facing wording
@@ -66,21 +70,21 @@ to distinguish invalid civil input, broken dataset assumptions, and failed
 calendar arithmetic from an *expected* range boundary — a distinction
 optionals cannot carry, because `nil` would collapse "outside the range" into
 "the table is broken". `ResolvedDay.swift` therefore introduces the core's one
-error type (`DayResolutionError`) and its one throwing surface
-(`resolvedDay(for:in:)`, `resolvedDay(now:in:)`). The conversion functions
-above stay optional; do not widen `throws` beyond the resolved-day resolvers.
-Where a caller wants no error handling at all, the non-throwing
-`watchDayDisplay(...)` helpers map failures to the calculation-error display.
+error type (`DayResolutionError`) and its one throwing surface, the
+`ResolvedDay` initializers. The conversion initializers above stay failable;
+do not widen `throws` beyond `ResolvedDay`. Where a caller wants no error
+handling at all, the non-throwing `watchDayDisplay(...)` helpers in
+`NepalKitWatchSupport` map failures to the calculation-error display.
 
 ## Validate once, at the boundary
 
 Guard invalid components in a single shared helper rather than at each entry
 point. `validatedMonths(for:in:)` in `Conversion.swift` is the one place a
 Bikram Sambat date is checked against the dataset, and `utcDate(from:)` is the
-one place a `GADay` becomes a `Date`.
+one place a `GregorianDate` becomes a `Date`.
 
 `Calendar` silently normalizes impossible input — February 30 becomes March 1 —
-so `adToBS` re-reads the components and rejects anything that doesn't round-trip
+so `utcDate(from:)` re-reads the components and rejects anything that doesn't round-trip
 exactly. Don't trust `Calendar` to validate for you.
 
 ## Injection over globals
@@ -90,7 +94,7 @@ default, not a global lookup:
 
 ```swift
 init(now: Date = .now, localTimeZone: TimeZone? = nil, refreshInterval: TimeInterval = 1, ...)
-func bsToAD(_ bs: BSDay, in dataset: CalendarDataset) -> GADay?
+init?(_ bikramSambat: BikramSambatDate, in dataset: CalendarDataset = .bundled)
 SettingsStore(defaults: UserDefaults = .standard)
 ```
 
@@ -181,17 +185,18 @@ them through the setting.
 **The Watch exception.** The Watch app and its complication extension both
 render the same firm state copy, and the extension cannot import the app's
 `Strings`, so the Watch's shared copy lives beside the display components in
-core (`WatchDayCopy` in `NepalKitCore`). The macOS app's copy still belongs in
-`Strings` alone; don't move it.
+the local `NepalKitWatchSupport` package (`WatchDayCopy`), which both link. The
+macOS app's copy still belongs in `Strings` alone; don't move it.
 
 The same reasoning governs the Watch's shared *accessibility labels*, so
-`ComplicationAccessibility` lives in core for it: the two watchOS products
-cannot share a framework target and neither can see the other's files, which
-leaves `NepalKitCore` — already linked by both — as the only place a helper they
-must agree on byte for byte can live. A label a surface builds by hand is a
-duplicate that drifts silently, because the other product's suite goes on passing
-against its own copy. Do not hand-roll one in a watchOS target; if a label helper
-has no home yet, that is the argument for putting it in core too.
+`ComplicationAccessibility` lives in `NepalKitWatchSupport` too: the two watchOS
+products cannot share a framework target and neither can see the other's files,
+which leaves a package linked by both as the only place a helper they must agree
+on byte for byte can live. A label a surface builds by hand is a duplicate that
+drifts silently, because the other product's suite goes on passing against its
+own copy. Do not hand-roll one in a watchOS target; if a label helper has no home
+yet, it belongs in `NepalKitWatchSupport`. Not in `NepalKitCore`: that package is
+published for other apps (ADR-0018), and app-only code there becomes public API.
 
 App Intents metadata is the exception. Intent titles, descriptions, parameter
 summaries, phrases, and entity representations must be build-time literals at
@@ -343,8 +348,8 @@ read the skip as coverage.
 
 ## Commands
 
-- Everything: `scripts/check-all.sh`, the seventeen local gates. That count is the
-  script's own `total`, and a green run prints `==> all 17 gates passed`, so the
+- Everything: `scripts/check-all.sh`, the eighteen local gates. That count is the
+  script's own `total`, and a green run prints `==> all 18 gates passed`, so the
   number here and the number the script runs cannot drift apart silently.
 - Core tests: `swift test` in `NepalKitCore/`.
 - App-layer tests: `scripts/run-app-tests.sh`, the documented runner (see

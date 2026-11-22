@@ -113,7 +113,7 @@ Read [SOURCES.md](SOURCES.md) for provenance, source disagreements, and data lic
 
 ## Swift package
 
-The calendar engine is published as [NepalKitCore](https://github.com/dibas-np/NepalKitCore), an MIT-licensed Swift package for macOS, iOS and watchOS 26 or later. It is at version 0.x, so its API may change between minor releases ([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md)).
+The calendar engine is published as [NepalKitCore](https://github.com/dibas-np/NepalKitCore), an MIT-licensed Swift package for macOS 12, iOS 15, watchOS 9, tvOS 15 and visionOS 1 or later. It is at version 0.x, so its API may change between minor releases ([ADR-0018](docs/adr/0018-publish-the-core-as-a-swift-package.md), [ADR-0019](docs/adr/0019-a-general-purpose-core-api.md)).
 
 ```swift
 .package(url: "https://github.com/dibas-np/NepalKitCore", .upToNextMinor(from: "0.1.0"))
@@ -139,7 +139,7 @@ To build the app and run the local checks from the repository root:
 ./scripts/check-all.sh
 ```
 
-The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs seventeen gates, which [CONTRIBUTING.md](.github/CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run. No workflow invokes the script — CI runs the individual gates in the workflow that owns each one, and two gates are local-only for reasons stated in [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+The script builds the app, runs SwiftLint, executes the core, app-layer, and Watch tests, checks the supporting scripts, and verifies the deployment target. It runs eighteen gates, which [CONTRIBUTING.md](.github/CONTRIBUTING.md) lists in order, and documents the separate calendar provenance and release checks that the script does not run. No workflow invokes the script — CI runs the individual gates in the workflow that owns each one, and two gates are local-only for reasons stated in [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 To run the three Swift test suites separately:
 
