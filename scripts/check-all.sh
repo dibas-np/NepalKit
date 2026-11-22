@@ -13,7 +13,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-total=16
+total="$(grep -c '^gate ' "${BASH_SOURCE[0]}")"
 ran=0
 summary=""
 current=""
@@ -55,9 +55,12 @@ gate "app and Xcode test targets build" bash -c '
         echo "the build reported success but produced no Info.plist at $plist" >&2
         exit 1
     fi
+    echo "NEPAKIT_BUILT_PLIST=$plist"
 ' _ "$repo_root" "$derived"
-NEPAKIT_BUILT_PLIST="$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
-export NEPAKIT_BUILT_PLIST
+if [[ -f "$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist" ]]; then
+    NEPAKIT_BUILT_PLIST="$derived/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
+    export NEPAKIT_BUILT_PLIST
+fi
 
 gate "SwiftLint" bash -c '
     set -euo pipefail

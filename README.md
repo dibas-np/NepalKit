@@ -5,7 +5,6 @@
 
 <p align="center">
   <a href="https://github.com/dibas-np/NepalKit/releases/latest"><img src="https://img.shields.io/github/v/release/dibas-np/NepalKit?label=version&style=flat-square" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/macOS-26.6%2B-black?style=flat-square&logo=apple" alt="macOS 26.6 or later">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-blue.svg?style=flat-square" alt="GPL version 3 or later"></a>
 </p>
 
@@ -62,14 +61,7 @@ The calendar engine is available as [NepalKitCore](https://github.com/dibas-np/N
 
 ## Development
 
-Requires Xcode 27.
-
-```sh
-git clone https://github.com/dibas-np/NepalKit.git
-open NepalKit/NepalKit.xcodeproj
-```
-
-Run `./scripts/check-all.sh` to build and run every test suite. See [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 ## License
 

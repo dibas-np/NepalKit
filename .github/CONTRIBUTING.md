@@ -12,7 +12,7 @@ Before opening a pull request, run:
 ./scripts/check-all.sh
 ```
 
-It builds the app, runs SwiftLint and every test suite. The Watch suite needs the *Apple Watch SE 3 (40mm)* simulator on watchOS 27.
+It builds the app and runs SwiftLint and every test suite.
 
 ## Calendar data
 
@@ -28,4 +28,4 @@ Changes to month lengths, the supported range or conversion need evidence, not r
 
 ## Pull requests
 
-Keep each pull request to one change and sign off your commits (`git commit -s`, [DCO](https://developercertificate.org/)). Code under `NepalKitCore/` is MIT; everything else is GPL-3.0-or-later.
+Keep each pull request to one change and sign off your commits (`git commit -s`, [DCO](https://developercertificate.org/)). Contributions are licensed like the files they change (see the [README](../README.md#license)).

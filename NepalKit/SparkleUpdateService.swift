@@ -4,7 +4,7 @@
 // The decisions it relies on live in `UpdatePolicy.swift`, which is tested.
 import Sparkle
 
-/// The production `UpdateServicing`, backed by Sparkle 2.10.0.
+/// The production `UpdateServicing`, backed by Sparkle.
 /// Uses the standard controller so Sparkle supplies its own update UI. Its user
 /// driver already activates the app before showing a window, so no extra fronting
 /// is needed for an `LSUIElement` app.

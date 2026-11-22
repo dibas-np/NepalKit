@@ -2,15 +2,16 @@
 build/
 .swiftpm/
 DerivedData/
-xcuserdata/
-*.xcuserdatad/
 .DS_Store
 __pycache__/
+*.xcuserdatad/
+*.xcuserdata/
+xcuserdata/
 .env
 
-# Local notes and agent files
+# Agent workflow (local-only, never committed)
 AGENTS.md
 docs/agents/
+.zcode/
 plans/
 .scratch/
-.zcode/

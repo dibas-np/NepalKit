@@ -99,6 +99,15 @@ jobs:
       - name: Package release script suite
         run: python3 scripts/test_release_core.py
 
+      - name: Release tooling suites
+        run: |
+          set -euo pipefail
+          python3 scripts/test_verify_appcast.py
+          python3 scripts/test_swiftlint.py
+          python3 scripts/test_verify_release_product.py
+          python3 scripts/test_measure_coverage.py
+          python3 scripts/test_check_signing_key.py
+
       - name: App-layer suite
         run: ./scripts/run-app-tests.sh
 
