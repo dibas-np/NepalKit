@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Callable
 
 from sparkle_key import load_public_key, verify_signature
+from sparkle_tools import tool_problem
 
 ROOT = Path(__file__).resolve().parent.parent
 SIGN_UPDATE = (Path(os.environ["SPARKLE_BIN"]) / "sign_update" if os.environ.get("SPARKLE_BIN")
@@ -90,6 +91,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not args.sign_update.is_file():
         print(f"  FAIL  no sign_update at {args.sign_update}; run scripts/check-all.sh once to build it")
+        return 1
+    problem = tool_problem(args.sign_update)
+    if problem:
+        print(f"  FAIL  refusing to give the signing key to {args.sign_update}: {problem}")
         return 1
     ok, message = check(args.info_plist, sparkle_signer(args.sign_update, args.key_file))
     source = f"key file {args.key_file}" if args.key_file else "login keychain"

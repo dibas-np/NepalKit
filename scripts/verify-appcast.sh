@@ -31,26 +31,7 @@ if [[ ! -x "$GENERATE_APPCAST" ]]; then
     exit 1
 fi
 
-# The binaries have no version flag, so check the tag of the source checkout
-# beside them against the pinned version.
-PINNED_SPARKLE="$(python3 "$ROOT/scripts/xcode_project.py" sparkle-pin)"
-SPARKLE_CHECKOUT="$(dirname "$GENERATE_APPCAST")/../../../../checkouts/Sparkle"
-if [[ ! -d "$SPARKLE_CHECKOUT" ]]; then
-    echo "no Sparkle source checkout at $SPARKLE_CHECKOUT; cannot confirm the tools match the $PINNED_SPARKLE pin." >&2
-    exit 1
-fi
-FOUND_SPARKLE="$(git -C "$SPARKLE_CHECKOUT" describe --tags --exact-match 2>/dev/null || true)"
-if [[ "$FOUND_SPARKLE" != "$PINNED_SPARKLE" ]]; then
-    echo "Sparkle tools belong to '${FOUND_SPARKLE:-unknown}', but the pin is $PINNED_SPARKLE; refusing to use them." >&2
-    exit 1
-fi
-TOOL_DIR="${GENERATE_APPCAST:h:A}"
-for tool in "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"; do
-    if [[ -e "$tool" && "${tool:A:h}" != "$TOOL_DIR" ]]; then
-        echo "$tool resolves outside $TOOL_DIR; refusing to run a Sparkle tool the pin check did not cover." >&2
-        exit 1
-    fi
-done
+python3 "$ROOT/scripts/sparkle_tools.py" "$GENERATE_APPCAST" "${GENERATE_APPCAST:h}/sign_update"
 echo "using $GENERATE_APPCAST"
 
 if [[ -z "$URL_PREFIX" ]]; then

@@ -6,10 +6,13 @@ from __future__ import annotations
 
 import base64
 import importlib.util
+import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+
+import sparkle_tools
 
 _SCRIPT = Path(__file__).resolve().parent / "check-signing-key.py"
 _spec = importlib.util.spec_from_file_location("check_signing_key", _SCRIPT)
@@ -126,6 +129,71 @@ class SparkleBin(unittest.TestCase):
         module = self._load({})
         self.assertTrue(str(module.SIGN_UPDATE).endswith("DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"))
         self.assertTrue(module.SIGN_UPDATE.is_relative_to(module.ROOT))
+
+
+class PinnedTools(unittest.TestCase):
+    ORIGIN = "https://github.com/sparkle-project/Sparkle"
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        root = Path(self._tmp.name)
+        self.bin = root / "SourcePackages/artifacts/sparkle/Sparkle/bin"
+        self.bin.mkdir(parents=True)
+        self.tool = self.bin / "sign_update"
+        self.tool.write_text("#!/bin/sh\n")
+        self.checkout = root / "SourcePackages/checkouts/Sparkle"
+        self.checkout.mkdir(parents=True)
+        git = ["git", "-C", str(self.checkout), "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+               "-c", "tag.gpgsign=false"]
+        subprocess.run([*git, "init", "-q"], check=True)
+        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        subprocess.run([*git, "tag", "2.10.0"], check=True)
+        subprocess.run([*git, "remote", "add", "origin", self.ORIGIN + ".git"], check=True)
+        self.revision = subprocess.run([*git, "rev-parse", "HEAD"], check=True, capture_output=True,
+                                       text=True).stdout.strip()
+        self.project = root / "project.pbxproj"
+        self.project.write_text('/* XCRemoteSwiftPackageReference "Sparkle" */ = {\n\trequirement = {\n'
+                                "\t\tkind = exactVersion;\n\t\tversion = 2.10.0;\n\t};\n};\n")
+        self.resolved = root / "Package.resolved"
+        self.pin(self.revision)
+
+    def pin(self, revision, location=ORIGIN):
+        self.resolved.write_text(json.dumps({"pins": [{"identity": "sparkle", "location": location,
+                                                       "state": {"revision": revision, "version": "2.10.0"}}]}))
+
+    def problem(self, tool=None):
+        return sparkle_tools.tool_problem(tool or self.tool, self.project, self.resolved)
+
+    def test_the_pinned_release_passes(self):
+        self.assertIsNone(self.problem())
+
+    def test_a_checkout_at_another_revision_is_refused(self):
+        self.pin("0" * 40)
+        self.assertIn("revision", self.problem())
+
+    def test_a_checkout_from_another_origin_is_refused(self):
+        self.pin(self.revision, "https://github.com/someone/Sparkle")
+        self.assertIn("does not come from", self.problem())
+
+    def test_a_checkout_without_the_pinned_tag_is_refused(self):
+        subprocess.run(["git", "-C", str(self.checkout), "tag", "-d", "2.10.0"], check=True, capture_output=True)
+        self.assertIn("not tagged 2.10.0", self.problem())
+
+    def test_a_tool_linked_from_outside_its_directory_is_refused(self):
+        outside = Path(self._tmp.name) / "elsewhere"
+        outside.write_text("#!/bin/sh\n")
+        self.tool.unlink()
+        self.tool.symlink_to(outside)
+        self.assertIn("resolves outside", self.problem())
+
+    def test_main_refuses_an_unpinned_sign_update_before_running_it(self):
+        stray = Path(self._tmp.name) / "stray" / "sign_update"
+        stray.parent.mkdir()
+        stray.write_text("#!/bin/sh\ntouch ran\n")
+        stray.chmod(0o755)
+        self.assertEqual(csk.main(["--sign-update", str(stray)]), 1)
+        self.assertFalse((stray.parent / "ran").exists())
 
 
 if __name__ == "__main__":
