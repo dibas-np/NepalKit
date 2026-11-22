@@ -5,19 +5,6 @@ import Testing
 @testable import NepalKit
 
 struct SiriDiscoverabilityTests {
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            for _ in 0 ..< 10 {
-                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                    return dir
-                }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    }
-
     @Test("The section leads with the split sentence, verbatim")
     func summaryStatesWhatActuallyWorks() {
         #expect(Strings.siriShortcutsSection == "Siri & Shortcuts")
@@ -56,7 +43,7 @@ struct SiriDiscoverabilityTests {
     @Test("The listed phrases are the ones the provider registers")
     func listedPhrasesMatchTheRegisteredShortcuts() throws {
         let source = try String(
-            contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/AppIntents/NepalKitShortcuts.swift"),
+            contentsOf: Repository.root.appendingPathComponent("NepalKit/AppIntents/NepalKitShortcuts.swift"),
             encoding: .utf8
         )
 
@@ -93,7 +80,7 @@ struct SiriDiscoverabilityTests {
 
     @Test("Every listed phrase has its catalog template, or it never registers")
     func listedPhrasesHaveCatalogEntries() throws {
-        let data = try Data(contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/AppShortcuts.xcstrings"))
+        let data = try Data(contentsOf: Repository.root.appendingPathComponent("NepalKit/AppShortcuts.xcstrings"))
         let catalog = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
         let strings = try #require(catalog["strings"] as? [String: Any])
 
@@ -111,7 +98,7 @@ struct SiriDiscoverabilityTests {
     @Test("The popover carries no Siri hint")
     func popoverStaysUntouched() throws {
         let source = try String(
-            contentsOf: Self.repositoryRoot.appendingPathComponent("NepalKit/PopoverView.swift"),
+            contentsOf: Repository.root.appendingPathComponent("NepalKit/PopoverView.swift"),
             encoding: .utf8
         )
 

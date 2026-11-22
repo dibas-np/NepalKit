@@ -31,16 +31,24 @@ enum UpdatePolicy {
     /// imported `NS_ENUM`, so casting would treat "on the latest version" as a failure.
     static func noUpdateKind(rawReason: Int?) -> NoUpdateFoundKind {
         switch rawReason {
-        case 1: .onLatestVersion
-        case 2: .onNewerThanLatestVersion
+        case SparkleCode.noUpdateOnLatestVersion: .onLatestVersion
+        case SparkleCode.noUpdateOnNewerThanLatestVersion: .onNewerThanLatestVersion
         default: .other
         }
     }
 
     static func outcome(forAbortedCheckDomain domain: String, code: Int, description: String) -> UpdateOutcome? {
-        if domain == "SUSparkleErrorDomain" && (code == 1001 || code == 4007) {
+        if domain == "SUSparkleErrorDomain" && (code == SparkleCode.noUpdateError || code == SparkleCode.installationCanceledError) {
             return nil
         }
         return .failed(reason: description)
     }
+}
+
+/// Raw values from Sparkle's `SUErrors.h`, which this file can't import.
+private enum SparkleCode {
+    static let noUpdateOnLatestVersion = 1
+    static let noUpdateOnNewerThanLatestVersion = 2
+    static let noUpdateError = 1001
+    static let installationCanceledError = 4007
 }

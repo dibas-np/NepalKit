@@ -200,7 +200,7 @@ struct UpdateCheckModelTests {
     }
 
     @Test func thePopoverAndSettingsShareOneTriggerForTheInstallFlow() throws {
-        let appDir = Self.repositoryRoot.appendingPathComponent("NepalKit")
+        let appDir = Repository.root.appendingPathComponent("NepalKit")
         let names = try Self.appSources(under: appDir)
         #expect(
             names.contains("AboutSettingsView.swift") && names.contains("PopoverFooter.swift"),
@@ -260,19 +260,6 @@ struct UpdateCheckModelTests {
             service.remind(showing)
             #expect(model.isShowingReminder == showing)
         }
-    }
-
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            for _ in 0 ..< 10 {
-                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                    return dir
-                }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     }
 
     private static func appSources(under directory: URL) throws -> [String] {

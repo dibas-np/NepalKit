@@ -30,14 +30,6 @@ struct TodayComplicationView: View {
     }
 }
 
-/// The watchOS Text Size slider stops below the accessibility sizes, so
-/// `isAccessibilitySize` never fires.
-extension DynamicTypeSize {
-    var watchLargeTextFallback: Bool {
-        self >= .xxLarge
-    }
-}
-
 struct TodayRectangularComplication: View {
     let state: TodayComplicationState
 

@@ -227,22 +227,11 @@ struct MonthGridModelTests {
     @Test func theMonthLivesInTodayNotItsOwnTab() throws {
         #expect(PopoverDestination.allCases == [.today, .convert])
 
-        let source = try String(contentsOf: Self.repositoryRoot.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
+        let source = try String(contentsOf: Repository.root.appending(path: "NepalKit/PopoverView.swift"), encoding: .utf8)
         let stack = try #require(source.range(of: "ZStack(alignment: .topLeading) {"))
         let todayEnd = try #require(source.range(of: ".destinationLayer(isShowing: destination == .today)", range: stack.upperBound ..< source.endIndex))
         let todayBranch = source[stack.upperBound ..< todayEnd.lowerBound]
         #expect(todayBranch.contains("MonthGridView("))
         #expect(source.components(separatedBy: "MonthGridView(").count == 2, "built once, in Today")
-    }
-
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            while dir.path != "/" {
-                if FileManager.default.fileExists(atPath: dir.appending(path: "NepalKit.xcodeproj").path) { return dir }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath)
     }
 }

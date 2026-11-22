@@ -85,7 +85,7 @@ were selected under that rule, and a second, independent read of the page
 images confirmed each one's day and wording, including three printed as
 overflow in another day's row. Every holiday or national day in the gazette
 notice below also gets a name, so a red day is never unnamed, bringing the list
-to 67 entries: the Panchanga's wording where it prints the day, and the gazette's for
+to 67 entries: the Panchanga's wording (outer brackets dropped) where it prints the day, and the gazette's for
 the two it does not (जेनजी सहिद दिवस, ज्यापू दिवस), which are marked with the
 gazette as their source. The data is
 in [`Festivals2083.swift`](NepalKitCore/Sources/NepalKitCore/Festivals2083.swift).
@@ -110,7 +110,7 @@ lists "on the day" with no date are left out. For 2083 that is खण्ड ७�
   national days the Panchanga does not print (ज्यापू दिवस, जेनजी सहिद दिवस),
   recorded with the Gazette as their source. Holidays listed "on the day" with
   no date (both Eids, Mohammad Jayanti, Siruwa Pawani, Bhoto Jatra) are left
-  out. Province-declared holidays are not in this notice.
+  out; Guru Nanak Jayanti, also undated there, uses the Panchanga's date. Province-declared holidays are not in this notice.
 
 The data is in
 [`PublicHolidays2083.swift`](NepalKitCore/Sources/NepalKitCore/PublicHolidays2083.swift).

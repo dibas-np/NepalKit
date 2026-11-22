@@ -37,7 +37,7 @@ struct SymbolTests {
     }
 
     private static func appSources() throws -> [String] {
-        let appDir = repositoryRoot.appendingPathComponent("NepalKit")
+        let appDir = Repository.root.appendingPathComponent("NepalKit")
         let names = try FileManager.default.contentsOfDirectory(atPath: appDir.path)
         return try names
             .filter { $0.hasSuffix(".swift") && $0 != "Symbols.swift" }
@@ -46,7 +46,7 @@ struct SymbolTests {
 
     private static func declaredConstants() throws -> [String] {
         let text = try String(
-            contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Symbols.swift"),
+            contentsOf: Repository.root.appendingPathComponent("NepalKit/Symbols.swift"),
             encoding: .utf8
         )
         return text
@@ -63,7 +63,7 @@ struct SymbolTests {
 
     private static let constants: Set<String> = {
         guard let text = try? String(
-            contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Symbols.swift"),
+            contentsOf: Repository.root.appendingPathComponent("NepalKit/Symbols.swift"),
             encoding: .utf8
         ),
               let start = text.range(of: "static let all: [String] = ["),
@@ -78,17 +78,4 @@ struct SymbolTests {
                 }
         )
     }()
-
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            for _ in 0 ..< 10 {
-                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                    return dir
-                }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    }
 }

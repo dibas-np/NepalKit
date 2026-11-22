@@ -159,12 +159,6 @@ extension WatchDayComponents {
     }
 }
 
-extension DynamicTypeSize {
-    var watchLargeTextFallback: Bool {
-        self >= .xxLarge
-    }
-}
-
 struct TodayDateLinesView: View {
     let components: WatchDayComponents
 

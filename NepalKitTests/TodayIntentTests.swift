@@ -8,16 +8,6 @@ import NepalKitCore
 struct TodayIntentTests {
     private var dataset: CalendarDataset { AppData.dataset }
 
-    private static func checkoutFile(_ relativePath: String) -> URL {
-        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        while directory.path != "/" {
-            let candidate = directory.appendingPathComponent(relativePath)
-            if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
-            directory.deleteLastPathComponent()
-        }
-        return directory.appendingPathComponent(relativePath)
-    }
-
     @Test("Today flips at Nepal Time midnight, not UTC midnight")
     func todayIsAnchoredToNepalTime() throws {
         let before = try TestDates.utc(2025, 4, 13, 18, 14)
@@ -180,7 +170,7 @@ struct TodayIntentTests {
 
     @Test("Shortcuts catalog is valid JSON carrying the phrase templates")
     func shortcutsCatalogCarriesTodayPhrases() throws {
-        let url = Self.checkoutFile("NepalKit/AppShortcuts.xcstrings")
+        let url = Repository.file("NepalKit/AppShortcuts.xcstrings")
         let data = try Data(contentsOf: url)
         let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let strings = catalog?["strings"] as? [String: Any]

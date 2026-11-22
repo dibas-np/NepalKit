@@ -92,8 +92,8 @@ struct MenuBarFormatModelTests {
         #expect(model.title(settings: Self.latin, updateAvailable: true) == "! Sun 11 Ashoj 2083 5:45")
     }
 
-    @Test func beyondTheRangeTheMarkerReplacesTheTimeToo() {
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_848_096_000), refreshes: false, schedulesMidnightFire: false)
+    @Test func beyondTheRangeTheMarkerReplacesTheTimeToo() throws {
+        let model = MenuBarModel(now: try TestDates.utc(2028, 7, 25, 0, 0), refreshes: false, schedulesMidnightFire: false)
         model.save(Self.everything)
 
         #expect(model.title(settings: Self.latin) == Strings.menuBarBeyondRange)

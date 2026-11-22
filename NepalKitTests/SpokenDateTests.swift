@@ -39,8 +39,8 @@ struct SpokenSurfaceTests {
         #expect(!spoken.contains("१"))
     }
 
-    @Test func menuBarAnnouncementPastTheRangeExplainsItself() {
-        let model = MenuBarModel(now: Date(timeIntervalSince1970: 1_848_096_000), schedulesMidnightFire: false)
+    @Test func menuBarAnnouncementPastTheRangeExplainsItself() throws {
+        let model = MenuBarModel(now: try TestDates.utc(2028, 7, 25, 0, 0), schedulesMidnightFire: false)
 
         let spoken = model.spokenTitle(settings: DisplaySettings(digits: .latin, monthNames: .transliterated))
 
@@ -91,12 +91,7 @@ struct SpokenOptionLabelTests {
     }
     @Test func noSpokenStringCarriesTypographicPunctuationOrSymbols() throws {
         let forbidden: Set<Character> = [
-            "\u{2013}", "\u{2014}",
-            "\u{00B7}",
-            "\u{2192}", "\u{2190}",
-            "\u{2699}", "\u{24D8}",
-            "\u{00B0}", "\u{2032}", "\u{2033}",
-            "\u{2026}",
+            "–", "—", "·", "→", "←", "⚙", "ⓘ", "°", "′", "″", "…",
         ]
         var offenders: [String] = []
 
@@ -199,7 +194,7 @@ struct SpokenOptionLabelTests {
 
     private static func sourceLines() throws -> [String] {
         try String(
-            contentsOf: repositoryRoot.appendingPathComponent("NepalKit/Strings.swift"),
+            contentsOf: Repository.root.appendingPathComponent("NepalKit/Strings.swift"),
             encoding: .utf8
         ).split(separator: "\n").map(String.init)
     }
@@ -224,19 +219,6 @@ struct SpokenOptionLabelTests {
             }
         }
         return nil
-    }
-
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            for _ in 0 ..< 10 {
-                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                    return dir
-                }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     }
 
     @Test func spokenSupportedRangeAvoidsTheEnDash() {

@@ -61,25 +61,6 @@ struct WatchPresentationWiringTests {
 
         #expect(offenders.isEmpty, "error-state labelling drifted:\n\(offenders.joined(separator: "\n"))")
     }
-
-    @Test func bothCopiesOfTheLargeTextThresholdAgree() throws {
-        let complication = ComplicationWiringSource.complicationSource
-        let today = ComplicationWiringSource.todaySource
-        var offenders: [String] = []
-        var bodies: [String: String] = [:]
-        for file in [complication, today] {
-            let found = try ComplicationWiringSource.largeTextThresholdBodies(in: file)
-            if found.count != 1 {
-                offenders.append("\(file) declares watchLargeTextFallback \(found.count) times; this sweep reads one body per module")
-            }
-            bodies[file] = found.first
-        }
-        if bodies[complication] != bodies[today] {
-            offenders.append("the two watchLargeTextFallback bodies disagree, so families switch composition at different text sizes:\n  \(complication): \(bodies[complication] ?? "absent")\n  \(today): \(bodies[today] ?? "absent")")
-        }
-
-        #expect(offenders.isEmpty, "the duplicated large-text threshold has drifted:\n\(offenders.joined(separator: "\n"))")
-    }
 }
 
 struct WiringCall {
@@ -271,32 +252,8 @@ enum ComplicationWiringSource {
         lines.map(String.init).joined(separator: ", ")
     }
 
-    static func largeTextThresholdBodies(in path: String) throws -> [String] {
-        let lines = try sourceLines(path)
-        var bodies: [String] = []
-        for (index, line) in lines.enumerated()
-        where line.trimmingCharacters(in: .whitespaces) == "var watchLargeTextFallback: Bool {" {
-            guard lines.indices.contains(index + 1) else { continue }
-            bodies.append(lines[index + 1].trimmingCharacters(in: .whitespaces))
-        }
-        return bodies
-    }
-
     private static func sourceLines(_ path: String) throws -> [String] {
-        try String(contentsOf: repositoryRoot.appending(path: path), encoding: .utf8)
+        try String(contentsOf: Repository.file(path), encoding: .utf8)
             .components(separatedBy: "\n")
-    }
-
-    private static var repositoryRoot: URL {
-        for base in [URL(fileURLWithPath: #filePath), URL(fileURLWithPath: #filePath).standardizedFileURL] {
-            var dir = base.deletingLastPathComponent()
-            for _ in 0 ..< 10 {
-                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                    return dir
-                }
-                dir = dir.deletingLastPathComponent()
-            }
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     }
 }

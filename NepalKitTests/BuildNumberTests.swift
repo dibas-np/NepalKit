@@ -6,17 +6,7 @@ import Testing
 
 @MainActor
 struct BuildNumberTests {
-    private static func checkoutFile(_ relativePath: String) -> URL {
-        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        while directory.path != "/" {
-            let candidate = directory.appendingPathComponent(relativePath)
-            if FileManager.default.fileExists(atPath: candidate.path) { return candidate }
-            directory.deleteLastPathComponent()
-        }
-        return directory.appendingPathComponent(relativePath)
-    }
-
-    private static var projectFileURL: URL { checkoutFile("NepalKit.xcodeproj/project.pbxproj") }
+    private static var projectFileURL: URL { Repository.file("NepalKit.xcodeproj/project.pbxproj") }
 
     private static let configurationMarker = "configuration for PBXProject \"NepalKit\" */ = {"
 
@@ -135,7 +125,7 @@ struct BuildNumberTests {
 
     private static var releasedVersions: Set<String> {
         get throws {
-            let appcast = checkoutFile("appcast.xml")
+            let appcast = Repository.file("appcast.xml")
             guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return [] }
             let pattern = try? NSRegularExpression(
                 pattern: "<sparkle:shortVersionString>([0-9.]+)</sparkle:shortVersionString>"
@@ -152,7 +142,7 @@ struct BuildNumberTests {
 
     private static var lastReleasedBuildNumber: Int {
         get throws {
-            let appcast = checkoutFile("appcast.xml")
+            let appcast = Repository.file("appcast.xml")
             guard let text = try? String(contentsOf: appcast, encoding: .utf8) else { return 0 }
             let pattern = try? NSRegularExpression(pattern: "<sparkle:version>(\\d+)</sparkle:version>")
             let range = NSRange(text.startIndex..., in: text)

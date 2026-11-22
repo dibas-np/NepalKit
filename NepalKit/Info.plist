@@ -11,11 +11,6 @@
 -->
 <plist version="1.0">
 <dict>
-	<!--
-	  Sparkle's EdDSA public key, generated 28 September 2026. Must stay
-	  identical to the key the release artifacts are signed with; changing it
-	  invalidates every existing installation's ability to update.
-	-->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
@@ -58,6 +53,10 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 
+	<!--
+	  Must stay identical to the key release artifacts are signed with;
+	  changing it breaks updates for every existing installation.
+	-->
 	<key>SUPublicEDKey</key>
 	<string>HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA=</string>
 

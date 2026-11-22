@@ -27,6 +27,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
+from typing import NoReturn
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
@@ -67,7 +68,7 @@ FEED_SIGNING_PREFIX = b"<!-- sparkle-signatures:\n"
 FEED_SIGNING_SUFFIX = b"-->"
 
 
-def fail(message: str) -> "NoReturn":  # type: ignore[valid-type]
+def fail(message: str) -> NoReturn:
     print(f"  FAIL  {message}")
     raise SystemExit(1)
 
@@ -484,7 +485,6 @@ def main() -> int:
         raise
     except Exception as exc:  # noqa: BLE001
         fail(f"unexpected error: {exc}")
-    return 1
 
 
 if __name__ == "__main__":

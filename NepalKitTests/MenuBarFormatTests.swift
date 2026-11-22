@@ -83,8 +83,8 @@ struct MenuBarFormatTests {
         #expect(title(justBefore, Self.everything) == "Sun 11 Ashoj 2083 11:59")
     }
 
-    @Test func beyondTheSupportedRangeThereIsNoTitle() {
-        let beyond = Date(timeIntervalSince1970: 1_848_096_000)
+    @Test func beyondTheSupportedRangeThereIsNoTitle() throws {
+        let beyond = try TestDates.utc(2028, 7, 25, 0, 0)
         #expect(title(beyond, Self.everything) == nil)
         #expect(SpokenDate.menuBarDate(now: beyond, format: Self.everything, monthNames: .transliterated, in: .v2) == nil)
     }

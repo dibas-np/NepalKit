@@ -76,17 +76,6 @@ struct AppMetadataTests {
         #expect(metadata.repositoryURL == nil)
     }
 
-    private static var repositoryRoot: URL {
-        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        for _ in 0 ..< 8 {
-            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                return dir
-            }
-            dir = dir.deletingLastPathComponent()
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    }
-
     private func licenseDirectory(_ text: String) throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("nk-lic-\(UUID().uuidString)")
@@ -99,7 +88,7 @@ struct AppMetadataTests {
 
     @Test func licenceComesFromTheShippedFileNotFromAString() throws {
         let shipped = try #require(
-            AppMetadata.licenseIdentifier(in: Self.repositoryRoot),
+            AppMetadata.licenseIdentifier(in: Repository.root),
             "the repository's own LICENSE did not parse"
         )
         #expect(shipped == "GNU GENERAL PUBLIC LICENSE 3")

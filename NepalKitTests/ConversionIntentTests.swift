@@ -193,13 +193,7 @@ struct ConversionIntentTests {
     func providerAndCatalogAreWhole() throws {
         #expect(NepalKitShortcuts.appShortcuts.count == 5)
 
-        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        var catalogURL = directory.appending(path: "NepalKit/AppShortcuts.xcstrings")
-        while !FileManager.default.fileExists(atPath: catalogURL.path), directory.path != "/" {
-            directory.deleteLastPathComponent()
-            catalogURL = directory.appending(path: "NepalKit/AppShortcuts.xcstrings")
-        }
-        let data = try Data(contentsOf: catalogURL)
+        let data = try Data(contentsOf: Repository.file("NepalKit/AppShortcuts.xcstrings"))
         let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let strings = try #require(catalog?["strings"] as? [String: Any])
 

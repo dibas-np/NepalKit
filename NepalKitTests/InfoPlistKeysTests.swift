@@ -32,18 +32,6 @@ struct InfoPlistKeysTests {
         return NSDictionary(contentsOf: builtPlist) as? [String: Any]
     }
 
-    private static var repositoryRoot: URL {
-        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        for _ in 0 ..< 8 {
-            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("NepalKit.xcodeproj").path) {
-                return dir
-            }
-            dir = dir.deletingLastPathComponent()
-        }
-        Issue.record("could not locate the repository root from #filePath")
-        return URL(fileURLWithPath: "/")
-    }
-
     private static let expectedPublicKey = "HJ/gD4l4Ojf8vILqA+81fO7U327vcxXEipVA5PICZQA="
 
     nonisolated private static var hasBuiltProduct: Bool { builtInfo != nil }
@@ -119,12 +107,12 @@ struct InfoPlistKeysTests {
 
         #expect(copyright == "Copyright (C) 2026 Dibas Sigdel")
 
-        let appSources = try FileManager.default.contentsOfDirectory(atPath: Self.repositoryRoot.appendingPathComponent("NepalKit").path)
+        let appSources = try FileManager.default.contentsOfDirectory(atPath: Repository.root.appendingPathComponent("NepalKit").path)
             .filter { $0.hasSuffix(".swift") }
         #expect(!appSources.isEmpty, "no app sources found beside the project")
 
         let headers = try appSources.map { filename in
-            try String(contentsOf: Self.repositoryRoot
+            try String(contentsOf: Repository.root
                 .appendingPathComponent("NepalKit/\(filename)"), encoding: .utf8)
         }
         #expect(headers.contains { $0.contains(copyright) },
