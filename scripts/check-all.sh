@@ -42,7 +42,7 @@ derived="$repo_root/DerivedData"
 gate "app and Xcode test targets build" bash -c '
     set -euo pipefail
     xcodebuild -project "$1/NepalKit.xcodeproj" -scheme NepalKit \
-        -configuration Debug -derivedDataPath "$2" \
+        -configuration Debug -derivedDataPath "$2" -onlyUsePackageVersionsFromResolvedFile \
         -destination "platform=macOS,arch=$(uname -m)" CODE_SIGNING_ALLOWED=NO build-for-testing
     plist="$2/Build/Products/Debug/NepalKit.app/Contents/Info.plist"
     if [[ ! -f "$plist" ]]; then
@@ -82,5 +82,6 @@ gate "Watch suite (watchOS Simulator)" xcodebuild test \
     -project "$repo_root/NepalKit.xcodeproj" \
     -scheme "NepalKitWatch Watch App" \
     -configuration Debug \
+    -onlyUsePackageVersionsFromResolvedFile \
     -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm),OS=27.0' \
     CODE_SIGNING_ALLOWED=NO

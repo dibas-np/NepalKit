@@ -115,7 +115,7 @@ cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 </plist>
 EOF
 
-xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
+xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" -onlyUsePackageVersionsFromResolvedFile \
     -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive
