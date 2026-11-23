@@ -32,8 +32,8 @@ def parse_candidate(text):
 
 
 def fetch_row(name, year):
-    url, repo = vds.PINS[name]
-    body = vds.fetch(name, url, False)
+    url, repo, digest = vds.PINS[name]
+    body = vds.fetch(name, url, digest, False)
     if body is None:
         raise OSError("could not fetch %s (%s)" % (name, url))
     table = vds.parse_askbuddie(body)

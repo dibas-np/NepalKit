@@ -36,7 +36,8 @@ mkdir -p "$bundle/linux/amd64" "$bundle/macos"
 printf '#!/bin/bash\\nexit 99\\n' > "$bundle/linux/amd64/swiftlint"
 printf '#!/bin/bash\\necho %s\\n' "$NK_TEST_VERSION" > "$bundle/macos/swiftlint"
 ''',
-            "swiftlint": "#!/bin/bash\necho from-path\n",
+            # Reports the pinned version, which the old version check would have accepted.
+            "swiftlint": '#!/bin/bash\necho "$NK_TEST_VERSION"\necho from-path >&2\n',
         }
         for name, contents in stubs.items():
             stub = self.tools / name
@@ -60,7 +61,8 @@ printf '#!/bin/bash\\necho %s\\n' "$NK_TEST_VERSION" > "$bundle/macos/swiftlint"
 
     def test_a_swiftlint_on_path_is_not_used(self):
         result = self.run_lint()
-        self.assertNotIn("from-path", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("from-path", result.stdout + result.stderr)
 
     def test_a_cached_binary_that_changed_is_refused(self):
         self.assertEqual(self.run_lint().returncode, 0)
