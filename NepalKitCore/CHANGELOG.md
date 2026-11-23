@@ -5,7 +5,7 @@ and until 1.0 a minor release can change the public API. The NepalKit app has
 its own version numbers and its own
 [changelog](https://github.com/dibas-np/NepalKit/blob/develop/CHANGELOG.md).
 
-## 0.2.0 — Unreleased
+## 0.2.0 — 2026-11-22
 
 This release reworks the API for use outside NepalKit, and it breaks every
 call site. The table after the list maps each old name to its replacement.

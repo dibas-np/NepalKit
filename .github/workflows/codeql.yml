@@ -99,15 +99,8 @@ jobs:
             -scheme NepalKit \
             -configuration Debug \
             -destination 'generic/platform=macOS' \
+            ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
-
-      - name: Build the core and its tests (traced)
-        if: matrix.language == 'swift'
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd NepalKitCore
-          swift build --build-tests --force-resolved-versions
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
@@ -118,7 +111,7 @@ jobs:
 
       - name: Keep the results for the upload job
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: codeql-sarif-${{ matrix.language }}
           path: sarif-results
