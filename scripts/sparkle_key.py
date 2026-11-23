@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import base64
+import plistlib
 import subprocess
 import tempfile
 from pathlib import Path
@@ -25,18 +26,17 @@ def ok(message: str) -> None:
 
 
 def load_public_key(info_plist: Path) -> bytes:
-    text = info_plist.read_text(encoding="utf-8")  # NOSONAR
-    marker = "SUPublicEDKey</key>"
-    if marker not in text:
-        fail(f"{info_plist} has no SUPublicEDKey")
-    tail = text.split(marker, 1)[1]
-    start = tail.find("<string>")
-    end = tail.find("</string>")
-    if start == -1 or end == -1:
-        fail("SUPublicEDKey is not wrapped in a <string> element")
-    encoded = tail[start + len("<string>") : end].strip()
     try:
-        key = base64.b64decode(encoded, validate=True)
+        with open(info_plist, "rb") as fh:  # NOSONAR
+            encoded = plistlib.load(fh).get("SUPublicEDKey")
+    except (OSError, plistlib.InvalidFileException) as exc:
+        fail(f"cannot read {info_plist} as a property list: {exc}")
+    if encoded is None:
+        fail(f"{info_plist} has no SUPublicEDKey")
+    if not isinstance(encoded, str):
+        fail(f"SUPublicEDKey is a {type(encoded).__name__}, not a string")
+    try:
+        key = base64.b64decode(encoded.strip(), validate=True)
     except Exception as exc:  # noqa: BLE001
         fail(f"SUPublicEDKey is not valid base64: {exc}")
     if len(key) != 32:

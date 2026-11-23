@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import base64
+import contextlib
+import io
 import importlib.util
 import json
 import subprocess
@@ -104,6 +106,25 @@ class Check(unittest.TestCase):
 
     def test_a_missing_sign_update_fails_cleanly(self):
         self.assertEqual(csk.main(["--sign-update", str(self.dir / "absent")]), 1)
+
+
+class PublicKey(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.plist = Path(self._tmp.name) / "Info.plist"
+
+    def test_a_key_in_a_comment_is_not_read(self):
+        real, decoy = bytes(range(32)), bytes(32)
+        self.plist.write_text(
+            f"<plist><dict><!-- <key>SUPublicEDKey</key><string>{base64.b64encode(decoy).decode()}</string> -->"
+            f"<key>SUPublicEDKey</key><string>{base64.b64encode(real).decode()}</string></dict></plist>")
+        self.assertEqual(csk.load_public_key(self.plist), real)
+
+    def test_a_key_that_is_not_a_string_fails(self):
+        self.plist.write_text("<plist><dict><key>SUPublicEDKey</key><integer>1</integer></dict></plist>")
+        with self.assertRaises(SystemExit), contextlib.redirect_stdout(io.StringIO()):
+            csk.load_public_key(self.plist)
 
 
 class SparkleBin(unittest.TestCase):
