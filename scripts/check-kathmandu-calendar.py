@@ -20,7 +20,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from data_sources import MONTHS
+from data_sources import MONTHS, OPENER
 from dataset_table import shipped_table
 
 BASE = "https://kathmandu.gov.np/en/calendar?view=bs&year={year}&month={month}"
@@ -40,7 +40,7 @@ def month_lengths(days):
 def fetch(year, month, timeout=25):
     request = urllib.request.Request(BASE.format(year=year, month=month),
                                      headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with OPENER.open(request, timeout=timeout) as response:
         # The payload is a JSON string inside a JS call, so unescape its quotes.
         return response.read().decode("utf-8", "replace").replace('\\"', '"')
 

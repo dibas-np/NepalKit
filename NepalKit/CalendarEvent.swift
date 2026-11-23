@@ -37,8 +37,10 @@ struct CalendarEvent: Equatable {
         in directory: URL = FileManager.default.temporaryDirectory,
         opener: (URL) -> Bool = { NSWorkspace.shared.open($0) }
     ) -> Bool {
-        let url = directory.appending(path: "NepalKit \(Self.basic(date)).ics")
+        let folder = directory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let url = folder.appending(path: "NepalKit \(Self.basic(date)).ics")
         do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
             try ics(stamp: stamp).write(to: url, atomically: true, encoding: .utf8)
         } catch {
             return false

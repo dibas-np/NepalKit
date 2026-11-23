@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import os
 import tempfile
 import unittest
+import urllib.error
+import urllib.request
 from pathlib import Path
+from unittest import mock
 
+import data_sources
 import dataset_table
 
 HERE = Path(__file__).resolve().parent
@@ -278,6 +284,45 @@ class ProvenanceGateArgvTests(unittest.TestCase):
     def test_a_baseline_without_a_path_exits_rather_than_defaulting(self):
         with self.assertRaises(SystemExit):
             vds._parse_argv(["--baseline"])
+
+
+
+class PinnedSourceFetch(unittest.TestCase):
+    BODY = b"export const daysInMonth = {'2083': [31]};"
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.dict(os.environ, {"NEPAKIT_DATA_CACHE": self._tmp.name})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.digest = hashlib.sha256(self.BODY).hexdigest()
+        self.cache = Path(self._tmp.name) / ("t-%s.ts" % self.digest[:16])
+
+    def test_a_cached_copy_with_the_pinned_digest_is_read(self):
+        self.cache.write_bytes(self.BODY)
+        self.assertEqual(data_sources.fetch("t", "https://x", self.digest, offline=True), self.BODY.decode())
+
+    def test_a_cached_copy_that_changed_is_refused(self):
+        self.cache.write_bytes(self.BODY + b" ")
+        with self.assertRaises(SystemExit) as raised:
+            data_sources.fetch("t", "https://x", self.digest, offline=True)
+        self.assertIn("not the pinned", str(raised.exception))
+
+    def test_a_download_that_changed_is_refused_and_not_cached(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = self.BODY + b" "
+        with mock.patch.object(data_sources.OPENER, "open", return_value=response), \
+                self.assertRaises(SystemExit):
+            data_sources.fetch("t", "https://x", self.digest, offline=False)
+        self.assertFalse(self.cache.exists())
+
+    def test_a_redirect_to_http_is_refused(self):
+        handler = data_sources._HTTPSOnlyRedirects()
+        request = urllib.request.Request("https://example.com/a")
+        with self.assertRaises(urllib.error.URLError):
+            handler.redirect_request(request, None, 302, "Found", {}, "http://example.com/b")
+        self.assertIsNotNone(handler.redirect_request(request, None, 302, "Found", {}, "https://example.com/b"))
 
 
 if __name__ == "__main__":
