@@ -6,6 +6,22 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>NepalKit</title>
         <item>
+            <title>1.8.1</title>
+            <pubDate>Mon, 23 Nov 2026 11:35:29 +0545</pubDate>
+            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.8.1</link>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<b>Fixes</b>
+<ul>
+<li>NepalKit checks for updates only at its own update feed. A feed address set in preferences or at launch is now ignored.</li>
+<li>Add to Calendar saves each event to a new file in a private folder, so another app cannot predict where it is written.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.8.1/NepalKit-1.8.1.zip" length="3459146" type="application/octet-stream" sparkle:edSignature="1ASyszMyXMZy0f7WfSfHomXMRIGCGbqBMBo+thyIOY7zLHnM8OW0txIAyduGUxPZmuu94uAhmsnFpKlXLBChDA=="/>
+        </item>
+        <item>
             <title>1.8.0</title>
             <pubDate>Sun, 22 Nov 2026 22:26:19 +0545</pubDate>
             <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.8.0</link>
@@ -114,30 +130,9 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
 ]]></description>
             <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.6.0/NepalKit-1.6.0.zip" length="3227095" type="application/octet-stream" sparkle:edSignature="gnhqkQFRXughbc6G12bTgJosRUFLPp1pGSzWUIhytdRnbqnZA3bWZ/mY9CP+G2G0BAV6ZcggTQBjWihpmHHQCA=="/>
         </item>
-        <item>
-            <title>1.5.0</title>
-            <pubDate>Thu, 01 Oct 2026 14:58:45 +0545</pubDate>
-            <link>https://github.com/dibas-np/NepalKit/releases/tag/v1.5.0</link>
-            <sparkle:version>7</sparkle:version>
-            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.6</sparkle:minimumSystemVersion>
-            <description><![CDATA[
-<b>Siri and Shortcuts support</b>
-<p>Ask Siri, "What is today's Nepali date with NepalKit" to hear today's Bikram Sambat date and weekday. Today's date follows Nepal Time.</p>
-<ul>
-<li>Convert dates between Gregorian and Bikram Sambat using new Shortcuts actions.</li>
-<li>Gregorian-to-Bikram Sambat conversion returns year, month, day, and weekday fields for use in your shortcuts. Conversion to Gregorian returns a standard date.</li>
-<li>Spoken answers use Latin digits and your chosen month-name language. Bikram Sambat date labels in Shortcuts follow your display settings, including Devanagari digits.</li>
-<li>Unsupported dates report the supported range. Invalid Bikram Sambat dates report the month's actual length.</li>
-<li>Find the available phrases in Settings, General, Siri &amp; Shortcuts.</li>
-</ul>
-<p>Siri supports today's date query. Use Shortcuts for date conversions, as Siri cannot yet reliably collect conversion parameters by voice.</p>
-]]></description>
-            <enclosure url="https://github.com/dibas-np/NepalKit/releases/download/v1.5.0/NepalKit-1.5.0.zip" length="3165375" type="application/octet-stream" sparkle:edSignature="nPQla+R3RvLMLg2tmEpZmydQz+X0l+d4DwYLbrX7O2S9evqJkLkn17wOSHjO/129U+T2qTLgu8UNPNaWkEj3Dw=="/>
-        </item>
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: 495wF9RwOBKSaLvEvrHzdfy0oN8koLMFXTu8EQNruGUSTAit2kamgTu9q/lTnf4OFEDvraxyCWa+uhvd9Ir+BA==
-length: 10375
+edSignature: dnCPF6YWQys3tX+1Rica1Xy5Cv71u+Cbw+QR1WOZ3616QmArr62aG5NuMhS6ObshBah+CNAka08JZUIJQBHrDw==
+length: 9696
 -->
