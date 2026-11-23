@@ -37,6 +37,8 @@ class FragmentParser(HTMLParser):
         self._context: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if attrs:
+            raise ValueError(f"<{tag}> has attributes; release notes allow none")
         if tag in TEXT_TAGS and self._context is None:
             self._context = tag
             self._buffer = []
@@ -66,6 +68,9 @@ class FragmentParser(HTMLParser):
 def render_fragment(path: Path) -> str:
     parser = FragmentParser()
     parser.feed(path.read_text(encoding="utf-8"))
+    if parser.rawdata:
+        raise ValueError(f"{path.name}: ends inside unterminated markup {parser.rawdata[:20]!r}")
+    parser.close()
     if parser.open_tag is not None:
         raise ValueError(f"{path.name}: ends inside an unfinished <{parser.open_tag}>")
     if not parser.blocks:

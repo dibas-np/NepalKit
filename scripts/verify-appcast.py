@@ -51,8 +51,27 @@ class _NotesHTMLCheck(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag not in NOTES_TAGS:
             self.offenses.append(f"<{tag}>")
+        if attrs:
+            self.offenses.append(f"<{tag}> with attributes")
 
     handle_startendtag = handle_starttag
+
+    def handle_endtag(self, tag):
+        if tag not in NOTES_TAGS:
+            self.offenses.append(f"</{tag}>")
+
+    def handle_decl(self, decl):
+        self.offenses.append("a declaration")
+
+    def handle_pi(self, data):
+        self.offenses.append("a processing instruction")
+
+    def check(self, html: str) -> list[str]:
+        self.feed(html)
+        if self.rawdata:
+            self.offenses.append(f"unterminated markup {self.rawdata[:20]!r}")
+        self.close()
+        return sorted(set(self.offenses))
 
 # Sparkle 2 signs a feed by appending a trailing comment block:
 #
@@ -325,11 +344,10 @@ def verify(appcast: Path, info_plist: Path, enclosure: Path | None, skip_crypto:
                 fail(f"version {version}: description contains ]]> — the CDATA block was corrupted")
             if len(description) > MAX_NOTES_CHARS:
                 fail(f"version {version}: description is {len(description)} chars, over the {MAX_NOTES_CHARS} cap")
-            checker = _NotesHTMLCheck()
-            checker.feed(description)
-            if checker.offenses:
-                fail(f"version {version}: release notes use tags outside the house contract "
-                     f"({', '.join(sorted(set(checker.offenses)))}); allowed: b, li, p, ul")
+            offenses = _NotesHTMLCheck().check(description)
+            if offenses:
+                fail(f"version {version}: release notes break the house contract "
+                     f"({', '.join(offenses)}); allowed: b, li, p, ul, without attributes")
             ok(f"version {version}: release notes match the notes contract ({len(description)} chars)")
 
         payload: bytes | None = None

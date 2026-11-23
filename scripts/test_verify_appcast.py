@@ -381,6 +381,15 @@ class VerifyAppcastTest(unittest.TestCase):
             output = run_verify(self, feed, self.plist(tmp_path))
         self.assertIn("script", output)
 
+    def test_description_attributes_and_unterminated_tags_fail(self) -> None:
+        for description, expected in (('<p onclick="x()">hi</p>', "<p> with attributes"),
+                                      ("<p>hi</p><b", "unterminated markup")):
+            with self.subTest(description=description), tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+                feed = self.feed(tmp_path, make_item(description=description))
+                output = run_verify(self, feed, self.plist(tmp_path))
+                self.assertIn(expected, output)
+
     def test_description_cdata_break_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
