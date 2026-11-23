@@ -131,7 +131,8 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
 
 python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
     --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
-    --entitlements "$ROOT/$APP/$APP.entitlements"
+    --entitlements "$ROOT/$APP/$APP.entitlements" \
+    --info-plist "$ROOT/$APP/Info.plist"
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" "${NOTARY_ARGS[@]}" --wait
