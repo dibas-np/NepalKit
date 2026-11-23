@@ -15,8 +15,41 @@ permissions:
   contents: read
 
 jobs:
+  # The two macOS jobs take about 40 minutes, so a pull request that changes only
+  # docs, the site, or other workflows skips them. A skipped required check passes.
+  scope:
+    name: decide whether to build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.scope.outputs.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          build=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            relevant="$(git diff --name-only HEAD^1 HEAD | grep -vE \
+              '^(site|docs/img|assets)/|^(LICENSE|\.coderabbit\.yaml|\.sonarcloud\.properties|\.github/(dependabot\.yml|CODEOWNERS))$|^\.github/workflows/(codeql|data-sources|dco|dependency-review|pages|scripts)\.yml$|\.md$' \
+              || true)"
+            # The release-core suite reads this guide.
+            relevant+="$(git diff --name-only HEAD^1 HEAD -- docs/release-verification.md)"
+            if [[ -z "$relevant" ]]; then
+              build=false
+              echo "::notice::Only docs, site, or unrelated config changed; skipping the macOS build."
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
   floor:
     name: build, test, and launch on macOS 26
+    needs: scope
+    if: needs.scope.outputs.build == 'true'
     runs-on: xcode-27
     timeout-minutes: 45
 
@@ -154,6 +187,8 @@ jobs:
 
   watch:
     name: build and test the Watch app
+    needs: scope
+    if: needs.scope.outputs.build == 'true'
     runs-on: xcode-27
     timeout-minutes: 45
     permissions:
