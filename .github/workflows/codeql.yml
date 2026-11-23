@@ -83,6 +83,15 @@ jobs:
             echo "  now: $(grep -m1 objectVersion "$project")"
           fi
 
+      # Under the tracer, package resolution alone took about 9 minutes.
+      - name: Resolve packages before tracing
+        if: matrix.language == 'swift'
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NepalKit.xcodeproj \
+            -scheme NepalKit \
+            -onlyUsePackageVersionsFromResolvedFile
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
@@ -99,6 +108,8 @@ jobs:
             -scheme NepalKit \
             -configuration Debug \
             -destination 'generic/platform=macOS' \
+            -skipPackageUpdates \
+            -onlyUsePackageVersionsFromResolvedFile \
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
 
