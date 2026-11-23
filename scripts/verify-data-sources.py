@@ -119,8 +119,8 @@ def main():
         "sources": {},
     }
 
-    for name, (url, repo) in PINS.items():
-        body = fetch(name, url, offline)
+    for name, (url, repo, digest) in PINS.items():
+        body = fetch(name, url, digest, offline)
         if body is None:
             print("%s: unavailable, skipped\n" % name)
             observation["sources"][name] = {
