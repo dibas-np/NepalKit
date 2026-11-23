@@ -65,10 +65,14 @@ struct CalendarEventTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let event = CalendarEvent(title: "t", notes: "n", date: GregorianDate(year: 2026, month: 10, day: 21))
-        var opened: URL?
-        #expect(event.open(in: directory) { opened = $0; return true })
-        let url = try #require(opened)
+        var opened: [URL] = []
+        #expect(event.open(in: directory) { opened.append($0); return true })
+        #expect(event.open(in: directory) { opened.append($0); return true })
+        let url = try #require(opened.first)
         #expect(url.lastPathComponent == "NepalKit 20261021.ics")
+        #expect(url.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL
+            == directory.standardizedFileURL)
+        #expect(Set(opened).count == 2)
         #expect(try String(contentsOf: url, encoding: .utf8).contains("DTSTART;VALUE=DATE:20261021"))
     }
 
