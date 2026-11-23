@@ -4,6 +4,13 @@ Notable changes per released version. The same notes, formatted for the
 update alert, live at `scripts/release-notes/<version>.html` and ship in
 the [appcast](https://dibas-np.github.io/NepalKit/appcast.xml).
 
+## 1.8.1 — unreleased
+
+### Fixes
+
+- NepalKit checks for updates only at its own update feed. A feed address set in preferences or at launch is now ignored.
+- Add to Calendar saves each event to a new file in a private folder, so another app cannot predict where it is written.
+
 ## 1.8.0 — 2026-11-22
 
 ### A cleaner popover
