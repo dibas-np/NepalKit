@@ -266,6 +266,13 @@ class ReleaseCoreTest(unittest.TestCase):
         self.assertIn("is not signed by SHA256:not-the-documented-key", result.stderr)
         self.assertNothingPublished()
 
+    def test_a_fingerprint_that_only_prefixes_the_signers_is_refused(self) -> None:
+        prefix = self.world.fingerprint[:-4]
+        result = self.world.run("0.1.0", CORE_SIGNING_FINGERPRINT=prefix)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(f"is not signed by {prefix}", result.stderr)
+        self.assertNothingPublished()
+
     def test_signing_that_cannot_be_verified_is_refused(self) -> None:
         git("config", "--unset", "gpg.ssh.allowedSignersFile", cwd=self.world.repo)
         result = self.world.run("--dry-run", "0.1.0")
