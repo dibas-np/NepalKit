@@ -45,9 +45,31 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # The traced Swift build takes about 20 minutes, so a pull request that
+      # changes no Swift skips it. Pushes to main and the weekly run always analyze.
+      - name: Decide whether to analyze
+        id: scope
+        shell: bash
+        env:
+          LANGUAGE: ${{ matrix.language }}
+        run: |
+          set -euo pipefail
+          analyze=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && "$LANGUAGE" == swift ]]; then
+            changed="$(git diff --name-only HEAD^1 HEAD)"
+            if ! grep -qE '\.swift$|\.xcodeproj/|^\.swiftlint|^scripts/swiftlint\.sh$|^\.github/workflows/codeql\.yml$' <<< "$changed"; then
+              analyze=false
+              echo "::notice::No Swift, Xcode project, SwiftLint, or CodeQL workflow change; skipping the Swift analysis."
+            fi
+          fi
+          echo "analyze=$analyze" >> "$GITHUB_OUTPUT"
 
       - name: Select the pinned Xcode explicitly
-        if: matrix.language == 'swift'
+        if: matrix.language == 'swift' && steps.scope.outputs.analyze == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -62,11 +84,11 @@ jobs:
           xcodebuild -version
 
       - name: SwiftLint
-        if: matrix.language == 'swift'
+        if: matrix.language == 'swift' && steps.scope.outputs.analyze == 'true'
         run: ./scripts/swiftlint.sh lint --strict
 
       - name: Make the project readable by the pinned Xcode
-        if: matrix.language == 'swift'
+        if: matrix.language == 'swift' && steps.scope.outputs.analyze == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -84,13 +106,14 @@ jobs:
           fi
 
       - name: Initialize CodeQL
+        if: steps.scope.outputs.analyze == 'true'
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
       - name: Build the app (traced)
-        if: matrix.language == 'swift'
+        if: matrix.language == 'swift' && steps.scope.outputs.analyze == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -103,6 +126,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Perform CodeQL Analysis
+        if: steps.scope.outputs.analyze == 'true'
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
           category: "/language:${{ matrix.language }}"
@@ -110,7 +134,7 @@ jobs:
           output: sarif-results
 
       - name: Keep the results for the upload job
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.scope.outputs.analyze == 'true' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: codeql-sarif-${{ matrix.language }}
