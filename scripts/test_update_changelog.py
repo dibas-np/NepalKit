@@ -152,6 +152,22 @@ class RenderingStaysDeterministic(unittest.TestCase):
             self.assertEqual(box.changelog.read_text(encoding="utf-8"), shipped)
 
 
+class FragmentContract(unittest.TestCase):
+    def render(self, html: str) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "9.9.9.html"
+            path.write_text(html, encoding="utf-8")
+            return uc.render_fragment(path)
+
+    def test_attributes_are_refused(self) -> None:
+        with self.assertRaisesRegex(ValueError, "attributes"):
+            self.render('<p class="x">text</p>')
+
+    def test_unterminated_markup_is_refused(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unterminated"):
+            self.render("<p>text</p><b")
+
+
 class DatePrecedence(unittest.TestCase):
     def _resolve(
         self,

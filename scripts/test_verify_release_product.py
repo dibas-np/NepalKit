@@ -60,9 +60,16 @@ class VerifyReleaseProductTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.root = Path(self._tmp.name)
 
-    def run_case(self, signed=None, info=None, sparkle="2.10.0", pin=None, expected=None, codesign_exit=0):
+    def run_case(self, signed=None, info=None, sparkle="2.10.0", pin=None, expected=None, codesign_exit=0,
+                 source_key=None, helpers=None, helper_signature=None, helper_entitlements=None):
         app = self.root / "NepalKit.app"
         (app / "Contents/Frameworks/Sparkle.framework/Resources").mkdir(parents=True, exist_ok=True)
+        for name in vrp.SPARKLE_HELPERS if helpers is None else helpers:
+            (app / vrp.SPARKLE_VERSION_DIR / name).parent.mkdir(parents=True, exist_ok=True)
+            (app / vrp.SPARKLE_VERSION_DIR / name).touch()
+        source = self.root / "Info.plist"
+        with open(source, "wb") as fh:
+            plistlib.dump({**GOOD_INFO, **({"SUPublicEDKey": source_key} if source_key else {})}, fh)
         with open(app / "Contents/Info.plist", "wb") as fh:
             plistlib.dump({**GOOD_INFO, **(info or {})}, fh)
         with open(app / vrp.SPARKLE_FRAMEWORK_PLIST, "wb") as fh:
@@ -74,19 +81,28 @@ class VerifyReleaseProductTests(unittest.TestCase):
             plistlib.dump(expected or FILE_ENTITLEMENTS, fh)
         xml = plistlib.dumps(signed if signed is not None else GOOD_ENTITLEMENTS)
 
+        app_signature = b"CodeDirectory v=20500 flags=0x10000(runtime)\nTeamIdentifier=CA89X9954L\n"
+
         def stub(cmd, **kwargs):
             self.assertEqual(cmd[:2], ["codesign", "-d"])
-            return SimpleNamespace(stdout=xml, stderr=b"codesign failed", returncode=codesign_exit)
+            is_app = cmd[-1] == str(app)
+            if "--verbose=2" in cmd:
+                signature = app_signature if is_app else (helper_signature or app_signature)
+                return SimpleNamespace(stdout=b"", stderr=signature, returncode=0)
+            if is_app:
+                return SimpleNamespace(stdout=xml, stderr=b"codesign failed", returncode=codesign_exit)
+            return SimpleNamespace(stdout=plistlib.dumps(helper_entitlements or {}), stderr=b"", returncode=0)
 
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            code = vrp.main([str(app), "--project", str(project), "--entitlements", str(ent)], run=stub)
+            code = vrp.main([str(app), "--project", str(project), "--entitlements", str(ent),
+                             "--info-plist", str(source)], run=stub)
         return code, out.getvalue()
 
-    def test_exact_match_passes_with_three_ok_lines(self):
+    def test_exact_match_passes_with_four_ok_lines(self):
         code, out = self.run_case()
         self.assertEqual(code, 0, out)
-        self.assertEqual(out.count("  ok "), 3, out)
+        self.assertEqual(out.count("  ok "), 4, out)
         self.assertNotIn("FAIL", out)
 
     def test_a_failed_codesign_run_is_a_failure_even_with_xml(self):
@@ -132,6 +148,31 @@ class VerifyReleaseProductTests(unittest.TestCase):
         code, out = self.run_case(info={"SUPublicEDKey": base64.b64encode(b"short").decode()})
         self.assertEqual(code, 1)
         self.assertIn("SUPublicEDKey", out)
+
+    def test_a_public_key_other_than_the_sources_fails(self):
+        code, out = self.run_case(source_key=base64.b64encode(bytes(32)).decode())
+        self.assertEqual(code, 1)
+        self.assertIn("not the source Info.plist's key", out)
+
+    def test_a_missing_sparkle_helper_fails(self):
+        code, out = self.run_case(helpers=vrp.SPARKLE_HELPERS[1:])
+        self.assertEqual(code, 1)
+        self.assertIn("Autoupdate is missing", out)
+
+    def test_a_helper_from_another_team_fails(self):
+        code, out = self.run_case(helper_signature=b"CodeDirectory flags=0x10000(runtime)\nTeamIdentifier=OTHER\n")
+        self.assertEqual(code, 1)
+        self.assertIn("signed by team OTHER", out)
+
+    def test_a_helper_without_the_hardened_runtime_fails(self):
+        code, out = self.run_case(helper_signature=b"CodeDirectory flags=0x0(none)\nTeamIdentifier=CA89X9954L\n")
+        self.assertEqual(code, 1)
+        self.assertIn("lacks the hardened runtime", out)
+
+    def test_a_helper_with_an_extra_entitlement_fails(self):
+        code, out = self.run_case(helper_entitlements={"com.apple.security.cs.disable-library-validation": True})
+        self.assertEqual(code, 1)
+        self.assertIn("disable-library-validation", out)
 
     def test_wrong_feed_url_fails(self):
         code, out = self.run_case(info={"SUFeedURL": "http://example.com/appcast.xml"})

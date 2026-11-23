@@ -115,7 +115,7 @@ cat > "$WORK/${APP}-ExportOptions.plist" <<EOF
 </plist>
 EOF
 
-xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" \
+xcodebuild -project "$ROOT/$APP.xcodeproj" -scheme "$APP" -onlyUsePackageVersionsFromResolvedFile \
     -destination 'generic/platform=macOS' -configuration Release \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
     -archivePath "$ARCHIVE" archive
@@ -131,7 +131,8 @@ grep -q "flags=.*runtime" "$WORK/${APP}-codesign.txt" || {
 
 python3 "$ROOT/scripts/verify-release-product.py" "$APP_PATH" \
     --project "$ROOT/$APP.xcodeproj/project.pbxproj" \
-    --entitlements "$ROOT/$APP/$APP.entitlements"
+    --entitlements "$ROOT/$APP/$APP.entitlements" \
+    --info-plist "$ROOT/$APP/Info.plist"
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" "${NOTARY_ARGS[@]}" --wait

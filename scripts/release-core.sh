@@ -93,15 +93,16 @@ inherit_signing_config() {
 }
 
 verify_tag() {
-    local ref="$1" name="$2" commit="$3" report=""
+    local ref="$1" name="$2" commit="$3" report="" good=""
     [[ "$(git cat-file -t "$ref")" == tag ]] || fail "$name is not an annotated tag, so it carries no signature"
     [[ "$(git cat-file tag "$ref" | awk '$1 == "tag" { print $2; exit }')" == "$name" ]] \
         || fail "the tag published as $name names itself something else"
     [[ "$(git rev-parse "$ref^{commit}")" == "$commit" ]] || fail "$name does not point at $commit"
     report="$(git verify-tag "$ref" 2>&1)" || fail "$name does not verify: $report"
-    [[ "$report" == *"Good \"git\" signature"*"$EXPECTED_FINGERPRINT"* ]] \
+    good="$(print -r -- "$report" | grep '^Good "git" signature for .* key ' || true)"
+    [[ -n "$good" && "$good" != *$'\n'* && "${good##* key }" == "$EXPECTED_FINGERPRINT" ]] \
         || fail "$name is not signed by $EXPECTED_FINGERPRINT: $report"
-    print -r -- "$name: $(print -r -- "$report" | grep '^Good')"
+    print -r -- "$name: $good"
 }
 
 [[ "$VERSION" =~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' ]] \
