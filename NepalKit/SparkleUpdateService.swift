@@ -50,6 +50,12 @@ final class SparkleUpdateService: NSObject, UpdateServicing {
 }
 
 extension SparkleUpdateService: SPUUpdaterDelegate {
+    /// Sparkle prefers this over a SUFeedURL user default or launch argument,
+    /// so only the signed Info.plist can choose the feed.
+    nonisolated func feedURLString(for updater: SPUUpdater) -> String? {
+        Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String
+    }
+
     nonisolated func updater(
         _ updater: SPUUpdater,
         mayPerformUpdateCheck updateCheck: SPUUpdateCheck,
