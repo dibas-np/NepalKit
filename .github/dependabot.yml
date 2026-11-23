@@ -3,10 +3,11 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
-      interval: "weekly"
-    # CodeQL refuses to run when init and analyze are at different versions.
+      interval: "monthly"
+    # One PR a month. This also keeps CodeQL's init and analyze at the same version, which it requires.
     groups:
-      codeql-action:
+      github-actions:
         patterns:
-          - "github/codeql-action/*"
+          - "*"
